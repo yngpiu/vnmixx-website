@@ -1,58 +1,82 @@
-# Turborepo Tailwind CSS starter
+# VNMIXX Website
 
-This Turborepo starter is maintained by the Turborepo core team.
+Dự án website thương mại điện tử VNMIXX sử dụng mô hình monorepo với Turborepo.
 
-## Using this example
+## Cấu trúc dự án
 
-Run the following command:
+Dự án bao gồm các ứng dụng và gói thư viện sau:
 
-```sh
-npx create-turbo@latest -e with-tailwind
+### Apps
+
+- `apps/api`: NestJS API (Port 4000).
+- `apps/dashboard`: Next.js Admin Dashboard (Port 3000).
+- `apps/shop`: Next.js Customer Shop (Port 3001).
+
+### Packages
+
+- `@repo/eslint-config`: Cấu hình ESLint (bao gồm Prettier và Tailwind plugin).
+- `@repo/tailwind-config`: Cấu hình Tailwind CSS dùng chung (v4).
+- `@repo/typescript-config`: Các tệp `tsconfig.json` dùng chung.
+- `@repo/ui`: Thư viện thành phần giao diện sử dụng Shadcn UI và Radix UI.
+
+## Công cụ sử dụng
+
+- [Turborepo](https://turbo.build/repo/docs) cho quản lý monorepo.
+- [TypeScript](https://www.typescriptlang.org/) cho kiểu dữ liệu tĩnh.
+- [PNPM](https://pnpm.io/) làm package manager.
+- [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/) cho chất lượng và định dạng mã nguồn.
+- [Husky](https://typicode.github.io/husky/) cho Git Hooks (pre-commit & pre-push).
+
+## Các lệnh chính
+
+Chạy các lệnh này từ thư mục gốc của dự án:
+
+### Phát triển (Development)
+
+```bash
+pnpm dev
 ```
 
-## What's inside?
+Lệnh này sẽ chạy tất cả các ứng dụng ở chế độ watch mode.
 
-This Turborepo includes the following packages/apps:
+### Xây dựng (Build)
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
-- `web`: another [Next.js](https://nextjs.org/) app with [Tailwind CSS](https://tailwindcss.com/)
-- `ui`: a stub React component library with [Tailwind CSS](https://tailwindcss.com/) shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Building packages/ui
-
-This example is set up to produce compiled styles for `ui` components into the `dist` directory. The component `.tsx` files are consumed by the Next.js apps directly using `transpilePackages` in `next.config.ts`. This was chosen for several reasons:
-
-- Make sharing one `tailwind.config.ts` to apps and packages as easy as possible.
-- Make package compilation simple by only depending on the Next.js Compiler and `tailwindcss`.
-- Ensure Tailwind classes do not overwrite each other. The `ui` package uses a `ui-` prefix for it's classes.
-- Maintain clear package export boundaries.
-
-Another option is to consume `packages/ui` directly from source without building. If using this option, you will need to update the `tailwind.config.ts` in your apps to be aware of your package locations, so it can find all usages of the `tailwindcss` class names for CSS compilation.
-
-For example, in [tailwind.config.ts](packages/tailwind-config/tailwind.config.ts):
-
-```js
-  content: [
-    // app content
-    `src/**/*.{js,ts,jsx,tsx}`,
-    // include packages if not transpiling
-    "../../packages/ui/*.{js,ts,jsx,tsx}",
-  ],
+```bash
+pnpm build
 ```
 
-If you choose this strategy, you can remove the `tailwindcss` and `autoprefixer` dependencies from the `ui` package.
+### Kiểm tra lỗi (Lint)
 
-### Utilities
+```bash
+pnpm lint
+```
 
-This Turborepo has some additional tools already setup for you:
+### Kiểm tra kiểu dữ liệu (Type-check)
 
-- [Tailwind CSS](https://tailwindcss.com/) for styles
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+```bash
+pnpm check-types
+```
+
+### Định dạng mã nguồn (Format)
+
+```bash
+pnpm format
+```
+
+## Quy trình làm việc (Workflow)
+
+Dự án sử dụng Husky để đảm bảo chất lượng code:
+
+- **Pre-commit**: Tự động chạy Prettier trên các file đã thay đổi.
+- **Pre-push**: Chạy `format`, `lint` và `check-types` trước khi đẩy mã nguồn lên server.
+
+Nếu bạn clone dự án lần đầu, hãy chạy:
+
+```bash
+pnpm install
+pnpm prepare
+```
+
+## Tài liệu hướng dẫn
+
+Xem thêm [TUTORIAL.md](./TUTORIAL.md) để biết chi tiết về cách tích hợp Shadcn UI với Turborepo.
