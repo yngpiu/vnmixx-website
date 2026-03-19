@@ -4,6 +4,12 @@ Giao diện khách hàng (Customer Shop) sử dụng Framework Next.js.
 
 ## Bắt đầu
 
+Tạo file env cho Shop:
+
+```bash
+cp .env.example .env
+```
+
 Chạy server phát triển:
 
 ```bash

@@ -4,6 +4,12 @@
 
 ## Bắt đầu
 
+Tạo file env cho API:
+
+```bash
+cp .env.example .env
+```
+
 Chạy server phát triển:
 
 ```bash

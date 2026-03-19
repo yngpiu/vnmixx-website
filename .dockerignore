@@ -1,0 +1,12 @@
+.git
+.gitignore
+.husky
+.turbo
+node_modules
+**/node_modules
+**/.next
+**/dist
+**/coverage
+pnpm-debug.log
+npm-debug.log
+.DS_Store

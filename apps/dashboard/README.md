@@ -4,6 +4,12 @@ Giao diện quản trị (Admin Dashboard) sử dụng Framework Next.js.
 
 ## Bắt đầu
 
+Tạo file env cho Dashboard:
+
+```bash
+cp .env.example .env
+```
+
 Chạy server phát triển:
 
 ```bash

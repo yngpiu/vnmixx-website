@@ -24,6 +24,7 @@ Dự án bao gồm các ứng dụng và gói thư viện sau:
 - [Turborepo](https://turbo.build/repo/docs) cho quản lý monorepo.
 - [TypeScript](https://www.typescriptlang.org/) cho kiểu dữ liệu tĩnh.
 - [PNPM](https://pnpm.io/) làm package manager.
+- [Docker Compose](https://docs.docker.com/compose/) để chạy môi trường Development/Production.
 - [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/) cho chất lượng và định dạng mã nguồn.
 - [Husky](https://typicode.github.io/husky/) cho Git Hooks (pre-commit & pre-push).
 
@@ -31,13 +32,63 @@ Dự án bao gồm các ứng dụng và gói thư viện sau:
 
 Chạy các lệnh này từ thư mục gốc của dự án:
 
+## Biến môi trường
+
+Khởi tạo env một lần:
+
+```bash
+cp .env.example .env
+cp apps/api/.env.example apps/api/.env
+cp apps/dashboard/.env.example apps/dashboard/.env
+cp apps/shop/.env.example apps/shop/.env
+```
+
 ### Phát triển (Development)
 
 ```bash
+pnpm docker:dev:up
 pnpm dev
 ```
 
-Lệnh này sẽ chạy tất cả các ứng dụng ở chế độ watch mode.
+Lệnh này sẽ:
+
+- Khởi động `MySQL` (`localhost:3306`) và `Redis` (`localhost:6379`) bằng Docker.
+- Chạy các app ở local watch mode (không chạy app trong container).
+- Dùng biến môi trường trong file `.env`.
+
+Để tắt service hạ tầng:
+
+```bash
+pnpm docker:dev:down
+```
+
+### Production (Docker)
+
+Chuẩn bị file biến môi trường production:
+
+```bash
+cp .env.example .env
+```
+
+Sau đó cập nhật các giá trị password trong `.env`.
+
+```bash
+pnpm docker:prod:up
+```
+
+Lệnh này sẽ chạy đầy đủ stack:
+
+- `mysql`
+- `redis`
+- `api` (port `4000`)
+- `dashboard` (port `3000`)
+- `shop` (port `3001`)
+
+Để dừng stack production:
+
+```bash
+pnpm docker:prod:down
+```
 
 ### Xây dựng (Build)
 
