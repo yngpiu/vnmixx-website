@@ -4,6 +4,9 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:fe": "turbo run dev --filter=shop --filter=dashboard",
+    "dev:be": "turbo run dev --filter=api",
+    "dev:api-dashboard": "turbo run dev --filter=api --filter=dashboard",
     "docker:dev:up": "docker compose up -d mysql redis",
     "docker:dev:down": "docker compose down",
     "docker:prod:up": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build",
