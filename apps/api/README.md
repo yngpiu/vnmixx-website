@@ -21,6 +21,36 @@ Mặc định, server sẽ chạy ở địa chỉ [localhost:4000](http://local
 
 Bạn có thể chỉnh sửa mã nguồn trong thư mục `src/`. Cấu trúc code tuân thủ chuẩn của NestJS.
 
+## Redis
+
+Project đã được tích hợp Redis client bằng `ioredis` thông qua `RedisModule` (global module).
+
+Các biến môi trường hỗ trợ:
+
+- `DATABASE_URL` (bắt buộc cho Prisma)
+- `REDIS_URL` (nếu có sẽ được ưu tiên)
+- `REDIS_HOST` (mặc định `127.0.0.1`)
+- `REDIS_PORT` (mặc định `6379`)
+- `REDIS_USERNAME`
+- `REDIS_PASSWORD`
+- `REDIS_DB` (mặc định `0`)
+
+Bạn có thể inject `RedisService` ở bất kỳ module/service nào để sử dụng:
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { RedisService } from './redis/redis.service';
+
+@Injectable()
+export class ExampleService {
+  constructor(private readonly redisService: RedisService) {}
+
+  async setValue() {
+    await this.redisService.getClient().set('key', 'value');
+  }
+}
+```
+
 ### Chú ý quan trọng 🚧
 
 Nếu bạn muốn xây dựng (`build`) hoặc chạy kiểm tra (`test`) thì trước tiên cần xây dựng các gói thư viện (`packages/*`) dùng chung.

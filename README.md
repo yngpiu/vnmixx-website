@@ -34,11 +34,22 @@ Chạy các lệnh này từ thư mục gốc của dự án:
 
 ## Biến môi trường
 
-Khởi tạo env một lần:
+Quy ước file env:
+
+- `/.env` dùng cho Docker Compose ở root (mysql/redis + prod stack).
+- `/apps/api/.env` dùng cho API khi chạy local (`pnpm dev`).
+- `/apps/dashboard/.env` và `/apps/shop/.env` là tùy chọn, chỉ cần khi bạn muốn override `NEXT_PUBLIC_API_BASE_URL`.
+
+Khởi tạo env tối thiểu (khuyến nghị):
 
 ```bash
 cp .env.example .env
 cp apps/api/.env.example apps/api/.env
+```
+
+Nếu cần override API URL cho frontend:
+
+```bash
 cp apps/dashboard/.env.example apps/dashboard/.env
 cp apps/shop/.env.example apps/shop/.env
 ```
@@ -54,7 +65,7 @@ Lệnh này sẽ:
 
 - Khởi động `MySQL` (`localhost:3306`) và `Redis` (`localhost:6379`) bằng Docker.
 - Chạy các app ở local watch mode (không chạy app trong container).
-- Dùng biến môi trường trong file `.env`.
+- Dùng biến môi trường Docker từ `.env`.
 
 Để tắt service hạ tầng:
 

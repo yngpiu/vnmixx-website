@@ -4,7 +4,7 @@ Giao diện khách hàng (Customer Shop) sử dụng Framework Next.js.
 
 ## Bắt đầu
 
-Tạo file env cho Shop:
+Tùy chọn (chỉ cần khi muốn override API URL):
 
 ```bash
 cp .env.example .env
@@ -18,6 +18,8 @@ pnpm dev
 ```
 
 Truy cập [localhost:3001](http://localhost:3001) để xem kết quả.
+
+Mặc định, app sẽ gọi API tại `http://localhost:4000` nếu không có biến `NEXT_PUBLIC_API_BASE_URL`.
 
 Bạn có thể bắt đầu chỉnh sửa giao diện bằng cách thay đổi file `app/page.tsx`. Trang sẽ tự động được cập nhật khi bạn lưu file.
 
