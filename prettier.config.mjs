@@ -10,7 +10,7 @@ const config = {
   tabWidth: 2,
   arrowParens: 'always',
   endOfLine: 'lf',
-  plugins: ['prettier-plugin-organize-imports', 'prettier-plugin-tailwindcss'],
+  plugins: ['prettier-plugin-tailwindcss', 'prettier-plugin-organize-imports'],
 };
 
 export default config;

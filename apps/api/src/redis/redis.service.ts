@@ -14,6 +14,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client.on('error', (error) => {
       this.logger.error(`Redis connection error: ${error.message}`);
     });
+
+    this.client.on('connect', () => {
+      this.logger.log('Connected to Redis');
+    });
   }
 
   async onModuleInit(): Promise<void> {
