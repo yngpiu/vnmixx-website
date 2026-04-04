@@ -1,0 +1,59 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+
+export interface EmployeeWithRoles {
+  employeeId: number;
+  fullName: string;
+  email: string;
+  roles: { id: number; name: string; description: string | null }[];
+}
+
+@Injectable()
+export class EmployeeRoleRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findByEmployeeId(employeeId: number): Promise<EmployeeWithRoles | null> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        employeeRoles: {
+          select: {
+            role: { select: { id: true, name: true, description: true } },
+          },
+        },
+      },
+    });
+
+    if (!employee) return null;
+
+    return {
+      employeeId: employee.id,
+      fullName: employee.fullName,
+      email: employee.email,
+      roles: employee.employeeRoles.map((er) => er.role),
+    };
+  }
+
+  async syncRoles(employeeId: number, roleIds: number[]): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.employeeRole.deleteMany({ where: { employeeId } }),
+      ...(roleIds.length
+        ? [
+            this.prisma.employeeRole.createMany({
+              data: roleIds.map((roleId) => ({ employeeId, roleId })),
+            }),
+          ]
+        : []),
+    ]);
+  }
+
+  async employeeExists(employeeId: number): Promise<boolean> {
+    const count = await this.prisma.employee.count({
+      where: { id: employeeId, deletedAt: null },
+    });
+    return count === 1;
+  }
+}
