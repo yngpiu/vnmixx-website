@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
-import { parseBoolean } from '../utils/config.util';
 
 interface SendMailOptions {
   to: string;
@@ -50,7 +49,8 @@ export class MailService {
     const host = this.config.get<string>('SMTP_HOST') ?? null;
     const rawPort = Number(this.config.get<string | number>('SMTP_PORT') ?? 587);
     const port = Number.isInteger(rawPort) && rawPort > 0 ? rawPort : 587;
-    const configuredSecure = parseBoolean(this.config.get<string>('SMTP_SECURE'), false);
+    const rawSecure = this.config.get<string>('SMTP_SECURE')?.trim().toLowerCase();
+    const configuredSecure = rawSecure === 'true' || rawSecure === '1';
     const secure = port === 465 ? true : configuredSecure;
 
     if (port === 465 && !configuredSecure) {
