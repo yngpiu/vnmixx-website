@@ -1,5 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
@@ -9,15 +11,17 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { Public } from '../decorators';
+import { CurrentUser, Public, RequireUserType } from '../decorators';
 import {
   AuthResponseDto,
+  ChangePasswordDto,
   CustomerRegisterResponseDto,
   LoginDto,
   RegisterDto,
   ResendCustomerOtpDto,
   VerifyCustomerOtpDto,
 } from '../dto';
+import type { AuthenticatedUser } from '../interfaces';
 import { CustomerAuthService } from '../services/customer-auth.service';
 import { TokenService } from '../services/token.service';
 import { extractRequestMeta } from '../utils';
@@ -81,5 +85,22 @@ export class CustomerAuthController {
   async login(@Body() dto: LoginDto, @Req() req: Request): Promise<AuthResponseDto> {
     const identity = await this.customerAuth.loginCustomer(dto);
     return this.tokenService.issueTokenPair(identity, 'CUSTOMER', extractRequestMeta(req));
+  }
+
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Change customer password and revoke all sessions' })
+  @ApiOkResponse({ description: 'Password changed successfully. All sessions terminated.' })
+  @ApiUnauthorizedResponse({ description: 'Current password is incorrect' })
+  @ApiBadRequestResponse({ description: 'Invalid request or customer not found' })
+  @RequireUserType('CUSTOMER')
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ message: string }> {
+    await this.customerAuth.changePassword(user.id, dto);
+    await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
+    return { message: 'Password changed successfully. Please log in again.' };
   }
 }

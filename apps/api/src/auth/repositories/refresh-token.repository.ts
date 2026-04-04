@@ -4,8 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 interface CreateRefreshTokenData {
   tokenHash: string;
-  userId: number;
-  userType: 'CUSTOMER' | 'EMPLOYEE';
+  customerId?: number;
+  employeeId?: number;
   deviceInfo: string | null;
   ipAddress: string | null;
   expiresAt: Date;
@@ -30,10 +30,6 @@ export class RefreshTokenRepository {
     });
   }
 
-  /**
-   * Atomically consume a refresh token only if it is still active.
-   * Returns true when the token is consumed exactly once.
-   */
   async consumeIfActive(id: number): Promise<boolean> {
     const now = new Date();
     const { count } = await this.prisma.refreshToken.updateMany({
@@ -52,7 +48,10 @@ export class RefreshTokenRepository {
 
   async revokeAllByUser(userId: number, userType: 'CUSTOMER' | 'EMPLOYEE'): Promise<void> {
     await this.prisma.refreshToken.updateMany({
-      where: { userId, userType, revokedAt: null },
+      where: {
+        ...(userType === 'CUSTOMER' ? { customerId: userId } : { employeeId: userId }),
+        revokedAt: null,
+      },
       data: { revokedAt: new Date() },
     });
   }

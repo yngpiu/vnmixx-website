@@ -82,6 +82,22 @@ export class CustomerRepository {
     return !!customer;
   }
 
+  async findHashedPasswordById(id: number): Promise<string | null> {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id },
+      select: { hashedPassword: true },
+    });
+    return customer?.hashedPassword ?? null;
+  }
+
+  async updatePassword(id: number, hashedPassword: string): Promise<boolean> {
+    const { count } = await this.prisma.customer.updateMany({
+      where: { id, deletedAt: null },
+      data: { hashedPassword },
+    });
+    return count === 1;
+  }
+
   async activateEmailById(id: number): Promise<boolean> {
     const { count } = await this.prisma.customer.updateMany({
       where: { id, deletedAt: null },

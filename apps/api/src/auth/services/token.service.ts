@@ -1,8 +1,6 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomUUID } from 'crypto';
-import { getPositiveIntConfig } from '../../common/utils/config.util';
 import { RedisService } from '../../redis/redis.service';
 import {
   BLACKLIST_PREFIX,
@@ -33,19 +31,10 @@ export class TokenService {
     private readonly employeeRepo: EmployeeRepository,
     private readonly refreshTokenRepo: RefreshTokenRepository,
     private readonly jwt: JwtService,
-    private readonly config: ConfigService,
     private readonly redis: RedisService,
   ) {
-    this.accessExpiration = getPositiveIntConfig(
-      this.config,
-      'JWT_ACCESS_EXPIRATION',
-      DEFAULT_ACCESS_EXPIRATION,
-    );
-    this.refreshExpiration = getPositiveIntConfig(
-      this.config,
-      'JWT_REFRESH_EXPIRATION',
-      DEFAULT_REFRESH_EXPIRATION,
-    );
+    this.accessExpiration = DEFAULT_ACCESS_EXPIRATION;
+    this.refreshExpiration = DEFAULT_REFRESH_EXPIRATION;
   }
 
   /** Issue a new access + refresh token pair for the given user identity. */
@@ -70,8 +59,7 @@ export class TokenService {
     const tokenHash = this.hashToken(rawRefreshToken);
     await this.refreshTokenRepo.create({
       tokenHash,
-      userId: user.id,
-      userType,
+      ...(userType === 'CUSTOMER' ? { customerId: user.id } : { employeeId: user.id }),
       deviceInfo: meta.deviceInfo ?? null,
       ipAddress: meta.ipAddress ?? null,
       expiresAt: new Date(Date.now() + this.refreshExpiration * 1000),
@@ -91,11 +79,13 @@ export class TokenService {
     if (!storedToken) {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
+    const isCustomer = storedToken.customerId !== null;
+    const ownerId = isCustomer ? storedToken.customerId! : storedToken.employeeId!;
+    const ownerType: 'CUSTOMER' | 'EMPLOYEE' = isCustomer ? 'CUSTOMER' : 'EMPLOYEE';
+
     if (storedToken.revokedAt) {
-      this.logger.warn(
-        `Refresh token reuse detected for ${storedToken.userType}:${storedToken.userId}`,
-      );
-      await this.refreshTokenRepo.revokeAllByUser(storedToken.userId, storedToken.userType);
+      this.logger.warn(`Refresh token reuse detected for ${ownerType}:${ownerId}`);
+      await this.refreshTokenRepo.revokeAllByUser(ownerId, ownerType);
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
     if (storedToken.expiresAt <= new Date()) {
@@ -104,14 +94,14 @@ export class TokenService {
     const consumed = await this.refreshTokenRepo.consumeIfActive(storedToken.id);
     if (!consumed) {
       this.logger.warn(
-        `Refresh token was already consumed concurrently for ${storedToken.userType}:${storedToken.userId}`,
+        `Refresh token was already consumed concurrently for ${ownerType}:${ownerId}`,
       );
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
-    if (storedToken.userType === 'CUSTOMER') {
-      return this.refreshCustomerTokens(storedToken.userId, meta);
+    if (isCustomer) {
+      return this.refreshCustomerTokens(ownerId, meta);
     }
-    return this.refreshEmployeeTokens(storedToken.userId, meta);
+    return this.refreshEmployeeTokens(ownerId, meta);
   }
 
   /** Revoke a single refresh token and blacklist the current access token. */

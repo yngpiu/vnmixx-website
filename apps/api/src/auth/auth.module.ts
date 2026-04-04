@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { getPositiveIntConfig } from '../common/utils/config.util';
+import { DEFAULT_ACCESS_EXPIRATION } from './constants';
 import { AuthController } from './controllers/auth.controller';
 import { CustomerAuthController } from './controllers/customer.controller';
 import { EmployeeAuthController } from './controllers/employee.controller';
@@ -23,9 +23,7 @@ import { TokenService } from './services/token.service';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: getPositiveIntConfig(config, 'JWT_ACCESS_EXPIRATION', 900),
-        },
+        signOptions: { expiresIn: DEFAULT_ACCESS_EXPIRATION },
       }),
     }),
   ],
@@ -41,6 +39,6 @@ import { TokenService } from './services/token.service';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: AuthorizationGuard },
   ],
-  exports: [TokenService, JwtModule],
+  exports: [TokenService, JwtModule, RefreshTokenRepository],
 })
 export class AuthModule {}

@@ -8,14 +8,14 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { compare, hash } from 'bcrypt';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
 import { Prisma } from 'generated/prisma/client';
 import { MailService } from '../../common/mail/mail.service';
-import { getPositiveIntConfig } from '../../common/utils/config.util';
+
 import { RedisService } from '../../redis/redis.service';
 import {
+  BCRYPT_SALT_ROUNDS,
   CUSTOMER_OTP_ATTEMPTS_PREFIX,
   CUSTOMER_OTP_LENGTH,
   CUSTOMER_OTP_PREFIX,
@@ -25,6 +25,7 @@ import {
   DEFAULT_OTP_RESEND_COOLDOWN,
 } from '../constants';
 import type {
+  ChangePasswordDto,
   CustomerRegisterResponseDto,
   LoginDto,
   RegisterDto,
@@ -55,27 +56,13 @@ export class CustomerAuthService {
 
   constructor(
     private readonly customerRepo: CustomerRepository,
-    private readonly config: ConfigService,
     private readonly redis: RedisService,
     private readonly mail: MailService,
   ) {
-    const saltRounds = getPositiveIntConfig(this.config, 'BCRYPT_SALT_ROUNDS', 12);
-    this.saltRounds = Math.min(Math.max(saltRounds, 4), 31);
-    this.otpExpiration = getPositiveIntConfig(
-      this.config,
-      'CUSTOMER_OTP_EXPIRATION',
-      DEFAULT_OTP_EXPIRATION,
-    );
-    this.otpResendCooldown = getPositiveIntConfig(
-      this.config,
-      'CUSTOMER_OTP_RESEND_COOLDOWN',
-      DEFAULT_OTP_RESEND_COOLDOWN,
-    );
-    this.otpMaxAttempts = getPositiveIntConfig(
-      this.config,
-      'CUSTOMER_OTP_MAX_ATTEMPTS',
-      DEFAULT_OTP_MAX_ATTEMPTS,
-    );
+    this.saltRounds = Math.min(Math.max(BCRYPT_SALT_ROUNDS, 4), 31);
+    this.otpExpiration = DEFAULT_OTP_EXPIRATION;
+    this.otpResendCooldown = DEFAULT_OTP_RESEND_COOLDOWN;
+    this.otpMaxAttempts = DEFAULT_OTP_MAX_ATTEMPTS;
   }
 
   /** Register a new customer and send email OTP for verification. */
@@ -173,6 +160,19 @@ export class CustomerAuthService {
     const isPasswordValid = await compare(dto.password, customer.hashedPassword);
     if (!isPasswordValid) throw new UnauthorizedException('Invalid email or password');
     return { id: customer.id, email: customer.email, fullName: customer.fullName };
+  }
+
+  /** Change the password of an authenticated customer. */
+  async changePassword(customerId: number, dto: ChangePasswordDto): Promise<void> {
+    const currentHash = await this.customerRepo.findHashedPasswordById(customerId);
+    if (!currentHash) throw new BadRequestException('Customer not found');
+
+    const isCurrentPasswordValid = await compare(dto.currentPassword, currentHash);
+    if (!isCurrentPasswordValid) throw new UnauthorizedException('Current password is incorrect');
+
+    const newHashedPassword = await hash(dto.newPassword, this.saltRounds);
+    const updated = await this.customerRepo.updatePassword(customerId, newHashedPassword);
+    if (!updated) throw new BadRequestException('Unable to update password');
   }
 
   // ── OTP helpers ────────────────────────────────────────────────────────────

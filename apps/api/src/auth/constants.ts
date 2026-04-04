@@ -13,6 +13,9 @@ export const DEFAULT_OTP_RESEND_COOLDOWN = 60;
 /** Default maximum failed verification attempts per OTP cycle. */
 export const DEFAULT_OTP_MAX_ATTEMPTS = 5;
 
+/** Bcrypt salt rounds (clamped to 4–31 at usage site). */
+export const BCRYPT_SALT_ROUNDS = 12;
+
 /** Number of digits in customer email verification OTP. */
 export const CUSTOMER_OTP_LENGTH = 6;
 
