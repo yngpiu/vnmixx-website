@@ -4,8 +4,8 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -19,6 +19,11 @@ enum Gender {
   MALE
   FEMALE
   OTHER
+}
+
+enum AddressType {
+  HOME
+  OFFICE
 }
 
 // ─── Customers ───────────────────────────────────────────
@@ -39,6 +44,7 @@ model Customer {
   deletedAt       DateTime? @map("deleted_at") @db.Timestamp(0)
 
   refreshTokens RefreshToken[]
+  addresses     Address[]
 
   @@map("customers")
 }
@@ -57,8 +63,8 @@ model Employee {
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
   deletedAt      DateTime? @map("deleted_at") @db.Timestamp(0)
 
-  employeeRoles  EmployeeRole[]
-  refreshTokens  RefreshToken[]
+  employeeRoles EmployeeRole[]
+  refreshTokens RefreshToken[]
 
   @@map("employees")
 }
@@ -112,6 +118,81 @@ model EmployeeRole {
   @@id([employeeId, roleId])
   @@index([roleId], map: "idx_emp_roles_role")
   @@map("employee_roles")
+}
+
+// ─── Geography ───────────────────────────────────────────
+
+model City {
+  id              Int      @id @default(autoincrement()) @db.UnsignedInt
+  giaohangnhanhId String   @unique(map: "uk_cities_ghn") @map("giaohangnhanh_id") @db.VarChar(20)
+  name            String   @db.VarChar(100)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  districts District[]
+  addresses Address[]
+
+  @@map("cities")
+}
+
+model District {
+  id              Int      @id @default(autoincrement()) @db.UnsignedInt
+  giaohangnhanhId String   @unique(map: "uk_districts_ghn") @map("giaohangnhanh_id") @db.VarChar(20)
+  name            String   @db.VarChar(100)
+  cityId          Int      @map("city_id") @db.UnsignedInt
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  city      City      @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  wards     Ward[]
+  addresses Address[]
+
+  @@index([cityId], map: "idx_districts_city")
+  @@map("districts")
+}
+
+model Ward {
+  id              Int      @id @default(autoincrement()) @db.UnsignedInt
+  giaohangnhanhId String   @unique(map: "uk_wards_ghn") @map("giaohangnhanh_id") @db.VarChar(20)
+  name            String   @db.VarChar(100)
+  districtId      Int      @map("district_id") @db.UnsignedInt
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  district  District  @relation(fields: [districtId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  addresses Address[]
+
+  @@index([districtId], map: "idx_wards_district")
+  @@map("wards")
+}
+
+// ─── Addresses ───────────────────────────────────────────
+
+model Address {
+  id          Int         @id @default(autoincrement()) @db.UnsignedInt
+  customerId  Int         @map("customer_id") @db.UnsignedInt
+  fullName    String      @map("full_name") @db.VarChar(100)
+  phoneNumber String      @map("phone_number") @db.VarChar(20)
+  cityId      Int         @map("city_id") @db.UnsignedInt
+  districtId  Int         @map("district_id") @db.UnsignedInt
+  wardId      Int         @map("ward_id") @db.UnsignedInt
+  addressLine String      @map("address_line") @db.VarChar(255)
+  type        AddressType @default(HOME)
+  isDefault   Boolean     @default(false) @map("is_default") @db.TinyInt
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt   DateTime?   @map("deleted_at") @db.Timestamp(0)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  city     City     @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  district District @relation(fields: [districtId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ward     Ward     @relation(fields: [wardId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([customerId], map: "idx_addresses_customer")
+  @@index([cityId], map: "idx_addresses_city")
+  @@index([districtId], map: "idx_addresses_district")
+  @@index([wardId], map: "idx_addresses_ward")
+  @@map("addresses")
 }
 
 // ─── Categories ──────────────────────────────────────────
