@@ -1,0 +1,9 @@
+# Ignore artifacts:
+build
+dist
+.next
+coverage
+node_modules
+
+# Next.js files
+next-env.d.ts
