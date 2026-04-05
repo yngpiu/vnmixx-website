@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -28,7 +29,7 @@ import { AddressService } from '../services/address.service';
 @ApiTags('Addresses')
 @ApiBearerAuth('access-token')
 @RequireUserType('CUSTOMER')
-@Controller('addresses')
+@Controller('me/addresses')
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
@@ -65,7 +66,7 @@ export class AddressController {
   @ApiOkResponse({ type: AddressResponseDto })
   @ApiNotFoundResponse({ description: 'Address not found' })
   @ApiBadRequestResponse({ description: 'Invalid location hierarchy' })
-  @Patch(':id')
+  @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAddressDto,
