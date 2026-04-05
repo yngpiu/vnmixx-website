@@ -210,9 +210,142 @@ model Category {
 
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   children Category[] @relation("CategoryTree")
+  products Product[]
 
   @@index([parentId], map: "idx_categories_parent")
   @@map("categories")
+}
+
+// ─── Attributes (EAV) ───────────────────────────────────
+
+model Attribute {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  name      String   @unique(map: "uk_attributes_name") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  values AttributeValue[]
+
+  @@map("attributes")
+}
+
+model AttributeValue {
+  id          Int      @id @default(autoincrement()) @db.UnsignedInt
+  attributeId Int      @map("attribute_id") @db.UnsignedInt
+  value       String   @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  attribute         Attribute          @relation(fields: [attributeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productAttributes ProductAttribute[]
+
+  @@unique([attributeId, value], map: "uk_attr_values_attr_value")
+  @@map("attribute_values")
+}
+
+// ─── Colors & Sizes ─────────────────────────────────────
+
+model Color {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  name      String   @unique(map: "uk_colors_name") @db.VarChar(50)
+  hexCode   String   @unique(map: "uk_colors_hex") @map("hex_code") @db.Char(7)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  @@map("colors")
+}
+
+model Size {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  label     String   @unique(map: "uk_sizes_label") @db.VarChar(10)
+  sortOrder Int      @default(0) @map("sort_order") @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  variants ProductVariant[]
+
+  @@map("sizes")
+}
+
+// ─── Products ───────────────────────────────────────────
+
+model Product {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  categoryId  Int?      @map("category_id") @db.UnsignedInt
+  name        String    @db.VarChar(255)
+  slug        String    @unique(map: "uk_products_slug") @db.VarChar(255)
+  description String?   @db.Text
+  thumbnail   String?   @db.VarChar(500)
+  isActive    Boolean   @default(true) @map("is_active") @db.TinyInt
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(0)
+
+  category          Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  productAttributes ProductAttribute[]
+  variants          ProductVariant[]
+  images            ProductImage[]
+
+  @@index([categoryId], map: "idx_products_category")
+  @@map("products")
+}
+
+model ProductAttribute {
+  productId        Int      @map("product_id") @db.UnsignedInt
+  attributeValueId Int      @map("attribute_value_id") @db.UnsignedInt
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  attributeValue AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([productId, attributeValueId])
+  @@map("product_attributes")
+}
+
+// ─── Product Variants & Images ──────────────────────────
+
+model ProductVariant {
+  id        Int       @id @default(autoincrement()) @db.UnsignedInt
+  productId Int       @map("product_id") @db.UnsignedInt
+  colorId   Int       @map("color_id") @db.UnsignedInt
+  sizeId    Int       @map("size_id") @db.UnsignedInt
+  sku       String    @unique(map: "uk_variants_sku") @db.VarChar(50)
+  price     Int       @db.UnsignedInt
+  salePrice Int?      @map("sale_price") @db.UnsignedInt
+  stockQty  Int       @default(0) @map("stock_qty") @db.UnsignedInt
+  isActive  Boolean   @default(true) @map("is_active") @db.TinyInt
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  color   Color   @relation(fields: [colorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  size    Size    @relation(fields: [sizeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([productId, colorId, sizeId], map: "uk_variants_combo")
+  @@index([colorId], map: "idx_variants_color")
+  @@index([sizeId], map: "idx_variants_size")
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  productId Int      @map("product_id") @db.UnsignedInt
+  colorId   Int?     @map("color_id") @db.UnsignedInt
+  url       String   @db.VarChar(500)
+  altText   String?  @map("alt_text") @db.VarChar(255)
+  sortOrder Int      @default(0) @map("sort_order") @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  color   Color?  @relation(fields: [colorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([productId, colorId], map: "idx_images_product_color")
+  @@map("product_images")
 }
 
 // ─── Refresh Tokens ──────────────────────────────────────

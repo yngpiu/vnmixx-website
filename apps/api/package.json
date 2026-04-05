@@ -21,7 +21,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "locations:fetch": "npx tsx prisma/fetch-ghn-data.ts",
     "locations:seed": "npx tsx --env-file=.env prisma/seed-locations.ts",
-    "locations:clear": "npx tsx --env-file=.env prisma/clear-locations.ts"
+    "locations:clear": "npx tsx --env-file=.env prisma/clear-locations.ts",
+    "products:seed": "npx tsx --env-file=.env prisma/seed-products.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -58,6 +59,8 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "@types/uuid": "^11.0.0",
+    "axios": "^1.14.0",
+    "cheerio": "^1.2.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
