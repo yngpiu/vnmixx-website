@@ -1,0 +1,153 @@
+import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../generated/prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+
+export interface EmployeeListItemView {
+  id: number;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  createdAt: Date;
+  deletedAt: Date | null;
+  employeeRoles: { role: { id: number; name: string } }[];
+}
+
+export interface EmployeeDetailView extends EmployeeListItemView {
+  avatarUrl: string | null;
+  updatedAt: Date;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
+const ROLE_SELECT = {
+  role: { select: { id: true, name: true } },
+} as const;
+
+const LIST_SELECT = {
+  id: true,
+  fullName: true,
+  email: true,
+  phoneNumber: true,
+  isActive: true,
+  createdAt: true,
+  deletedAt: true,
+  employeeRoles: { select: ROLE_SELECT },
+} as const;
+
+const DETAIL_SELECT = {
+  ...LIST_SELECT,
+  avatarUrl: true,
+  updatedAt: true,
+} as const;
+
+@Injectable()
+export class EmployeeRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    isActive?: boolean;
+    includeDeleted?: boolean;
+  }): Promise<PaginatedResult<EmployeeListItemView>> {
+    const { page, limit, search, isActive, includeDeleted } = params;
+
+    const where: Prisma.EmployeeWhereInput = {
+      ...(includeDeleted ? {} : { deletedAt: null }),
+      ...(isActive !== undefined && { isActive }),
+      ...(search && {
+        OR: [
+          { fullName: { contains: search } },
+          { email: { contains: search } },
+          { phoneNumber: { contains: search } },
+        ],
+      }),
+    };
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.employee.count({ where }),
+      this.prisma.employee.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: LIST_SELECT,
+      }),
+    ]);
+
+    return {
+      data: data as unknown as EmployeeListItemView[],
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async findById(id: number): Promise<EmployeeDetailView | null> {
+    return this.prisma.employee.findUnique({
+      where: { id },
+      select: DETAIL_SELECT,
+    }) as unknown as Promise<EmployeeDetailView | null>;
+  }
+
+  async create(data: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    hashedPassword: string;
+  }): Promise<EmployeeDetailView> {
+    const employee = await this.prisma.employee.create({
+      data: {
+        fullName: data.fullName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        hashedPassword: data.hashedPassword,
+      },
+      select: { id: true },
+    });
+    return this.findById(employee.id) as Promise<EmployeeDetailView>;
+  }
+
+  async update(id: number, data: Prisma.EmployeeUpdateInput): Promise<EmployeeDetailView | null> {
+    const { count } = await this.prisma.employee.updateMany({
+      where: { id, deletedAt: null },
+      data,
+    });
+    if (count === 0) return null;
+    return this.findById(id);
+  }
+
+  async softDelete(id: number): Promise<boolean> {
+    const { count } = await this.prisma.employee.updateMany({
+      where: { id, deletedAt: null },
+      data: { deletedAt: new Date(), isActive: false },
+    });
+    return count > 0;
+  }
+
+  async restore(id: number): Promise<EmployeeDetailView | null> {
+    const { count } = await this.prisma.employee.updateMany({
+      where: { id, NOT: { deletedAt: null } },
+      data: { deletedAt: null, isActive: true },
+    });
+    if (count === 0) return null;
+    return this.findById(id);
+  }
+
+  async emailExists(email: string, excludeId?: number): Promise<boolean> {
+    const count = await this.prisma.employee.count({
+      where: { email, ...(excludeId && { id: { not: excludeId } }) },
+    });
+    return count > 0;
+  }
+
+  async phoneExists(phone: string, excludeId?: number): Promise<boolean> {
+    const count = await this.prisma.employee.count({
+      where: { phoneNumber: phone, ...(excludeId && { id: { not: excludeId } }) },
+    });
+    return count > 0;
+  }
+}
