@@ -98,6 +98,35 @@ export class CategoryRepository {
     }) as unknown as Promise<CategoryTreeNode[]>;
   }
 
+  findAllActive(): Promise<CategoryView[]> {
+    return this.prisma.category.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      select: {
+        ...CATEGORY_SELECT,
+      },
+    });
+  }
+
+  async findBySlug(
+    slug: string,
+  ): Promise<(CategoryView & { children: CategoryTreeNode[] }) | null> {
+    return this.prisma.category.findFirst({
+      where: { slug, deletedAt: null },
+      select: {
+        ...CATEGORY_SELECT,
+        children: {
+          where: { deletedAt: null },
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            ...TREE_NODE_SELECT,
+            children: false,
+          },
+        },
+      },
+    }) as unknown as Promise<(CategoryView & { children: CategoryTreeNode[] }) | null>;
+  }
+
   // ─── Admin (all states) ───────────────────────────────────────────────────
 
   async findAll(includeDeleted = false): Promise<CategoryAdminView[]> {

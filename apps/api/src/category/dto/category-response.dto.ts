@@ -61,3 +61,8 @@ export class CategoryTreeNodeDto {
   @ApiProperty({ type: () => [CategoryTreeNodeDto] })
   children: CategoryTreeNodeDto[];
 }
+
+export class CategoryDetailDto extends CategoryResponseDto {
+  @ApiProperty({ type: () => [CategoryTreeNodeDto], description: 'Direct sub-categories' })
+  children: CategoryTreeNodeDto[];
+}

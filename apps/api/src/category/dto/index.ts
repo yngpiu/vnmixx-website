@@ -1,5 +1,6 @@
 export {
   CategoryAdminResponseDto,
+  CategoryDetailDto,
   CategoryParentDto,
   CategoryResponseDto,
   CategoryTreeNodeDto,

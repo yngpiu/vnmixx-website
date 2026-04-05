@@ -10,6 +10,7 @@ import {
   CategoryAdminView,
   CategoryRepository,
   CategoryTreeNode,
+  CategoryView,
 } from '../repositories/category.repository';
 
 const MAX_DEPTH = 3;
@@ -22,6 +23,18 @@ export class CategoryService {
 
   async findActiveTree(): Promise<CategoryTreeNode[]> {
     return this.repository.findActiveTree();
+  }
+
+  async findActiveFlat(): Promise<CategoryView[]> {
+    return this.repository.findAllActive();
+  }
+
+  async findBySlug(slug: string): Promise<CategoryView & { children: CategoryTreeNode[] }> {
+    const category = await this.repository.findBySlug(slug);
+    if (!category) {
+      throw new NotFoundException(`Category "${slug}" not found`);
+    }
+    return category;
   }
 
   // ─── Admin ────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param } from '@nestjs/common';
+import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../auth/decorators';
-import { CategoryTreeNodeDto } from '../dto';
+import { CategoryDetailDto, CategoryResponseDto } from '../dto';
 import { CategoryService } from '../services/category.service';
 
 @ApiTags('Categories')
@@ -9,11 +9,20 @@ import { CategoryService } from '../services/category.service';
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  @ApiOperation({ summary: 'Get category tree (public, active only, max 3 levels)' })
-  @ApiOkResponse({ type: [CategoryTreeNodeDto], description: 'Nested category tree' })
+  @ApiOperation({ summary: 'List all active categories (flat)' })
+  @ApiOkResponse({ type: [CategoryResponseDto] })
   @Public()
   @Get()
-  async getTree(): Promise<CategoryTreeNodeDto[]> {
-    return this.categoryService.findActiveTree();
+  findAll(): Promise<CategoryResponseDto[]> {
+    return this.categoryService.findActiveFlat();
+  }
+
+  @ApiOperation({ summary: 'Get category detail by slug, includes direct sub-categories' })
+  @ApiOkResponse({ type: CategoryDetailDto })
+  @ApiNotFoundResponse({ description: 'Category not found' })
+  @Public()
+  @Get(':slug')
+  findBySlug(@Param('slug') slug: string): Promise<CategoryDetailDto> {
+    return this.categoryService.findBySlug(slug);
   }
 }
