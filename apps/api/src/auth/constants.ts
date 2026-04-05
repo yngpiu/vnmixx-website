@@ -33,3 +33,18 @@ export const CUSTOMER_OTP_ATTEMPTS_PREFIX = 'otp:customer:attempts:' as const;
 
 /** Redis key prefix for customer OTP resend cooldown. */
 export const CUSTOMER_OTP_RESEND_PREFIX = 'otp:customer:resend:' as const;
+
+/** Redis key prefix for customer password reset OTP payload. */
+export const CUSTOMER_RESET_OTP_PREFIX = 'otp:customer:reset:' as const;
+
+/** Redis key prefix for failed customer password reset OTP attempts. */
+export const CUSTOMER_RESET_OTP_ATTEMPTS_PREFIX = 'otp:customer:reset-attempts:' as const;
+
+/** Redis key prefix for customer password reset OTP resend cooldown. */
+export const CUSTOMER_RESET_OTP_RESEND_PREFIX = 'otp:customer:reset-resend:' as const;
+
+/** Redis key prefix for customer password reset token (post-OTP, pre-password-change). */
+export const CUSTOMER_RESET_TOKEN_PREFIX = 'pwreset:customer:' as const;
+
+/** Lifetime of a password reset token in seconds (10 min). */
+export const DEFAULT_RESET_TOKEN_EXPIRATION = 600;

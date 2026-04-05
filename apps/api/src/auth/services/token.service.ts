@@ -127,6 +127,15 @@ export class TokenService {
     await this.blacklistAccessToken(accessTokenJti, accessTokenExp);
   }
 
+  /**
+   * Revoke all refresh tokens and invalidate all active JWTs for a user without
+   * requiring the caller to hold a current access token (e.g. after password reset).
+   */
+  async revokeAllSessions(userId: number, userType: 'CUSTOMER' | 'EMPLOYEE'): Promise<void> {
+    await this.refreshTokenRepo.revokeAllByUser(userId, userType);
+    await this.markAllSessionsLoggedOut(userId, userType);
+  }
+
   private async refreshCustomerTokens(userId: number, meta: RequestMeta): Promise<AuthResponse> {
     const customer = await this.customerRepo.findById(userId);
     if (!customer || !customer.isActive || customer.deletedAt) {

@@ -16,9 +16,14 @@ import {
   AuthResponseDto,
   ChangePasswordDto,
   CustomerRegisterResponseDto,
+  ForgotPasswordDto,
+  ForgotPasswordResponseDto,
+  ForgotPasswordVerifyOtpDto,
   LoginDto,
   RegisterDto,
   ResendCustomerOtpDto,
+  ResetPasswordDto,
+  ResetTokenResponseDto,
   VerifyCustomerOtpDto,
 } from '../dto';
 import type { AuthenticatedUser } from '../interfaces';
@@ -102,5 +107,46 @@ export class CustomerAuthController {
     await this.customerAuth.changePassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
     return { message: 'Password changed successfully. Please log in again.' };
+  }
+
+  @ApiOperation({ summary: 'Request a password reset OTP for a customer account' })
+  @ApiOkResponse({
+    type: ForgotPasswordResponseDto,
+    description: 'Reset OTP sent to the provided email (if account exists and is verified).',
+  })
+  @ApiTooManyRequestsResponse({ description: 'Please wait before requesting another reset code' })
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
+    return this.customerAuth.requestPasswordReset(dto);
+  }
+
+  @ApiOperation({ summary: 'Verify password reset OTP and receive a one-time reset token' })
+  @ApiOkResponse({
+    type: ResetTokenResponseDto,
+    description: 'OTP verified. Reset token issued for the password reset step.',
+  })
+  @ApiTooManyRequestsResponse({ description: 'Too many incorrect OTP attempts' })
+  @ApiBadRequestResponse({ description: 'OTP is invalid, expired, or incorrect' })
+  @Public()
+  @Post('forgot-password/verify-otp')
+  @HttpCode(HttpStatus.OK)
+  async forgotPasswordVerifyOtp(
+    @Body() dto: ForgotPasswordVerifyOtpDto,
+  ): Promise<ResetTokenResponseDto> {
+    return this.customerAuth.verifyPasswordResetOtp(dto);
+  }
+
+  @ApiOperation({ summary: 'Reset customer password using a valid reset token' })
+  @ApiOkResponse({ description: 'Password reset successfully. All sessions terminated.' })
+  @ApiBadRequestResponse({ description: 'Reset token is invalid or expired' })
+  @Public()
+  @Post('forgot-password/reset')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+    const { customerId } = await this.customerAuth.resetPassword(dto);
+    await this.tokenService.revokeAllSessions(customerId, 'CUSTOMER');
+    return { message: 'Password reset successfully. Please log in again.' };
   }
 }

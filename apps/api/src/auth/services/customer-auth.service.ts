@@ -9,7 +9,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
-import { createHash, randomInt, timingSafeEqual } from 'crypto';
+import { createHash, randomInt, randomUUID, timingSafeEqual } from 'crypto';
 import { Prisma } from 'generated/prisma/client';
 import { MailService } from '../../common/mail/mail.service';
 
@@ -20,16 +20,26 @@ import {
   CUSTOMER_OTP_LENGTH,
   CUSTOMER_OTP_PREFIX,
   CUSTOMER_OTP_RESEND_PREFIX,
+  CUSTOMER_RESET_OTP_ATTEMPTS_PREFIX,
+  CUSTOMER_RESET_OTP_PREFIX,
+  CUSTOMER_RESET_OTP_RESEND_PREFIX,
+  CUSTOMER_RESET_TOKEN_PREFIX,
   DEFAULT_OTP_EXPIRATION,
   DEFAULT_OTP_MAX_ATTEMPTS,
   DEFAULT_OTP_RESEND_COOLDOWN,
+  DEFAULT_RESET_TOKEN_EXPIRATION,
 } from '../constants';
 import type {
   ChangePasswordDto,
   CustomerRegisterResponseDto,
+  ForgotPasswordDto,
+  ForgotPasswordResponseDto,
+  ForgotPasswordVerifyOtpDto,
   LoginDto,
   RegisterDto,
   ResendCustomerOtpDto,
+  ResetPasswordDto,
+  ResetTokenResponseDto,
   VerifyCustomerOtpDto,
 } from '../dto';
 import { CustomerRepository } from '../repositories/customer.repository';
@@ -173,6 +183,183 @@ export class CustomerAuthService {
     const newHashedPassword = await hash(dto.newPassword, this.saltRounds);
     const updated = await this.customerRepo.updatePassword(customerId, newHashedPassword);
     if (!updated) throw new BadRequestException('Unable to update password');
+  }
+
+  /** Request a password reset OTP to be sent to the customer's email. */
+  async requestPasswordReset(dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
+    const normalizedEmail = normalizeEmail(dto.email);
+    const customer = await this.customerRepo.findByEmail(normalizedEmail);
+    if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
+      return {
+        message: 'If your email is registered and verified, a reset code has been sent.',
+        email: normalizedEmail,
+        otpExpiresIn: this.otpExpiration,
+        resendAfter: this.otpResendCooldown,
+      };
+    }
+    await this.assertResetOtpResendNotInCooldown(normalizedEmail);
+    const otpMeta = await this.issuePasswordResetOtp(customer.id, customer.email);
+    return {
+      message: 'A password reset code has been sent to your email.',
+      email: customer.email,
+      ...otpMeta,
+    };
+  }
+
+  /** Verify the password reset OTP and return a one-time reset token. */
+  async verifyPasswordResetOtp(dto: ForgotPasswordVerifyOtpDto): Promise<ResetTokenResponseDto> {
+    const normalizedEmail = normalizeEmail(dto.email);
+    const customer = await this.customerRepo.findByEmail(normalizedEmail);
+    if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
+      throw new BadRequestException('Invalid or expired reset code');
+    }
+    const otpKey = this.getResetOtpKey(normalizedEmail);
+    const attemptsKey = this.getResetOtpAttemptsKey(normalizedEmail);
+    const otpPayloadRaw = await this.redis.getClient().get(otpKey);
+    if (!otpPayloadRaw) {
+      throw new BadRequestException('OTP is invalid or expired');
+    }
+    const payload = this.parseCustomerOtpPayload(otpPayloadRaw);
+    if (!payload || payload.customerId !== customer.id) {
+      await this.redis.getClient().del(otpKey, attemptsKey);
+      throw new BadRequestException('OTP is invalid or expired');
+    }
+    const incomingOtpHash = this.hashOtp(dto.otp);
+    if (!this.hasMatchingHash(payload.otpHash, incomingOtpHash)) {
+      const attempts = await this.incrementFailedOtpAttempt(attemptsKey, otpKey);
+      if (attempts >= this.otpMaxAttempts) {
+        throw new HttpException(
+          'Too many incorrect OTP attempts. Please request a new reset code.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      throw new BadRequestException('OTP is incorrect');
+    }
+    const resetToken = randomUUID();
+    const resetTokenHash = createHash('sha256').update(resetToken).digest('hex');
+    const resetKey = this.getResetTokenKey(normalizedEmail);
+    await this.redis.getClient().setex(resetKey, DEFAULT_RESET_TOKEN_EXPIRATION, resetTokenHash);
+    await this.redis
+      .getClient()
+      .del(otpKey, attemptsKey, this.getResetOtpResendKey(normalizedEmail));
+    return { resetToken };
+  }
+
+  /** Reset the customer's password using a valid reset token. */
+  async resetPassword(dto: ResetPasswordDto): Promise<{ customerId: number }> {
+    const normalizedEmail = normalizeEmail(dto.email);
+    const customer = await this.customerRepo.findByEmail(normalizedEmail);
+    if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+    const resetKey = this.getResetTokenKey(normalizedEmail);
+    const storedHash = await this.redis.getClient().get(resetKey);
+    if (!storedHash) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+    const incomingHash = createHash('sha256').update(dto.resetToken).digest('hex');
+    const storedBuffer = Buffer.from(storedHash, 'hex');
+    const incomingBuffer = Buffer.from(incomingHash, 'hex');
+    const isValid =
+      storedBuffer.length > 0 &&
+      storedBuffer.length === incomingBuffer.length &&
+      timingSafeEqual(storedBuffer, incomingBuffer);
+    if (!isValid) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+    const newHashedPassword = await hash(dto.newPassword, this.saltRounds);
+    const updated = await this.customerRepo.updatePassword(customer.id, newHashedPassword);
+    if (!updated) throw new BadRequestException('Unable to update password');
+    await this.redis.getClient().del(resetKey);
+    return { customerId: customer.id };
+  }
+
+  // ── Password reset OTP helpers ────────────────────────────────────────────
+
+  private async issuePasswordResetOtp(
+    customerId: number,
+    email: string,
+  ): Promise<{ otpExpiresIn: number; resendAfter: number }> {
+    const redis = this.redis.getClient();
+    const otp = this.generateOtpCode(CUSTOMER_OTP_LENGTH);
+    const otpPayload: CustomerOtpPayload = { customerId, otpHash: this.hashOtp(otp) };
+    const otpKey = this.getResetOtpKey(email);
+    const attemptsKey = this.getResetOtpAttemptsKey(email);
+    const resendKey = this.getResetOtpResendKey(email);
+    await redis
+      .multi()
+      .setex(otpKey, this.otpExpiration, JSON.stringify(otpPayload))
+      .del(attemptsKey)
+      .exec();
+    try {
+      await this.sendPasswordResetOtp(email, otp, this.otpExpiration);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send password reset OTP email to ${email}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      await redis.del(otpKey, attemptsKey);
+      throw new InternalServerErrorException('Unable to send reset code email. Please try again.');
+    }
+    await redis.setex(resendKey, this.otpResendCooldown, '1');
+    return { otpExpiresIn: this.otpExpiration, resendAfter: this.otpResendCooldown };
+  }
+
+  private async sendPasswordResetOtp(
+    email: string,
+    otp: string,
+    otpExpiresInSeconds: number,
+  ): Promise<void> {
+    const expiresInMinutes = Math.ceil(otpExpiresInSeconds / 60);
+    if (!this.mail.isConfigured()) {
+      this.logger.log(
+        `[OTP DEV] password-reset email=${email} otp=${otp} expiresIn=${otpExpiresInSeconds}s`,
+      );
+      return;
+    }
+    await this.mail.sendMail({
+      to: email,
+      subject: 'VNMIXX - Password reset code',
+      text:
+        `Your VNMIXX password reset code is: ${otp}\n\n` +
+        `This code expires in ${expiresInMinutes} minute(s).\n` +
+        'If you did not request this, please ignore this email.',
+      html: `
+        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#222">
+          <h2 style="margin:0 0 12px">VNMIXX Password Reset</h2>
+          <p style="margin:0 0 12px">Your password reset code is:</p>
+          <p style="margin:0 0 16px;font-size:28px;letter-spacing:6px;font-weight:700">${otp}</p>
+          <p style="margin:0 0 8px">This code expires in ${expiresInMinutes} minute(s).</p>
+          <p style="margin:0;color:#666">If you did not request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+  }
+
+  private async assertResetOtpResendNotInCooldown(email: string): Promise<void> {
+    const resendKey = this.getResetOtpResendKey(email);
+    const cooldownTtl = await this.redis.getClient().ttl(resendKey);
+    if (cooldownTtl > 0) {
+      throw new HttpException(
+        `Please wait ${cooldownTtl} second(s) before requesting another reset code.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private getResetOtpKey(email: string): string {
+    return `${CUSTOMER_RESET_OTP_PREFIX}${email}`;
+  }
+
+  private getResetOtpAttemptsKey(email: string): string {
+    return `${CUSTOMER_RESET_OTP_ATTEMPTS_PREFIX}${email}`;
+  }
+
+  private getResetOtpResendKey(email: string): string {
+    return `${CUSTOMER_RESET_OTP_RESEND_PREFIX}${email}`;
+  }
+
+  private getResetTokenKey(email: string): string {
+    return `${CUSTOMER_RESET_TOKEN_PREFIX}${email}`;
   }
 
   // ── OTP helpers ────────────────────────────────────────────────────────────
