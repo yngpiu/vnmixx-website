@@ -9,12 +9,14 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -47,14 +49,6 @@ export class CategoryAdminController {
     return this.categoryService.findAll(query.includeDeleted);
   }
 
-  @ApiOperation({ summary: 'Get category by ID' })
-  @ApiOkResponse({ type: CategoryAdminResponseDto })
-  @ApiNotFoundResponse({ description: 'Category not found' })
-  @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<CategoryAdminResponseDto> {
-    return this.categoryService.findById(id);
-  }
-
   @ApiOperation({ summary: 'Create a new category' })
   @ApiCreatedResponse({ type: CategoryAdminResponseDto })
   @ApiConflictResponse({ description: 'Slug already taken' })
@@ -67,7 +61,7 @@ export class CategoryAdminController {
   @ApiOkResponse({ type: CategoryAdminResponseDto })
   @ApiNotFoundResponse({ description: 'Category not found' })
   @ApiConflictResponse({ description: 'Slug already taken' })
-  @Patch(':id')
+  @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCategoryDto,
@@ -76,7 +70,7 @@ export class CategoryAdminController {
   }
 
   @ApiOperation({ summary: 'Soft-delete a category' })
-  @ApiOkResponse({ description: 'Category deleted' })
+  @ApiNoContentResponse({ description: 'Category deleted' })
   @ApiNotFoundResponse({ description: 'Category not found' })
   @ApiConflictResponse({ description: 'Category has active children' })
   @Delete(':id')
