@@ -43,6 +43,37 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return this.client;
   }
 
+  // ─── Cache helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * Cache-aside: return cached value or compute, store, and return.
+   */
+  async getOrSet<T>(key: string, ttlSeconds: number, factory: () => Promise<T>): Promise<T> {
+    const cached = await this.client.get(key);
+    if (cached !== null) return JSON.parse(cached) as T;
+
+    const data = await factory();
+    await this.client.setex(key, ttlSeconds, JSON.stringify(data));
+    return data;
+  }
+
+  async del(...keys: string[]): Promise<void> {
+    if (keys.length === 0) return;
+    await this.client.del(...keys);
+  }
+
+  /**
+   * Delete all keys matching a glob pattern using SCAN (non-blocking).
+   */
+  async deleteByPattern(pattern: string): Promise<void> {
+    const stream = this.client.scanStream({ match: pattern, count: 100 });
+    for await (const keys of stream) {
+      if ((keys as string[]).length > 0) {
+        await this.client.del(...(keys as string[]));
+      }
+    }
+  }
+
   private buildOptions(): RedisOptions {
     return {
       host: process.env.REDIS_HOST || '127.0.0.1',
