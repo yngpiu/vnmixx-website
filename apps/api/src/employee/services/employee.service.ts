@@ -32,16 +32,16 @@ export class EmployeeService {
 
   async findById(id: number): Promise<EmployeeDetailView> {
     const employee = await this.employeeRepo.findById(id);
-    if (!employee) throw new NotFoundException('Employee not found');
+    if (!employee) throw new NotFoundException('Không tìm thấy nhân viên');
     return employee;
   }
 
   async create(dto: CreateEmployeeDto): Promise<EmployeeDetailView> {
     if (await this.employeeRepo.emailExists(dto.email)) {
-      throw new ConflictException('Email already in use');
+      throw new ConflictException('Email đã được sử dụng');
     }
     if (await this.employeeRepo.phoneExists(dto.phoneNumber)) {
-      throw new ConflictException('Phone number already in use');
+      throw new ConflictException('Số điện thoại đã được sử dụng');
     }
 
     const hashedPassword = await hash(dto.password, BCRYPT_ROUNDS);
@@ -56,7 +56,7 @@ export class EmployeeService {
 
   async update(id: number, dto: UpdateEmployeeDto): Promise<EmployeeDetailView> {
     if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('At least one field must be provided');
+      throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
     }
 
     const data: {
@@ -72,18 +72,18 @@ export class EmployeeService {
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
 
     const updated = await this.employeeRepo.update(id, data);
-    if (!updated) throw new NotFoundException('Employee not found');
+    if (!updated) throw new NotFoundException('Không tìm thấy nhân viên');
     return updated;
   }
 
   async softDelete(id: number): Promise<void> {
     const deleted = await this.employeeRepo.softDelete(id);
-    if (!deleted) throw new NotFoundException('Employee not found');
+    if (!deleted) throw new NotFoundException('Không tìm thấy nhân viên');
   }
 
   async restore(id: number): Promise<EmployeeDetailView> {
     const restored = await this.employeeRepo.restore(id);
-    if (!restored) throw new NotFoundException('Employee not found or not deleted');
+    if (!restored) throw new NotFoundException('Không tìm thấy nhân viên or not deleted');
     return restored;
   }
 }

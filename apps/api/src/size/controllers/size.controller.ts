@@ -9,7 +9,7 @@ import { SizeService } from '../services/size.service';
 export class SizeController {
   constructor(private readonly sizeService: SizeService) {}
 
-  @ApiOperation({ summary: 'List all sizes' })
+  @ApiOperation({ summary: 'Liệt kê tất cả kích thước' })
   @ApiOkResponse({ type: [SizeResponseDto] })
   @Public()
   @Get()

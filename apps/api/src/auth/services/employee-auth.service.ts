@@ -23,14 +23,14 @@ export class EmployeeAuthService {
   async loginEmployee(dto: LoginDto): Promise<EmployeeAuthResult> {
     const employee = await this.employeeRepo.findByEmail(dto.email);
     if (!employee || employee.deletedAt) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
     }
     if (!employee.isActive) {
-      throw new UnauthorizedException('Account is deactivated');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
     const isPasswordValid = await compare(dto.password, employee.hashedPassword);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
     }
     const { roles, permissions } = await this.employeeRepo.loadPermissions(employee.id);
 

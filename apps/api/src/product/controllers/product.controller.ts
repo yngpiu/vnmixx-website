@@ -9,7 +9,7 @@ import { ProductService } from '../services/product.service';
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  @ApiOperation({ summary: 'List products with pagination and filters' })
+  @ApiOperation({ summary: 'Liệt kê sản phẩm có phân trang và bộ lọc' })
   @ApiOkResponse({ type: ProductListResponseDto })
   @Public()
   @Get()
@@ -17,9 +17,9 @@ export class ProductController {
     return this.productService.findPublicList(query);
   }
 
-  @ApiOperation({ summary: 'Get product detail by slug' })
+  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm theo slug' })
   @ApiOkResponse({ type: ProductDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Product not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Public()
   @Get(':slug')
   findBySlug(@Param('slug') slug: string): Promise<ProductDetailResponseDto> {

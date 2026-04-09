@@ -58,20 +58,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return {
           statusCode: status,
           message: (res.message as string | string[]) ?? exception.message,
-          error: (res.error as string) ?? HttpStatus[status] ?? 'Error',
+          error: (res.error as string) ?? HttpStatus[status] ?? 'Lỗi',
         };
       }
       return {
         statusCode: status,
         message: typeof response === 'string' ? response : exception.message,
-        error: HttpStatus[status] ?? 'Error',
+        error: HttpStatus[status] ?? 'Lỗi',
       };
     }
 
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error',
-      error: 'Internal Server Error',
+      message: 'Lỗi máy chủ nội bộ',
+      error: 'Lỗi máy chủ nội bộ',
     };
   }
 }

@@ -30,23 +30,23 @@ import { AddressService } from '../services/address.service';
 
 @ApiTags('Addresses')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('CUSTOMER')
 @Controller('me/addresses')
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
-  @ApiOperation({ summary: 'List all addresses of the current customer' })
+  @ApiOperation({ summary: 'Liệt kê tất cả địa chỉ của khách hàng hiện tại' })
   @ApiOkResponse({ type: [AddressResponseDto] })
   @Get()
   async findAll(@CurrentUser() user: AuthenticatedUser): Promise<AddressResponseDto[]> {
     return this.addressService.findAll(user.id);
   }
 
-  @ApiOperation({ summary: 'Get an address by ID' })
+  @ApiOperation({ summary: 'Lấy địa chỉ theo ID' })
   @ApiOkResponse({ type: AddressResponseDto })
-  @ApiNotFoundResponse({ description: 'Address not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -55,9 +55,9 @@ export class AddressController {
     return this.addressService.findById(id, user.id);
   }
 
-  @ApiOperation({ summary: 'Create a new address' })
+  @ApiOperation({ summary: 'Tạo địa chỉ mới' })
   @ApiCreatedResponse({ type: AddressResponseDto })
-  @ApiBadRequestResponse({ description: 'Location hierarchy is invalid.' })
+  @ApiBadRequestResponse({ description: 'Phân cấp địa chỉ không hợp lệ.' })
   @Post()
   async create(
     @Body() dto: CreateAddressDto,
@@ -66,10 +66,10 @@ export class AddressController {
     return this.addressService.create(user.id, dto);
   }
 
-  @ApiOperation({ summary: 'Update an address' })
+  @ApiOperation({ summary: 'Cập nhật địa chỉ' })
   @ApiOkResponse({ type: AddressResponseDto })
-  @ApiNotFoundResponse({ description: 'Address not found.' })
-  @ApiBadRequestResponse({ description: 'Location hierarchy is invalid.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
+  @ApiBadRequestResponse({ description: 'Phân cấp địa chỉ không hợp lệ.' })
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -79,9 +79,9 @@ export class AddressController {
     return this.addressService.update(id, user.id, dto);
   }
 
-  @ApiOperation({ summary: 'Delete an address (soft delete)' })
-  @ApiNoContentResponse({ description: 'Address deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Address not found.' })
+  @ApiOperation({ summary: 'Xóa địa chỉ (xóa mềm)' })
+  @ApiNoContentResponse({ description: 'Xóa địa chỉ thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
@@ -91,9 +91,9 @@ export class AddressController {
     return this.addressService.remove(id, user.id);
   }
 
-  @ApiOperation({ summary: 'Set an address as default' })
+  @ApiOperation({ summary: 'Đặt địa chỉ làm mặc định' })
   @ApiOkResponse({ type: AddressResponseDto })
-  @ApiNotFoundResponse({ description: 'Address not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @Patch(':id/set-default')
   async setDefault(
     @Param('id', ParseIntPipe) id: number,

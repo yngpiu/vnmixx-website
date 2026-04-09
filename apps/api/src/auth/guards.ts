@@ -7,7 +7,7 @@ import type { AuthenticatedUser } from './interfaces';
 
 /**
  * Global JWT auth guard.
- * Every route requires a valid access token unless decorated with `@Public()`.
+ * Every route requires a valid mã truy cập unless decorated with `@Public()`.
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -44,7 +44,7 @@ export class AuthorizationGuard implements CanActivate {
     if (requiredUserType) {
       if (!user || user.userType !== requiredUserType) {
         throw new ForbiddenException(
-          `This resource is only accessible to ${requiredUserType.toLowerCase()}s`,
+          `Tài nguyên này chỉ cho phép ${requiredUserType.toLowerCase()} truy cập`,
         );
       }
     }
@@ -54,9 +54,9 @@ export class AuthorizationGuard implements CanActivate {
       context.getClass(),
     ]);
     if (requiredPermissions?.length) {
-      if (!user) throw new ForbiddenException('Authentication required');
+      if (!user) throw new ForbiddenException('Yêu cầu xác thực');
       const hasAll = requiredPermissions.every((p) => user.permissions.includes(p));
-      if (!hasAll) throw new ForbiddenException('Insufficient permissions');
+      if (!hasAll) throw new ForbiddenException('Không đủ quyền truy cập');
     }
 
     return true;

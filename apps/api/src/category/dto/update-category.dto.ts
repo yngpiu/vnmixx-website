@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 
 export class UpdateCategoryDto {
-  @ApiPropertyOptional({ example: 'Áo sơ mi', description: 'Category name', maxLength: 100 })
+  @ApiPropertyOptional({ example: 'Áo sơ mi', description: 'Tên danh mục', maxLength: 100 })
   @IsString()
   @IsNotEmpty()
   @IsOptional()
@@ -20,7 +20,7 @@ export class UpdateCategoryDto {
 
   @ApiPropertyOptional({
     example: 'ao-so-mi',
-    description: 'URL-friendly slug (lowercase, hyphens only)',
+    description: 'Slug thân thiện URL (chữ thường, chỉ dùng dấu gạch nối)',
     maxLength: 120,
   })
   @IsString()
@@ -28,16 +28,16 @@ export class UpdateCategoryDto {
   @IsOptional()
   @MaxLength(120)
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message: 'slug must be lowercase alphanumeric and hyphens only',
+    message: 'slug chỉ được chứa chữ thường, số và dấu gạch nối',
   })
   slug?: string;
 
-  @ApiPropertyOptional({ example: false, description: 'Whether this category is featured' })
+  @ApiPropertyOptional({ example: false, description: 'Danh mục nổi bật hay không' })
   @IsBoolean()
   @IsOptional()
   isFeatured?: boolean;
 
-  @ApiPropertyOptional({ example: 0, description: 'Display sort order', minimum: 0 })
+  @ApiPropertyOptional({ example: 0, description: 'Thứ tự hiển thị', minimum: 0 })
   @IsInt()
   @IsOptional()
   @Min(0)
@@ -45,7 +45,7 @@ export class UpdateCategoryDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Parent category ID (null to move to root, minimum: 1)',
+    description: 'ID danh mục cha (null để chuyển lên gốc, tối thiểu: 1)',
     nullable: true,
     minimum: 1,
   })

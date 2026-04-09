@@ -18,18 +18,21 @@ export class ListCustomersQueryDto {
   @IsOptional()
   limit?: number = 20;
 
-  @ApiPropertyOptional({ example: 'Nguyễn', description: 'Search by name, email, or phone' })
+  @ApiPropertyOptional({
+    example: 'Nguyễn',
+    description: 'Tìm kiếm theo tên, email hoặc số điện thoại',
+  })
   @IsString()
   @IsOptional()
   search?: string;
 
-  @ApiPropertyOptional({ example: true, description: 'Filter by active status' })
+  @ApiPropertyOptional({ example: true, description: 'Lọc theo trạng thái hoạt động' })
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Include soft-deleted customers' })
+  @ApiPropertyOptional({ example: false, description: 'Bao gồm khách hàng đã xóa mềm' })
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   @IsOptional()

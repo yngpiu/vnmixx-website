@@ -23,7 +23,7 @@ export class LocationService {
 
   async findDistrictsByCityId(cityId: number): Promise<DistrictView[]> {
     const exists = await this.locationRepo.cityExists(cityId);
-    if (!exists) throw new NotFoundException(`City #${cityId} not found`);
+    if (!exists) throw new NotFoundException(`Không tìm thấy thành phố #${cityId}`);
 
     return this.redis.getOrSet(CACHE_KEYS.DISTRICTS(cityId), CACHE_TTL.LOCATION, () =>
       this.locationRepo.findDistrictsByCityId(cityId),
@@ -32,7 +32,7 @@ export class LocationService {
 
   async findWardsByDistrictId(districtId: number): Promise<WardView[]> {
     const exists = await this.locationRepo.districtExists(districtId);
-    if (!exists) throw new NotFoundException(`District #${districtId} not found`);
+    if (!exists) throw new NotFoundException(`Không tìm thấy quận/huyện #${districtId}`);
 
     return this.redis.getOrSet(CACHE_KEYS.WARDS(districtId), CACHE_TTL.LOCATION, () =>
       this.locationRepo.findWardsByDistrictId(districtId),

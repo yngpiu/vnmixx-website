@@ -36,17 +36,17 @@ import { EmployeeService } from '../services/employee.service';
 
 @ApiTags('Employees')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/employees')
 export class EmployeeAdminController {
   constructor(private readonly employeeService: EmployeeService) {}
 
   @ApiOperation({
-    summary: 'List employees',
+    summary: 'Liệt kê nhân viên',
     description:
-      'Paginated list with optional search, active-status filter, and soft-delete inclusion.',
+      'Danh sách phân trang với tùy chọn tìm kiếm, lọc trạng thái hoạt động và bao gồm bản ghi đã xóa mềm.',
   })
   @ApiOkResponse({ type: EmployeeListResponseDto })
   @Get()
@@ -60,44 +60,46 @@ export class EmployeeAdminController {
     });
   }
 
-  @ApiOperation({ summary: 'Get employee detail by ID' })
+  @ApiOperation({ summary: 'Lấy chi tiết nhân viên theo ID' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Employee not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Get(':id')
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.employeeService.findById(id);
   }
 
-  @ApiOperation({ summary: 'Create a new employee' })
+  @ApiOperation({ summary: 'Tạo nhân viên mới' })
   @ApiCreatedResponse({ type: EmployeeDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'Request validation failed.' })
-  @ApiConflictResponse({ description: 'Email or phone number is already in use.' })
+  @ApiBadRequestResponse({ description: 'Xác thực dữ liệu yêu cầu thất bại.' })
+  @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được sử dụng.' })
   @Post()
   create(@Body() dto: CreateEmployeeDto) {
     return this.employeeService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Update an employee' })
+  @ApiOperation({ summary: 'Cập nhật nhân viên' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'Request validation failed or no fields were provided.' })
-  @ApiNotFoundResponse({ description: 'Employee not found.' })
+  @ApiBadRequestResponse({
+    description: 'Xác thực dữ liệu thất bại hoặc không có trường nào được cung cấp.',
+  })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEmployeeDto) {
     return this.employeeService.update(id, dto);
   }
 
-  @ApiOperation({ summary: 'Soft-delete an employee' })
-  @ApiNoContentResponse({ description: 'Employee deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Employee not found.' })
+  @ApiOperation({ summary: 'Xóa mềm nhân viên' })
+  @ApiNoContentResponse({ description: 'Xóa nhân viên thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.employeeService.softDelete(id);
   }
 
-  @ApiOperation({ summary: 'Restore a soft-deleted employee' })
+  @ApiOperation({ summary: 'Khôi phục nhân viên đã xóa mềm' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Employee not found or not deleted.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên hoặc nhân viên chưa bị xóa.' })
   @Patch(':id/restore')
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.employeeService.restore(id);

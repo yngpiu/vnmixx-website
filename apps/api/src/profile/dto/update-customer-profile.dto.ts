@@ -14,10 +14,10 @@ export class UpdateCustomerProfileDto {
   @MaxLength(100)
   fullName?: string;
 
-  @ApiPropertyOptional({ example: '1999-12-31', description: 'Date of birth (YYYY-MM-DD)' })
+  @ApiPropertyOptional({ example: '1999-12-31', description: 'Ngày sinh (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'dob must be in YYYY-MM-DD format' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'ngày sinh phải theo định dạng YYYY-MM-DD' })
   dob?: string;
 
   @ApiPropertyOptional({ enum: GenderInput, example: GenderInput.MALE })

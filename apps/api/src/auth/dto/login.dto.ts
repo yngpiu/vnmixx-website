@@ -5,7 +5,7 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 export class LoginDto {
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Registered email address',
+    description: 'Địa chỉ email đã đăng ký',
   })
   @IsEmail()
   @IsNotEmpty()
@@ -13,7 +13,7 @@ export class LoginDto {
 
   @ApiProperty({
     example: 'Str0ngP@ssword!',
-    description: 'Account password (min 8 characters)',
+    description: 'Mật khẩu tài khoản (tối thiểu 8 ký tự)',
     minLength: 8,
   })
   @IsString()

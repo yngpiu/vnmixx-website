@@ -28,32 +28,32 @@ import { SizeService } from '../services/size.service';
 
 @ApiTags('Sizes')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/sizes')
 export class SizeAdminController {
   constructor(private readonly sizeService: SizeService) {}
 
-  @ApiOperation({ summary: 'List all sizes (admin)' })
+  @ApiOperation({ summary: 'Liệt kê tất cả kích thước (quản trị)' })
   @ApiOkResponse({ type: [SizeAdminResponseDto] })
   @Get()
   findAll(): Promise<SizeAdminResponseDto[]> {
     return this.sizeService.findAll();
   }
 
-  @ApiOperation({ summary: 'Create a new size' })
+  @ApiOperation({ summary: 'Tạo kích thước mới' })
   @ApiCreatedResponse({ type: SizeAdminResponseDto })
-  @ApiConflictResponse({ description: 'Size label is already in use.' })
+  @ApiConflictResponse({ description: 'Nhãn kích thước đã được sử dụng.' })
   @Post()
   create(@Body() dto: CreateSizeDto): Promise<SizeAdminResponseDto> {
     return this.sizeService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Update a size' })
+  @ApiOperation({ summary: 'Cập nhật kích thước' })
   @ApiOkResponse({ type: SizeAdminResponseDto })
-  @ApiNotFoundResponse({ description: 'Size not found.' })
-  @ApiConflictResponse({ description: 'Size label is already in use.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy kích thước.' })
+  @ApiConflictResponse({ description: 'Nhãn kích thước đã được sử dụng.' })
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -62,10 +62,10 @@ export class SizeAdminController {
     return this.sizeService.update(id, dto);
   }
 
-  @ApiOperation({ summary: 'Delete a size' })
-  @ApiNoContentResponse({ description: 'Size deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Size not found.' })
-  @ApiConflictResponse({ description: 'Size cannot be deleted because it is in use.' })
+  @ApiOperation({ summary: 'Xóa kích thước' })
+  @ApiNoContentResponse({ description: 'Xóa kích thước thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy kích thước.' })
+  @ApiConflictResponse({ description: 'Không thể xóa kích thước vì đang được sử dụng.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {

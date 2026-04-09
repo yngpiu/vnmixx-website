@@ -32,17 +32,17 @@ import { CustomerService } from '../services/customer.service';
 
 @ApiTags('Customers')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/customers')
 export class CustomerAdminController {
   constructor(private readonly customerService: CustomerService) {}
 
   @ApiOperation({
-    summary: 'List customers',
+    summary: 'Liệt kê khách hàng',
     description:
-      'Paginated list with optional search, active-status filter, and soft-delete inclusion.',
+      'Danh sách phân trang với tùy chọn tìm kiếm, lọc trạng thái hoạt động và bao gồm bản ghi đã xóa mềm.',
   })
   @ApiOkResponse({ type: CustomerListResponseDto })
   @Get()
@@ -56,35 +56,37 @@ export class CustomerAdminController {
     });
   }
 
-  @ApiOperation({ summary: 'Get customer detail by ID' })
+  @ApiOperation({ summary: 'Lấy chi tiết khách hàng theo ID' })
   @ApiOkResponse({ type: CustomerDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Customer not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Get(':id')
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.customerService.findById(id);
   }
 
-  @ApiOperation({ summary: 'Update a customer' })
+  @ApiOperation({ summary: 'Cập nhật khách hàng' })
   @ApiOkResponse({ type: CustomerDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'Request validation failed or no fields were provided.' })
-  @ApiNotFoundResponse({ description: 'Customer not found.' })
+  @ApiBadRequestResponse({
+    description: 'Xác thực dữ liệu thất bại hoặc không có trường nào được cung cấp.',
+  })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCustomerDto) {
     return this.customerService.update(id, dto);
   }
 
-  @ApiOperation({ summary: 'Soft-delete a customer' })
-  @ApiNoContentResponse({ description: 'Customer deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Customer not found.' })
+  @ApiOperation({ summary: 'Xóa mềm khách hàng' })
+  @ApiNoContentResponse({ description: 'Xóa khách hàng thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.customerService.softDelete(id);
   }
 
-  @ApiOperation({ summary: 'Restore a soft-deleted customer' })
+  @ApiOperation({ summary: 'Khôi phục khách hàng đã xóa mềm' })
   @ApiOkResponse({ type: CustomerDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Customer not found or not deleted.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng hoặc khách hàng chưa bị xóa.' })
   @Patch(':id/restore')
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.customerService.restore(id);

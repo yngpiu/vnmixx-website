@@ -35,17 +35,17 @@ import { CategoryService } from '../services/category.service';
 
 @ApiTags('Categories')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/categories')
 export class CategoryAdminController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @ApiOperation({
-    summary: 'List categories',
+    summary: 'Liệt kê danh mục',
     description:
-      'Returns active categories by default. Pass `includeDeleted=true` to include soft-deleted entries.',
+      'Mặc định trả về danh mục đang hoạt động. Truyền `includeDeleted=true` để bao gồm bản ghi đã xóa mềm.',
   })
   @ApiOkResponse({ type: [CategoryAdminResponseDto] })
   @Get()
@@ -53,18 +53,18 @@ export class CategoryAdminController {
     return this.categoryService.findAll(query.includeDeleted);
   }
 
-  @ApiOperation({ summary: 'Create a new category' })
+  @ApiOperation({ summary: 'Tạo danh mục mới' })
   @ApiCreatedResponse({ type: CategoryAdminResponseDto })
-  @ApiConflictResponse({ description: 'Category slug is already in use.' })
+  @ApiConflictResponse({ description: 'Slug danh mục đã được sử dụng.' })
   @Post()
   async create(@Body() dto: CreateCategoryDto): Promise<CategoryAdminResponseDto> {
     return this.categoryService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Update a category' })
+  @ApiOperation({ summary: 'Cập nhật danh mục' })
   @ApiOkResponse({ type: CategoryAdminResponseDto })
-  @ApiNotFoundResponse({ description: 'Category not found.' })
-  @ApiConflictResponse({ description: 'Category slug is already in use.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
+  @ApiConflictResponse({ description: 'Slug danh mục đã được sử dụng.' })
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -73,11 +73,11 @@ export class CategoryAdminController {
     return this.categoryService.update(id, dto);
   }
 
-  @ApiOperation({ summary: 'Soft-delete a category' })
-  @ApiNoContentResponse({ description: 'Category deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Category not found.' })
+  @ApiOperation({ summary: 'Xóa mềm danh mục' })
+  @ApiNoContentResponse({ description: 'Xóa danh mục thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @ApiConflictResponse({
-    description: 'Category cannot be deleted because it has active children.',
+    description: 'Không thể xóa danh mục vì còn danh mục con đang hoạt động.',
   })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -85,9 +85,9 @@ export class CategoryAdminController {
     return this.categoryService.softDelete(id);
   }
 
-  @ApiOperation({ summary: 'Restore a soft-deleted category' })
+  @ApiOperation({ summary: 'Khôi phục danh mục đã xóa mềm' })
   @ApiOkResponse({ type: CategoryAdminResponseDto })
-  @ApiNotFoundResponse({ description: 'Category not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @Patch(':id/restore')
   async restore(@Param('id', ParseIntPipe) id: number): Promise<CategoryAdminResponseDto> {
     return this.categoryService.restore(id);

@@ -41,24 +41,26 @@ export class CustomerAuthController {
     private readonly tokenService: TokenService,
   ) {}
 
-  @ApiOperation({ summary: 'Register a new customer account and send email OTP' })
+  @ApiOperation({ summary: 'Đăng ký tài khoản khách hàng mới và gửi OTP qua email' })
   @ApiCreatedResponse({
     type: CustomerRegisterResponseDto,
-    description: 'Customer registered successfully. Verification OTP has been sent via email.',
+    description: 'Đăng ký khách hàng thành công. OTP xác thực đã được gửi qua email.',
   })
-  @ApiConflictResponse({ description: 'Email or phone number is already registered.' })
+  @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được đăng ký.' })
   @Public()
   @Post('register')
   async register(@Body() dto: RegisterDto): Promise<CustomerRegisterResponseDto> {
     return this.customerAuth.registerCustomer(dto);
   }
 
-  @ApiOperation({ summary: 'Verify customer email OTP and issue token pair' })
+  @ApiOperation({ summary: 'Xác thực OTP email khách hàng và cấp cặp token' })
   @ApiOkResponse({
     type: AuthResponseDto,
-    description: 'OTP verified successfully. Token pair issued.',
+    description: 'Xác thực OTP thành công. Đã cấp cặp token.',
   })
-  @ApiTooManyRequestsResponse({ description: 'Too many OTP attempts. Please try again later.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Bạn đã thử OTP quá nhiều lần. Vui lòng thử lại sau.',
+  })
   @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
@@ -70,13 +72,13 @@ export class CustomerAuthController {
     return this.tokenService.issueTokenPair(identity, 'CUSTOMER', extractRequestMeta(req));
   }
 
-  @ApiOperation({ summary: 'Resend customer email verification OTP' })
+  @ApiOperation({ summary: 'Gửi lại OTP xác thực email khách hàng' })
   @ApiOkResponse({
     type: CustomerRegisterResponseDto,
-    description: 'Verification OTP has been resent successfully.',
+    description: 'Đã gửi lại OTP xác thực thành công.',
   })
   @ApiTooManyRequestsResponse({
-    description: 'Too many requests. Please wait before requesting another OTP.',
+    description: 'Quá nhiều yêu cầu. Vui lòng chờ trước khi yêu cầu OTP mới.',
   })
   @Public()
   @Post('resend-otp')
@@ -86,9 +88,11 @@ export class CustomerAuthController {
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  @ApiOperation({ summary: 'Log in as a customer' })
-  @ApiOkResponse({ type: AuthResponseDto, description: 'Customer logged in successfully.' })
-  @ApiUnauthorizedResponse({ description: 'Credentials are invalid or account is inactive.' })
+  @ApiOperation({ summary: 'Đăng nhập với vai trò khách hàng' })
+  @ApiOkResponse({ type: AuthResponseDto, description: 'Đăng nhập khách hàng thành công.' })
+  @ApiUnauthorizedResponse({
+    description: 'Thông tin đăng nhập không hợp lệ hoặc tài khoản đã bị vô hiệu hóa.',
+  })
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -98,10 +102,10 @@ export class CustomerAuthController {
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Change customer password and revoke all sessions' })
-  @ApiOkResponse({ description: 'Password changed successfully. All sessions have been revoked.' })
-  @ApiUnauthorizedResponse({ description: 'Current password is incorrect.' })
-  @ApiBadRequestResponse({ description: 'Request is invalid or customer was not found.' })
+  @ApiOperation({ summary: 'Đổi mật khẩu khách hàng và thu hồi toàn bộ phiên' })
+  @ApiOkResponse({ description: 'Đổi mật khẩu thành công. Tất cả phiên đã bị thu hồi.' })
+  @ApiUnauthorizedResponse({ description: 'Mật khẩu hiện tại không chính xác.' })
+  @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ hoặc không tìm thấy khách hàng.' })
   @RequireUserType('CUSTOMER')
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
@@ -111,17 +115,17 @@ export class CustomerAuthController {
   ): Promise<{ message: string }> {
     await this.customerAuth.changePassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
-    return { message: 'Password changed successfully. Please log in again.' };
+    return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  @ApiOperation({ summary: 'Request a password reset OTP for a customer account' })
+  @ApiOperation({ summary: 'Yêu cầu OTP đặt lại mật khẩu cho tài khoản khách hàng' })
   @ApiOkResponse({
     type: ForgotPasswordResponseDto,
-    description: 'Password reset OTP has been sent if the account exists and is verified.',
+    description: 'OTP đặt lại mật khẩu đã được gửi nếu tài khoản tồn tại và đã xác thực.',
   })
   @ApiTooManyRequestsResponse({
-    description: 'Too many requests. Please wait before requesting another reset OTP.',
+    description: 'Quá nhiều yêu cầu. Vui lòng chờ trước khi yêu cầu OTP đặt lại mới.',
   })
   @Public()
   @Post('forgot-password')
@@ -130,13 +134,15 @@ export class CustomerAuthController {
     return this.customerAuth.requestPasswordReset(dto);
   }
 
-  @ApiOperation({ summary: 'Verify password reset OTP and receive a one-time reset token' })
+  @ApiOperation({ summary: 'Xác thực OTP đặt lại mật khẩu và nhận mã đặt lại dùng một lần' })
   @ApiOkResponse({
     type: ResetTokenResponseDto,
-    description: 'OTP verified successfully. Reset token issued.',
+    description: 'Xác thực OTP thành công. Đã cấp mã đặt lại.',
   })
-  @ApiTooManyRequestsResponse({ description: 'Too many OTP attempts. Please try again later.' })
-  @ApiBadRequestResponse({ description: 'OTP is invalid, expired, or incorrect.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Bạn đã thử OTP quá nhiều lần. Vui lòng thử lại sau.',
+  })
+  @ApiBadRequestResponse({ description: 'OTP không hợp lệ, đã hết hạn hoặc không chính xác.' })
   @Public()
   @Post('forgot-password/verify-otp')
   @HttpCode(HttpStatus.OK)
@@ -146,15 +152,15 @@ export class CustomerAuthController {
     return this.customerAuth.verifyPasswordResetOtp(dto);
   }
 
-  @ApiOperation({ summary: 'Reset customer password using a valid reset token' })
-  @ApiOkResponse({ description: 'Password reset successfully. All sessions have been revoked.' })
-  @ApiBadRequestResponse({ description: 'Reset token is invalid or expired.' })
+  @ApiOperation({ summary: 'Đặt lại mật khẩu khách hàng bằng mã đặt lại hợp lệ' })
+  @ApiOkResponse({ description: 'Đặt lại mật khẩu thành công. Tất cả phiên đã bị thu hồi.' })
+  @ApiBadRequestResponse({ description: 'Mã đặt lại không hợp lệ hoặc đã hết hạn.' })
   @Public()
   @Post('forgot-password/reset')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
     const { customerId } = await this.customerAuth.resetPassword(dto);
     await this.tokenService.revokeAllSessions(customerId, 'CUSTOMER');
-    return { message: 'Password reset successfully. Please log in again.' };
+    return { message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.' };
   }
 }

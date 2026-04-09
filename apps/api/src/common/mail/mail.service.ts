@@ -38,7 +38,9 @@ export class MailService {
    */
   async sendMail(options: SendMailOptions): Promise<void> {
     if (!this.isConfigured()) {
-      this.logger.warn('SMTP is not configured. Email is logged for local development only.');
+      this.logger.warn(
+        'SMTP chưa được cấu hình. Email sẽ chỉ được ghi log cho môi trường phát triển cục bộ.',
+      );
       this.logger.log(`[MAIL DEV] to=${options.to} subject=${options.subject}`);
       return;
     }
@@ -56,7 +58,9 @@ export class MailService {
    */
   async sendMailDirect(options: SendMailOptions): Promise<void> {
     if (!this.transporter || !this.sender) {
-      this.logger.warn('SMTP is not configured. Email is logged for local development only.');
+      this.logger.warn(
+        'SMTP chưa được cấu hình. Email sẽ chỉ được ghi log cho môi trường phát triển cục bộ.',
+      );
       this.logger.log(`[MAIL DEV] to=${options.to} subject=${options.subject}`);
       return;
     }

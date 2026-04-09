@@ -21,7 +21,7 @@ export const BCRYPT_SALT_ROUNDS = 12;
 /** Number of digits in customer email verification OTP. */
 export const CUSTOMER_OTP_LENGTH = 6;
 
-/** Redis key prefix for blacklisted access tokens. */
+/** Redis key prefix for blacklisted mã truy cậps. */
 export const BLACKLIST_PREFIX = CACHE_PREFIXES.TOKEN_BLACKLIST;
 
 /** Redis key prefix for per-user "logout all sessions" marker. */
@@ -45,8 +45,8 @@ export const CUSTOMER_RESET_OTP_ATTEMPTS_PREFIX = CACHE_PREFIXES.CUSTOMER_RESET_
 /** Redis key prefix for customer password reset OTP resend cooldown. */
 export const CUSTOMER_RESET_OTP_RESEND_PREFIX = CACHE_PREFIXES.CUSTOMER_RESET_OTP_RESEND;
 
-/** Redis key prefix for customer password reset token (post-OTP, pre-password-change). */
+/** Redis key prefix for customer password mã đặt lại (post-OTP, pre-password-change). */
 export const CUSTOMER_RESET_TOKEN_PREFIX = CACHE_PREFIXES.CUSTOMER_RESET_TOKEN;
 
-/** Lifetime of a password reset token in seconds (10 min). */
+/** Lifetime of a password mã đặt lại in seconds (10 min). */
 export const DEFAULT_RESET_TOKEN_EXPIRATION = CACHE_TTL.RESET_TOKEN;

@@ -24,13 +24,13 @@ export class CustomerService {
 
   async findById(id: number): Promise<CustomerDetailView> {
     const customer = await this.customerRepo.findById(id);
-    if (!customer) throw new NotFoundException('Customer not found');
+    if (!customer) throw new NotFoundException('Không tìm thấy khách hàng');
     return customer;
   }
 
   async update(id: number, dto: UpdateCustomerDto): Promise<CustomerDetailView> {
     if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('At least one field must be provided');
+      throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
     }
 
     const data: {
@@ -48,18 +48,18 @@ export class CustomerService {
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
 
     const updated = await this.customerRepo.update(id, data);
-    if (!updated) throw new NotFoundException('Customer not found');
+    if (!updated) throw new NotFoundException('Không tìm thấy khách hàng');
     return updated;
   }
 
   async softDelete(id: number): Promise<void> {
     const deleted = await this.customerRepo.softDelete(id);
-    if (!deleted) throw new NotFoundException('Customer not found');
+    if (!deleted) throw new NotFoundException('Không tìm thấy khách hàng');
   }
 
   async restore(id: number): Promise<CustomerDetailView> {
     const restored = await this.customerRepo.restore(id);
-    if (!restored) throw new NotFoundException('Customer not found or not deleted');
+    if (!restored) throw new NotFoundException('Không tìm thấy khách hàng or not deleted');
     return restored;
   }
 }

@@ -13,15 +13,15 @@ import { PermissionService } from '../services/permission.service';
 
 @ApiTags('RBAC')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @RequirePermissions('rbac.manage')
 @Controller('admin/permissions')
 export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
 
-  @ApiOperation({ summary: 'List all permissions' })
+  @ApiOperation({ summary: 'Liệt kê tất cả quyền' })
   @ApiOkResponse({ type: [PermissionResponseDto] })
   @Get()
   async findAll(): Promise<PermissionResponseDto[]> {

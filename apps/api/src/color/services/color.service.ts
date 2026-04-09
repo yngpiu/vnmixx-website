@@ -74,7 +74,7 @@ export class ColorService {
 
   private async findByIdOrFail(id: number): Promise<ColorAdminView> {
     const color = await this.repository.findById(id);
-    if (!color) throw new NotFoundException(`Color #${id} not found`);
+    if (!color) throw new NotFoundException(`Không tìm thấy màu sắc #${id}`);
     return color;
   }
 
@@ -85,7 +85,7 @@ export class ColorService {
   private handleUniqueViolation(err: unknown): void {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       const target = (err.meta?.target as string[])?.join(', ') ?? 'field';
-      throw new ConflictException(`A color with this ${target} already exists`);
+      throw new ConflictException(`Màu sắc với ${target} này đã tồn tại`);
     }
   }
 }

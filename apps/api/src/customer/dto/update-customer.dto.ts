@@ -20,10 +20,10 @@ export class UpdateCustomerDto {
   @MaxLength(20)
   phoneNumber?: string;
 
-  @ApiPropertyOptional({ example: '1999-12-31', description: 'Date of birth (YYYY-MM-DD)' })
+  @ApiPropertyOptional({ example: '1999-12-31', description: 'Ngày sinh (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'dob must be in YYYY-MM-DD format' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'ngày sinh phải theo định dạng YYYY-MM-DD' })
   dob?: string;
 
   @ApiPropertyOptional({ enum: GenderInput, example: GenderInput.MALE })
@@ -31,7 +31,7 @@ export class UpdateCustomerDto {
   @IsEnum(GenderInput)
   gender?: GenderInput;
 
-  @ApiPropertyOptional({ example: true, description: 'Activate or deactivate customer' })
+  @ApiPropertyOptional({ example: true, description: 'Kích hoạt hoặc vô hiệu hóa khách hàng' })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;

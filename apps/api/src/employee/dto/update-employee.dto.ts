@@ -20,7 +20,7 @@ export class UpdateEmployeeDto {
   @MaxLength(500)
   avatarUrl?: string;
 
-  @ApiPropertyOptional({ example: true, description: 'Activate or deactivate employee' })
+  @ApiPropertyOptional({ example: true, description: 'Kích hoạt hoặc vô hiệu hóa nhân viên' })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;

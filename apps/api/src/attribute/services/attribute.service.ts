@@ -29,7 +29,7 @@ export class AttributeService {
     try {
       return await this.repository.create({ name: dto.name });
     } catch (err) {
-      this.handleUniqueViolation(err, `Attribute name "${dto.name}" already exists`);
+      this.handleUniqueViolation(err, `Tên thuộc tính "${dto.name}" đã tồn tại`);
       throw err;
     }
   }
@@ -39,7 +39,7 @@ export class AttributeService {
     try {
       return await this.repository.update(id, { name: dto.name });
     } catch (err) {
-      this.handleUniqueViolation(err, `Attribute name "${dto.name}" already exists`);
+      this.handleUniqueViolation(err, `Tên thuộc tính "${dto.name}" đã tồn tại`);
       throw err;
     }
   }
@@ -59,7 +59,7 @@ export class AttributeService {
     try {
       return await this.repository.createValue({ attributeId, value: dto.value });
     } catch (err) {
-      this.handleUniqueViolation(err, `Value "${dto.value}" already exists for this attribute`);
+      this.handleUniqueViolation(err, `Giá trị "${dto.value}" đã tồn tại cho thuộc tính này`);
       throw err;
     }
   }
@@ -71,7 +71,7 @@ export class AttributeService {
   ): Promise<AttributeValueAdminView> {
     await this.findByIdOrFail(attributeId);
     const value = await this.repository.findValueById(valueId);
-    if (!value) throw new NotFoundException(`Attribute value #${valueId} not found`);
+    if (!value) throw new NotFoundException(`Không tìm thấy giá trị thuộc tính #${valueId}`);
     if (value.attributeId !== attributeId) {
       throw new BadRequestException(
         `Value #${valueId} does not belong to attribute #${attributeId}`,
@@ -81,7 +81,7 @@ export class AttributeService {
     try {
       return await this.repository.updateValue(valueId, { value: dto.value });
     } catch (err) {
-      this.handleUniqueViolation(err, `Value "${dto.value}" already exists for this attribute`);
+      this.handleUniqueViolation(err, `Giá trị "${dto.value}" đã tồn tại cho thuộc tính này`);
       throw err;
     }
   }
@@ -89,7 +89,7 @@ export class AttributeService {
   async removeValue(attributeId: number, valueId: number): Promise<void> {
     await this.findByIdOrFail(attributeId);
     const value = await this.repository.findValueById(valueId);
-    if (!value) throw new NotFoundException(`Attribute value #${valueId} not found`);
+    if (!value) throw new NotFoundException(`Không tìm thấy giá trị thuộc tính #${valueId}`);
     if (value.attributeId !== attributeId) {
       throw new BadRequestException(
         `Value #${valueId} does not belong to attribute #${attributeId}`,
@@ -103,7 +103,7 @@ export class AttributeService {
 
   private async findByIdOrFail(id: number): Promise<AttributeWithValuesView> {
     const attr = await this.repository.findById(id);
-    if (!attr) throw new NotFoundException(`Attribute #${id} not found`);
+    if (!attr) throw new NotFoundException(`Không tìm thấy thuộc tính #${id}`);
     return attr;
   }
 

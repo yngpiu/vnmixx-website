@@ -42,8 +42,8 @@ import { ProductService } from '../services/product.service';
 
 @ApiTags('Products')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/products')
 export class ProductAdminController {
@@ -51,51 +51,51 @@ export class ProductAdminController {
 
   // ─── Product CRUD ──────────────────────────────────────────────────────────
 
-  @ApiOperation({ summary: 'List products (admin)' })
+  @ApiOperation({ summary: 'Liệt kê sản phẩm (quản trị)' })
   @ApiOkResponse({ type: ProductAdminListResponseDto })
   @Get()
   findAll(@Query() query: ListAdminProductsQueryDto) {
     return this.productService.findAdminList(query);
   }
 
-  @ApiOperation({ summary: 'Get product detail (admin)' })
+  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm (quản trị)' })
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Product not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Get(':id')
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.productService.findAdminById(id);
   }
 
-  @ApiOperation({ summary: 'Create a product with variants, images, and attributes' })
+  @ApiOperation({ summary: 'Tạo sản phẩm kèm biến thể, hình ảnh và thuộc tính' })
   @ApiCreatedResponse({ type: ProductAdminDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'Request validation failed.' })
-  @ApiConflictResponse({ description: 'Product slug or SKU is already in use.' })
+  @ApiBadRequestResponse({ description: 'Xác thực dữ liệu yêu cầu thất bại.' })
+  @ApiConflictResponse({ description: 'Slug hoặc SKU sản phẩm đã được sử dụng.' })
   @Post()
   create(@Body() dto: CreateProductDto) {
     return this.productService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Update product basic info' })
+  @ApiOperation({ summary: 'Cập nhật thông tin cơ bản sản phẩm' })
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Product not found.' })
-  @ApiConflictResponse({ description: 'Product slug is already in use.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
+  @ApiConflictResponse({ description: 'Slug sản phẩm đã được sử dụng.' })
   @Put(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProductDto) {
     return this.productService.update(id, dto);
   }
 
-  @ApiOperation({ summary: 'Soft-delete a product and its variants' })
-  @ApiNoContentResponse({ description: 'Product deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Product not found.' })
+  @ApiOperation({ summary: 'Xóa mềm sản phẩm và các biến thể' })
+  @ApiNoContentResponse({ description: 'Xóa sản phẩm thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.productService.softDelete(id);
   }
 
-  @ApiOperation({ summary: 'Restore a soft-deleted product' })
+  @ApiOperation({ summary: 'Khôi phục sản phẩm đã xóa mềm' })
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Product not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Patch(':id/restore')
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.productService.restore(id);
@@ -103,18 +103,18 @@ export class ProductAdminController {
 
   // ─── Variants ──────────────────────────────────────────────────────────────
 
-  @ApiOperation({ summary: 'Add a variant to a product' })
-  @ApiCreatedResponse({ description: 'Variant created successfully.' })
-  @ApiNotFoundResponse({ description: 'Product not found.' })
-  @ApiConflictResponse({ description: 'Variant SKU or color-size combination is already in use.' })
+  @ApiOperation({ summary: 'Thêm biến thể cho sản phẩm' })
+  @ApiCreatedResponse({ description: 'Tạo biến thể thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
+  @ApiConflictResponse({ description: 'SKU biến thể hoặc tổ hợp màu-kích thước đã được sử dụng.' })
   @Post(':id/variants')
   createVariant(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateVariantDto) {
     return this.productService.createVariant(id, dto);
   }
 
-  @ApiOperation({ summary: 'Update a variant (price, stock, status)' })
-  @ApiOkResponse({ description: 'Variant updated successfully.' })
-  @ApiNotFoundResponse({ description: 'Product or variant not found.' })
+  @ApiOperation({ summary: 'Cập nhật biến thể (giá, tồn kho, trạng thái)' })
+  @ApiOkResponse({ description: 'Cập nhật biến thể thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc biến thể.' })
   @Put(':id/variants/:variantId')
   updateVariant(
     @Param('id', ParseIntPipe) id: number,
@@ -124,9 +124,9 @@ export class ProductAdminController {
     return this.productService.updateVariant(id, variantId, dto);
   }
 
-  @ApiOperation({ summary: 'Soft-delete a variant' })
-  @ApiNoContentResponse({ description: 'Variant deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Product or variant not found.' })
+  @ApiOperation({ summary: 'Xóa mềm biến thể' })
+  @ApiNoContentResponse({ description: 'Xóa biến thể thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc biến thể.' })
   @Delete(':id/variants/:variantId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeVariant(
@@ -138,17 +138,17 @@ export class ProductAdminController {
 
   // ─── Images ────────────────────────────────────────────────────────────────
 
-  @ApiOperation({ summary: 'Add an image to a product' })
-  @ApiCreatedResponse({ description: 'Product image created successfully.' })
-  @ApiNotFoundResponse({ description: 'Product not found.' })
+  @ApiOperation({ summary: 'Thêm hình ảnh cho sản phẩm' })
+  @ApiCreatedResponse({ description: 'Thêm hình ảnh sản phẩm thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Post(':id/images')
   createImage(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateImageDto) {
     return this.productService.createImage(id, dto);
   }
 
-  @ApiOperation({ summary: 'Update an image' })
-  @ApiOkResponse({ description: 'Product image updated successfully.' })
-  @ApiNotFoundResponse({ description: 'Product or image not found.' })
+  @ApiOperation({ summary: 'Cập nhật hình ảnh' })
+  @ApiOkResponse({ description: 'Cập nhật hình ảnh sản phẩm thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc hình ảnh.' })
   @Put(':id/images/:imageId')
   updateImage(
     @Param('id', ParseIntPipe) id: number,
@@ -158,9 +158,9 @@ export class ProductAdminController {
     return this.productService.updateImage(id, imageId, dto);
   }
 
-  @ApiOperation({ summary: 'Delete an image' })
-  @ApiNoContentResponse({ description: 'Product image deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Product or image not found.' })
+  @ApiOperation({ summary: 'Xóa hình ảnh' })
+  @ApiNoContentResponse({ description: 'Xóa hình ảnh sản phẩm thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc hình ảnh.' })
   @Delete(':id/images/:imageId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeImage(
@@ -172,9 +172,9 @@ export class ProductAdminController {
 
   // ─── Attributes ────────────────────────────────────────────────────────────
 
-  @ApiOperation({ summary: 'Sync product attributes (replace all)' })
-  @ApiNoContentResponse({ description: 'Product attributes synchronized successfully.' })
-  @ApiNotFoundResponse({ description: 'Product not found.' })
+  @ApiOperation({ summary: 'Đồng bộ thuộc tính sản phẩm (thay thế toàn bộ)' })
+  @ApiNoContentResponse({ description: 'Đồng bộ thuộc tính sản phẩm thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Put(':id/attributes')
   @HttpCode(HttpStatus.NO_CONTENT)
   syncAttributes(

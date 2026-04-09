@@ -12,7 +12,7 @@ import {
 export class ForgotPasswordDto {
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Email address of the customer account',
+    description: 'Địa chỉ email của tài khoản khách hàng',
   })
   @IsEmail()
   @IsNotEmpty()
@@ -22,22 +22,22 @@ export class ForgotPasswordDto {
 export class ForgotPasswordVerifyOtpDto {
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Email address of the customer account',
+    description: 'Địa chỉ email của tài khoản khách hàng',
   })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: '123456', description: '6-digit OTP sent to email' })
+  @ApiProperty({ example: '123456', description: 'Mã OTP 6 chữ số được gửi qua email' })
   @IsNotEmpty()
-  @Matches(/^\d{6}$/, { message: 'otp must be a 6-digit numeric code' })
+  @Matches(/^\d{6}$/, { message: 'OTP phải là mã số gồm 6 chữ số' })
   otp: string;
 }
 
 export class ResetPasswordDto {
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Email address of the customer account',
+    description: 'Địa chỉ email của tài khoản khách hàng',
   })
   @IsEmail()
   @IsNotEmpty()
@@ -45,13 +45,13 @@ export class ResetPasswordDto {
 
   @ApiProperty({
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    description: 'One-time reset token received after OTP verification',
+    description: 'Mã đặt lại dùng một lần nhận được sau khi xác thực OTP',
   })
   @IsUUID()
   @IsNotEmpty()
   resetToken: string;
 
-  @ApiProperty({ description: 'New password (8–72 characters)', minLength: 8, maxLength: 72 })
+  @ApiProperty({ description: 'Mật khẩu mới (8-72 ký tự)', minLength: 8, maxLength: 72 })
   @IsString()
   @IsNotEmpty()
   @MinLength(8)
@@ -61,27 +61,27 @@ export class ResetPasswordDto {
 
 export class ForgotPasswordResponseDto {
   @ApiProperty({
-    example: 'A password reset code has been sent to your email.',
+    example: 'Mã đặt lại mật khẩu đã được gửi tới email của bạn.',
   })
   message: string;
 
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Email that received the password reset OTP',
+    description: 'Email đã nhận OTP đặt lại mật khẩu',
   })
   email: string;
 
-  @ApiProperty({ example: 300, description: 'OTP lifetime in seconds' })
+  @ApiProperty({ example: 300, description: 'Thời hạn OTP (giây)' })
   otpExpiresIn: number;
 
-  @ApiProperty({ example: 60, description: 'Seconds to wait before requesting a new OTP' })
+  @ApiProperty({ example: 60, description: 'Số giây cần chờ trước khi yêu cầu OTP mới' })
   resendAfter: number;
 }
 
 export class ResetTokenResponseDto {
   @ApiProperty({
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    description: 'One-time token to authorize the password reset step',
+    description: 'Token dùng một lần để xác thực bước đặt lại mật khẩu',
   })
   resetToken: string;
 }

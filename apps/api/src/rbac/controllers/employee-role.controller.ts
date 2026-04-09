@@ -14,25 +14,25 @@ import { EmployeeRoleService } from '../services/employee-role.service';
 
 @ApiTags('RBAC')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @RequirePermissions('rbac.manage')
 @Controller('admin/employees')
 export class EmployeeRoleController {
   constructor(private readonly employeeRoleService: EmployeeRoleService) {}
 
-  @ApiOperation({ summary: 'Get roles assigned to an employee' })
+  @ApiOperation({ summary: 'Lấy vai trò được gán cho nhân viên' })
   @ApiOkResponse({ type: EmployeeRolesResponseDto })
-  @ApiNotFoundResponse({ description: 'Employee not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Get(':id/roles')
   async findRoles(@Param('id', ParseIntPipe) id: number): Promise<EmployeeRolesResponseDto> {
     return this.employeeRoleService.findByEmployeeId(id);
   }
 
-  @ApiOperation({ summary: 'Sync roles for an employee (replace all)' })
+  @ApiOperation({ summary: 'Đồng bộ vai trò cho nhân viên (thay thế toàn bộ)' })
   @ApiOkResponse({ type: EmployeeRolesResponseDto })
-  @ApiNotFoundResponse({ description: 'Employee not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Put(':id/roles')
   async syncRoles(
     @Param('id', ParseIntPipe) id: number,

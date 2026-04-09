@@ -68,7 +68,7 @@ export class ProductService {
         return product ? this.transformPublicDetail(product) : null;
       },
     );
-    if (!cached) throw new NotFoundException(`Product "${slug}" not found`);
+    if (!cached) throw new NotFoundException(`Không tìm thấy sản phẩm "${slug}"`);
     return cached;
   }
 
@@ -104,7 +104,7 @@ export class ProductService {
 
   async findAdminById(id: number) {
     const product = await this.repository.findAdminById(id);
-    if (!product) throw new NotFoundException(`Product #${id} not found`);
+    if (!product) throw new NotFoundException(`Không tìm thấy sản phẩm #${id}`);
     return this.transformAdminDetail(product);
   }
 
@@ -112,7 +112,9 @@ export class ProductService {
     if (dto.categoryId) {
       const exists = await this.repository.categoryExists(dto.categoryId);
       if (!exists)
-        throw new BadRequestException(`Category #${dto.categoryId} not found or deleted`);
+        throw new BadRequestException(
+          `Không tìm thấy danh mục #${dto.categoryId} hoặc danh mục đã bị xóa`,
+        );
       const isLeaf = await this.repository.isLeafCategory(dto.categoryId);
       if (!isLeaf)
         throw new BadRequestException(
@@ -123,7 +125,8 @@ export class ProductService {
     const attrValueIds = dto.attributeValueIds ?? [];
     if (attrValueIds.length > 0) {
       const valid = await this.repository.attributeValuesExist(attrValueIds);
-      if (!valid) throw new BadRequestException('One or more attribute value IDs are invalid');
+      if (!valid)
+        throw new BadRequestException('Một hoặc nhiều ID giá trị thuộc tính không hợp lệ');
     }
 
     const colorIds = dto.variants.map((v) => v.colorId);
@@ -133,8 +136,8 @@ export class ProductService {
       this.repository.colorsExist(colorIds),
       this.repository.sizesExist(sizeIds),
     ]);
-    if (!colorsValid) throw new BadRequestException('One or more color IDs are invalid');
-    if (!sizesValid) throw new BadRequestException('One or more size IDs are invalid');
+    if (!colorsValid) throw new BadRequestException('Một hoặc nhiều ID màu sắc không hợp lệ');
+    if (!sizesValid) throw new BadRequestException('Một hoặc nhiều ID kích thước không hợp lệ');
 
     this.validateVariantCombos(dto.variants);
     this.validateSkuUniqueness(dto.variants);
@@ -142,7 +145,7 @@ export class ProductService {
 
     for (const v of dto.variants) {
       if (await this.repository.skuExists(v.sku)) {
-        throw new ConflictException(`SKU "${v.sku}" already exists`);
+        throw new ConflictException(`SKU "${v.sku}" đã tồn tại`);
       }
     }
 
@@ -172,7 +175,9 @@ export class ProductService {
     if (dto.categoryId) {
       const exists = await this.repository.categoryExists(dto.categoryId);
       if (!exists)
-        throw new BadRequestException(`Category #${dto.categoryId} not found or deleted`);
+        throw new BadRequestException(
+          `Không tìm thấy danh mục #${dto.categoryId} hoặc danh mục đã bị xóa`,
+        );
       const isLeaf = await this.repository.isLeafCategory(dto.categoryId);
       if (!isLeaf)
         throw new BadRequestException(
@@ -208,7 +213,7 @@ export class ProductService {
 
   async restore(id: number) {
     const product = await this.findAdminByIdOrFail(id);
-    if (!product.deletedAt) throw new BadRequestException('Product is not deleted');
+    if (!product.deletedAt) throw new BadRequestException('Sản phẩm chưa bị xóa');
 
     const restored = await this.repository.restore(id);
     await this.invalidateProductCache(product.slug);
@@ -224,15 +229,15 @@ export class ProductService {
       this.repository.colorsExist([dto.colorId]),
       this.repository.sizesExist([dto.sizeId]),
     ]);
-    if (!colorsValid) throw new BadRequestException(`Color #${dto.colorId} not found`);
-    if (!sizesValid) throw new BadRequestException(`Size #${dto.sizeId} not found`);
+    if (!colorsValid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
+    if (!sizesValid) throw new BadRequestException(`Không tìm thấy kích thước #${dto.sizeId}`);
 
     if (dto.salePrice !== undefined && dto.salePrice >= dto.price) {
-      throw new BadRequestException('salePrice must be less than price');
+      throw new BadRequestException('Giá khuyến mãi phải nhỏ hơn giá gốc');
     }
 
     if (await this.repository.skuExists(dto.sku)) {
-      throw new ConflictException(`SKU "${dto.sku}" already exists`);
+      throw new ConflictException(`SKU "${dto.sku}" đã tồn tại`);
     }
 
     try {
@@ -242,7 +247,7 @@ export class ProductService {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new ConflictException(
-          'A variant with this color + size combo already exists for this product',
+          'Biến thể với tổ hợp màu + kích thước này đã tồn tại cho sản phẩm',
         );
       }
       throw err;
@@ -252,7 +257,7 @@ export class ProductService {
   async updateVariant(productId: number, variantId: number, dto: UpdateVariantDto) {
     const product = await this.findAdminByIdOrFail(productId);
     const variant = await this.repository.findVariantById(variantId);
-    if (!variant) throw new NotFoundException(`Variant #${variantId} not found`);
+    if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
     if (variant.productId !== productId) {
       throw new BadRequestException(
         `Variant #${variantId} does not belong to product #${productId}`,
@@ -272,7 +277,7 @@ export class ProductService {
   async softDeleteVariant(productId: number, variantId: number): Promise<void> {
     const product = await this.findAdminByIdOrFail(productId);
     const variant = await this.repository.findVariantById(variantId);
-    if (!variant) throw new NotFoundException(`Variant #${variantId} not found`);
+    if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
     if (variant.productId !== productId) {
       throw new BadRequestException(
         `Variant #${variantId} does not belong to product #${productId}`,
@@ -290,7 +295,7 @@ export class ProductService {
 
     if (dto.colorId) {
       const valid = await this.repository.colorsExist([dto.colorId]);
-      if (!valid) throw new BadRequestException(`Color #${dto.colorId} not found`);
+      if (!valid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
     }
 
     const result = await this.repository.createImage(productId, dto);
@@ -301,14 +306,14 @@ export class ProductService {
   async updateImage(productId: number, imageId: number, dto: UpdateImageDto) {
     const product = await this.findAdminByIdOrFail(productId);
     const image = await this.repository.findImageById(imageId);
-    if (!image) throw new NotFoundException(`Image #${imageId} not found`);
+    if (!image) throw new NotFoundException(`Không tìm thấy hình ảnh #${imageId}`);
     if (image.productId !== productId) {
-      throw new BadRequestException(`Image #${imageId} does not belong to product #${productId}`);
+      throw new BadRequestException(`Hình ảnh #${imageId} không thuộc về sản phẩm #${productId}`);
     }
 
     if (dto.colorId) {
       const valid = await this.repository.colorsExist([dto.colorId]);
-      if (!valid) throw new BadRequestException(`Color #${dto.colorId} not found`);
+      if (!valid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
     }
 
     const result = await this.repository.updateImage(imageId, {
@@ -323,9 +328,9 @@ export class ProductService {
   async deleteImage(productId: number, imageId: number): Promise<void> {
     const product = await this.findAdminByIdOrFail(productId);
     const image = await this.repository.findImageById(imageId);
-    if (!image) throw new NotFoundException(`Image #${imageId} not found`);
+    if (!image) throw new NotFoundException(`Không tìm thấy hình ảnh #${imageId}`);
     if (image.productId !== productId) {
-      throw new BadRequestException(`Image #${imageId} does not belong to product #${productId}`);
+      throw new BadRequestException(`Hình ảnh #${imageId} không thuộc về sản phẩm #${productId}`);
     }
 
     await this.repository.deleteImage(imageId);
@@ -339,7 +344,8 @@ export class ProductService {
 
     if (dto.attributeValueIds.length > 0) {
       const valid = await this.repository.attributeValuesExist(dto.attributeValueIds);
-      if (!valid) throw new BadRequestException('One or more attribute value IDs are invalid');
+      if (!valid)
+        throw new BadRequestException('Một hoặc nhiều ID giá trị thuộc tính không hợp lệ');
     }
 
     await this.repository.syncAttributes(productId, dto.attributeValueIds);
@@ -350,7 +356,7 @@ export class ProductService {
 
   private async findAdminByIdOrFail(id: number): Promise<ProductAdminDetailView> {
     const product = await this.repository.findAdminById(id);
-    if (!product) throw new NotFoundException(`Product #${id} not found`);
+    if (!product) throw new NotFoundException(`Không tìm thấy sản phẩm #${id}`);
     return product;
   }
 

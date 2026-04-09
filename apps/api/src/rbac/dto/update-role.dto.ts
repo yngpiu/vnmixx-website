@@ -2,7 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateRoleDto {
-  @ApiPropertyOptional({ example: 'editor', description: 'Unique role name', maxLength: 50 })
+  @ApiPropertyOptional({ example: 'editor', description: 'Tên vai trò duy nhất', maxLength: 50 })
   @IsString()
   @IsNotEmpty()
   @IsOptional()

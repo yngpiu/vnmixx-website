@@ -38,17 +38,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private assertRequiredClaims(payload: JwtPayload): void {
     const isKnownUserType = payload.userType === 'CUSTOMER' || payload.userType === 'EMPLOYEE';
     if (!payload.jti || !isKnownUserType || typeof payload.sub !== 'number') {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Token không hợp lệ');
     }
     if (typeof payload.exp !== 'number' || typeof payload.iat !== 'number') {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Token không hợp lệ');
     }
   }
 
   private async assertNotBlacklisted(jti: string | undefined): Promise<void> {
-    if (!jti) throw new UnauthorizedException('Invalid token');
+    if (!jti) throw new UnauthorizedException('Token không hợp lệ');
     const isBlacklisted = await this.redis.getClient().exists(`${BLACKLIST_PREFIX}${jti}`);
-    if (isBlacklisted) throw new UnauthorizedException('Token has been revoked');
+    if (isBlacklisted) throw new UnauthorizedException('Token đã bị thu hồi');
   }
 
   private async assertNotLoggedOutAll(payload: JwtPayload): Promise<void> {
@@ -58,14 +58,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const timestamp = Number(logoutAllAt);
     if (!Number.isFinite(timestamp)) return;
     if ((payload.iat ?? 0) <= timestamp) {
-      throw new UnauthorizedException('Session has been terminated');
+      throw new UnauthorizedException('Phiên đăng nhập đã bị chấm dứt');
     }
   }
 
   private async validateCustomer(payload: JwtPayload): Promise<AuthenticatedUser> {
     const customer = await this.customerRepo.findById(payload.sub);
     if (!customer || !customer.isActive || customer.deletedAt) {
-      throw new UnauthorizedException('Account is inactive or deleted');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
     }
     return {
       id: customer.id,
@@ -83,7 +83,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private async validateEmployee(payload: JwtPayload): Promise<AuthenticatedUser> {
     const employee = await this.employeeRepo.findById(payload.sub);
     if (!employee || !employee.isActive || employee.deletedAt) {
-      throw new UnauthorizedException('Account is inactive or deleted');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
     }
     return {
       id: employee.id,

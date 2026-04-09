@@ -16,7 +16,7 @@ export class AddressService {
 
   async findById(id: number, customerId: number): Promise<AddressView> {
     const address = await this.addressRepo.findById(id, customerId);
-    if (!address) throw new NotFoundException(`Address #${id} not found`);
+    if (!address) throw new NotFoundException(`Không tìm thấy địa chỉ #${id}`);
     return address;
   }
 
@@ -107,16 +107,16 @@ export class AddressService {
     wardId: number,
   ): Promise<void> {
     const cityExists = await this.locationRepo.cityExists(cityId);
-    if (!cityExists) throw new BadRequestException(`City #${cityId} not found`);
+    if (!cityExists) throw new BadRequestException(`Không tìm thấy thành phố #${cityId}`);
 
     const districtValid = await this.locationRepo.districtBelongsToCity(districtId, cityId);
     if (!districtValid) {
-      throw new BadRequestException(`District #${districtId} does not belong to city #${cityId}`);
+      throw new BadRequestException(`Quận/huyện #${districtId} không thuộc thành phố #${cityId}`);
     }
 
     const wardValid = await this.locationRepo.wardBelongsToDistrict(wardId, districtId);
     if (!wardValid) {
-      throw new BadRequestException(`Ward #${wardId} does not belong to district #${districtId}`);
+      throw new BadRequestException(`Phường/xã #${wardId} không thuộc quận/huyện #${districtId}`);
     }
   }
 }

@@ -16,13 +16,13 @@ export class EmployeeRoleService {
 
   async findByEmployeeId(employeeId: number): Promise<EmployeeWithRoles> {
     const result = await this.employeeRoleRepo.findByEmployeeId(employeeId);
-    if (!result) throw new NotFoundException(`Employee #${employeeId} not found`);
+    if (!result) throw new NotFoundException(`Không tìm thấy nhân viên #${employeeId}`);
     return result;
   }
 
   async syncRoles(employeeId: number, roleIds: number[]): Promise<EmployeeWithRoles> {
     const exists = await this.employeeRoleRepo.employeeExists(employeeId);
-    if (!exists) throw new NotFoundException(`Employee #${employeeId} not found`);
+    if (!exists) throw new NotFoundException(`Không tìm thấy nhân viên #${employeeId}`);
 
     if (roleIds.length) {
       await this.validateRoleIds(roleIds);
@@ -39,7 +39,7 @@ export class EmployeeRoleService {
     const existingIds = new Set(roles.map((r) => r.id));
     const invalid = ids.filter((id) => !existingIds.has(id));
     if (invalid.length) {
-      throw new BadRequestException(`Role IDs do not exist: ${invalid.join(', ')}`);
+      throw new BadRequestException(`Các ID vai trò không tồn tại: ${invalid.join(', ')}`);
     }
   }
 }

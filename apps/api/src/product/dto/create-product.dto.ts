@@ -86,7 +86,7 @@ export class CreateProductDto {
   @IsNotEmpty()
   @MaxLength(255)
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message: 'slug must be lowercase alphanumeric and hyphens only',
+    message: 'slug chỉ được chứa chữ thường, số và dấu gạch nối',
   })
   slug: string;
 

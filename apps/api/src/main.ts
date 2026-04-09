@@ -19,19 +19,14 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Vnmixx API')
-    .setDescription(
-      'REST API for the Vnmixx platform. ' +
-        'Supports dual-role authentication (Customer & Employee) with JWT Bearer tokens.',
-    )
     .setVersion('1.0')
-    .setContact('Vnmixx Team', 'https://vnmixx.vn', 'dev@vnmixx.vn')
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
         name: 'Authorization',
-        description: 'Enter your JWT access token',
+        description: 'Nhập mã JWT để xác thực',
         in: 'header',
       },
       'access-token',
@@ -45,7 +40,6 @@ async function bootstrap() {
       tagsSorter: 'alpha',
       operationsSorter: 'alpha',
     },
-    customSiteTitle: 'Vnmixx API Docs',
   });
 
   await app.listen(port, '0.0.0.0');

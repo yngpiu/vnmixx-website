@@ -17,12 +17,14 @@ export class EmployeeAuthController {
     private readonly tokenService: TokenService,
   ) {}
 
-  @ApiOperation({ summary: 'Log in as an employee' })
+  @ApiOperation({ summary: 'Đăng nhập với vai trò nhân viên' })
   @ApiOkResponse({
     type: AuthResponseDto,
-    description: 'Employee logged in successfully with roles and permissions.',
+    description: 'Đăng nhập nhân viên thành công kèm vai trò và quyền.',
   })
-  @ApiUnauthorizedResponse({ description: 'Credentials are invalid or account is inactive.' })
+  @ApiUnauthorizedResponse({
+    description: 'Thông tin đăng nhập không hợp lệ hoặc tài khoản đã bị vô hiệu hóa.',
+  })
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)

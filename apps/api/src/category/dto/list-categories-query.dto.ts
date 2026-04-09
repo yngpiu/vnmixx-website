@@ -5,7 +5,7 @@ import { IsBoolean, IsOptional } from 'class-validator';
 export class ListCategoriesQueryDto {
   @ApiPropertyOptional({
     example: false,
-    description: 'Include soft-deleted categories in the result',
+    description: 'Bao gồm danh mục đã xóa mềm trong kết quả',
     default: false,
   })
   @Transform(({ value }: { value: unknown }) => value === 'true' || value === true)

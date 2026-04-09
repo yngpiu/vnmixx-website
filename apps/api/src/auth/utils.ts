@@ -6,14 +6,14 @@ export function parseDob(dob?: string): Date | null {
   if (!dob) return null;
   const dateParts = dob.split('-');
   if (dateParts.length !== 3) {
-    throw new BadRequestException('dob must be in YYYY-MM-DD format');
+    throw new BadRequestException('ngày sinh phải theo định dạng YYYY-MM-DD');
   }
   const [yearRaw, monthRaw, dayRaw] = dateParts;
   const year = Number(yearRaw);
   const month = Number(monthRaw);
   const day = Number(dayRaw);
   if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
-    throw new BadRequestException('dob must be in YYYY-MM-DD format');
+    throw new BadRequestException('ngày sinh phải theo định dạng YYYY-MM-DD');
   }
   const parsed = new Date(Date.UTC(year, month - 1, day));
   const isValidDate =
@@ -21,7 +21,7 @@ export function parseDob(dob?: string): Date | null {
     parsed.getUTCMonth() === month - 1 &&
     parsed.getUTCDate() === day;
   if (!isValidDate) {
-    throw new BadRequestException('dob must be a valid calendar date');
+    throw new BadRequestException('ngày sinh phải là một ngày hợp lệ');
   }
   return parsed;
 }

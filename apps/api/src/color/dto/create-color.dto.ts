@@ -8,9 +8,9 @@ export class CreateColorDto {
   @MaxLength(50)
   name: string;
 
-  @ApiProperty({ example: '#FFFFFF', description: 'Hex color code (#RRGGBB)' })
+  @ApiProperty({ example: '#FFFFFF', description: 'Mã màu HEX (#RRGGBB)' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'hexCode must be a valid hex color (e.g. #FF0000)' })
+  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'mã màu HEX không hợp lệ (ví dụ: #FF0000)' })
   hexCode: string;
 }

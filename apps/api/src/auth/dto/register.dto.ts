@@ -18,7 +18,7 @@ enum GenderInput {
 
 /** DTO for customer registration. Employees are created by admins. */
 export class RegisterDto {
-  @ApiProperty({ example: 'Nguyễn Văn A', description: 'Full name', maxLength: 100 })
+  @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ và tên', maxLength: 100 })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
@@ -26,7 +26,7 @@ export class RegisterDto {
 
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Unique email address',
+    description: 'Địa chỉ email duy nhất',
     maxLength: 255,
   })
   @IsEmail()
@@ -36,18 +36,18 @@ export class RegisterDto {
 
   @ApiProperty({
     example: '+84901234567',
-    description: 'Phone number in any standard format',
+    description: 'Số điện thoại theo định dạng hợp lệ',
     maxLength: 20,
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[0-9+\-\s()]+$/, { message: 'phoneNumber must be a valid phone number' })
+  @Matches(/^[0-9+\-\s()]+$/, { message: 'số điện thoại không đúng định dạng hợp lệ' })
   @MaxLength(20)
   phoneNumber: string;
 
   @ApiProperty({
     example: 'Str0ngP@ssword!',
-    description: 'Password (8–72 characters)',
+    description: 'Mật khẩu (8-72 ký tự)',
     minLength: 8,
     maxLength: 72,
   })
@@ -57,13 +57,13 @@ export class RegisterDto {
   @MaxLength(72)
   password: string;
 
-  @ApiPropertyOptional({ example: '1999-12-31', description: 'Date of birth (YYYY-MM-DD)' })
+  @ApiPropertyOptional({ example: '1999-12-31', description: 'Ngày sinh (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'dob must be in YYYY-MM-DD format' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'ngày sinh phải theo định dạng YYYY-MM-DD' })
   dob?: string;
 
-  @ApiPropertyOptional({ enum: GenderInput, example: GenderInput.MALE, description: 'Gender' })
+  @ApiPropertyOptional({ enum: GenderInput, example: GenderInput.MALE, description: 'Giới tính' })
   @IsOptional()
   @IsEnum(GenderInput)
   gender?: GenderInput;

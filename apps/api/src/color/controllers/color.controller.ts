@@ -9,7 +9,7 @@ import { ColorService } from '../services/color.service';
 export class ColorController {
   constructor(private readonly colorService: ColorService) {}
 
-  @ApiOperation({ summary: 'List all colors' })
+  @ApiOperation({ summary: 'Liệt kê tất cả màu sắc' })
   @ApiOkResponse({ type: [ColorResponseDto] })
   @Public()
   @Get()

@@ -19,9 +19,11 @@ import { extractRequestMeta } from '../utils';
 export class AuthController {
   constructor(private readonly tokenService: TokenService) {}
 
-  @ApiOperation({ summary: 'Refresh access token using a refresh token' })
-  @ApiOkResponse({ type: AuthResponseDto, description: 'Token pair refreshed successfully.' })
-  @ApiUnauthorizedResponse({ description: 'Refresh token is invalid, expired, or already used.' })
+  @ApiOperation({ summary: 'Làm mới mã truy cập bằng mã làm mới' })
+  @ApiOkResponse({ type: AuthResponseDto, description: 'Làm mới cặp token thành công.' })
+  @ApiUnauthorizedResponse({
+    description: 'Mã làm mới không hợp lệ, đã hết hạn hoặc đã được sử dụng.',
+  })
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -31,10 +33,10 @@ export class AuthController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Log out the current session',
+    summary: 'Đăng xuất phiên hiện tại',
   })
-  @ApiOkResponse({ description: 'Current session logged out successfully.' })
-  @ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
+  @ApiOkResponse({ description: 'Đăng xuất phiên hiện tại thành công.' })
+  @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
@@ -42,30 +44,30 @@ export class AuthController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ message: string }> {
     await this.tokenService.logout(dto.refreshToken, user.jti, user.exp);
-    return { message: 'Logged out successfully' };
+    return { message: 'Đăng xuất thành công.' };
   }
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Log out all sessions',
+    summary: 'Đăng xuất tất cả phiên',
   })
-  @ApiOkResponse({ description: 'All sessions logged out successfully.' })
-  @ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
+  @ApiOkResponse({ description: 'Đăng xuất tất cả phiên thành công.' })
+  @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
   async logoutAll(@CurrentUser() user: AuthenticatedUser): Promise<{ message: string }> {
     await this.tokenService.logoutAll(user.id, user.userType, user.jti, user.exp);
-    return { message: 'All sessions have been terminated' };
+    return { message: 'Tất cả phiên đã được chấm dứt.' };
   }
 
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Get profile of the currently authenticated user' })
+  @ApiOperation({ summary: 'Lấy hồ sơ người dùng đang đăng nhập' })
   @ApiOkResponse({
     type: ProfileResponseDto,
-    description: 'Authenticated user profile retrieved successfully.',
+    description: 'Lấy hồ sơ người dùng đã xác thực thành công.',
   })
-  @ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-  @ApiForbiddenResponse({ description: 'Access token has been revoked.' })
+  @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+  @ApiForbiddenResponse({ description: 'Mã truy cập đã bị thu hồi.' })
   @Get('me')
   getProfile(@CurrentUser() user: AuthenticatedUser): ProfileResponseDto {
     return {

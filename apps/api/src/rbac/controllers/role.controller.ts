@@ -35,41 +35,41 @@ import { RoleService } from '../services/role.service';
 
 @ApiTags('RBAC')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @RequirePermissions('rbac.manage')
 @Controller('admin/roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
-  @ApiOperation({ summary: 'List all roles' })
+  @ApiOperation({ summary: 'Liệt kê tất cả vai trò' })
   @ApiOkResponse({ type: [RoleResponseDto] })
   @Get()
   async findAll(): Promise<RoleResponseDto[]> {
     return this.roleService.findAll();
   }
 
-  @ApiOperation({ summary: 'Get role detail with permissions' })
+  @ApiOperation({ summary: 'Lấy chi tiết vai trò kèm quyền' })
   @ApiOkResponse({ type: RoleDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Role not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<RoleDetailResponseDto> {
     return this.roleService.findById(id);
   }
 
-  @ApiOperation({ summary: 'Create a new role' })
+  @ApiOperation({ summary: 'Tạo vai trò mới' })
   @ApiCreatedResponse({ type: RoleDetailResponseDto })
-  @ApiConflictResponse({ description: 'Role name is already in use.' })
+  @ApiConflictResponse({ description: 'Tên vai trò đã được sử dụng.' })
   @Post()
   async create(@Body() dto: CreateRoleDto): Promise<RoleDetailResponseDto> {
     return this.roleService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Update role name/description' })
+  @ApiOperation({ summary: 'Cập nhật tên/mô tả vai trò' })
   @ApiOkResponse({ type: RoleDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Role not found.' })
-  @ApiConflictResponse({ description: 'Role name is already in use.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
+  @ApiConflictResponse({ description: 'Tên vai trò đã được sử dụng.' })
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -78,18 +78,18 @@ export class RoleController {
     return this.roleService.update(id, dto);
   }
 
-  @ApiOperation({ summary: 'Delete a role' })
-  @ApiNoContentResponse({ description: 'Role deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Role not found.' })
+  @ApiOperation({ summary: 'Xóa vai trò' })
+  @ApiNoContentResponse({ description: 'Xóa vai trò thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.roleService.delete(id);
   }
 
-  @ApiOperation({ summary: 'Sync permissions for a role (replace all)' })
+  @ApiOperation({ summary: 'Đồng bộ quyền cho vai trò (thay thế toàn bộ)' })
   @ApiOkResponse({ type: RoleDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Role not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
   @Put(':id/permissions')
   async syncPermissions(
     @Param('id', ParseIntPipe) id: number,

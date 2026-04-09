@@ -16,17 +16,17 @@ export class UpdateAddressDto {
   @MaxLength(20)
   phoneNumber?: string;
 
-  @ApiPropertyOptional({ example: 1, description: 'City ID' })
+  @ApiPropertyOptional({ example: 1, description: 'ID tỉnh/thành phố' })
   @IsInt()
   @IsOptional()
   cityId?: number;
 
-  @ApiPropertyOptional({ example: 1, description: 'District ID (must belong to city)' })
+  @ApiPropertyOptional({ example: 1, description: 'ID quận/huyện (phải thuộc tỉnh/thành phố)' })
   @IsInt()
   @IsOptional()
   districtId?: number;
 
-  @ApiPropertyOptional({ example: 1, description: 'Ward ID (must belong to district)' })
+  @ApiPropertyOptional({ example: 1, description: 'ID phường/xã (phải thuộc quận/huyện)' })
   @IsInt()
   @IsOptional()
   wardId?: number;

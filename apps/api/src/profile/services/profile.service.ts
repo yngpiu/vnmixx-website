@@ -20,7 +20,7 @@ export class ProfileService {
 
   async getCustomerProfile(customerId: number): Promise<CustomerProfileView> {
     const profile = await this.customerRepo.findById(customerId);
-    if (!profile) throw new NotFoundException('Customer not found');
+    if (!profile) throw new NotFoundException('Không tìm thấy khách hàng');
     return profile;
   }
 
@@ -29,7 +29,7 @@ export class ProfileService {
     dto: UpdateCustomerProfileDto,
   ): Promise<CustomerProfileView> {
     if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('At least one field must be provided');
+      throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
     }
 
     const data: {
@@ -45,13 +45,13 @@ export class ProfileService {
     if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl;
 
     const updated = await this.customerRepo.update(customerId, data);
-    if (!updated) throw new NotFoundException('Customer not found');
+    if (!updated) throw new NotFoundException('Không tìm thấy khách hàng');
     return updated;
   }
 
   async getEmployeeProfile(employeeId: number): Promise<EmployeeProfileView> {
     const profile = await this.employeeRepo.findById(employeeId);
-    if (!profile) throw new NotFoundException('Employee not found');
+    if (!profile) throw new NotFoundException('Không tìm thấy nhân viên');
     return profile;
   }
 
@@ -60,7 +60,7 @@ export class ProfileService {
     dto: UpdateEmployeeProfileDto,
   ): Promise<EmployeeProfileView> {
     if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('At least one field must be provided');
+      throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
     }
 
     const data: { fullName?: string; avatarUrl?: string } = {};
@@ -69,7 +69,7 @@ export class ProfileService {
     if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl;
 
     const updated = await this.employeeRepo.update(employeeId, data);
-    if (!updated) throw new NotFoundException('Employee not found');
+    if (!updated) throw new NotFoundException('Không tìm thấy nhân viên');
     return updated;
   }
 }

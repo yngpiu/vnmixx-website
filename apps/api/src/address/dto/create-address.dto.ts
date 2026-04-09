@@ -22,15 +22,15 @@ export class CreateAddressDto {
   @MaxLength(20)
   phoneNumber: string;
 
-  @ApiProperty({ example: 1, description: 'City ID' })
+  @ApiProperty({ example: 1, description: 'ID tỉnh/thành phố' })
   @IsInt()
   cityId: number;
 
-  @ApiProperty({ example: 1, description: 'District ID (must belong to city)' })
+  @ApiProperty({ example: 1, description: 'ID quận/huyện (phải thuộc tỉnh/thành phố)' })
   @IsInt()
   districtId: number;
 
-  @ApiProperty({ example: 1, description: 'Ward ID (must belong to district)' })
+  @ApiProperty({ example: 1, description: 'ID phường/xã (phải thuộc quận/huyện)' })
   @IsInt()
   wardId: number;
 

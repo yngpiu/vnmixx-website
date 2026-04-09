@@ -9,7 +9,7 @@ import { LocationService } from '../services/location.service';
 export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 
-  @ApiOperation({ summary: 'List all cities/provinces' })
+  @ApiOperation({ summary: 'Liệt kê tất cả tỉnh/thành phố' })
   @ApiOkResponse({ type: [CityResponseDto] })
   @Public()
   @Get('cities')
@@ -17,9 +17,9 @@ export class LocationController {
     return this.locationService.findAllCities();
   }
 
-  @ApiOperation({ summary: 'List districts by city' })
+  @ApiOperation({ summary: 'Liệt kê quận/huyện theo thành phố' })
   @ApiOkResponse({ type: [DistrictResponseDto] })
-  @ApiNotFoundResponse({ description: 'City not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy thành phố.' })
   @Public()
   @Get('cities/:cityId/districts')
   async findDistrictsByCityId(
@@ -28,9 +28,9 @@ export class LocationController {
     return this.locationService.findDistrictsByCityId(cityId);
   }
 
-  @ApiOperation({ summary: 'List wards by district' })
+  @ApiOperation({ summary: 'Liệt kê phường/xã theo quận/huyện' })
   @ApiOkResponse({ type: [WardResponseDto] })
-  @ApiNotFoundResponse({ description: 'District not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy quận/huyện.' })
   @Public()
   @Get('districts/:districtId/wards')
   async findWardsByDistrictId(

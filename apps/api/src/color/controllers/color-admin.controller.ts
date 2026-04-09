@@ -28,32 +28,32 @@ import { ColorService } from '../services/color.service';
 
 @ApiTags('Colors')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/colors')
 export class ColorAdminController {
   constructor(private readonly colorService: ColorService) {}
 
-  @ApiOperation({ summary: 'List all colors (admin)' })
+  @ApiOperation({ summary: 'Liệt kê tất cả màu sắc (quản trị)' })
   @ApiOkResponse({ type: [ColorAdminResponseDto] })
   @Get()
   findAll(): Promise<ColorAdminResponseDto[]> {
     return this.colorService.findAll();
   }
 
-  @ApiOperation({ summary: 'Create a new color' })
+  @ApiOperation({ summary: 'Tạo màu mới' })
   @ApiCreatedResponse({ type: ColorAdminResponseDto })
-  @ApiConflictResponse({ description: 'Color name or HEX code is already in use.' })
+  @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
   @Post()
   create(@Body() dto: CreateColorDto): Promise<ColorAdminResponseDto> {
     return this.colorService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Update a color' })
+  @ApiOperation({ summary: 'Cập nhật màu' })
   @ApiOkResponse({ type: ColorAdminResponseDto })
-  @ApiNotFoundResponse({ description: 'Color not found.' })
-  @ApiConflictResponse({ description: 'Color name or HEX code is already in use.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })
+  @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -62,10 +62,10 @@ export class ColorAdminController {
     return this.colorService.update(id, dto);
   }
 
-  @ApiOperation({ summary: 'Delete a color' })
-  @ApiNoContentResponse({ description: 'Color deleted successfully.' })
-  @ApiNotFoundResponse({ description: 'Color not found.' })
-  @ApiConflictResponse({ description: 'Color cannot be deleted because it is in use.' })
+  @ApiOperation({ summary: 'Xóa màu' })
+  @ApiNoContentResponse({ description: 'Xóa màu thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })
+  @ApiConflictResponse({ description: 'Không thể xóa màu vì đang được sử dụng.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {

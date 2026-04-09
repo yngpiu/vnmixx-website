@@ -16,28 +16,30 @@ import { ProfileService } from '../services/profile.service';
 
 @ApiTags('Profile')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/profile')
 export class EmployeeProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
-  @ApiOperation({ summary: 'Get current employee profile' })
+  @ApiOperation({ summary: 'Lấy hồ sơ nhân viên hiện tại' })
   @ApiOkResponse({ type: EmployeeProfileResponseDto })
-  @ApiNotFoundResponse({ description: 'Employee not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Get()
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.profileService.getEmployeeProfile(user.id);
   }
 
-  @ApiOperation({ summary: 'Update current employee profile' })
+  @ApiOperation({ summary: 'Cập nhật hồ sơ nhân viên hiện tại' })
   @ApiOkResponse({
     type: EmployeeProfileResponseDto,
-    description: 'Employee profile updated successfully.',
+    description: 'Cập nhật hồ sơ nhân viên thành công.',
   })
-  @ApiBadRequestResponse({ description: 'Request validation failed or no fields were provided.' })
-  @ApiNotFoundResponse({ description: 'Employee not found.' })
+  @ApiBadRequestResponse({
+    description: 'Xác thực dữ liệu thất bại hoặc không có trường nào được cung cấp.',
+  })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Patch()
   @HttpCode(HttpStatus.OK)
   async updateProfile(

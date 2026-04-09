@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateRoleDto {
-  @ApiProperty({ example: 'editor', description: 'Unique role name', maxLength: 50 })
+  @ApiProperty({ example: 'editor', description: 'Tên vai trò duy nhất', maxLength: 50 })
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
@@ -16,7 +16,7 @@ export class CreateRoleDto {
 
   @ApiPropertyOptional({
     example: [1, 2, 5],
-    description: 'Permission IDs to assign immediately',
+    description: 'Danh sách ID quyền cần gán ngay',
     type: [Number],
   })
   @IsArray()

@@ -1,4 +1,4 @@
-/** JWT payload embedded in the access token. */
+/** JWT payload embedded in the mã truy cập. */
 export interface JwtPayload {
   /** User ID (maps to customer.id or employee.id) */
   sub: number;
@@ -28,9 +28,9 @@ export interface AuthenticatedUser {
   permissions: string[];
   /** Original JWT ID — needed for blacklisting on logout */
   jti: string;
-  /** Access token expiration (Unix timestamp, seconds) */
+  /** Mã truy cập expiration (Unix timestamp, seconds) */
   exp: number;
-  /** Access token issued-at (Unix timestamp, seconds) */
+  /** Mã truy cập issued-at (Unix timestamp, seconds) */
   iat: number;
 }
 

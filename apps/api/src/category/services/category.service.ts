@@ -48,7 +48,7 @@ export class CategoryService {
       },
     );
     if (!category) {
-      throw new NotFoundException(`Category "${slug}" not found`);
+      throw new NotFoundException(`Không tìm thấy danh mục "${slug}"`);
     }
     return category;
   }
@@ -62,7 +62,7 @@ export class CategoryService {
   async findById(id: number): Promise<CategoryAdminView> {
     const category = await this.repository.findById(id);
     if (!category) {
-      throw new NotFoundException(`Category #${id} not found`);
+      throw new NotFoundException(`Không tìm thấy danh mục #${id}`);
     }
     return category;
   }
@@ -95,7 +95,7 @@ export class CategoryService {
       const newParentId = dto.parentId;
       if (newParentId !== null) {
         if (newParentId === id) {
-          throw new BadRequestException('A category cannot be its own parent');
+          throw new BadRequestException('Danh mục không thể là danh mục cha của chính nó');
         }
         await this.validateParentForCreate(newParentId);
         await this.validateNoCircularRef(id, newParentId);
@@ -126,7 +126,7 @@ export class CategoryService {
 
     const hasChildren = await this.repository.hasActiveChildren(id);
     if (hasChildren) {
-      throw new ConflictException('Cannot delete a category that has active children');
+      throw new ConflictException('Không thể xóa danh mục còn danh mục con đang hoạt động');
     }
 
     await this.repository.softDelete(id);
@@ -137,13 +137,13 @@ export class CategoryService {
     const category = await this.findById(id);
 
     if (!category.deletedAt) {
-      throw new BadRequestException('Category is not deleted');
+      throw new BadRequestException('Danh mục chưa bị xóa');
     }
 
     if (category.parentId !== null) {
       const parent = await this.repository.findById(category.parentId);
       if (parent?.deletedAt) {
-        throw new BadRequestException('Cannot restore a category whose parent is soft-deleted');
+        throw new BadRequestException('Không thể khôi phục danh mục có danh mục cha đã bị xóa mềm');
       }
     }
 
@@ -157,7 +157,7 @@ export class CategoryService {
   private async validateParentForCreate(parentId: number): Promise<void> {
     const parent = await this.repository.findById(parentId);
     if (!parent) {
-      throw new NotFoundException(`Parent category #${parentId} not found`);
+      throw new NotFoundException(`Không tìm thấy danh mục cha #${parentId}`);
     }
     if (parent.deletedAt) {
       throw new BadRequestException(`Parent category #${parentId} is soft-deleted`);
@@ -165,7 +165,7 @@ export class CategoryService {
 
     const depth = await this.getAncestorDepth(parentId);
     if (depth + 1 >= MAX_DEPTH) {
-      throw new BadRequestException(`Category cannot exceed ${MAX_DEPTH} levels deep`);
+      throw new BadRequestException(`Danh mục không thể vượt quá ${MAX_DEPTH} cấp`);
     }
   }
 
@@ -193,7 +193,7 @@ export class CategoryService {
 
     while (currentId !== null) {
       if (currentId === categoryId) {
-        throw new BadRequestException('Circular parent reference detected');
+        throw new BadRequestException('Phát hiện tham chiếu vòng lặp ở danh mục cha');
       }
       const node = await this.repository.findDepthChain(currentId);
       if (!node) break;

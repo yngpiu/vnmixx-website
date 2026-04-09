@@ -77,26 +77,24 @@ export class TokenService {
     const tokenHash = this.hashToken(refreshToken);
     const storedToken = await this.refreshTokenRepo.findByHash(tokenHash);
     if (!storedToken) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException('Mã làm mới không hợp lệ hoặc đã hết hạn');
     }
     const isCustomer = storedToken.customerId !== null;
     const ownerId = isCustomer ? storedToken.customerId! : storedToken.employeeId!;
     const ownerType: 'CUSTOMER' | 'EMPLOYEE' = isCustomer ? 'CUSTOMER' : 'EMPLOYEE';
 
     if (storedToken.revokedAt) {
-      this.logger.warn(`Refresh token reuse detected for ${ownerType}:${ownerId}`);
+      this.logger.warn(`Mã làm mới reuse detected for ${ownerType}:${ownerId}`);
       await this.refreshTokenRepo.revokeAllByUser(ownerId, ownerType);
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException('Mã làm mới không hợp lệ hoặc đã hết hạn');
     }
     if (storedToken.expiresAt <= new Date()) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException('Mã làm mới không hợp lệ hoặc đã hết hạn');
     }
     const consumed = await this.refreshTokenRepo.consumeIfActive(storedToken.id);
     if (!consumed) {
-      this.logger.warn(
-        `Refresh token was already consumed concurrently for ${ownerType}:${ownerId}`,
-      );
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      this.logger.warn(`Mã làm mới was already consumed concurrently for ${ownerType}:${ownerId}`);
+      throw new UnauthorizedException('Mã làm mới không hợp lệ hoặc đã hết hạn');
     }
     if (isCustomer) {
       return this.refreshCustomerTokens(ownerId, meta);
@@ -104,7 +102,7 @@ export class TokenService {
     return this.refreshEmployeeTokens(ownerId, meta);
   }
 
-  /** Revoke a single refresh token and blacklist the current access token. */
+  /** Revoke a single refresh token and blacklist the current mã truy cập. */
   async logout(
     refreshToken: string,
     accessTokenJti: string,
@@ -115,7 +113,7 @@ export class TokenService {
     await this.blacklistAccessToken(accessTokenJti, accessTokenExp);
   }
 
-  /** Revoke ALL refresh tokens for a user and blacklist current access token. */
+  /** Revoke ALL refresh tokens for a user and blacklist current mã truy cập. */
   async logoutAll(
     userId: number,
     userType: 'CUSTOMER' | 'EMPLOYEE',
@@ -129,7 +127,7 @@ export class TokenService {
 
   /**
    * Revoke all refresh tokens and invalidate all active JWTs for a user without
-   * requiring the caller to hold a current access token (e.g. after password reset).
+   * requiring the caller to hold a current mã truy cập (e.g. after password reset).
    */
   async revokeAllSessions(userId: number, userType: 'CUSTOMER' | 'EMPLOYEE'): Promise<void> {
     await this.refreshTokenRepo.revokeAllByUser(userId, userType);
@@ -139,7 +137,7 @@ export class TokenService {
   private async refreshCustomerTokens(userId: number, meta: RequestMeta): Promise<AuthResponse> {
     const customer = await this.customerRepo.findById(userId);
     if (!customer || !customer.isActive || customer.deletedAt) {
-      throw new UnauthorizedException('Account is inactive or deleted');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
     }
     return this.issueTokenPair(
       { id: customer.id, email: customer.email, fullName: customer.fullName },
@@ -151,7 +149,7 @@ export class TokenService {
   private async refreshEmployeeTokens(userId: number, meta: RequestMeta): Promise<AuthResponse> {
     const employee = await this.employeeRepo.findById(userId);
     if (!employee || !employee.isActive || employee.deletedAt) {
-      throw new UnauthorizedException('Account is inactive or deleted');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
     }
     const { roles, permissions } = await this.employeeRepo.loadPermissions(employee.id);
     return this.issueTokenPair(

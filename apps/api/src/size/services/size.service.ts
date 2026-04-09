@@ -59,7 +59,7 @@ export class SizeService {
     await this.findByIdOrFail(id);
 
     if (await this.repository.hasVariants(id)) {
-      throw new ConflictException('Cannot delete a size that is in use by product variants');
+      throw new ConflictException('Không thể xóa kích thước đang được biến thể sản phẩm sử dụng');
     }
 
     await this.repository.delete(id);
@@ -74,13 +74,13 @@ export class SizeService {
 
   private async findByIdOrFail(id: number): Promise<SizeAdminView> {
     const size = await this.repository.findById(id);
-    if (!size) throw new NotFoundException(`Size #${id} not found`);
+    if (!size) throw new NotFoundException(`Không tìm thấy kích thước #${id}`);
     return size;
   }
 
   private handleUniqueViolation(err: unknown): void {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw new ConflictException('A size with this label already exists');
+      throw new ConflictException('Kích thước với nhãn này đã tồn tại');
     }
   }
 }

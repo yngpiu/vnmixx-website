@@ -4,22 +4,22 @@ import { IsEmail, IsNotEmpty, Matches } from 'class-validator';
 export class VerifyCustomerOtpDto {
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Customer email used during registration',
+    description: 'Email khách hàng dùng trong lúc đăng ký',
   })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: '123456', description: '6-digit OTP sent to email' })
+  @ApiProperty({ example: '123456', description: 'Mã OTP 6 chữ số được gửi qua email' })
   @IsNotEmpty()
-  @Matches(/^\d{6}$/, { message: 'otp must be a 6-digit numeric code' })
+  @Matches(/^\d{6}$/, { message: 'OTP phải là mã số gồm 6 chữ số' })
   otp: string;
 }
 
 export class ResendCustomerOtpDto {
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Customer email waiting for verification',
+    description: 'Email khách hàng đang chờ xác thực',
   })
   @IsEmail()
   @IsNotEmpty()
@@ -28,19 +28,19 @@ export class ResendCustomerOtpDto {
 
 export class CustomerRegisterResponseDto {
   @ApiProperty({
-    example: 'Registration successful. Please verify your email using the OTP sent.',
+    example: 'Đăng ký thành công. Vui lòng xác thực email bằng mã OTP đã gửi.',
   })
   message: string;
 
   @ApiProperty({
     example: 'customer@example.com',
-    description: 'Email that received the verification OTP',
+    description: 'Email đã nhận OTP xác thực',
   })
   email: string;
 
-  @ApiProperty({ example: 300, description: 'OTP lifetime in seconds' })
+  @ApiProperty({ example: 300, description: 'Thời hạn OTP (giây)' })
   otpExpiresIn: number;
 
-  @ApiProperty({ example: 60, description: 'Seconds to wait before requesting a new OTP' })
+  @ApiProperty({ example: 60, description: 'Số giây cần chờ trước khi yêu cầu OTP mới' })
   resendAfter: number;
 }

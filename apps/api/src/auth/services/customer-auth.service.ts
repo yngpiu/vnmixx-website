@@ -93,7 +93,7 @@ export class CustomerAuthService {
     });
     const otpMeta = await this.issueVerificationOtp(customer.id, customer.email);
     return {
-      message: 'Registration successful. Please verify your email using the OTP sent.',
+      message: 'Đăng ký thành công. Vui lòng xác thực email bằng mã OTP đã gửi.',
       email: customer.email,
       ...otpMeta,
     };
@@ -104,36 +104,36 @@ export class CustomerAuthService {
     const normalizedEmail = normalizeEmail(dto.email);
     const customer = await this.customerRepo.findByEmail(normalizedEmail);
     if (!customer || customer.deletedAt) {
-      throw new BadRequestException('Invalid verification request');
+      throw new BadRequestException('Yêu cầu xác thực không hợp lệ');
     }
     if (customer.emailVerifiedAt) {
-      if (!customer.isActive) throw new UnauthorizedException('Account is deactivated');
-      throw new BadRequestException('Email is already verified');
+      if (!customer.isActive) throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+      throw new BadRequestException('Email đã được xác thực');
     }
     const otpKey = this.getCustomerOtpKey(normalizedEmail);
     const attemptsKey = this.getCustomerOtpAttemptsKey(normalizedEmail);
     const otpPayloadRaw = await this.redis.getClient().get(otpKey);
     if (!otpPayloadRaw) {
-      throw new BadRequestException('OTP is invalid or expired');
+      throw new BadRequestException('OTP không hợp lệ hoặc đã hết hạn');
     }
     const payload = this.parseCustomerOtpPayload(otpPayloadRaw);
     if (!payload || payload.customerId !== customer.id) {
       await this.redis.getClient().del(otpKey, attemptsKey);
-      throw new BadRequestException('OTP is invalid or expired');
+      throw new BadRequestException('OTP không hợp lệ hoặc đã hết hạn');
     }
     const incomingOtpHash = this.hashOtp(dto.otp);
     if (!this.hasMatchingHash(payload.otpHash, incomingOtpHash)) {
       const attempts = await this.incrementFailedOtpAttempt(attemptsKey, otpKey);
       if (attempts >= this.otpMaxAttempts) {
         throw new HttpException(
-          'Too many incorrect OTP attempts. Please request a new OTP.',
+          'Bạn đã nhập sai OTP quá nhiều lần. Vui lòng yêu cầu OTP mới.',
           HttpStatus.TOO_MANY_REQUESTS,
         );
       }
-      throw new BadRequestException('OTP is incorrect');
+      throw new BadRequestException('OTP không chính xác');
     }
     const activated = await this.customerRepo.activateEmailById(customer.id);
-    if (!activated) throw new BadRequestException('Unable to verify this account');
+    if (!activated) throw new BadRequestException('Không thể xác thực tài khoản này');
     await this.redis
       .getClient()
       .del(otpKey, attemptsKey, this.getCustomerOtpResendKey(normalizedEmail));
@@ -145,15 +145,19 @@ export class CustomerAuthService {
     const normalizedEmail = normalizeEmail(dto.email);
     const customer = await this.customerRepo.findByEmail(normalizedEmail);
     if (!customer || customer.deletedAt) {
-      throw new BadRequestException('Invalid verification request');
+      throw new BadRequestException('Yêu cầu xác thực không hợp lệ');
     }
     if (customer.emailVerifiedAt) {
-      if (!customer.isActive) throw new UnauthorizedException('Account is deactivated');
-      throw new BadRequestException('Email is already verified');
+      if (!customer.isActive) throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+      throw new BadRequestException('Email đã được xác thực');
     }
     await this.assertOtpResendNotInCooldown(normalizedEmail);
     const otpMeta = await this.issueVerificationOtp(customer.id, customer.email);
-    return { message: 'A new OTP has been sent to your email.', email: customer.email, ...otpMeta };
+    return {
+      message: 'Mã OTP mới đã được gửi tới email của bạn.',
+      email: customer.email,
+      ...otpMeta,
+    };
   }
 
   /** Authenticate an existing customer and return identity. */
@@ -161,28 +165,29 @@ export class CustomerAuthService {
     const normalizedEmail = normalizeEmail(dto.email);
     const customer = await this.customerRepo.findByEmail(normalizedEmail);
     if (!customer || customer.deletedAt) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
     }
     if (!customer.isActive) {
-      if (!customer.emailVerifiedAt) throw new UnauthorizedException('Email is not verified');
-      throw new UnauthorizedException('Account is deactivated');
+      if (!customer.emailVerifiedAt) throw new UnauthorizedException('Email chưa được xác thực');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
     const isPasswordValid = await compare(dto.password, customer.hashedPassword);
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid email or password');
+    if (!isPasswordValid) throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
     return { id: customer.id, email: customer.email, fullName: customer.fullName };
   }
 
   /** Change the password of an authenticated customer. */
   async changePassword(customerId: number, dto: ChangePasswordDto): Promise<void> {
     const currentHash = await this.customerRepo.findHashedPasswordById(customerId);
-    if (!currentHash) throw new BadRequestException('Customer not found');
+    if (!currentHash) throw new BadRequestException('Không tìm thấy khách hàng');
 
     const isCurrentPasswordValid = await compare(dto.currentPassword, currentHash);
-    if (!isCurrentPasswordValid) throw new UnauthorizedException('Current password is incorrect');
+    if (!isCurrentPasswordValid)
+      throw new UnauthorizedException('Mật khẩu hiện tại không chính xác');
 
     const newHashedPassword = await hash(dto.newPassword, this.saltRounds);
     const updated = await this.customerRepo.updatePassword(customerId, newHashedPassword);
-    if (!updated) throw new BadRequestException('Unable to update password');
+    if (!updated) throw new BadRequestException('Không thể cập nhật mật khẩu');
   }
 
   /** Request a password reset OTP to be sent to the customer's email. */
@@ -191,7 +196,7 @@ export class CustomerAuthService {
     const customer = await this.customerRepo.findByEmail(normalizedEmail);
     if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
       return {
-        message: 'If your email is registered and verified, a reset code has been sent.',
+        message: 'Nếu email đã đăng ký và đã xác thực, mã đặt lại đã được gửi.',
         email: normalizedEmail,
         otpExpiresIn: this.otpExpiration,
         resendAfter: this.otpResendCooldown,
@@ -200,40 +205,40 @@ export class CustomerAuthService {
     await this.assertResetOtpResendNotInCooldown(normalizedEmail);
     const otpMeta = await this.issuePasswordResetOtp(customer.id, customer.email);
     return {
-      message: 'A password reset code has been sent to your email.',
+      message: 'Mã đặt lại mật khẩu đã được gửi tới email của bạn.',
       email: customer.email,
       ...otpMeta,
     };
   }
 
-  /** Verify the password reset OTP and return a one-time reset token. */
+  /** Verify the password reset OTP and return a one-time mã đặt lại. */
   async verifyPasswordResetOtp(dto: ForgotPasswordVerifyOtpDto): Promise<ResetTokenResponseDto> {
     const normalizedEmail = normalizeEmail(dto.email);
     const customer = await this.customerRepo.findByEmail(normalizedEmail);
     if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
-      throw new BadRequestException('Invalid or expired reset code');
+      throw new BadRequestException('Mã đặt lại không hợp lệ hoặc đã hết hạn');
     }
     const otpKey = this.getResetOtpKey(normalizedEmail);
     const attemptsKey = this.getResetOtpAttemptsKey(normalizedEmail);
     const otpPayloadRaw = await this.redis.getClient().get(otpKey);
     if (!otpPayloadRaw) {
-      throw new BadRequestException('OTP is invalid or expired');
+      throw new BadRequestException('OTP không hợp lệ hoặc đã hết hạn');
     }
     const payload = this.parseCustomerOtpPayload(otpPayloadRaw);
     if (!payload || payload.customerId !== customer.id) {
       await this.redis.getClient().del(otpKey, attemptsKey);
-      throw new BadRequestException('OTP is invalid or expired');
+      throw new BadRequestException('OTP không hợp lệ hoặc đã hết hạn');
     }
     const incomingOtpHash = this.hashOtp(dto.otp);
     if (!this.hasMatchingHash(payload.otpHash, incomingOtpHash)) {
       const attempts = await this.incrementFailedOtpAttempt(attemptsKey, otpKey);
       if (attempts >= this.otpMaxAttempts) {
         throw new HttpException(
-          'Too many incorrect OTP attempts. Please request a new reset code.',
+          'Bạn đã nhập sai OTP quá nhiều lần. Vui lòng yêu cầu mã đặt lại mới.',
           HttpStatus.TOO_MANY_REQUESTS,
         );
       }
-      throw new BadRequestException('OTP is incorrect');
+      throw new BadRequestException('OTP không chính xác');
     }
     const resetToken = randomUUID();
     const resetTokenHash = createHash('sha256').update(resetToken).digest('hex');
@@ -245,17 +250,17 @@ export class CustomerAuthService {
     return { resetToken };
   }
 
-  /** Reset the customer's password using a valid reset token. */
+  /** Reset the customer's password using a valid mã đặt lại. */
   async resetPassword(dto: ResetPasswordDto): Promise<{ customerId: number }> {
     const normalizedEmail = normalizeEmail(dto.email);
     const customer = await this.customerRepo.findByEmail(normalizedEmail);
     if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
-      throw new BadRequestException('Invalid or expired reset token');
+      throw new BadRequestException('Mã đặt lại không hợp lệ hoặc đã hết hạn');
     }
     const resetKey = this.getResetTokenKey(normalizedEmail);
     const storedHash = await this.redis.getClient().get(resetKey);
     if (!storedHash) {
-      throw new BadRequestException('Invalid or expired reset token');
+      throw new BadRequestException('Mã đặt lại không hợp lệ hoặc đã hết hạn');
     }
     const incomingHash = createHash('sha256').update(dto.resetToken).digest('hex');
     const storedBuffer = Buffer.from(storedHash, 'hex');
@@ -265,11 +270,11 @@ export class CustomerAuthService {
       storedBuffer.length === incomingBuffer.length &&
       timingSafeEqual(storedBuffer, incomingBuffer);
     if (!isValid) {
-      throw new BadRequestException('Invalid or expired reset token');
+      throw new BadRequestException('Mã đặt lại không hợp lệ hoặc đã hết hạn');
     }
     const newHashedPassword = await hash(dto.newPassword, this.saltRounds);
     const updated = await this.customerRepo.updatePassword(customer.id, newHashedPassword);
-    if (!updated) throw new BadRequestException('Unable to update password');
+    if (!updated) throw new BadRequestException('Không thể cập nhật mật khẩu');
     await this.redis.getClient().del(resetKey);
     return { customerId: customer.id };
   }
@@ -295,10 +300,10 @@ export class CustomerAuthService {
       await this.sendPasswordResetOtp(email, otp, this.otpExpiration);
     } catch (error) {
       this.logger.error(
-        `Failed to send password reset OTP email to ${email}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Không thể gửi email OTP đặt lại mật khẩu tới ${email}: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`,
       );
       await redis.del(otpKey, attemptsKey);
-      throw new InternalServerErrorException('Unable to send reset code email. Please try again.');
+      throw new InternalServerErrorException('Không thể gửi email mã đặt lại. Vui lòng thử lại.');
     }
     await redis.setex(resendKey, this.otpResendCooldown, '1');
     return { otpExpiresIn: this.otpExpiration, resendAfter: this.otpResendCooldown };
@@ -320,16 +325,16 @@ export class CustomerAuthService {
       to: email,
       subject: 'VNMIXX - Password reset code',
       text:
-        `Your VNMIXX password reset code is: ${otp}\n\n` +
-        `This code expires in ${expiresInMinutes} minute(s).\n` +
-        'If you did not request this, please ignore this email.',
+        `Mã đặt lại mật khẩu VNMIXX của bạn là: ${otp}\n\n` +
+        `Mã này sẽ hết hạn sau ${expiresInMinutes} minute(s).\n` +
+        'Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email này.',
       html: `
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#222">
-          <h2 style="margin:0 0 12px">VNMIXX Password Reset</h2>
-          <p style="margin:0 0 12px">Your password reset code is:</p>
+          <h2 style="margin:0 0 12px">Đặt lại mật khẩu VNMIXX</h2>
+          <p style="margin:0 0 12px">Mã đặt lại mật khẩu của bạn là:</p>
           <p style="margin:0 0 16px;font-size:28px;letter-spacing:6px;font-weight:700">${otp}</p>
-          <p style="margin:0 0 8px">This code expires in ${expiresInMinutes} minute(s).</p>
-          <p style="margin:0;color:#666">If you did not request this, please ignore this email.</p>
+          <p style="margin:0 0 8px">Mã này sẽ hết hạn sau ${expiresInMinutes} minute(s).</p>
+          <p style="margin:0;color:#666">Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email này.</p>
         </div>
       `,
     });
@@ -340,7 +345,7 @@ export class CustomerAuthService {
     const cooldownTtl = await this.redis.getClient().ttl(resendKey);
     if (cooldownTtl > 0) {
       throw new HttpException(
-        `Please wait ${cooldownTtl} second(s) before requesting another reset code.`,
+        `Vui lòng chờ ${cooldownTtl} giây trước khi yêu cầu mã đặt lại mới.`,
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -383,10 +388,10 @@ export class CustomerAuthService {
       await this.sendVerificationOtp(email, otp, this.otpExpiration);
     } catch (error) {
       this.logger.error(
-        `Failed to send OTP email to ${email}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to send OTP email to ${email}: ${error instanceof Error ? error.message : 'Lỗi không xác định'}`,
       );
       await redis.del(otpKey, attemptsKey);
-      throw new InternalServerErrorException('Unable to send OTP email. Please try again.');
+      throw new InternalServerErrorException('Không thể gửi email OTP. Vui lòng thử lại.');
     }
     await redis.setex(resendKey, this.otpResendCooldown, '1');
     return { otpExpiresIn: this.otpExpiration, resendAfter: this.otpResendCooldown };
@@ -404,18 +409,18 @@ export class CustomerAuthService {
     }
     await this.mail.sendMail({
       to: email,
-      subject: 'VNMIXX - Email verification code',
+      subject: 'VNMIXX - Mã xác thực email',
       text:
-        `Your VNMIXX verification code is: ${otp}\n\n` +
-        `This code expires in ${expiresInMinutes} minute(s).\n` +
-        'If you did not request this, you can ignore this email.',
+        `Mã xác thực VNMIXX của bạn là: ${otp}\n\n` +
+        `Mã này sẽ hết hạn sau ${expiresInMinutes} minute(s).\n` +
+        'Nếu bạn không yêu cầu thao tác này, bạn có thể bỏ qua email này.',
       html: `
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#222">
-          <h2 style="margin:0 0 12px">VNMIXX Email Verification</h2>
-          <p style="margin:0 0 12px">Your verification code is:</p>
+          <h2 style="margin:0 0 12px">Xác thực email VNMIXX</h2>
+          <p style="margin:0 0 12px">Mã xác thực của bạn là:</p>
           <p style="margin:0 0 16px;font-size:28px;letter-spacing:6px;font-weight:700">${otp}</p>
-          <p style="margin:0 0 8px">This code expires in ${expiresInMinutes} minute(s).</p>
-          <p style="margin:0;color:#666">If you did not request this, you can ignore this email.</p>
+          <p style="margin:0 0 8px">Mã này sẽ hết hạn sau ${expiresInMinutes} minute(s).</p>
+          <p style="margin:0;color:#666">Nếu bạn không yêu cầu thao tác này, bạn có thể bỏ qua email này.</p>
         </div>
       `,
     });
@@ -426,7 +431,7 @@ export class CustomerAuthService {
     const cooldownTtl = await this.redis.getClient().ttl(resendKey);
     if (cooldownTtl > 0) {
       throw new HttpException(
-        `Please wait ${cooldownTtl} second(s) before requesting another OTP.`,
+        `Vui lòng chờ ${cooldownTtl} giây trước khi yêu cầu OTP mới.`,
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -511,12 +516,12 @@ export class CustomerAuthService {
       if (this.isUniqueConstraintError(error)) {
         const targets = this.extractConstraintTargets(error.meta?.target);
         if (targets.some((target) => target.includes('email'))) {
-          throw new ConflictException('Email is already registered');
+          throw new ConflictException('Email đã được đăng ký');
         }
         if (targets.some((target) => target.includes('phone'))) {
-          throw new ConflictException('Phone number is already registered');
+          throw new ConflictException('Số điện thoại đã được đăng ký');
         }
-        throw new ConflictException('Customer account already exists');
+        throw new ConflictException('Tài khoản khách hàng đã tồn tại');
       }
       throw error;
     }
@@ -534,11 +539,11 @@ export class CustomerAuthService {
 
   private async assertCustomerEmailNotTaken(email: string): Promise<void> {
     const isTaken = await this.customerRepo.existsByEmail(email);
-    if (isTaken) throw new ConflictException('Email is already registered');
+    if (isTaken) throw new ConflictException('Email đã được đăng ký');
   }
 
   private async assertCustomerPhoneNotTaken(phoneNumber: string): Promise<void> {
     const isTaken = await this.customerRepo.existsByPhone(phoneNumber);
-    if (isTaken) throw new ConflictException('Phone number is already registered');
+    if (isTaken) throw new ConflictException('Số điện thoại đã được đăng ký');
   }
 }

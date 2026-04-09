@@ -28,7 +28,7 @@ export class RoleService {
 
   async findById(id: number): Promise<RoleDetailView> {
     const role = await this.roleRepo.findById(id);
-    if (!role) throw new NotFoundException(`Role #${id} not found`);
+    if (!role) throw new NotFoundException(`Không tìm thấy vai trò #${id}`);
     return role;
   }
 
@@ -86,7 +86,7 @@ export class RoleService {
   private async validatePermissionIds(ids: number[]): Promise<void> {
     const allExist = await this.permissionRepo.existAll(ids);
     if (!allExist) {
-      throw new BadRequestException('One or more permission IDs do not exist');
+      throw new BadRequestException('Một hoặc nhiều ID quyền không tồn tại');
     }
   }
 
@@ -98,7 +98,7 @@ export class RoleService {
 
   private handleUniqueViolation(err: unknown, name: string): void {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw new ConflictException(`Role name "${name}" is already taken`);
+      throw new ConflictException(`Tên vai trò "${name}" đã được sử dụng`);
     }
   }
 }

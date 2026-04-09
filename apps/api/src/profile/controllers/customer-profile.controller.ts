@@ -16,28 +16,30 @@ import { ProfileService } from '../services/profile.service';
 
 @ApiTags('Profile')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
-@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('CUSTOMER')
 @Controller('profile')
 export class CustomerProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
-  @ApiOperation({ summary: 'Get current customer profile' })
+  @ApiOperation({ summary: 'Lấy hồ sơ khách hàng hiện tại' })
   @ApiOkResponse({ type: CustomerProfileResponseDto })
-  @ApiNotFoundResponse({ description: 'Customer not found.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Get()
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.profileService.getCustomerProfile(user.id);
   }
 
-  @ApiOperation({ summary: 'Update current customer profile' })
+  @ApiOperation({ summary: 'Cập nhật hồ sơ khách hàng hiện tại' })
   @ApiOkResponse({
     type: CustomerProfileResponseDto,
-    description: 'Customer profile updated successfully.',
+    description: 'Cập nhật hồ sơ khách hàng thành công.',
   })
-  @ApiBadRequestResponse({ description: 'Request validation failed or no fields were provided.' })
-  @ApiNotFoundResponse({ description: 'Customer not found.' })
+  @ApiBadRequestResponse({
+    description: 'Xác thực dữ liệu thất bại hoặc không có trường nào được cung cấp.',
+  })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Patch()
   @HttpCode(HttpStatus.OK)
   async updateProfile(
