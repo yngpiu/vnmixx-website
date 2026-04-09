@@ -10,6 +10,7 @@ import {
   ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { CurrentUser, Public, RequireUserType } from '../decorators';
 import {
@@ -31,6 +32,7 @@ import { CustomerAuthService } from '../services/customer-auth.service';
 import { TokenService } from '../services/token.service';
 import { extractRequestMeta } from '../utils';
 
+@Throttle({ default: { ttl: 60_000, limit: 10 } })
 @ApiTags('Auth')
 @Controller('auth')
 export class CustomerAuthController {
@@ -81,6 +83,7 @@ export class CustomerAuthController {
     return this.customerAuth.resendCustomerOtp(dto);
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Log in as a customer' })
   @ApiOkResponse({ type: AuthResponseDto, description: 'Login successful' })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials or account inactive' })
@@ -109,6 +112,7 @@ export class CustomerAuthController {
     return { message: 'Password changed successfully. Please log in again.' };
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Request a password reset OTP for a customer account' })
   @ApiOkResponse({
     type: ForgotPasswordResponseDto,
