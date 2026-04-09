@@ -1,5 +1,8 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule, ThrottlerStorage } from '@nestjs/throttler';
 import { AddressModule } from './address/address.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -17,11 +20,24 @@ import { ProductModule } from './product/product.module';
 import { ProfileModule } from './profile/profile.module';
 import { RbacModule } from './rbac/rbac.module';
 import { RedisModule } from './redis/redis.module';
+import { ThrottlerStorageRedis } from './redis/throttler-storage-redis';
 import { SizeModule } from './size/size.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRoot({
+      connection: {
+        host: process.env.REDIS_HOST || '127.0.0.1',
+        port: Number(process.env.REDIS_PORT) || 6379,
+        username: process.env.REDIS_USERNAME || undefined,
+        password: process.env.REDIS_PASSWORD || undefined,
+        db: Number(process.env.REDIS_DB) || 0,
+      },
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
+    }),
     CoreModule,
     PrismaModule,
     RedisModule,
@@ -40,6 +56,10 @@ import { SizeModule } from './size/size.module';
     AddressModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: ThrottlerStorage, useClass: ThrottlerStorageRedis },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
