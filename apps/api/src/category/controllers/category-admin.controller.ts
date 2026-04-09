@@ -16,11 +16,13 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireUserType } from '../../auth/decorators';
 import {
@@ -33,6 +35,8 @@ import { CategoryService } from '../services/category.service';
 
 @ApiTags('Categories')
 @ApiBearerAuth('access-token')
+@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
+@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/categories')
 export class CategoryAdminController {
@@ -51,7 +55,7 @@ export class CategoryAdminController {
 
   @ApiOperation({ summary: 'Create a new category' })
   @ApiCreatedResponse({ type: CategoryAdminResponseDto })
-  @ApiConflictResponse({ description: 'Slug already taken' })
+  @ApiConflictResponse({ description: 'Category slug is already in use.' })
   @Post()
   async create(@Body() dto: CreateCategoryDto): Promise<CategoryAdminResponseDto> {
     return this.categoryService.create(dto);
@@ -59,8 +63,8 @@ export class CategoryAdminController {
 
   @ApiOperation({ summary: 'Update a category' })
   @ApiOkResponse({ type: CategoryAdminResponseDto })
-  @ApiNotFoundResponse({ description: 'Category not found' })
-  @ApiConflictResponse({ description: 'Slug already taken' })
+  @ApiNotFoundResponse({ description: 'Category not found.' })
+  @ApiConflictResponse({ description: 'Category slug is already in use.' })
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -70,9 +74,11 @@ export class CategoryAdminController {
   }
 
   @ApiOperation({ summary: 'Soft-delete a category' })
-  @ApiNoContentResponse({ description: 'Category deleted' })
-  @ApiNotFoundResponse({ description: 'Category not found' })
-  @ApiConflictResponse({ description: 'Category has active children' })
+  @ApiNoContentResponse({ description: 'Category deleted successfully.' })
+  @ApiNotFoundResponse({ description: 'Category not found.' })
+  @ApiConflictResponse({
+    description: 'Category cannot be deleted because it has active children.',
+  })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
@@ -81,7 +87,7 @@ export class CategoryAdminController {
 
   @ApiOperation({ summary: 'Restore a soft-deleted category' })
   @ApiOkResponse({ type: CategoryAdminResponseDto })
-  @ApiNotFoundResponse({ description: 'Category not found' })
+  @ApiNotFoundResponse({ description: 'Category not found.' })
   @Patch(':id/restore')
   async restore(@Param('id', ParseIntPipe) id: number): Promise<CategoryAdminResponseDto> {
     return this.categoryService.restore(id);

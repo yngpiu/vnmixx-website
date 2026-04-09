@@ -16,11 +16,13 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireUserType } from '../../auth/decorators';
 import {
@@ -34,6 +36,8 @@ import { EmployeeService } from '../services/employee.service';
 
 @ApiTags('Employees')
 @ApiBearerAuth('access-token')
+@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
+@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/employees')
 export class EmployeeAdminController {
@@ -58,7 +62,7 @@ export class EmployeeAdminController {
 
   @ApiOperation({ summary: 'Get employee detail by ID' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Employee not found' })
+  @ApiNotFoundResponse({ description: 'Employee not found.' })
   @Get(':id')
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.employeeService.findById(id);
@@ -66,8 +70,8 @@ export class EmployeeAdminController {
 
   @ApiOperation({ summary: 'Create a new employee' })
   @ApiCreatedResponse({ type: EmployeeDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'Validation error' })
-  @ApiConflictResponse({ description: 'Email or phone number already in use' })
+  @ApiBadRequestResponse({ description: 'Request validation failed.' })
+  @ApiConflictResponse({ description: 'Email or phone number is already in use.' })
   @Post()
   create(@Body() dto: CreateEmployeeDto) {
     return this.employeeService.create(dto);
@@ -75,16 +79,16 @@ export class EmployeeAdminController {
 
   @ApiOperation({ summary: 'Update an employee' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'No fields provided or invalid data' })
-  @ApiNotFoundResponse({ description: 'Employee not found' })
+  @ApiBadRequestResponse({ description: 'Request validation failed or no fields were provided.' })
+  @ApiNotFoundResponse({ description: 'Employee not found.' })
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEmployeeDto) {
     return this.employeeService.update(id, dto);
   }
 
   @ApiOperation({ summary: 'Soft-delete an employee' })
-  @ApiNoContentResponse({ description: 'Employee deleted' })
-  @ApiNotFoundResponse({ description: 'Employee not found' })
+  @ApiNoContentResponse({ description: 'Employee deleted successfully.' })
+  @ApiNotFoundResponse({ description: 'Employee not found.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
@@ -93,7 +97,7 @@ export class EmployeeAdminController {
 
   @ApiOperation({ summary: 'Restore a soft-deleted employee' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Employee not found or not deleted' })
+  @ApiNotFoundResponse({ description: 'Employee not found or not deleted.' })
   @Patch(':id/restore')
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.employeeService.restore(id);

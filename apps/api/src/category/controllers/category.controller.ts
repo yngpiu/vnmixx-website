@@ -19,7 +19,7 @@ export class CategoryController {
 
   @ApiOperation({ summary: 'Get category detail by slug, includes direct sub-categories' })
   @ApiOkResponse({ type: CategoryDetailDto })
-  @ApiNotFoundResponse({ description: 'Category not found' })
+  @ApiNotFoundResponse({ description: 'Category not found.' })
   @Public()
   @Get(':slug')
   findBySlug(@Param('slug') slug: string): Promise<CategoryDetailDto> {

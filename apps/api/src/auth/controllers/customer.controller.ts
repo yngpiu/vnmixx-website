@@ -44,9 +44,9 @@ export class CustomerAuthController {
   @ApiOperation({ summary: 'Register a new customer account and send email OTP' })
   @ApiCreatedResponse({
     type: CustomerRegisterResponseDto,
-    description: 'Customer registered. Email verification OTP sent.',
+    description: 'Customer registered successfully. Verification OTP has been sent via email.',
   })
-  @ApiConflictResponse({ description: 'Email or phone number is already registered' })
+  @ApiConflictResponse({ description: 'Email or phone number is already registered.' })
   @Public()
   @Post('register')
   async register(@Body() dto: RegisterDto): Promise<CustomerRegisterResponseDto> {
@@ -56,9 +56,9 @@ export class CustomerAuthController {
   @ApiOperation({ summary: 'Verify customer email OTP and issue token pair' })
   @ApiOkResponse({
     type: AuthResponseDto,
-    description: 'OTP verified. Access and refresh tokens issued.',
+    description: 'OTP verified successfully. Token pair issued.',
   })
-  @ApiTooManyRequestsResponse({ description: 'Too many incorrect OTP attempts or resend abuse' })
+  @ApiTooManyRequestsResponse({ description: 'Too many OTP attempts. Please try again later.' })
   @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
@@ -73,9 +73,11 @@ export class CustomerAuthController {
   @ApiOperation({ summary: 'Resend customer email verification OTP' })
   @ApiOkResponse({
     type: CustomerRegisterResponseDto,
-    description: 'A new verification OTP has been sent.',
+    description: 'Verification OTP has been resent successfully.',
   })
-  @ApiTooManyRequestsResponse({ description: 'Please wait before requesting another OTP' })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many requests. Please wait before requesting another OTP.',
+  })
   @Public()
   @Post('resend-otp')
   @HttpCode(HttpStatus.OK)
@@ -85,8 +87,8 @@ export class CustomerAuthController {
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Log in as a customer' })
-  @ApiOkResponse({ type: AuthResponseDto, description: 'Login successful' })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials or account inactive' })
+  @ApiOkResponse({ type: AuthResponseDto, description: 'Customer logged in successfully.' })
+  @ApiUnauthorizedResponse({ description: 'Credentials are invalid or account is inactive.' })
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -97,9 +99,9 @@ export class CustomerAuthController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Change customer password and revoke all sessions' })
-  @ApiOkResponse({ description: 'Password changed successfully. All sessions terminated.' })
-  @ApiUnauthorizedResponse({ description: 'Current password is incorrect' })
-  @ApiBadRequestResponse({ description: 'Invalid request or customer not found' })
+  @ApiOkResponse({ description: 'Password changed successfully. All sessions have been revoked.' })
+  @ApiUnauthorizedResponse({ description: 'Current password is incorrect.' })
+  @ApiBadRequestResponse({ description: 'Request is invalid or customer was not found.' })
   @RequireUserType('CUSTOMER')
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
@@ -116,9 +118,11 @@ export class CustomerAuthController {
   @ApiOperation({ summary: 'Request a password reset OTP for a customer account' })
   @ApiOkResponse({
     type: ForgotPasswordResponseDto,
-    description: 'Reset OTP sent to the provided email (if account exists and is verified).',
+    description: 'Password reset OTP has been sent if the account exists and is verified.',
   })
-  @ApiTooManyRequestsResponse({ description: 'Please wait before requesting another reset code' })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many requests. Please wait before requesting another reset OTP.',
+  })
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
@@ -129,10 +133,10 @@ export class CustomerAuthController {
   @ApiOperation({ summary: 'Verify password reset OTP and receive a one-time reset token' })
   @ApiOkResponse({
     type: ResetTokenResponseDto,
-    description: 'OTP verified. Reset token issued for the password reset step.',
+    description: 'OTP verified successfully. Reset token issued.',
   })
-  @ApiTooManyRequestsResponse({ description: 'Too many incorrect OTP attempts' })
-  @ApiBadRequestResponse({ description: 'OTP is invalid, expired, or incorrect' })
+  @ApiTooManyRequestsResponse({ description: 'Too many OTP attempts. Please try again later.' })
+  @ApiBadRequestResponse({ description: 'OTP is invalid, expired, or incorrect.' })
   @Public()
   @Post('forgot-password/verify-otp')
   @HttpCode(HttpStatus.OK)
@@ -143,8 +147,8 @@ export class CustomerAuthController {
   }
 
   @ApiOperation({ summary: 'Reset customer password using a valid reset token' })
-  @ApiOkResponse({ description: 'Password reset successfully. All sessions terminated.' })
-  @ApiBadRequestResponse({ description: 'Reset token is invalid or expired' })
+  @ApiOkResponse({ description: 'Password reset successfully. All sessions have been revoked.' })
+  @ApiBadRequestResponse({ description: 'Reset token is invalid or expired.' })
   @Public()
   @Post('forgot-password/reset')
   @HttpCode(HttpStatus.OK)

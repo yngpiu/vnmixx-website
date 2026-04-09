@@ -20,8 +20,8 @@ export class AuthController {
   constructor(private readonly tokenService: TokenService) {}
 
   @ApiOperation({ summary: 'Refresh access token using a refresh token' })
-  @ApiOkResponse({ type: AuthResponseDto, description: 'New token pair issued' })
-  @ApiUnauthorizedResponse({ description: 'Refresh token is invalid, expired, or already used' })
+  @ApiOkResponse({ type: AuthResponseDto, description: 'Token pair refreshed successfully.' })
+  @ApiUnauthorizedResponse({ description: 'Refresh token is invalid, expired, or already used.' })
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -31,10 +31,10 @@ export class AuthController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Log out current session (revoke refresh token + blacklist access token)',
+    summary: 'Log out the current session',
   })
-  @ApiOkResponse({ description: 'Logged out successfully' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid access token' })
+  @ApiOkResponse({ description: 'Current session logged out successfully.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
@@ -47,11 +47,10 @@ export class AuthController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary:
-      'Log out all sessions (revoke all refresh tokens and invalidate all current access tokens)',
+    summary: 'Log out all sessions',
   })
-  @ApiOkResponse({ description: 'All sessions terminated' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid access token' })
+  @ApiOkResponse({ description: 'All sessions logged out successfully.' })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
   async logoutAll(@CurrentUser() user: AuthenticatedUser): Promise<{ message: string }> {
@@ -61,9 +60,12 @@ export class AuthController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get profile of the currently authenticated user' })
-  @ApiOkResponse({ type: ProfileResponseDto, description: 'Current user profile' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid access token' })
-  @ApiForbiddenResponse({ description: 'Token has been revoked' })
+  @ApiOkResponse({
+    type: ProfileResponseDto,
+    description: 'Authenticated user profile retrieved successfully.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
+  @ApiForbiddenResponse({ description: 'Access token has been revoked.' })
   @Get('me')
   getProfile(@CurrentUser() user: AuthenticatedUser): ProfileResponseDto {
     return {

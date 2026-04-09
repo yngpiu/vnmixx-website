@@ -19,7 +19,7 @@ export class LocationController {
 
   @ApiOperation({ summary: 'List districts by city' })
   @ApiOkResponse({ type: [DistrictResponseDto] })
-  @ApiNotFoundResponse({ description: 'City not found' })
+  @ApiNotFoundResponse({ description: 'City not found.' })
   @Public()
   @Get('cities/:cityId/districts')
   async findDistrictsByCityId(
@@ -30,7 +30,7 @@ export class LocationController {
 
   @ApiOperation({ summary: 'List wards by district' })
   @ApiOkResponse({ type: [WardResponseDto] })
-  @ApiNotFoundResponse({ description: 'District not found' })
+  @ApiNotFoundResponse({ description: 'District not found.' })
   @Public()
   @Get('districts/:districtId/wards')
   async findWardsByDistrictId(

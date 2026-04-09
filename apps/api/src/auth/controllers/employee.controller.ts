@@ -20,9 +20,9 @@ export class EmployeeAuthController {
   @ApiOperation({ summary: 'Log in as an employee' })
   @ApiOkResponse({
     type: AuthResponseDto,
-    description: 'Login successful with roles and permissions',
+    description: 'Employee logged in successfully with roles and permissions.',
   })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials or account inactive' })
+  @ApiUnauthorizedResponse({ description: 'Credentials are invalid or account is inactive.' })
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)

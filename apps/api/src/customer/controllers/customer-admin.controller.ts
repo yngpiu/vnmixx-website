@@ -13,11 +13,13 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireUserType } from '../../auth/decorators';
 import {
@@ -30,6 +32,8 @@ import { CustomerService } from '../services/customer.service';
 
 @ApiTags('Customers')
 @ApiBearerAuth('access-token')
+@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
+@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/customers')
 export class CustomerAdminController {
@@ -54,7 +58,7 @@ export class CustomerAdminController {
 
   @ApiOperation({ summary: 'Get customer detail by ID' })
   @ApiOkResponse({ type: CustomerDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Customer not found' })
+  @ApiNotFoundResponse({ description: 'Customer not found.' })
   @Get(':id')
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.customerService.findById(id);
@@ -62,16 +66,16 @@ export class CustomerAdminController {
 
   @ApiOperation({ summary: 'Update a customer' })
   @ApiOkResponse({ type: CustomerDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'No fields provided or invalid data' })
-  @ApiNotFoundResponse({ description: 'Customer not found' })
+  @ApiBadRequestResponse({ description: 'Request validation failed or no fields were provided.' })
+  @ApiNotFoundResponse({ description: 'Customer not found.' })
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCustomerDto) {
     return this.customerService.update(id, dto);
   }
 
   @ApiOperation({ summary: 'Soft-delete a customer' })
-  @ApiNoContentResponse({ description: 'Customer deleted' })
-  @ApiNotFoundResponse({ description: 'Customer not found' })
+  @ApiNoContentResponse({ description: 'Customer deleted successfully.' })
+  @ApiNotFoundResponse({ description: 'Customer not found.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
@@ -80,7 +84,7 @@ export class CustomerAdminController {
 
   @ApiOperation({ summary: 'Restore a soft-deleted customer' })
   @ApiOkResponse({ type: CustomerDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Customer not found or not deleted' })
+  @ApiNotFoundResponse({ description: 'Customer not found or not deleted.' })
   @Patch(':id/restore')
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.customerService.restore(id);

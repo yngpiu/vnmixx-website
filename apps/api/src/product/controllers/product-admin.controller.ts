@@ -17,11 +17,13 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireUserType } from '../../auth/decorators';
 import {
@@ -40,6 +42,8 @@ import { ProductService } from '../services/product.service';
 
 @ApiTags('Products')
 @ApiBearerAuth('access-token')
+@ApiUnauthorizedResponse({ description: 'Authentication is required or token is invalid.' })
+@ApiForbiddenResponse({ description: 'You do not have permission to access this resource.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/products')
 export class ProductAdminController {
@@ -56,7 +60,7 @@ export class ProductAdminController {
 
   @ApiOperation({ summary: 'Get product detail (admin)' })
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Product not found' })
+  @ApiNotFoundResponse({ description: 'Product not found.' })
   @Get(':id')
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.productService.findAdminById(id);
@@ -64,8 +68,8 @@ export class ProductAdminController {
 
   @ApiOperation({ summary: 'Create a product with variants, images, and attributes' })
   @ApiCreatedResponse({ type: ProductAdminDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'Validation error' })
-  @ApiConflictResponse({ description: 'Slug or SKU already taken' })
+  @ApiBadRequestResponse({ description: 'Request validation failed.' })
+  @ApiConflictResponse({ description: 'Product slug or SKU is already in use.' })
   @Post()
   create(@Body() dto: CreateProductDto) {
     return this.productService.create(dto);
@@ -73,16 +77,16 @@ export class ProductAdminController {
 
   @ApiOperation({ summary: 'Update product basic info' })
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Product not found' })
-  @ApiConflictResponse({ description: 'Slug already taken' })
+  @ApiNotFoundResponse({ description: 'Product not found.' })
+  @ApiConflictResponse({ description: 'Product slug is already in use.' })
   @Put(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProductDto) {
     return this.productService.update(id, dto);
   }
 
   @ApiOperation({ summary: 'Soft-delete a product and its variants' })
-  @ApiNoContentResponse({ description: 'Product deleted' })
-  @ApiNotFoundResponse({ description: 'Product not found' })
+  @ApiNoContentResponse({ description: 'Product deleted successfully.' })
+  @ApiNotFoundResponse({ description: 'Product not found.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
@@ -91,7 +95,7 @@ export class ProductAdminController {
 
   @ApiOperation({ summary: 'Restore a soft-deleted product' })
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Product not found' })
+  @ApiNotFoundResponse({ description: 'Product not found.' })
   @Patch(':id/restore')
   restore(@Param('id', ParseIntPipe) id: number) {
     return this.productService.restore(id);
@@ -100,17 +104,17 @@ export class ProductAdminController {
   // ─── Variants ──────────────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Add a variant to a product' })
-  @ApiCreatedResponse({ description: 'Variant created' })
-  @ApiNotFoundResponse({ description: 'Product not found' })
-  @ApiConflictResponse({ description: 'SKU or color+size combo already exists' })
+  @ApiCreatedResponse({ description: 'Variant created successfully.' })
+  @ApiNotFoundResponse({ description: 'Product not found.' })
+  @ApiConflictResponse({ description: 'Variant SKU or color-size combination is already in use.' })
   @Post(':id/variants')
   createVariant(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateVariantDto) {
     return this.productService.createVariant(id, dto);
   }
 
   @ApiOperation({ summary: 'Update a variant (price, stock, status)' })
-  @ApiOkResponse({ description: 'Variant updated' })
-  @ApiNotFoundResponse({ description: 'Product or variant not found' })
+  @ApiOkResponse({ description: 'Variant updated successfully.' })
+  @ApiNotFoundResponse({ description: 'Product or variant not found.' })
   @Put(':id/variants/:variantId')
   updateVariant(
     @Param('id', ParseIntPipe) id: number,
@@ -121,8 +125,8 @@ export class ProductAdminController {
   }
 
   @ApiOperation({ summary: 'Soft-delete a variant' })
-  @ApiNoContentResponse({ description: 'Variant deleted' })
-  @ApiNotFoundResponse({ description: 'Product or variant not found' })
+  @ApiNoContentResponse({ description: 'Variant deleted successfully.' })
+  @ApiNotFoundResponse({ description: 'Product or variant not found.' })
   @Delete(':id/variants/:variantId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeVariant(
@@ -135,16 +139,16 @@ export class ProductAdminController {
   // ─── Images ────────────────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Add an image to a product' })
-  @ApiCreatedResponse({ description: 'Image created' })
-  @ApiNotFoundResponse({ description: 'Product not found' })
+  @ApiCreatedResponse({ description: 'Product image created successfully.' })
+  @ApiNotFoundResponse({ description: 'Product not found.' })
   @Post(':id/images')
   createImage(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateImageDto) {
     return this.productService.createImage(id, dto);
   }
 
   @ApiOperation({ summary: 'Update an image' })
-  @ApiOkResponse({ description: 'Image updated' })
-  @ApiNotFoundResponse({ description: 'Product or image not found' })
+  @ApiOkResponse({ description: 'Product image updated successfully.' })
+  @ApiNotFoundResponse({ description: 'Product or image not found.' })
   @Put(':id/images/:imageId')
   updateImage(
     @Param('id', ParseIntPipe) id: number,
@@ -155,8 +159,8 @@ export class ProductAdminController {
   }
 
   @ApiOperation({ summary: 'Delete an image' })
-  @ApiNoContentResponse({ description: 'Image deleted' })
-  @ApiNotFoundResponse({ description: 'Product or image not found' })
+  @ApiNoContentResponse({ description: 'Product image deleted successfully.' })
+  @ApiNotFoundResponse({ description: 'Product or image not found.' })
   @Delete(':id/images/:imageId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeImage(
@@ -169,8 +173,8 @@ export class ProductAdminController {
   // ─── Attributes ────────────────────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Sync product attributes (replace all)' })
-  @ApiNoContentResponse({ description: 'Attributes synced' })
-  @ApiNotFoundResponse({ description: 'Product not found' })
+  @ApiNoContentResponse({ description: 'Product attributes synchronized successfully.' })
+  @ApiNotFoundResponse({ description: 'Product not found.' })
   @Put(':id/attributes')
   @HttpCode(HttpStatus.NO_CONTENT)
   syncAttributes(

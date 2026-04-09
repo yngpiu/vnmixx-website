@@ -19,7 +19,7 @@ export class ProductController {
 
   @ApiOperation({ summary: 'Get product detail by slug' })
   @ApiOkResponse({ type: ProductDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Product not found' })
+  @ApiNotFoundResponse({ description: 'Product not found.' })
   @Public()
   @Get(':slug')
   findBySlug(@Param('slug') slug: string): Promise<ProductDetailResponseDto> {
