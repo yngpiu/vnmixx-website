@@ -137,7 +137,16 @@ export class ProductRepository {
       isActive: true,
       deletedAt: null,
       ...(search && { name: { contains: search } }),
-      ...(categorySlug && { category: { slug: categorySlug, deletedAt: null } }),
+      ...(categorySlug && {
+        category: {
+          deletedAt: null,
+          OR: [
+            { slug: categorySlug },
+            { parent: { slug: categorySlug, deletedAt: null } },
+            { parent: { parent: { slug: categorySlug, deletedAt: null } } },
+          ],
+        },
+      }),
     };
 
     const variantFilter: Prisma.ProductVariantWhereInput = {
@@ -172,13 +181,11 @@ export class ProductRepository {
       }),
     ]);
 
-    const data = products.map((p) => {
-      const prices = p.variants.map((v) => v.salePrice ?? v.price);
-      const computedMin = prices.length ? Math.min(...prices) : null;
-      const computedMax = prices.length ? Math.max(...prices) : null;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { variants, ...rest } = p;
-      return { ...rest, minPrice: computedMin, maxPrice: computedMax };
+    const data = products.map(({ variants, ...rest }) => {
+      const prices = variants.map((v) => v.salePrice ?? v.price);
+      const minP = prices.length ? Math.min(...prices) : null;
+      const maxP = prices.length ? Math.max(...prices) : null;
+      return { ...rest, minPrice: minP, maxPrice: maxP };
     });
 
     let filtered = data;
@@ -264,10 +271,8 @@ export class ProductRepository {
       }),
     ]);
 
-    const data = products.map((p) => {
-      const totalStock = p.variants.reduce((sum, v) => sum + v.stockQty, 0);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { variants, ...rest } = p;
+    const data = products.map(({ variants, ...rest }) => {
+      const totalStock = variants.reduce((sum, v) => sum + v.stockQty, 0);
       return { ...rest, totalStock };
     });
 
@@ -590,6 +595,13 @@ export class ProductRepository {
       where: { id, deletedAt: null },
     });
     return count > 0;
+  }
+
+  async isLeafCategory(id: number): Promise<boolean> {
+    const childCount = await this.prisma.category.count({
+      where: { parentId: id, deletedAt: null },
+    });
+    return childCount === 0;
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────────

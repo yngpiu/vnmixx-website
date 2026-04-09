@@ -4,7 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { Prisma } from '../../../generated/prisma/client';
+import { CACHE_KEYS, CACHE_PATTERNS, CACHE_TTL } from '../../redis/cache-keys';
+import { RedisService } from '../../redis/redis.service';
 import {
   CreateImageDto,
   CreateProductDto,
@@ -26,7 +29,10 @@ import {
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly repository: ProductRepository) {}
+  constructor(
+    private readonly repository: ProductRepository,
+    private readonly redis: RedisService,
+  ) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
 
@@ -35,7 +41,7 @@ export class ProductService {
   ): Promise<
     PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
   > {
-    return this.repository.findPublicList({
+    const params = {
       page: query.page ?? 1,
       limit: query.limit ?? 20,
       search: query.search,
@@ -45,13 +51,25 @@ export class ProductService {
       minPrice: query.minPrice,
       maxPrice: query.maxPrice,
       sort: query.sort,
-    });
+    };
+
+    const hash = this.hashQuery(params);
+    return this.redis.getOrSet(CACHE_KEYS.PRODUCT_LIST(hash), CACHE_TTL.PRODUCT_LIST, () =>
+      this.repository.findPublicList(params),
+    );
   }
 
   async findBySlug(slug: string) {
-    const product = await this.repository.findBySlug(slug);
-    if (!product) throw new NotFoundException(`Product "${slug}" not found`);
-    return this.transformPublicDetail(product);
+    const cached = await this.redis.getOrSet(
+      CACHE_KEYS.PRODUCT_SLUG(slug),
+      CACHE_TTL.PRODUCT_DETAIL,
+      async () => {
+        const product = await this.repository.findBySlug(slug);
+        return product ? this.transformPublicDetail(product) : null;
+      },
+    );
+    if (!cached) throw new NotFoundException(`Product "${slug}" not found`);
+    return cached;
   }
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
@@ -95,6 +113,11 @@ export class ProductService {
       const exists = await this.repository.categoryExists(dto.categoryId);
       if (!exists)
         throw new BadRequestException(`Category #${dto.categoryId} not found or deleted`);
+      const isLeaf = await this.repository.isLeafCategory(dto.categoryId);
+      if (!isLeaf)
+        throw new BadRequestException(
+          `Category #${dto.categoryId} has subcategories. Products can only be added to leaf categories`,
+        );
     }
 
     const attrValueIds = dto.attributeValueIds ?? [];
@@ -135,6 +158,7 @@ export class ProductService {
         variants: dto.variants,
         images: dto.images ?? [],
       });
+      await this.invalidateProductCache(dto.slug);
       return this.transformAdminDetail(product);
     } catch (err) {
       this.handleUniqueViolation(err);
@@ -143,12 +167,17 @@ export class ProductService {
   }
 
   async update(id: number, dto: UpdateProductDto) {
-    await this.findAdminByIdOrFail(id);
+    const existing = await this.findAdminByIdOrFail(id);
 
     if (dto.categoryId) {
       const exists = await this.repository.categoryExists(dto.categoryId);
       if (!exists)
         throw new BadRequestException(`Category #${dto.categoryId} not found or deleted`);
+      const isLeaf = await this.repository.isLeafCategory(dto.categoryId);
+      if (!isLeaf)
+        throw new BadRequestException(
+          `Category #${dto.categoryId} has subcategories. Products can only be added to leaf categories`,
+        );
     }
 
     try {
@@ -160,6 +189,10 @@ export class ProductService {
         ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       });
+      await this.invalidateProductCache(existing.slug);
+      if (dto.slug && dto.slug !== existing.slug) {
+        await this.redis.del(CACHE_KEYS.PRODUCT_SLUG(dto.slug));
+      }
       return this.transformAdminDetail(product);
     } catch (err) {
       this.handleUniqueViolation(err);
@@ -168,8 +201,9 @@ export class ProductService {
   }
 
   async softDelete(id: number): Promise<void> {
-    await this.findAdminByIdOrFail(id);
+    const product = await this.findAdminByIdOrFail(id);
     await this.repository.softDelete(id);
+    await this.invalidateProductCache(product.slug);
   }
 
   async restore(id: number) {
@@ -177,13 +211,14 @@ export class ProductService {
     if (!product.deletedAt) throw new BadRequestException('Product is not deleted');
 
     const restored = await this.repository.restore(id);
+    await this.invalidateProductCache(product.slug);
     return this.transformAdminDetail(restored);
   }
 
   // ─── Variants ──────────────────────────────────────────────────────────────
 
   async createVariant(productId: number, dto: CreateVariantDto) {
-    await this.findAdminByIdOrFail(productId);
+    const product = await this.findAdminByIdOrFail(productId);
 
     const [colorsValid, sizesValid] = await Promise.all([
       this.repository.colorsExist([dto.colorId]),
@@ -201,7 +236,9 @@ export class ProductService {
     }
 
     try {
-      return await this.repository.createVariant(productId, dto);
+      const result = await this.repository.createVariant(productId, dto);
+      await this.invalidateProductCache(product.slug);
+      return result;
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new ConflictException(
@@ -213,7 +250,7 @@ export class ProductService {
   }
 
   async updateVariant(productId: number, variantId: number, dto: UpdateVariantDto) {
-    await this.findAdminByIdOrFail(productId);
+    const product = await this.findAdminByIdOrFail(productId);
     const variant = await this.repository.findVariantById(variantId);
     if (!variant) throw new NotFoundException(`Variant #${variantId} not found`);
     if (variant.productId !== productId) {
@@ -222,16 +259,18 @@ export class ProductService {
       );
     }
 
-    return this.repository.updateVariant(variantId, {
+    const result = await this.repository.updateVariant(variantId, {
       ...(dto.price !== undefined && { price: dto.price }),
       ...(dto.salePrice !== undefined && { salePrice: dto.salePrice }),
       ...(dto.stockQty !== undefined && { stockQty: dto.stockQty }),
       ...(dto.isActive !== undefined && { isActive: dto.isActive }),
     });
+    await this.invalidateProductCache(product.slug);
+    return result;
   }
 
   async softDeleteVariant(productId: number, variantId: number): Promise<void> {
-    await this.findAdminByIdOrFail(productId);
+    const product = await this.findAdminByIdOrFail(productId);
     const variant = await this.repository.findVariantById(variantId);
     if (!variant) throw new NotFoundException(`Variant #${variantId} not found`);
     if (variant.productId !== productId) {
@@ -241,23 +280,26 @@ export class ProductService {
     }
 
     await this.repository.softDeleteVariant(variantId);
+    await this.invalidateProductCache(product.slug);
   }
 
   // ─── Images ────────────────────────────────────────────────────────────────
 
   async createImage(productId: number, dto: CreateImageDto) {
-    await this.findAdminByIdOrFail(productId);
+    const product = await this.findAdminByIdOrFail(productId);
 
     if (dto.colorId) {
       const valid = await this.repository.colorsExist([dto.colorId]);
       if (!valid) throw new BadRequestException(`Color #${dto.colorId} not found`);
     }
 
-    return this.repository.createImage(productId, dto);
+    const result = await this.repository.createImage(productId, dto);
+    await this.invalidateProductCache(product.slug);
+    return result;
   }
 
   async updateImage(productId: number, imageId: number, dto: UpdateImageDto) {
-    await this.findAdminByIdOrFail(productId);
+    const product = await this.findAdminByIdOrFail(productId);
     const image = await this.repository.findImageById(imageId);
     if (!image) throw new NotFoundException(`Image #${imageId} not found`);
     if (image.productId !== productId) {
@@ -269,15 +311,17 @@ export class ProductService {
       if (!valid) throw new BadRequestException(`Color #${dto.colorId} not found`);
     }
 
-    return this.repository.updateImage(imageId, {
+    const result = await this.repository.updateImage(imageId, {
       ...(dto.colorId !== undefined && { colorId: dto.colorId }),
       ...(dto.altText !== undefined && { altText: dto.altText }),
       ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
     });
+    await this.invalidateProductCache(product.slug);
+    return result;
   }
 
   async deleteImage(productId: number, imageId: number): Promise<void> {
-    await this.findAdminByIdOrFail(productId);
+    const product = await this.findAdminByIdOrFail(productId);
     const image = await this.repository.findImageById(imageId);
     if (!image) throw new NotFoundException(`Image #${imageId} not found`);
     if (image.productId !== productId) {
@@ -285,12 +329,13 @@ export class ProductService {
     }
 
     await this.repository.deleteImage(imageId);
+    await this.invalidateProductCache(product.slug);
   }
 
   // ─── Attributes ────────────────────────────────────────────────────────────
 
   async syncAttributes(productId: number, dto: SyncAttributesDto): Promise<void> {
-    await this.findAdminByIdOrFail(productId);
+    const product = await this.findAdminByIdOrFail(productId);
 
     if (dto.attributeValueIds.length > 0) {
       const valid = await this.repository.attributeValuesExist(dto.attributeValueIds);
@@ -298,6 +343,7 @@ export class ProductService {
     }
 
     await this.repository.syncAttributes(productId, dto.attributeValueIds);
+    await this.invalidateProductCache(product.slug);
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -378,6 +424,25 @@ export class ProductService {
       updatedAt: product.updatedAt,
       deletedAt: product.deletedAt,
     };
+  }
+
+  private async invalidateProductCache(slug: string): Promise<void> {
+    await Promise.all([
+      this.redis.del(CACHE_KEYS.PRODUCT_SLUG(slug)),
+      this.redis.deleteByPattern(CACHE_PATTERNS.ALL_PRODUCT_LISTS),
+    ]);
+  }
+
+  private hashQuery(params: Record<string, unknown>): string {
+    const sorted = Object.keys(params)
+      .filter((k) => params[k] !== undefined)
+      .sort()
+      .map((k) => {
+        const v = params[k];
+        return `${k}=${Array.isArray(v) ? (v as unknown[]).sort().join(',') : String(v)}`;
+      })
+      .join('&');
+    return createHash('sha256').update(sorted).digest('hex').slice(0, 8);
   }
 
   private handleUniqueViolation(err: unknown): void {

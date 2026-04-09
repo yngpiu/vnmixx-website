@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
+import { CACHE_KEYS, CACHE_PATTERNS, CACHE_TTL } from '../../redis/cache-keys';
+import { RedisService } from '../../redis/redis.service';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
 import {
   CategoryAdminView,
@@ -17,20 +19,34 @@ const MAX_DEPTH = 3;
 
 @Injectable()
 export class CategoryService {
-  constructor(private readonly repository: CategoryRepository) {}
+  constructor(
+    private readonly repository: CategoryRepository,
+    private readonly redis: RedisService,
+  ) {}
 
   // ─── Public ───────────────────────────────────────────────────────────────
 
   async findActiveTree(): Promise<CategoryTreeNode[]> {
-    return this.repository.findActiveTree();
+    return this.redis.getOrSet(CACHE_KEYS.CATEGORY_TREE, CACHE_TTL.CATEGORY, () =>
+      this.repository.findActiveTree(),
+    );
   }
 
   async findActiveFlat(): Promise<CategoryView[]> {
-    return this.repository.findAllActive();
+    return this.redis.getOrSet(CACHE_KEYS.CATEGORY_LIST, CACHE_TTL.CATEGORY, () =>
+      this.repository.findAllActive(),
+    );
   }
 
   async findBySlug(slug: string): Promise<CategoryView & { children: CategoryTreeNode[] }> {
-    const category = await this.repository.findBySlug(slug);
+    const category = await this.redis.getOrSet(
+      CACHE_KEYS.CATEGORY_SLUG(slug),
+      CACHE_TTL.CATEGORY,
+      async () => {
+        const result = await this.repository.findBySlug(slug);
+        return result ?? null;
+      },
+    );
     if (!category) {
       throw new NotFoundException(`Category "${slug}" not found`);
     }
@@ -57,13 +73,15 @@ export class CategoryService {
     }
 
     try {
-      return await this.repository.create({
+      const result = await this.repository.create({
         name: dto.name,
         slug: dto.slug,
         isFeatured: dto.isFeatured ?? false,
         sortOrder: dto.sortOrder ?? 0,
         parentId: dto.parentId ?? null,
       });
+      await this.invalidateCache();
+      return result;
     } catch (err) {
       this.handleUniqueViolation(err, dto.slug);
       throw err;
@@ -88,13 +106,15 @@ export class CategoryService {
     const parentId = dto.parentId !== undefined ? dto.parentId : existing.parentId;
 
     try {
-      return await this.repository.update(id, {
+      const result = await this.repository.update(id, {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.slug !== undefined && { slug: dto.slug }),
         ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
         parentId,
       });
+      await this.invalidateCache();
+      return result;
     } catch (err) {
       if (dto.slug) this.handleUniqueViolation(err, dto.slug);
       throw err;
@@ -110,6 +130,7 @@ export class CategoryService {
     }
 
     await this.repository.softDelete(id);
+    await this.invalidateCache();
   }
 
   async restore(id: number): Promise<CategoryAdminView> {
@@ -126,7 +147,9 @@ export class CategoryService {
       }
     }
 
-    return this.repository.restore(id);
+    const result = await this.repository.restore(id);
+    await this.invalidateCache();
+    return result;
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -176,6 +199,10 @@ export class CategoryService {
       if (!node) break;
       currentId = node.parentId;
     }
+  }
+
+  private async invalidateCache(): Promise<void> {
+    await this.redis.deleteByPattern(CACHE_PATTERNS.ALL_CATEGORIES);
   }
 
   private handleUniqueViolation(err: unknown, slug: string): void {

@@ -1,16 +1,23 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
+import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
+import { RedisService } from '../../redis/redis.service';
 import { CreateColorDto, UpdateColorDto } from '../dto';
 import { ColorAdminView, ColorRepository, ColorView } from '../repositories/color.repository';
 
 @Injectable()
 export class ColorService {
-  constructor(private readonly repository: ColorRepository) {}
+  constructor(
+    private readonly repository: ColorRepository,
+    private readonly redis: RedisService,
+  ) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
 
   findAllPublic(): Promise<ColorView[]> {
-    return this.repository.findAllPublic();
+    return this.redis.getOrSet(CACHE_KEYS.COLOR_LIST, CACHE_TTL.COLOR, () =>
+      this.repository.findAllPublic(),
+    );
   }
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
@@ -21,7 +28,9 @@ export class ColorService {
 
   async create(dto: CreateColorDto): Promise<ColorAdminView> {
     try {
-      return await this.repository.create({ name: dto.name, hexCode: dto.hexCode });
+      const result = await this.repository.create({ name: dto.name, hexCode: dto.hexCode });
+      await this.invalidateCache();
+      return result;
     } catch (err) {
       this.handleUniqueViolation(err);
       throw err;
@@ -31,10 +40,12 @@ export class ColorService {
   async update(id: number, dto: UpdateColorDto): Promise<ColorAdminView> {
     await this.findByIdOrFail(id);
     try {
-      return await this.repository.update(id, {
+      const result = await this.repository.update(id, {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.hexCode !== undefined && { hexCode: dto.hexCode }),
       });
+      await this.invalidateCache();
+      return result;
     } catch (err) {
       this.handleUniqueViolation(err);
       throw err;
@@ -56,6 +67,7 @@ export class ColorService {
     }
 
     await this.repository.delete(id);
+    await this.invalidateCache();
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -64,6 +76,10 @@ export class ColorService {
     const color = await this.repository.findById(id);
     if (!color) throw new NotFoundException(`Color #${id} not found`);
     return color;
+  }
+
+  private async invalidateCache(): Promise<void> {
+    await this.redis.del(CACHE_KEYS.COLOR_LIST);
   }
 
   private handleUniqueViolation(err: unknown): void {
