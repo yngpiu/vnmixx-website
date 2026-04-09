@@ -1,9 +1,12 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Queue } from 'bullmq';
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
+import { MAIL_QUEUE } from './mail.constants';
 
-interface SendMailOptions {
+export interface SendMailOptions {
   to: string;
   subject: string;
   text: string;
@@ -16,7 +19,10 @@ export class MailService {
   private readonly sender: string | null;
   private readonly transporter: Transporter | null;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    @InjectQueue(MAIL_QUEUE) private readonly mailQueue: Queue,
+  ) {
     this.sender = this.config.get<string>('SMTP_FROM') ?? null;
     this.transporter = this.buildTransporter();
   }
@@ -27,10 +33,28 @@ export class MailService {
   }
 
   /**
-   * Send an email. Falls back to logging when SMTP is not configured
-   * (useful for local development).
+   * Enqueue an email to be sent asynchronously via BullMQ.
+   * Falls back to logging in dev mode (no SMTP configured).
    */
   async sendMail(options: SendMailOptions): Promise<void> {
+    if (!this.isConfigured()) {
+      this.logger.warn('SMTP is not configured. Email is logged for local development only.');
+      this.logger.log(`[MAIL DEV] to=${options.to} subject=${options.subject}`);
+      return;
+    }
+    await this.mailQueue.add('send', options, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 2_000 },
+      removeOnComplete: true,
+      removeOnFail: 50,
+    });
+  }
+
+  /**
+   * Send an email directly (called by the queue processor).
+   * Should not be used outside of MailProcessor.
+   */
+  async sendMailDirect(options: SendMailOptions): Promise<void> {
     if (!this.transporter || !this.sender) {
       this.logger.warn('SMTP is not configured. Email is logged for local development only.');
       this.logger.log(`[MAIL DEV] to=${options.to} subject=${options.subject}`);
