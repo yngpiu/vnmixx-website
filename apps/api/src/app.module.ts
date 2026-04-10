@@ -16,6 +16,7 @@ import { CoreModule } from './core/core.module';
 import { CustomerModule } from './customer/customer.module';
 import { EmployeeModule } from './employee/employee.module';
 import { LocationModule } from './location/location.module';
+import { OrderModule } from './order/order.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductModule } from './product/product.module';
 import { ProfileModule } from './profile/profile.module';
@@ -60,6 +61,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     AddressModule,
     ShippingModule,
     WishlistModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [
