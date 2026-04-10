@@ -76,7 +76,9 @@ export class OrderAdminService {
         packageHeight: true,
         subtotal: true,
         total: true,
-        items: { select: { productName: true, quantity: true, price: true } },
+        items: {
+          select: { id: true, variantId: true, productName: true, quantity: true, price: true },
+        },
         payments: { select: { id: true, method: true, status: true }, take: 1 },
       },
     });
@@ -153,8 +155,55 @@ export class OrderAdminService {
         ],
       });
 
-      // For COD, mark payment as pending until delivery
-      // Payment stays PENDING for COD — will be SUCCESS when delivered
+      // Convert reserved stock to exported stock once order is confirmed
+      for (const item of order.items) {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { id: true, sku: true, onHand: true, reserved: true, version: true },
+        });
+
+        if (!variant) {
+          throw new BadRequestException(`Không tìm thấy biến thể #${item.variantId} để xuất kho.`);
+        }
+
+        if (variant.onHand < item.quantity) {
+          throw new BadRequestException(
+            `SKU ${variant.sku} không đủ tồn kho để xác nhận đơn. Còn lại: ${variant.onHand}, yêu cầu: ${item.quantity}.`,
+          );
+        }
+
+        const releaseQty = Math.min(variant.reserved, item.quantity);
+        const nextReserved = variant.reserved - releaseQty;
+        const nextOnHand = variant.onHand - item.quantity;
+
+        const updated = await tx.productVariant.updateMany({
+          where: { id: variant.id, version: variant.version },
+          data: {
+            onHand: { decrement: item.quantity },
+            ...(releaseQty > 0 ? { reserved: { decrement: releaseQty } } : {}),
+            version: { increment: 1 },
+          },
+        });
+
+        if (updated.count === 0) {
+          throw new BadRequestException(
+            `Tồn kho của SKU ${variant.sku} vừa thay đổi, vui lòng xác nhận đơn lại.`,
+          );
+        }
+
+        await tx.stockMovement.create({
+          data: {
+            variantId: variant.id,
+            orderId: order.id,
+            orderItemId: item.id,
+            type: 'EXPORT',
+            delta: -item.quantity,
+            onHandAfter: nextOnHand,
+            reservedAfter: nextReserved,
+            note: 'Xuất kho khi admin xác nhận đơn',
+          },
+        });
+      }
     });
 
     this.logger.log(`Đơn hàng ${orderCode} đã xác nhận, mã vận đơn GHN: ${ghnResult.order_code}`);
@@ -169,7 +218,7 @@ export class OrderAdminService {
         id: true,
         status: true,
         ghnOrderCode: true,
-        items: { select: { variantId: true, quantity: true } },
+        items: { select: { id: true, variantId: true, quantity: true } },
         payments: { select: { id: true, status: true } },
       },
     });
@@ -204,12 +253,68 @@ export class OrderAdminService {
         data: { orderId: order.id, status: 'CANCELLED' },
       });
 
-      // Restore stock
+      const isPendingOrder = order.status === 'PENDING';
+
+      // Restore stock / release reservation
       for (const item of order.items) {
-        await tx.productVariant.update({
+        const variant = await tx.productVariant.findUnique({
           where: { id: item.variantId },
-          data: { stockQty: { increment: item.quantity } },
+          select: { id: true, onHand: true, reserved: true, version: true },
         });
+
+        if (!variant) continue;
+
+        const releaseQty = Math.min(variant.reserved, item.quantity);
+        const onHandIncrement = item.quantity - releaseQty;
+        const nextReserved = variant.reserved - releaseQty;
+        const nextOnHand = variant.onHand + onHandIncrement;
+
+        const updated = await tx.productVariant.updateMany({
+          where: { id: variant.id, version: variant.version },
+          data: {
+            ...(releaseQty > 0 ? { reserved: { decrement: releaseQty } } : {}),
+            ...(onHandIncrement > 0 ? { onHand: { increment: onHandIncrement } } : {}),
+            version: { increment: 1 },
+          },
+        });
+
+        if (updated.count === 0) {
+          throw new BadRequestException('Tồn kho vừa thay đổi, vui lòng thử hủy đơn lại.');
+        }
+
+        if (releaseQty > 0) {
+          await tx.stockMovement.create({
+            data: {
+              variantId: variant.id,
+              orderId: order.id,
+              orderItemId: item.id,
+              type: 'RELEASE',
+              delta: -releaseQty,
+              onHandAfter: variant.onHand,
+              reservedAfter: nextReserved,
+              note: isPendingOrder
+                ? 'Nhả giữ tồn kho khi admin hủy đơn PENDING'
+                : 'Nhả phần giữ tồn còn lại khi admin hủy đơn',
+            },
+          });
+        }
+
+        if (onHandIncrement > 0) {
+          await tx.stockMovement.create({
+            data: {
+              variantId: variant.id,
+              orderId: order.id,
+              orderItemId: item.id,
+              type: isPendingOrder ? 'ADJUSTMENT' : 'RETURN',
+              delta: onHandIncrement,
+              onHandAfter: nextOnHand,
+              reservedAfter: nextReserved,
+              note: isPendingOrder
+                ? 'Hoàn tồn kho do dữ liệu giữ hàng không đủ khi hủy đơn'
+                : 'Hoàn tồn kho khi admin hủy đơn sau xác nhận',
+            },
+          });
+        }
       }
 
       // Refund if payment was already confirmed

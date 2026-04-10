@@ -29,8 +29,8 @@ export class CreateVariantDto {
   @IsOptional()
   salePrice?: number;
 
-  @ApiProperty({ example: 50 })
+  @ApiProperty({ example: 50, description: 'Tồn kho thực tế ban đầu' })
   @IsInt()
   @Min(0)
-  stockQty: number;
+  onHand: number;
 }

@@ -21,10 +21,11 @@ export class CartService {
     // Tính tổng số lượng sau khi thêm (bao gồm số lượng đã có trong giỏ)
     const existingItem = await this.cartRepo.findCartItemByVariant(cart.id, dto.variantId);
     const totalQty = (existingItem?.quantity ?? 0) + dto.quantity;
+    const availableQty = variant.onHand - variant.reserved;
 
-    if (totalQty > variant.stockQty) {
+    if (totalQty > availableQty) {
       throw new BadRequestException(
-        `Số lượng tồn kho không đủ. Còn lại: ${variant.stockQty}, yêu cầu: ${totalQty}`,
+        `Số lượng tồn kho không đủ. Có thể bán: ${availableQty}, yêu cầu: ${totalQty}`,
       );
     }
 
@@ -44,9 +45,10 @@ export class CartService {
 
     // Kiểm tra tồn kho khi cập nhật số lượng
     const variant = await this.cartRepo.findVariant(item.variantId);
-    if (!variant || dto.quantity > variant.stockQty) {
+    const availableQty = variant ? variant.onHand - variant.reserved : 0;
+    if (!variant || dto.quantity > availableQty) {
       throw new BadRequestException(
-        `Số lượng tồn kho không đủ. Còn lại: ${variant?.stockQty ?? 0}, yêu cầu: ${dto.quantity}`,
+        `Số lượng tồn kho không đủ. Có thể bán: ${availableQty}, yêu cầu: ${dto.quantity}`,
       );
     }
 

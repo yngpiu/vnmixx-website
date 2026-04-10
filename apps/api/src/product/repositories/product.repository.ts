@@ -46,7 +46,8 @@ export interface ProductDetailView {
     sku: string;
     price: number;
     salePrice: number | null;
-    stockQty: number;
+    onHand: number;
+    reserved: number;
     color: { id: number; name: string; hexCode: string };
     size: { id: number; label: string; sortOrder: number };
   }[];
@@ -88,7 +89,8 @@ const VARIANT_PUBLIC_SELECT = {
   sku: true,
   price: true,
   salePrice: true,
-  stockQty: true,
+  onHand: true,
+  reserved: true,
   color: { select: { id: true, name: true, hexCode: true } },
   size: { select: { id: true, label: true, sortOrder: true } },
 } as const;
@@ -265,14 +267,14 @@ export class ProductRepository {
           _count: { select: { variants: true } },
           variants: {
             where: { deletedAt: null },
-            select: { stockQty: true },
+            select: { onHand: true },
           },
         },
       }),
     ]);
 
     const data = products.map(({ variants, ...rest }) => {
-      const totalStock = variants.reduce((sum, v) => sum + v.stockQty, 0);
+      const totalStock = variants.reduce((sum, v) => sum + v.onHand, 0);
       return { ...rest, totalStock };
     });
 
@@ -331,7 +333,7 @@ export class ProductRepository {
       sku: string;
       price: number;
       salePrice?: number | null;
-      stockQty: number;
+      onHand: number;
     }[];
     images: {
       url: string;
@@ -370,7 +372,9 @@ export class ProductRepository {
             sku: v.sku,
             price: v.price,
             salePrice: v.salePrice ?? null,
-            stockQty: v.stockQty,
+            onHand: v.onHand,
+            reserved: 0,
+            version: 0,
           })),
         });
       }
@@ -444,7 +448,7 @@ export class ProductRepository {
       sku: string;
       price: number;
       salePrice?: number | null;
-      stockQty: number;
+      onHand: number;
     },
   ) {
     return this.prisma.productVariant.create({
@@ -455,7 +459,9 @@ export class ProductRepository {
         sku: data.sku,
         price: data.price,
         salePrice: data.salePrice ?? null,
-        stockQty: data.stockQty,
+        onHand: data.onHand,
+        reserved: 0,
+        version: 0,
       },
       select: {
         ...VARIANT_PUBLIC_SELECT,
@@ -481,7 +487,7 @@ export class ProductRepository {
 
   async updateVariant(
     variantId: number,
-    data: { price?: number; salePrice?: number | null; stockQty?: number; isActive?: boolean },
+    data: { price?: number; salePrice?: number | null; onHand?: number; isActive?: boolean },
   ) {
     return this.prisma.productVariant.update({
       where: { id: variantId },

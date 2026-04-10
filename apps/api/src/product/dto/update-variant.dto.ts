@@ -14,11 +14,11 @@ export class UpdateVariantDto {
   @IsOptional()
   salePrice?: number | null;
 
-  @ApiPropertyOptional({ example: 50 })
+  @ApiPropertyOptional({ example: 50, description: 'Cập nhật tồn kho thực tế (on hand)' })
   @IsInt()
   @Min(0)
   @IsOptional()
-  stockQty?: number;
+  onHand?: number;
 
   @ApiPropertyOptional({ example: true })
   @IsBoolean()

@@ -46,8 +46,11 @@ class CartItemVariantDto {
   @ApiProperty({ example: 249000, nullable: true })
   salePrice: number | null;
 
-  @ApiProperty({ example: 50 })
-  stockQty: number;
+  @ApiProperty({ example: 50, description: 'Tồn kho thực tế tại cửa hàng' })
+  onHand: number;
+
+  @ApiProperty({ example: 5, description: 'Số lượng đang được giữ cho đơn hàng khác' })
+  reserved: number;
 
   @ApiProperty({ type: CartItemColorDto })
   color: CartItemColorDto;

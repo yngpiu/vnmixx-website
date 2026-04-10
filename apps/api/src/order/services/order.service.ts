@@ -50,7 +50,8 @@ export class OrderService {
                 sku: true,
                 price: true,
                 salePrice: true,
-                stockQty: true,
+                onHand: true,
+                reserved: true,
                 color: { select: { name: true } },
                 size: { select: { label: true } },
                 product: {
@@ -69,9 +70,10 @@ export class OrderService {
 
     // 3. Re-validate stock
     for (const item of cart.items) {
-      if (item.quantity > item.variant.stockQty) {
+      const availableQty = item.variant.onHand - item.variant.reserved;
+      if (item.quantity > availableQty) {
         throw new BadRequestException(
-          `Sản phẩm "${item.variant.product.name}" (${item.variant.sku}) không đủ tồn kho. Còn lại: ${item.variant.stockQty}, yêu cầu: ${item.quantity}.`,
+          `Sản phẩm "${item.variant.product.name}" (${item.variant.sku}) không đủ tồn kho. Có thể bán: ${availableQty}, yêu cầu: ${item.quantity}.`,
         );
       }
     }
@@ -200,11 +202,58 @@ export class OrderService {
         data: { orderId: order.id, status: 'PENDING' },
       });
 
-      // e. Deduct stock
+      // e. Reserve stock
       for (const item of cart.items) {
-        await tx.productVariant.update({
+        const currentVariant = await tx.productVariant.findUnique({
           where: { id: item.variant.id },
-          data: { stockQty: { decrement: item.quantity } },
+          select: {
+            id: true,
+            sku: true,
+            isActive: true,
+            deletedAt: true,
+            onHand: true,
+            reserved: true,
+            version: true,
+          },
+        });
+
+        if (!currentVariant || !currentVariant.isActive || currentVariant.deletedAt) {
+          throw new BadRequestException(
+            `Biến thể SKU ${item.variant.sku} không còn khả dụng để đặt hàng.`,
+          );
+        }
+
+        const availableQty = currentVariant.onHand - currentVariant.reserved;
+        if (item.quantity > availableQty) {
+          throw new BadRequestException(
+            `Sản phẩm "${item.variant.product.name}" (${item.variant.sku}) không đủ tồn kho. Có thể bán: ${availableQty}, yêu cầu: ${item.quantity}.`,
+          );
+        }
+
+        const updated = await tx.productVariant.updateMany({
+          where: { id: currentVariant.id, version: currentVariant.version },
+          data: {
+            reserved: { increment: item.quantity },
+            version: { increment: 1 },
+          },
+        });
+
+        if (updated.count === 0) {
+          throw new BadRequestException(
+            `Tồn kho của SKU ${item.variant.sku} vừa thay đổi, vui lòng thử lại.`,
+          );
+        }
+
+        await tx.stockMovement.create({
+          data: {
+            variantId: currentVariant.id,
+            orderId: order.id,
+            type: 'RESERVE',
+            delta: item.quantity,
+            onHandAfter: currentVariant.onHand,
+            reservedAfter: currentVariant.reserved + item.quantity,
+            note: 'Giữ tồn kho khi tạo đơn hàng',
+          },
         });
       }
 
@@ -249,7 +298,11 @@ export class OrderService {
   async cancelMyOrder(customerId: number, orderCode: string): Promise<OrderDetailView> {
     const order = await this.prisma.order.findFirst({
       where: { orderCode, customerId },
-      select: { id: true, status: true, items: { select: { variantId: true, quantity: true } } },
+      select: {
+        id: true,
+        status: true,
+        items: { select: { id: true, variantId: true, quantity: true } },
+      },
     });
 
     if (!order) {
@@ -270,12 +323,62 @@ export class OrderService {
         data: { orderId: order.id, status: 'CANCELLED' },
       });
 
-      // Restore stock
+      // Release reserved stock for pending order
       for (const item of order.items) {
-        await tx.productVariant.update({
+        const variant = await tx.productVariant.findUnique({
           where: { id: item.variantId },
-          data: { stockQty: { increment: item.quantity } },
+          select: { id: true, onHand: true, reserved: true, version: true },
         });
+
+        if (!variant) continue;
+
+        const releaseQty = Math.min(variant.reserved, item.quantity);
+        const restoreQty = item.quantity - releaseQty;
+        const nextReserved = variant.reserved - releaseQty;
+        const nextOnHand = variant.onHand + restoreQty;
+
+        const updated = await tx.productVariant.updateMany({
+          where: { id: variant.id, version: variant.version },
+          data: {
+            ...(releaseQty > 0 ? { reserved: { decrement: releaseQty } } : {}),
+            ...(restoreQty > 0 ? { onHand: { increment: restoreQty } } : {}),
+            version: { increment: 1 },
+          },
+        });
+
+        if (updated.count === 0) {
+          throw new BadRequestException('Tồn kho vừa thay đổi, vui lòng thử hủy đơn lại.');
+        }
+
+        if (releaseQty > 0) {
+          await tx.stockMovement.create({
+            data: {
+              variantId: variant.id,
+              orderId: order.id,
+              orderItemId: item.id,
+              type: 'RELEASE',
+              delta: -releaseQty,
+              onHandAfter: variant.onHand,
+              reservedAfter: nextReserved,
+              note: 'Nhả giữ tồn kho khi khách hủy đơn hàng PENDING',
+            },
+          });
+        }
+
+        if (restoreQty > 0) {
+          await tx.stockMovement.create({
+            data: {
+              variantId: variant.id,
+              orderId: order.id,
+              orderItemId: item.id,
+              type: 'ADJUSTMENT',
+              delta: restoreQty,
+              onHandAfter: nextOnHand,
+              reservedAfter: nextReserved,
+              note: 'Hoàn tồn kho do dữ liệu giữ hàng không đủ khi hủy đơn',
+            },
+          });
+        }
       }
     });
 

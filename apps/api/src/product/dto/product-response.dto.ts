@@ -79,8 +79,11 @@ class ProductVariantDto {
   @ApiPropertyOptional({ example: 249000, nullable: true })
   salePrice: number | null;
 
-  @ApiProperty({ example: 50 })
-  stockQty: number;
+  @ApiProperty({ example: 50, description: 'Tồn kho thực tế' })
+  onHand: number;
+
+  @ApiProperty({ example: 5, description: 'Số lượng đang giữ cho đơn chưa hoàn tất' })
+  reserved: number;
 
   @ApiProperty({ type: VariantColorDto })
   color: VariantColorDto;

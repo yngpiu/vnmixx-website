@@ -54,6 +54,15 @@ enum RequiredNote {
   KHONGCHOXEMHANG
 }
 
+enum StockMovementType {
+  IMPORT
+  EXPORT
+  RESERVE
+  RELEASE
+  ADJUSTMENT
+  RETURN
+}
+
 // ─── Customers ───────────────────────────────────────────
 
 model Customer {
@@ -94,8 +103,9 @@ model Employee {
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
   deletedAt      DateTime? @map("deleted_at") @db.Timestamp(0)
 
-  employeeRoles EmployeeRole[]
-  refreshTokens RefreshToken[]
+  employeeRoles  EmployeeRole[]
+  refreshTokens  RefreshToken[]
+  stockMovements StockMovement[]
 
   @@map("employees")
 }
@@ -352,17 +362,20 @@ model ProductVariant {
   sku       String    @unique(map: "uk_variants_sku") @db.VarChar(50)
   price     Int       @db.UnsignedInt
   salePrice Int?      @map("sale_price") @db.UnsignedInt
-  stockQty  Int       @default(0) @map("stock_qty") @db.UnsignedInt
+  onHand    Int       @default(0) @map("on_hand") @db.UnsignedInt
+  reserved  Int       @default(0) @db.UnsignedInt
+  version   Int       @default(0) @db.UnsignedInt
   isActive  Boolean   @default(true) @map("is_active") @db.TinyInt
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
   deletedAt DateTime? @map("deleted_at") @db.Timestamp(0)
 
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  color      Color       @relation(fields: [colorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  size       Size        @relation(fields: [sizeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  cartItems  CartItem[]
-  orderItems OrderItem[]
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  color          Color           @relation(fields: [colorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  size           Size            @relation(fields: [sizeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  stockMovements StockMovement[]
 
   @@unique([productId, colorId, sizeId], map: "uk_variants_combo")
   @@index([colorId], map: "idx_variants_color")
@@ -469,6 +482,7 @@ model Order {
   items           OrderItem[]
   statusHistories OrderStatusHistory[]
   payments        Payment[]
+  stockMovements  StockMovement[]
 
   @@index([customerId], map: "idx_orders_customer")
   @@index([status], map: "idx_orders_status")
@@ -490,8 +504,9 @@ model OrderItem {
   subtotal    Int      @db.UnsignedInt
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
-  order   Order          @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant        ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  stockMovements StockMovement[]
 
   @@index([orderId], map: "idx_order_items_order")
   @@index([variantId], map: "idx_order_items_variant")
@@ -526,6 +541,30 @@ model Payment {
   @@index([orderId], map: "idx_payments_order")
   @@index([transactionId], map: "idx_payments_transaction")
   @@map("payments")
+}
+
+model StockMovement {
+  id            Int               @id @default(autoincrement()) @db.UnsignedInt
+  variantId     Int               @map("variant_id") @db.UnsignedInt
+  orderId       Int?              @map("order_id") @db.UnsignedInt
+  orderItemId   Int?              @map("order_item_id") @db.UnsignedInt
+  employeeId    Int?              @map("employee_id") @db.UnsignedInt
+  type          StockMovementType
+  delta         Int               @db.Int
+  onHandAfter   Int               @map("on_hand_after") @db.UnsignedInt
+  reservedAfter Int               @map("reserved_after") @db.UnsignedInt
+  note          String?           @db.VarChar(255)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamp(0)
+
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  order     Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  orderItem OrderItem?     @relation(fields: [orderItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  employee  Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([variantId, createdAt], map: "idx_stock_movements_variant_created")
+  @@index([orderId], map: "idx_stock_movements_order")
+  @@index([employeeId], map: "idx_stock_movements_employee")
+  @@map("stock_movements")
 }
 
 // ─── Refresh Tokens ──────────────────────────────────────

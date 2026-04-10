@@ -267,7 +267,7 @@ export class ProductService {
     const result = await this.repository.updateVariant(variantId, {
       ...(dto.price !== undefined && { price: dto.price }),
       ...(dto.salePrice !== undefined && { salePrice: dto.salePrice }),
-      ...(dto.stockQty !== undefined && { stockQty: dto.stockQty }),
+      ...(dto.onHand !== undefined && { onHand: dto.onHand }),
       ...(dto.isActive !== undefined && { isActive: dto.isActive }),
     });
     await this.invalidateProductCache(product.slug);

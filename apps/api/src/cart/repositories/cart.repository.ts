@@ -12,7 +12,8 @@ const CART_ITEM_SELECT = {
       sku: true,
       price: true,
       salePrice: true,
-      stockQty: true,
+      onHand: true,
+      reserved: true,
       color: { select: { id: true, name: true, hexCode: true } },
       size: { select: { id: true, label: true } },
       product: { select: { id: true, name: true, slug: true, thumbnail: true } },
@@ -40,7 +41,8 @@ export interface CartItemView {
     sku: string;
     price: number;
     salePrice: number | null;
-    stockQty: number;
+    onHand: number;
+    reserved: number;
     color: { id: number; name: string; hexCode: string };
     size: { id: number; label: string };
     product: { id: number; name: string; slug: string; thumbnail: string | null };
@@ -115,7 +117,7 @@ export class CartRepository {
   async findVariant(variantId: number) {
     return this.prisma.productVariant.findFirst({
       where: { id: variantId, isActive: true, deletedAt: null },
-      select: { id: true, stockQty: true },
+      select: { id: true, onHand: true, reserved: true },
     });
   }
 }
