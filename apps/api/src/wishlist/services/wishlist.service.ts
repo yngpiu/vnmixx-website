@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { type WishlistItemView, WishlistRepository } from '../repositories/wishlist.repository';
 
 @Injectable()
@@ -15,20 +16,24 @@ export class WishlistService {
       throw new NotFoundException(`Không tìm thấy sản phẩm #${productId}`);
     }
 
-    const alreadyExists = await this.wishlistRepo.exists(customerId, productId);
-    if (alreadyExists) {
-      throw new ConflictException('Sản phẩm đã có trong danh sách yêu thích.');
+    try {
+      await this.wishlistRepo.add(customerId, productId);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Sản phẩm đã có trong danh sách yêu thích.');
+      }
+      throw error;
     }
-
-    await this.wishlistRepo.add(customerId, productId);
   }
 
   async remove(customerId: number, productId: number): Promise<void> {
-    const exists = await this.wishlistRepo.exists(customerId, productId);
-    if (!exists) {
-      throw new NotFoundException('Sản phẩm không có trong danh sách yêu thích.');
+    try {
+      await this.wishlistRepo.remove(customerId, productId);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Sản phẩm không có trong danh sách yêu thích.');
+      }
+      throw error;
     }
-
-    await this.wishlistRepo.remove(customerId, productId);
   }
 }
