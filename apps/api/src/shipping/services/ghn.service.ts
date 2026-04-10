@@ -17,6 +17,18 @@ export interface GhnLeadtimeData {
   leadtime: number;
 }
 
+export interface GhnCreateOrderData {
+  order_code: string;
+  expected_delivery_time: string;
+  total_fee: number;
+}
+
+export interface GhnOrderDetailData {
+  order_code: string;
+  status: string;
+  log: { status: string; updated_date: string }[];
+}
+
 interface GhnResponse<T> {
   code: number;
   message: string;
@@ -29,39 +41,26 @@ export class GhnService {
   private readonly apiUrl: string;
   private readonly token: string;
   private readonly shopId: string;
-  private readonly useMock: boolean;
 
   constructor(private readonly config: ConfigService) {
     this.apiUrl = this.config.getOrThrow<string>('GHN_API_URL');
     this.token = this.config.getOrThrow<string>('GHN_TOKEN');
     this.shopId = this.config.getOrThrow<string>('GHN_SHOP_ID');
-    this.useMock = this.config.get<string>('GHN_USE_MOCK') === 'true';
   }
 
   async getAvailableServices(
     fromDistrictId: number,
     toDistrictId: number,
   ): Promise<GhnAvailableService[]> {
-    try {
-      return await this.post<GhnAvailableService[]>(
-        '/shipping-order/available-services',
-        {
-          shop_id: Number(this.shopId),
-          from_district: fromDistrictId,
-          to_district: toDistrictId,
-        },
-        { Token: this.token, ShopId: this.shopId },
-      );
-    } catch (e) {
-      if (!this.useMock) throw e;
-      this.logger.warn(
-        `Using GHN mock for available-services: ${String((e as Error)?.message ?? e)}`,
-      );
-      return [
-        { service_id: 53320, short_name: 'Mock Standard', service_type_id: 2 },
-        { service_id: 53321, short_name: 'Mock Express', service_type_id: 1 },
-      ];
-    }
+    return this.post<GhnAvailableService[]>(
+      '/shipping-order/available-services',
+      {
+        shop_id: Number(this.shopId),
+        from_district: fromDistrictId,
+        to_district: toDistrictId,
+      },
+      { Token: this.token, ShopId: this.shopId },
+    );
   }
 
   async calculateFee(params: {
@@ -76,37 +75,22 @@ export class GhnService {
     height: number;
     insuranceValue?: number;
   }): Promise<GhnFeeData> {
-    try {
-      return await this.post<GhnFeeData>(
-        '/shipping-order/fee',
-        {
-          from_district_id: params.fromDistrictId,
-          from_ward_code: params.fromWardCode,
-          to_district_id: params.toDistrictId,
-          to_ward_code: params.toWardCode,
-          service_id: params.serviceId,
-          weight: params.weight,
-          length: params.length,
-          width: params.width,
-          height: params.height,
-          insurance_value: params.insuranceValue ?? 0,
-        },
-        { Token: this.token, ShopId: this.shopId },
-      );
-    } catch (e) {
-      if (!this.useMock) throw e;
-      this.logger.warn(`Using GHN mock for fee: ${String((e as Error)?.message ?? e)}`);
-      const insuranceFee = Math.min(Math.floor((params.insuranceValue ?? 0) * 0.005), 50_000);
-      const base = 15_000;
-      const weightFee = Math.ceil(params.weight / 500) * 5_000;
-      const serviceMultiplier = params.serviceId === 53321 ? 1.5 : 1;
-      const serviceFee = Math.round((base + weightFee) * serviceMultiplier);
-      return {
-        total: serviceFee + insuranceFee,
-        service_fee: serviceFee,
-        insurance_fee: insuranceFee,
-      };
-    }
+    return this.post<GhnFeeData>(
+      '/shipping-order/fee',
+      {
+        from_district_id: params.fromDistrictId,
+        from_ward_code: params.fromWardCode,
+        to_district_id: params.toDistrictId,
+        to_ward_code: params.toWardCode,
+        service_id: params.serviceId,
+        weight: params.weight,
+        length: params.length,
+        width: params.width,
+        height: params.height,
+        insurance_value: params.insuranceValue ?? 0,
+      },
+      { Token: this.token, ShopId: this.shopId },
+    );
   }
 
   async getLeadtime(params: {
@@ -116,24 +100,79 @@ export class GhnService {
     toWardCode: string;
     serviceId: number;
   }): Promise<GhnLeadtimeData> {
-    try {
-      return await this.post<GhnLeadtimeData>(
-        '/shipping-order/leadtime',
-        {
-          from_district_id: params.fromDistrictId,
-          from_ward_code: params.fromWardCode,
-          to_district_id: params.toDistrictId,
-          to_ward_code: params.toWardCode,
-          service_id: params.serviceId,
-        },
-        { Token: this.token, ShopId: this.shopId },
-      );
-    } catch (e) {
-      if (!this.useMock) throw e;
-      this.logger.warn(`Using GHN mock for leadtime: ${String((e as Error)?.message ?? e)}`);
-      const days = params.serviceId === 53321 ? 1 : 3;
-      return { leadtime: Math.floor(Date.now() / 1000) + days * 24 * 60 * 60 };
-    }
+    return this.post<GhnLeadtimeData>(
+      '/shipping-order/leadtime',
+      {
+        from_district_id: params.fromDistrictId,
+        from_ward_code: params.fromWardCode,
+        to_district_id: params.toDistrictId,
+        to_ward_code: params.toWardCode,
+        service_id: params.serviceId,
+      },
+      { Token: this.token, ShopId: this.shopId },
+    );
+  }
+
+  async createOrder(params: {
+    toName: string;
+    toPhone: string;
+    toAddress: string;
+    toWardName: string;
+    toDistrictName: string;
+    toProvinceName: string;
+    weight: number;
+    length: number;
+    width: number;
+    height: number;
+    serviceTypeId: number;
+    paymentTypeId: number;
+    requiredNote: string;
+    codAmount: number;
+    insuranceValue: number;
+    items: { name: string; quantity: number; weight: number }[];
+    note?: string;
+    clientOrderCode?: string;
+  }): Promise<GhnCreateOrderData> {
+    return this.post<GhnCreateOrderData>(
+      '/shipping-order/create',
+      {
+        to_name: params.toName,
+        to_phone: params.toPhone,
+        to_address: params.toAddress,
+        to_ward_name: params.toWardName,
+        to_district_name: params.toDistrictName,
+        to_province_name: params.toProvinceName,
+        weight: params.weight,
+        length: params.length,
+        width: params.width,
+        height: params.height,
+        service_type_id: params.serviceTypeId,
+        payment_type_id: params.paymentTypeId,
+        required_note: params.requiredNote,
+        cod_amount: params.codAmount,
+        insurance_value: params.insuranceValue,
+        items: params.items,
+        note: params.note ?? '',
+        client_order_code: params.clientOrderCode ?? '',
+      },
+      { Token: this.token, ShopId: this.shopId },
+    );
+  }
+
+  async cancelOrder(orderCodes: string[]): Promise<void> {
+    await this.post<unknown>(
+      '/switch-status/cancel',
+      { order_codes: orderCodes },
+      { Token: this.token, ShopId: this.shopId },
+    );
+  }
+
+  async getOrderDetail(orderCode: string): Promise<GhnOrderDetailData> {
+    return this.post<GhnOrderDetailData>(
+      '/shipping-order/detail',
+      { order_code: orderCode },
+      { Token: this.token, ShopId: this.shopId },
+    );
   }
 
   private async post<T>(

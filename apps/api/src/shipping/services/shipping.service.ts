@@ -18,33 +18,33 @@ export class ShippingService implements OnModuleInit {
   private shopGhnWardCode: string | null = null;
   private initialized = false;
 
-  private readonly shopDistrictDbId: number;
-  private readonly shopWardDbId: number;
+  private readonly shopGhnDistrictIdStr: string;
+  private readonly shopGhnWardCodeStr: string;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly ghn: GhnService,
     config: ConfigService,
   ) {
-    this.shopDistrictDbId = Number(config.getOrThrow<string>('GHN_SHOP_DISTRICT_ID'));
-    this.shopWardDbId = Number(config.getOrThrow<string>('GHN_SHOP_WARD_ID'));
+    this.shopGhnDistrictIdStr = config.getOrThrow<string>('GHN_SHOP_DISTRICT_ID');
+    this.shopGhnWardCodeStr = config.getOrThrow<string>('GHN_SHOP_WARD_ID');
   }
 
   async onModuleInit(): Promise<void> {
     const [district, ward] = await Promise.all([
       this.prisma.district.findUnique({
-        where: { id: this.shopDistrictDbId },
+        where: { giaohangnhanhId: this.shopGhnDistrictIdStr },
         select: { giaohangnhanhId: true },
       }),
       this.prisma.ward.findUnique({
-        where: { id: this.shopWardDbId },
+        where: { giaohangnhanhId: this.shopGhnWardCodeStr },
         select: { giaohangnhanhId: true },
       }),
     ]);
 
     if (!district || !ward) {
       this.logger.warn(
-        `Không tìm thấy district (id=${this.shopDistrictDbId}) hoặc ward (id=${this.shopWardDbId}) trong DB. ` +
+        `Không tìm thấy district (ghn_id=${this.shopGhnDistrictIdStr}) hoặc ward (ghn_id=${this.shopGhnWardCodeStr}) trong DB. ` +
           'Cập nhật GHN_SHOP_DISTRICT_ID và GHN_SHOP_WARD_ID trong .env để sử dụng tính phí vận chuyển.',
       );
       return;
@@ -57,6 +57,11 @@ export class ShippingService implements OnModuleInit {
     this.logger.log(
       `Kho hàng: GHN district=${this.shopGhnDistrictId}, ward=${this.shopGhnWardCode}`,
     );
+  }
+
+  getShopGhnIds(): { districtId: number; wardCode: string } {
+    this.ensureInitialized();
+    return { districtId: this.shopGhnDistrictId!, wardCode: this.shopGhnWardCode! };
   }
 
   private ensureInitialized(): void {
