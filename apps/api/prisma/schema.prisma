@@ -26,6 +26,34 @@ enum AddressType {
   OFFICE
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  AWAITING_SHIPMENT
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentMethod {
+  COD
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum RequiredNote {
+  CHOTHUHANG
+  CHOXEMHANGKHONGTHU
+  KHONGCHOXEMHANG
+}
+
 // ─── Customers ───────────────────────────────────────────
 
 model Customer {
@@ -47,6 +75,7 @@ model Customer {
   addresses     Address[]
   cart          Cart?
   wishlists     Wishlist[]
+  orders        Order[]
 
   @@map("customers")
 }
@@ -329,10 +358,11 @@ model ProductVariant {
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
   deletedAt DateTime? @map("deleted_at") @db.Timestamp(0)
 
-  product   Product    @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  color     Color      @relation(fields: [colorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  size      Size       @relation(fields: [sizeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  cartItems CartItem[]
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  color      Color       @relation(fields: [colorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  size       Size        @relation(fields: [sizeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  cartItems  CartItem[]
+  orderItems OrderItem[]
 
   @@unique([productId, colorId, sizeId], map: "uk_variants_combo")
   @@index([colorId], map: "idx_variants_color")
@@ -400,6 +430,102 @@ model Wishlist {
   @@id([customerId, productId])
   @@index([productId], map: "idx_wishlists_product")
   @@map("wishlists")
+}
+
+// ─── Orders ─────────────────────────────────────────────
+
+model Order {
+  id                    Int           @id @default(autoincrement()) @db.UnsignedInt
+  orderCode             String        @unique(map: "uk_orders_code") @map("order_code") @db.VarChar(20)
+  customerId            Int           @map("customer_id") @db.UnsignedInt
+  status                OrderStatus   @default(PENDING)
+  shippingFullName      String        @map("shipping_full_name") @db.VarChar(100)
+  shippingPhoneNumber   String        @map("shipping_phone_number") @db.VarChar(20)
+  shippingCity          String        @map("shipping_city") @db.VarChar(100)
+  shippingDistrict      String        @map("shipping_district") @db.VarChar(100)
+  shippingWard          String        @map("shipping_ward") @db.VarChar(100)
+  shippingAddressLine   String        @map("shipping_address_line") @db.VarChar(255)
+  shippingGhnDistrictId Int?          @map("shipping_ghn_district_id") @db.UnsignedInt
+  shippingGhnWardCode   String?       @map("shipping_ghn_ward_code") @db.VarChar(20)
+  paymentStatus         PaymentStatus @default(PENDING) @map("payment_status")
+  serviceTypeId         Int?          @map("service_type_id") @db.UnsignedSmallInt
+  requiredNote          RequiredNote  @default(KHONGCHOXEMHANG) @map("required_note")
+  note                  String?       @db.VarChar(500)
+  ghnOrderCode          String?       @map("ghn_order_code") @db.VarChar(50)
+  expectedDeliveryTime  DateTime?     @map("expected_delivery_time") @db.Timestamp(0)
+  packageWeight         Int           @default(0) @map("package_weight") @db.UnsignedInt
+  packageLength         Int           @default(0) @map("package_length") @db.UnsignedSmallInt
+  packageWidth          Int           @default(0) @map("package_width") @db.UnsignedSmallInt
+  packageHeight         Int           @default(0) @map("package_height") @db.UnsignedSmallInt
+  couponCode            String?       @map("coupon_code") @db.VarChar(50)
+  subtotal              Int           @db.UnsignedInt
+  discountAmount        Int           @default(0) @map("discount_amount") @db.UnsignedInt
+  shippingFee           Int           @default(0) @map("shipping_fee") @db.UnsignedInt
+  total                 Int           @db.UnsignedInt
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  customer        Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items           OrderItem[]
+  statusHistories OrderStatusHistory[]
+  payments        Payment[]
+
+  @@index([customerId], map: "idx_orders_customer")
+  @@index([status], map: "idx_orders_status")
+  @@index([paymentStatus], map: "idx_orders_payment_status")
+  @@index([ghnOrderCode], map: "idx_orders_ghn_code")
+  @@map("orders")
+}
+
+model OrderItem {
+  id          Int      @id @default(autoincrement()) @db.UnsignedInt
+  orderId     Int      @map("order_id") @db.UnsignedInt
+  variantId   Int      @map("variant_id") @db.UnsignedInt
+  productName String   @map("product_name") @db.VarChar(255)
+  colorName   String   @map("color_name") @db.VarChar(50)
+  sizeLabel   String   @map("size_label") @db.VarChar(10)
+  sku         String   @db.VarChar(50)
+  price       Int      @db.UnsignedInt
+  quantity    Int      @db.UnsignedSmallInt
+  subtotal    Int      @db.UnsignedInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([orderId], map: "idx_order_items_order")
+  @@index([variantId], map: "idx_order_items_variant")
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id        Int         @id @default(autoincrement()) @db.UnsignedInt
+  orderId   Int         @map("order_id") @db.UnsignedInt
+  status    OrderStatus
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([orderId], map: "idx_status_histories_order")
+  @@map("order_status_histories")
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement()) @db.UnsignedInt
+  orderId       Int           @map("order_id") @db.UnsignedInt
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  transactionId String?       @map("transaction_id") @db.VarChar(100)
+  amount        Int           @db.UnsignedInt
+  paidAt        DateTime?     @map("paid_at") @db.Timestamp(0)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([orderId], map: "idx_payments_order")
+  @@index([transactionId], map: "idx_payments_transaction")
+  @@map("payments")
 }
 
 // ─── Refresh Tokens ──────────────────────────────────────
