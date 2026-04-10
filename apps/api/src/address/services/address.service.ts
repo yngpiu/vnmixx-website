@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { LocationRepository } from '../../location/repositories/location.repository';
+import { PrismaService } from '../../prisma/prisma.service';
 import type { CreateAddressDto, UpdateAddressDto } from '../dto';
 import { type AddressView, AddressRepository } from '../repositories/address.repository';
 
@@ -8,6 +9,7 @@ export class AddressService {
   constructor(
     private readonly addressRepo: AddressRepository,
     private readonly locationRepo: LocationRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async findAll(customerId: number): Promise<AddressView[]> {
@@ -24,25 +26,44 @@ export class AddressService {
     await this.validateLocationHierarchy(dto.cityId, dto.districtId, dto.wardId);
 
     const shouldBeDefault = dto.isDefault ?? false;
+    const count = await this.addressRepo.countByCustomerId(customerId);
+    const isFirst = count === 0;
+    const makeDefault = shouldBeDefault || isFirst;
 
-    if (shouldBeDefault) {
-      await this.addressRepo.clearDefault(customerId);
-    } else {
-      const count = await this.addressRepo.countByCustomerId(customerId);
-      if (count === 0) {
-        // First address is always default
-        return this.addressRepo.create({
-          customerId,
-          fullName: dto.fullName,
-          phoneNumber: dto.phoneNumber,
-          cityId: dto.cityId,
-          districtId: dto.districtId,
-          wardId: dto.wardId,
-          addressLine: dto.addressLine,
-          type: dto.type ?? 'HOME',
-          isDefault: true,
+    if (makeDefault) {
+      return this.prisma.$transaction(async (tx) => {
+        await tx.address.updateMany({
+          where: { customerId, isDefault: true, deletedAt: null },
+          data: { isDefault: false },
         });
-      }
+
+        return tx.address.create({
+          data: {
+            customerId,
+            fullName: dto.fullName,
+            phoneNumber: dto.phoneNumber,
+            cityId: dto.cityId,
+            districtId: dto.districtId,
+            wardId: dto.wardId,
+            addressLine: dto.addressLine,
+            type: dto.type ?? 'HOME',
+            isDefault: true,
+          },
+          select: {
+            id: true,
+            fullName: true,
+            phoneNumber: true,
+            addressLine: true,
+            type: true,
+            isDefault: true,
+            createdAt: true,
+            updatedAt: true,
+            city: { select: { id: true, name: true } },
+            district: { select: { id: true, name: true } },
+            ward: { select: { id: true, name: true } },
+          },
+        });
+      }) as unknown as AddressView;
     }
 
     return this.addressRepo.create({
@@ -54,7 +75,7 @@ export class AddressService {
       wardId: dto.wardId,
       addressLine: dto.addressLine,
       type: dto.type ?? 'HOME',
-      isDefault: shouldBeDefault,
+      isDefault: false,
     });
   }
 
@@ -83,21 +104,44 @@ export class AddressService {
   async remove(id: number, customerId: number): Promise<void> {
     const address = await this.findById(id, customerId);
 
-    await this.addressRepo.softDelete(id);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.address.update({
+        where: { id },
+        data: { deletedAt: new Date(), isDefault: false },
+      });
 
-    if (address.isDefault) {
-      const remaining = await this.addressRepo.findAllByCustomerId(customerId);
-      if (remaining.length > 0) {
-        await this.addressRepo.clearDefault(customerId);
-        await this.addressRepo.setDefault(remaining[0].id);
+      if (address.isDefault) {
+        // Tìm địa chỉ đầu tiên còn lại để đặt làm mặc định
+        const next = await tx.address.findFirst({
+          where: { customerId, deletedAt: null, id: { not: id } },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true },
+        });
+
+        if (next) {
+          await tx.address.update({
+            where: { id: next.id },
+            data: { isDefault: true },
+          });
+        }
       }
-    }
+    });
   }
 
   async setDefault(id: number, customerId: number): Promise<AddressView> {
     await this.findById(id, customerId);
-    await this.addressRepo.clearDefault(customerId);
-    await this.addressRepo.setDefault(id);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.address.updateMany({
+        where: { customerId, isDefault: true, deletedAt: null },
+        data: { isDefault: false },
+      });
+      await tx.address.update({
+        where: { id },
+        data: { isDefault: true },
+      });
+    });
+
     return this.findById(id, customerId);
   }
 
