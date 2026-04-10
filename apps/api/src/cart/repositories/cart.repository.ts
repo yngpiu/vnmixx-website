@@ -112,10 +112,10 @@ export class CartRepository {
     await this.prisma.cartItem.deleteMany({ where: { cartId } });
   }
 
-  async variantExists(variantId: number): Promise<boolean> {
-    const count = await this.prisma.productVariant.count({
+  async findVariant(variantId: number) {
+    return this.prisma.productVariant.findFirst({
       where: { id: variantId, isActive: true, deletedAt: null },
+      select: { id: true, stockQty: true },
     });
-    return count > 0;
   }
 }

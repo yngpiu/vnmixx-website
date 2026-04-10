@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AddCartItemDto, UpdateCartItemDto } from '../dto';
 import { type CartItemView, type CartView, CartRepository } from '../repositories/cart.repository';
 
@@ -11,12 +11,23 @@ export class CartService {
   }
 
   async addItem(customerId: number, dto: AddCartItemDto): Promise<CartItemView> {
-    const variantExists = await this.cartRepo.variantExists(dto.variantId);
-    if (!variantExists) {
+    const variant = await this.cartRepo.findVariant(dto.variantId);
+    if (!variant) {
       throw new NotFoundException(`Không tìm thấy biến thể sản phẩm #${dto.variantId}`);
     }
 
     const cart = await this.cartRepo.findOrCreate(customerId);
+
+    // Tính tổng số lượng sau khi thêm (bao gồm số lượng đã có trong giỏ)
+    const existingItem = await this.cartRepo.findCartItemByVariant(cart.id, dto.variantId);
+    const totalQty = (existingItem?.quantity ?? 0) + dto.quantity;
+
+    if (totalQty > variant.stockQty) {
+      throw new BadRequestException(
+        `Số lượng tồn kho không đủ. Còn lại: ${variant.stockQty}, yêu cầu: ${totalQty}`,
+      );
+    }
+
     return this.cartRepo.addItem(cart.id, dto.variantId, dto.quantity);
   }
 
@@ -29,6 +40,14 @@ export class CartService {
     const item = await this.cartRepo.findCartItemById(itemId, cart.id);
     if (!item) {
       throw new NotFoundException(`Không tìm thấy mục giỏ hàng #${itemId}`);
+    }
+
+    // Kiểm tra tồn kho khi cập nhật số lượng
+    const variant = await this.cartRepo.findVariant(item.variantId);
+    if (!variant || dto.quantity > variant.stockQty) {
+      throw new BadRequestException(
+        `Số lượng tồn kho không đủ. Còn lại: ${variant?.stockQty ?? 0}, yêu cầu: ${dto.quantity}`,
+      );
     }
 
     return this.cartRepo.updateItemQuantity(itemId, dto.quantity);
