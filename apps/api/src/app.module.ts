@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AttributeModule } from './attribute/attribute.module';
 import { AuthModule } from './auth/auth.module';
+import { CartModule } from './cart/cart.module';
 import { CategoryModule } from './category/category.module';
 import { ColorModule } from './color/color.module';
 import { CommonModule } from './common/common.module';
@@ -43,6 +44,7 @@ import { SizeModule } from './size/size.module';
     RedisModule,
     CommonModule,
     AuthModule,
+    CartModule,
     ProfileModule,
     CategoryModule,
     ColorModule,
