@@ -46,6 +46,7 @@ model Customer {
   refreshTokens RefreshToken[]
   addresses     Address[]
   cart          Cart?
+  wishlists     Wishlist[]
 
   @@map("customers")
 }
@@ -289,6 +290,7 @@ model Product {
   productAttributes ProductAttribute[]
   variants          ProductVariant[]
   images            ProductImage[]
+  wishlists         Wishlist[]
 
   @@index([categoryId], map: "idx_products_category")
   @@map("products")
@@ -378,6 +380,21 @@ model CartItem {
   @@unique([cartId, variantId], map: "uk_cart_items_combo")
   @@index([variantId], map: "idx_cart_items_variant")
   @@map("cart_items")
+}
+
+// ─── Wishlists ──────────────────────────────────────────
+
+model Wishlist {
+  customerId Int      @map("customer_id") @db.UnsignedInt
+  productId  Int      @map("product_id") @db.UnsignedInt
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([customerId, productId])
+  @@index([productId], map: "idx_wishlists_product")
+  @@map("wishlists")
 }
 
 // ─── Refresh Tokens ──────────────────────────────────────

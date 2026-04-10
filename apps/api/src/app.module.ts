@@ -23,6 +23,7 @@ import { RbacModule } from './rbac/rbac.module';
 import { RedisModule } from './redis/redis.module';
 import { ThrottlerStorageRedis } from './redis/throttler-storage-redis';
 import { SizeModule } from './size/size.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { SizeModule } from './size/size.module';
     RbacModule,
     LocationModule,
     AddressModule,
+    WishlistModule,
   ],
   controllers: [AppController],
   providers: [
