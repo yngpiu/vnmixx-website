@@ -22,6 +22,7 @@ import { ProfileModule } from './profile/profile.module';
 import { RbacModule } from './rbac/rbac.module';
 import { RedisModule } from './redis/redis.module';
 import { ThrottlerStorageRedis } from './redis/throttler-storage-redis';
+import { ShippingModule } from './shipping/shipping.module';
 import { SizeModule } from './size/size.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 
@@ -57,6 +58,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     RbacModule,
     LocationModule,
     AddressModule,
+    ShippingModule,
     WishlistModule,
   ],
   controllers: [AppController],

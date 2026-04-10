@@ -281,6 +281,10 @@ model Product {
   slug        String    @unique(map: "uk_products_slug") @db.VarChar(255)
   description String?   @db.Text
   thumbnail   String?   @db.VarChar(500)
+  weight      Int       @default(300) @db.UnsignedInt // gram
+  length      Int       @default(30) @db.UnsignedSmallInt // cm
+  width       Int       @default(25) @db.UnsignedSmallInt // cm
+  height      Int       @default(5) @db.UnsignedSmallInt // cm
   isActive    Boolean   @default(true) @map("is_active") @db.TinyInt
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
