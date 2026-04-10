@@ -297,6 +297,7 @@ model Product {
   wishlists         Wishlist[]
 
   @@index([categoryId], map: "idx_products_category")
+  @@index([isActive, deletedAt], map: "idx_products_active_deleted")
   @@map("products")
 }
 
@@ -420,5 +421,6 @@ model RefreshToken {
   @@index([customerId], map: "idx_refresh_customer")
   @@index([employeeId], map: "idx_refresh_employee")
   @@index([expiresAt], map: "idx_refresh_expires")
+  @@index([revokedAt], map: "idx_refresh_revoked")
   @@map("refresh_tokens")
 }
