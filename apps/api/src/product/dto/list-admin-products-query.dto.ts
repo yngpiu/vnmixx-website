@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+
+import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
 
 export class ListAdminProductsQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
@@ -31,13 +33,13 @@ export class ListAdminProductsQueryDto {
   categoryId?: number;
 
   @ApiPropertyOptional({ example: true })
-  @Transform(({ value }) => value === 'true' || value === true)
+  @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
 
   @ApiPropertyOptional({ example: false })
-  @Transform(({ value }) => value === 'true' || value === true)
+  @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
   includeDeleted?: boolean;

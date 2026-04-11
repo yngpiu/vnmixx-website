@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+
+import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
 
 export class ListEmployeesQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
@@ -27,13 +29,13 @@ export class ListEmployeesQueryDto {
   search?: string;
 
   @ApiPropertyOptional({ example: true, description: 'Lọc theo trạng thái hoạt động' })
-  @Transform(({ value }) => value === 'true' || value === true)
+  @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
 
   @ApiPropertyOptional({ example: false, description: 'Bao gồm nhân viên đã xóa mềm' })
-  @Transform(({ value }) => value === 'true' || value === true)
+  @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
   includeDeleted?: boolean;
