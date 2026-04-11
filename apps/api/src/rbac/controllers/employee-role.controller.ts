@@ -17,7 +17,6 @@ import { EmployeeRoleService } from '../services/employee-role.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
-@RequirePermissions('rbac.manage')
 @Controller('admin/employees')
 export class EmployeeRoleController {
   constructor(private readonly employeeRoleService: EmployeeRoleService) {}
@@ -25,6 +24,7 @@ export class EmployeeRoleController {
   @ApiOperation({ summary: 'Lấy vai trò được gán cho nhân viên' })
   @ApiOkResponse({ type: EmployeeRolesResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
+  @RequirePermissions('rbac.read')
   @Get(':id/roles')
   async findRoles(@Param('id', ParseIntPipe) id: number): Promise<EmployeeRolesResponseDto> {
     return this.employeeRoleService.findByEmployeeId(id);
@@ -33,6 +33,7 @@ export class EmployeeRoleController {
   @ApiOperation({ summary: 'Đồng bộ vai trò cho nhân viên (thay thế toàn bộ)' })
   @ApiOkResponse({ type: EmployeeRolesResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
+  @RequirePermissions('rbac.update')
   @Put(':id/roles')
   async syncRoles(
     @Param('id', ParseIntPipe) id: number,

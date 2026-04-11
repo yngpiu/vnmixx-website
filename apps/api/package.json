@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "locations:fetch": "npx tsx prisma/fetch-ghn-data.ts",
     "locations:seed": "npx tsx --env-file=.env prisma/seed-locations.ts",
+    "rbac:seed": "npx tsx prisma/seed.ts",
     "locations:clear": "npx tsx --env-file=.env prisma/clear-locations.ts",
     "products:seed": "npx tsx --env-file=.env prisma/seed-products.ts"
   },

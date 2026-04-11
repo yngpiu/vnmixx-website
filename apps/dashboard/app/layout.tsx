@@ -1,8 +1,10 @@
+import { AppChrome } from '@/components/app-chrome';
 import { COOKIE_ACCESS_TOKEN } from '@/lib/constants';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
+import { DashboardTooltipProvider } from '@/providers/tooltip-provider';
 import '@repo/ui/globals.css';
-import { montserrat } from '@repo/ui/lib/fonts';
+import { inter } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
@@ -23,10 +25,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={montserrat.className}>
-        <QueryProvider>
-          <AuthProvider accessToken={accessToken}>{children}</AuthProvider>
-        </QueryProvider>
+      <body className={inter.className}>
+        <DashboardTooltipProvider>
+          <QueryProvider>
+            <AuthProvider accessToken={accessToken}>
+              <AppChrome>{children}</AppChrome>
+            </AuthProvider>
+          </QueryProvider>
+        </DashboardTooltipProvider>
       </body>
     </html>
   );

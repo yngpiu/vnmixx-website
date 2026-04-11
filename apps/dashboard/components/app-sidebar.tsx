@@ -1,0 +1,70 @@
+'use client';
+
+import type { ComponentProps } from 'react';
+import { Fragment } from 'react';
+
+import { NavMain } from '@/components/nav-main';
+import { NavUser } from '@/components/nav-user';
+import { sidebarSections } from '@/config/sidebar-menu';
+import { dashboardRoutes } from '@/lib/routes';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+} from '@repo/ui/components/ui/sidebar';
+import Image from 'next/image';
+import Link from 'next/link';
+
+const data = {
+  user: {
+    name: 'Người dùng',
+    email: 'account@vnmixx.local',
+    avatar: '',
+  },
+};
+
+export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
+  return (
+    <Sidebar variant="inset" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" className="min-h-10 py-1.5" asChild>
+              <Link href={dashboardRoutes.root} title="VNMIXX" className="overflow-hidden">
+                <Image
+                  src="/images/logo.png"
+                  alt="VNMIXX"
+                  width={120}
+                  height={32}
+                  priority
+                  unoptimized
+                  className="h-6 w-auto max-w-[min(100%,7.5rem)] shrink-0 object-contain object-left transition-[max-width] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:max-h-5 group-data-[collapsible=icon]:max-w-5 group-data-[collapsible=icon]:object-center"
+                />
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        {sidebarSections.map((section, index) => (
+          <Fragment key={section.id}>
+            {index > 0 ? <SidebarSeparator className="mx-0" /> : null}
+            <NavMain
+              groupLabel={section.groupLabel}
+              groupLabelClassName={section.groupLabelClassName}
+              items={section.items}
+            />
+          </Fragment>
+        ))}
+      </SidebarContent>
+      <SidebarFooter>
+        <NavUser user={data.user} />
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

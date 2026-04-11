@@ -1,15 +1,21 @@
-import { Button } from '@repo/ui/components/ui/button';
-
-export default function Page() {
+export default function OverviewPage() {
   return (
-    <main className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Dashboard ready!</h1>
-          <p>Bạn có thể dùng shadcn shared UI từ `packages/ui`.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
+    <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
+      <div>
+        <h1 className="text-lg font-medium tracking-tight">Tổng quan</h1>
+        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+          Chọn module ở thanh bên — mỗi mục tương ứng với một phần của API quản trị trong{' '}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">apps/api</code> (ví dụ{' '}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">admin/orders</code>,{' '}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">admin/products</code>).
+        </p>
       </div>
-    </main>
+      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+        <div className="aspect-video rounded-xl border border-dashed border-border/80 bg-muted/40" />
+        <div className="aspect-video rounded-xl border border-dashed border-border/80 bg-muted/40" />
+        <div className="aspect-video rounded-xl border border-dashed border-border/80 bg-muted/40" />
+      </div>
+      <div className="min-h-[40vh] flex-1 rounded-xl border border-dashed border-border/80 bg-muted/30 md:min-h-min" />
+    </div>
   );
 }
