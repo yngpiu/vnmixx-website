@@ -117,6 +117,7 @@ export function EmployeesTable() {
         table={table}
         searchPlaceholder="Tìm theo tên, email, SĐT…"
         searchKey="fullName"
+        searchDebounceMs={350}
         filters={[
           {
             columnId: 'isActive',

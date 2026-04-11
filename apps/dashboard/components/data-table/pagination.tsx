@@ -37,7 +37,7 @@ export function DataTablePagination<TData>({ table, className }: DataTablePagina
       style={{ overflowClipMargin: 1 }}
     >
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex w-full items-center justify-center text-sm font-medium sm:hidden">
+        <div className="flex w-full items-center justify-center text-sm font-medium sm:hidden ">
           Trang {currentPage} / {totalPages}
         </div>
         <div className="flex items-center justify-center gap-2 sm:justify-end">

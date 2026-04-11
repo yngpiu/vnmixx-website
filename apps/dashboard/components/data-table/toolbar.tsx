@@ -2,9 +2,10 @@
 
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
-import type { Table } from '@tanstack/react-table';
+import type { Column, Table } from '@tanstack/react-table';
 import { XIcon } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DataTableFacetedFilter } from './faceted-filter';
 import { DataTableViewOptions } from './view-options';
 
@@ -12,6 +13,8 @@ type DataTableToolbarProps<TData> = {
   table: Table<TData>;
   searchPlaceholder?: string;
   searchKey?: string;
+  /** When set with `searchKey`, URL/API updates wait until typing pauses (smoother search). */
+  searchDebounceMs?: number;
   filters?: {
     columnId: string;
     title: string;
@@ -23,25 +26,79 @@ type DataTableToolbarProps<TData> = {
   }[];
 };
 
+function DataTableToolbarDebouncedSearch<TData>({
+  column,
+  placeholder,
+  debounceMs,
+}: {
+  column: Column<TData, unknown>;
+  placeholder: string;
+  debounceMs: number;
+}) {
+  const committed = (column.getFilterValue() as string) ?? '';
+  const [draft, setDraft] = useState(committed);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setDraft(committed);
+  }, [committed]);
+
+  useEffect(() => {
+    if (draft === committed) {
+      return;
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      column.setFilterValue(draft);
+    }, debounceMs);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [column, committed, debounceMs, draft]);
+
+  return (
+    <Input
+      placeholder={placeholder}
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      className="h-8 w-[150px] lg:w-[260px]"
+    />
+  );
+}
+
 export function DataTableToolbar<TData>({
   table,
   searchPlaceholder = 'Lọc…',
   searchKey,
+  searchDebounceMs = 0,
   filters = [],
 }: DataTableToolbarProps<TData>) {
   const isFiltered =
     table.getState().columnFilters.length > 0 || Boolean(table.getState().globalFilter);
 
+  const searchColumn = searchKey ? table.getColumn(searchKey) : undefined;
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:gap-2">
         {searchKey ? (
-          <Input
-            placeholder={searchPlaceholder}
-            value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ''}
-            onChange={(event) => table.getColumn(searchKey)?.setFilterValue(event.target.value)}
-            className="h-8 w-[150px] lg:w-[260px]"
-          />
+          searchColumn ? (
+            searchDebounceMs > 0 ? (
+              <DataTableToolbarDebouncedSearch
+                column={searchColumn}
+                placeholder={searchPlaceholder}
+                debounceMs={searchDebounceMs}
+              />
+            ) : (
+              <Input
+                placeholder={searchPlaceholder}
+                value={(searchColumn.getFilterValue() as string) ?? ''}
+                onChange={(event) => searchColumn.setFilterValue(event.target.value)}
+                className="h-8 w-[150px] lg:w-[260px]"
+              />
+            )
+          ) : null
         ) : (
           <Input
             placeholder={searchPlaceholder}
