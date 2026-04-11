@@ -1,6 +1,6 @@
 'use client';
 
-import { DashboardShell } from '@/components/dashboard-shell';
+import { DashboardShell } from '@/components/sidebar/dashboard-shell';
 import { usePathname } from 'next/navigation';
 
 export function AppChrome({ children }: { children: React.ReactNode }) {

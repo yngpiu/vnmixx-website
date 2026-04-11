@@ -3,8 +3,8 @@
 import type { ComponentProps } from 'react';
 import { Fragment, useMemo } from 'react';
 
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
+import { NavMain } from '@/components/sidebar/nav-main';
+import { NavUser } from '@/components/sidebar/nav-user';
 import { sidebarSections } from '@/config/sidebar-menu';
 import { pravatarFromEmail } from '@/lib/avatar';
 import { dashboardRoutes } from '@/lib/routes';

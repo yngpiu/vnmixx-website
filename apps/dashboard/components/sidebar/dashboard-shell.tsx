@@ -1,6 +1,6 @@
 'use client';
 
-import { AppSidebar } from '@/components/app-sidebar';
+import { AppSidebar } from '@/components/sidebar/app-sidebar';
 import { dashboardBreadcrumbPageTitle, dashboardRoutes } from '@/lib/routes';
 import {
   Breadcrumb,
