@@ -1,12 +1,10 @@
+import { adminModulePath } from '@/lib/admin-modules';
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Thêm mới · Quyền · Vnmixx' };
+export const metadata: Metadata = { title: 'Quyền · Vnmixx' };
 
-export default function PermissionsNewPage() {
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-      <h1 className="text-lg font-medium tracking-tight">Thêm mới · Quyền</h1>
-      <p className="max-w-xl text-sm text-muted-foreground">Đây là trang thêm mới quyền.</p>
-    </div>
-  );
+/** API chỉ hỗ trợ đọc danh sách quyền; không có tạo qua dashboard. */
+export default function PermissionsNewRedirectPage() {
+  redirect(adminModulePath('permissions'));
 }

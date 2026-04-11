@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
@@ -20,6 +21,8 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+
+const EDIT_EMPLOYEE_ROLES_FORM_ID = 'edit-employee-roles-form';
 
 const editRolesSchema = z.object({
   roleIds: z.array(z.number().int().positive()),
@@ -214,97 +217,155 @@ export function EditEmployeeDialog({
               ? 'Bản ghi hiện không ở trạng thái đã xóa.'
               : '';
 
+  const loading = Boolean(detailQuery.isLoading && employeeId != null);
+  const error = detailQuery.isError;
+  const deletedBlock = Boolean(isDeleted && detail && mode !== 'restore');
+  const rolesBlock = Boolean(detail && !detailQuery.isLoading && !isDeleted && mode === 'roles');
+  const activeBlock = Boolean(detail && !detailQuery.isLoading && !isDeleted && mode === 'active');
+  const deleteBlock = Boolean(detail && !detailQuery.isLoading && !isDeleted && mode === 'delete');
+  const restoreDeletedBlock = Boolean(
+    detail && !detailQuery.isLoading && mode === 'restore' && isDeleted,
+  );
+  const restoreNotDeletedBlock = Boolean(
+    detail && !detailQuery.isLoading && mode === 'restore' && !isDeleted,
+  );
+
+  const footerSingleDismiss = loading || error || deletedBlock || restoreNotDeletedBlock;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[min(90dvh,40rem)] overflow-y-auto sm:max-w-md"
+        {...(!description ? { 'aria-describedby': undefined } : {})}
+        className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
       >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
-        </DialogHeader>
+        <div className="shrink-0 border-b px-6 py-4">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            {description ? <DialogDescription>{description}</DialogDescription> : null}
+          </DialogHeader>
+        </div>
 
-        {detailQuery.isLoading && employeeId != null ? (
-          <p className="text-sm text-muted-foreground">Đang tải thông tin…</p>
-        ) : null}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+          {loading ? <p className="text-sm text-muted-foreground">Đang tải thông tin…</p> : null}
 
-        {detailQuery.isError ? (
-          <p className="text-sm text-destructive" role="alert">
-            {detailQuery.error instanceof Error
-              ? detailQuery.error.message
-              : 'Không tải được nhân viên.'}
-          </p>
-        ) : null}
+          {error ? (
+            <p className="text-sm text-destructive" role="alert">
+              {detailQuery.error instanceof Error
+                ? detailQuery.error.message
+                : 'Không tải được nhân viên.'}
+            </p>
+          ) : null}
 
-        {isDeleted && detail && mode !== 'restore' ? (
-          <div className="flex flex-col gap-3">
+          {deletedBlock ? (
             <p className="text-sm text-amber-700 dark:text-amber-400" role="status">
               Nhân viên đã bị xóa — không thể thực hiện thao tác này. Dùng mục Khôi phục trên menu
               hành động.
             </p>
-            <div className="flex justify-end">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Đóng
-              </Button>
-            </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {detail && !detailQuery.isLoading && !isDeleted && mode === 'roles' ? (
-          <form onSubmit={handleSubmitRoles(submitRoles)} noValidate>
-            <FieldGroup className="gap-4">
-              {rolesErrors.root ? (
-                <Field data-invalid>
-                  <FieldError errors={[rolesErrors.root]} />
-                </Field>
-              ) : null}
-
-              <Card size="sm">
-                <CardHeader>
-                  <CardTitle>{detail.fullName}</CardTitle>
-                  <CardDescription>{detail.email}</CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Field>
-                <FieldLabel>Vai trò</FieldLabel>
-                {rolesQuery.isLoading ? (
-                  <p className="text-sm text-muted-foreground">Đang tải danh sách vai trò…</p>
+          {rolesBlock && detail ? (
+            <form
+              id={EDIT_EMPLOYEE_ROLES_FORM_ID}
+              onSubmit={handleSubmitRoles(submitRoles)}
+              noValidate
+            >
+              <FieldGroup className="gap-4">
+                {rolesErrors.root ? (
+                  <Field data-invalid>
+                    <FieldError errors={[rolesErrors.root]} />
+                  </Field>
                 ) : null}
-                {rolesQuery.isError ? (
-                  <FieldError
-                    errors={[
-                      {
-                        message:
-                          'Không tải được vai trò (cần quyền xem RBAC). Thử lại sau hoặc liên hệ quản trị.',
-                      },
-                    ]}
+
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle>{detail.fullName}</CardTitle>
+                    <CardDescription>{detail.email}</CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Field>
+                  <FieldLabel>Vai trò</FieldLabel>
+                  {rolesQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">Đang tải danh sách vai trò…</p>
+                  ) : null}
+                  {rolesQuery.isError ? (
+                    <FieldError
+                      errors={[
+                        {
+                          message:
+                            'Không tải được vai trò (cần quyền xem RBAC). Thử lại sau hoặc liên hệ quản trị.',
+                        },
+                      ]}
+                    />
+                  ) : null}
+                  <Controller
+                    name="roleIds"
+                    control={rolesControl}
+                    render={({ field }) => {
+                      const roles = rolesQuery.data ?? [];
+                      const options = roles.map((r) => ({ value: r.id, label: r.name }));
+                      return (
+                        <MultiSelectPopover
+                          options={options}
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={rolesFormDisabled || options.length === 0}
+                          placeholder="Chọn vai trò…"
+                          aria-invalid={Boolean(rolesErrors.roleIds)}
+                        />
+                      );
+                    }}
                   />
-                ) : null}
-                <Controller
-                  name="roleIds"
-                  control={rolesControl}
-                  render={({ field }) => {
-                    const roles = rolesQuery.data ?? [];
-                    const options = roles.map((r) => ({ value: r.id, label: r.name }));
-                    return (
-                      <MultiSelectPopover
-                        options={options}
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={rolesFormDisabled || options.length === 0}
-                        placeholder="Chọn vai trò…"
-                        aria-invalid={Boolean(rolesErrors.roleIds)}
-                      />
-                    );
-                  }}
-                />
-                <FieldError errors={[rolesErrors.roleIds]} />
-              </Field>
-            </FieldGroup>
+                  <FieldError errors={[rolesErrors.roleIds]} />
+                </Field>
+              </FieldGroup>
+            </form>
+          ) : null}
 
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {activeBlock && detail ? (
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>{detail.fullName}</CardTitle>
+                <CardDescription>{detail.email}</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : null}
+
+          {deleteBlock && detail ? (
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>{detail.fullName}</CardTitle>
+                <CardDescription>{detail.email}</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : null}
+
+          {restoreDeletedBlock && detail ? (
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>{detail.fullName}</CardTitle>
+                <CardDescription>{detail.email}</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : null}
+
+          {restoreNotDeletedBlock ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              Nhân viên này chưa bị xóa.
+            </p>
+          ) : null}
+        </div>
+
+        <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 px-6 py-4 sm:justify-end">
+          {footerSingleDismiss ? (
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {error || deletedBlock || restoreNotDeletedBlock ? 'Đóng' : 'Hủy'}
+            </Button>
+          ) : null}
+
+          {rolesBlock ? (
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -313,22 +374,14 @@ export function EditEmployeeDialog({
               >
                 Hủy
               </Button>
-              <Button type="submit" disabled={rolesFormDisabled}>
+              <Button type="submit" form={EDIT_EMPLOYEE_ROLES_FORM_ID} disabled={rolesFormDisabled}>
                 {isPending ? 'Đang lưu…' : 'Lưu vai trò'}
               </Button>
-            </div>
-          </form>
-        ) : null}
+            </>
+          ) : null}
 
-        {detail && !detailQuery.isLoading && !isDeleted && mode === 'active' ? (
-          <div className="flex flex-col gap-4">
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{detail.fullName}</CardTitle>
-                <CardDescription>{detail.email}</CardDescription>
-              </CardHeader>
-            </Card>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {activeBlock && detail ? (
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -345,19 +398,11 @@ export function EditEmployeeDialog({
               >
                 {isPending ? 'Đang xử lý…' : detail.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
               </Button>
-            </div>
-          </div>
-        ) : null}
+            </>
+          ) : null}
 
-        {detail && !detailQuery.isLoading && !isDeleted && mode === 'delete' ? (
-          <div className="flex flex-col gap-4">
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{detail.fullName}</CardTitle>
-                <CardDescription>{detail.email}</CardDescription>
-              </CardHeader>
-            </Card>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {deleteBlock ? (
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -374,19 +419,11 @@ export function EditEmployeeDialog({
               >
                 {deleteMutation.isPending ? 'Đang xóa…' : 'Xóa'}
               </Button>
-            </div>
-          </div>
-        ) : null}
+            </>
+          ) : null}
 
-        {detail && !detailQuery.isLoading && mode === 'restore' && isDeleted ? (
-          <div className="flex flex-col gap-4">
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{detail.fullName}</CardTitle>
-                <CardDescription>{detail.email}</CardDescription>
-              </CardHeader>
-            </Card>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {restoreDeletedBlock ? (
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -398,15 +435,9 @@ export function EditEmployeeDialog({
               <Button type="button" disabled={restoreFormDisabled} onClick={submitRestore}>
                 {restoreMutation.isPending ? 'Đang khôi phục…' : 'Khôi phục'}
               </Button>
-            </div>
-          </div>
-        ) : null}
-
-        {detail && !detailQuery.isLoading && mode === 'restore' && !isDeleted ? (
-          <p className="text-sm text-muted-foreground" role="status">
-            Nhân viên này chưa bị xóa.
-          </p>
-        ) : null}
+            </>
+          ) : null}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

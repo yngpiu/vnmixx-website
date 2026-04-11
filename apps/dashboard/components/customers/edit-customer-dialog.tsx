@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
@@ -137,53 +138,93 @@ export function EditCustomerDialog({
             ? 'Bản ghi hiện không ở trạng thái đã xóa.'
             : '';
 
+  const loading = Boolean(detailQuery.isLoading && customerId != null);
+  const error = detailQuery.isError;
+  const deletedBlock = Boolean(isDeleted && detail && mode !== 'restore');
+  const activeBlock = Boolean(detail && !detailQuery.isLoading && !isDeleted && mode === 'active');
+  const deleteBlock = Boolean(detail && !detailQuery.isLoading && !isDeleted && mode === 'delete');
+  const restoreDeletedBlock = Boolean(
+    detail && !detailQuery.isLoading && mode === 'restore' && isDeleted,
+  );
+  const restoreNotDeletedBlock = Boolean(
+    detail && !detailQuery.isLoading && mode === 'restore' && !isDeleted,
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        {...(!description ? { 'aria-describedby': undefined as const } : {})}
-        className="max-h-[min(90dvh,40rem)] overflow-y-auto sm:max-w-md"
+        {...(!description ? { 'aria-describedby': undefined } : {})}
+        className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
       >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
-        </DialogHeader>
+        <div className="shrink-0 border-b px-6 py-4">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            {description ? <DialogDescription>{description}</DialogDescription> : null}
+          </DialogHeader>
+        </div>
 
-        {detailQuery.isLoading && customerId != null ? (
-          <p className="text-sm text-muted-foreground">Đang tải thông tin…</p>
-        ) : null}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4">
+          {loading ? <p className="text-sm text-muted-foreground">Đang tải thông tin…</p> : null}
 
-        {detailQuery.isError ? (
-          <p className="text-sm text-destructive" role="alert">
-            {detailQuery.error instanceof Error
-              ? detailQuery.error.message
-              : 'Không tải được khách hàng.'}
-          </p>
-        ) : null}
+          {error ? (
+            <p className="text-sm text-destructive" role="alert">
+              {detailQuery.error instanceof Error
+                ? detailQuery.error.message
+                : 'Không tải được khách hàng.'}
+            </p>
+          ) : null}
 
-        {isDeleted && detail && mode !== 'restore' ? (
-          <div className="flex flex-col gap-3">
+          {deletedBlock ? (
             <p className="text-sm text-amber-700 dark:text-amber-400" role="status">
               Khách hàng đã bị xóa — không thể thực hiện thao tác này. Dùng mục Khôi phục trên menu
               hành động.
             </p>
-            <div className="flex justify-end">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Đóng
-              </Button>
-            </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {detail && !detailQuery.isLoading && !isDeleted && mode === 'active' ? (
-          <div className="flex flex-col gap-4">
+          {activeBlock && detail ? (
             <Card size="sm">
               <CardHeader>
                 <CardTitle>{detail.fullName}</CardTitle>
                 <CardDescription>{detail.email}</CardDescription>
               </CardHeader>
             </Card>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          ) : null}
+
+          {deleteBlock && detail ? (
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>{detail.fullName}</CardTitle>
+                <CardDescription>{detail.email}</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : null}
+
+          {restoreDeletedBlock && detail ? (
+            <Card size="sm">
+              <CardHeader>
+                <CardTitle>{detail.fullName}</CardTitle>
+                <CardDescription>{detail.email}</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : null}
+
+          {restoreNotDeletedBlock ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              Khách hàng này chưa bị xóa.
+            </p>
+          ) : null}
+        </div>
+
+        <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 px-6 py-4 sm:justify-end">
+          {loading || error || deletedBlock || restoreNotDeletedBlock ? (
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {error || deletedBlock || restoreNotDeletedBlock ? 'Đóng' : 'Hủy'}
+            </Button>
+          ) : null}
+
+          {activeBlock && detail ? (
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -200,19 +241,11 @@ export function EditCustomerDialog({
               >
                 {isPending ? 'Đang xử lý…' : detail.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
               </Button>
-            </div>
-          </div>
-        ) : null}
+            </>
+          ) : null}
 
-        {detail && !detailQuery.isLoading && !isDeleted && mode === 'delete' ? (
-          <div className="flex flex-col gap-4">
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{detail.fullName}</CardTitle>
-                <CardDescription>{detail.email}</CardDescription>
-              </CardHeader>
-            </Card>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {deleteBlock ? (
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -229,19 +262,11 @@ export function EditCustomerDialog({
               >
                 {deleteMutation.isPending ? 'Đang xóa…' : 'Xóa'}
               </Button>
-            </div>
-          </div>
-        ) : null}
+            </>
+          ) : null}
 
-        {detail && !detailQuery.isLoading && mode === 'restore' && isDeleted ? (
-          <div className="flex flex-col gap-4">
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{detail.fullName}</CardTitle>
-                <CardDescription>{detail.email}</CardDescription>
-              </CardHeader>
-            </Card>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {restoreDeletedBlock ? (
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -253,15 +278,9 @@ export function EditCustomerDialog({
               <Button type="button" disabled={restoreFormDisabled} onClick={submitRestore}>
                 {restoreMutation.isPending ? 'Đang khôi phục…' : 'Khôi phục'}
               </Button>
-            </div>
-          </div>
-        ) : null}
-
-        {detail && !detailQuery.isLoading && mode === 'restore' && !isDeleted ? (
-          <p className="text-sm text-muted-foreground" role="status">
-            Khách hàng này chưa bị xóa.
-          </p>
-        ) : null}
+            </>
+          ) : null}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

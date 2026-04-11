@@ -157,19 +157,11 @@ export const sidebarSections: SidebarSection[] = [
         title: 'Vai trò',
         url: adminModulePath('roles'),
         icon: <ShieldIcon />,
-        items: [
-          { title: 'Danh sách', url: adminModulePath('roles') },
-          { title: 'Thêm mới', url: adminModuleNewPath('roles') },
-        ],
       },
       {
         title: 'Quyền',
         url: adminModulePath('permissions'),
         icon: <KeyRoundIcon />,
-        items: [
-          { title: 'Danh sách', url: adminModulePath('permissions') },
-          { title: 'Thêm mới', url: adminModuleNewPath('permissions') },
-        ],
       },
     ],
   },

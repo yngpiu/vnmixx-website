@@ -123,9 +123,13 @@ export class RoleRepository {
   async syncPermissions(roleId: number, permissionIds: number[]): Promise<RoleDetailView> {
     await this.prisma.$transaction([
       this.prisma.rolePermission.deleteMany({ where: { roleId } }),
-      this.prisma.rolePermission.createMany({
-        data: permissionIds.map((pid) => ({ roleId, permissionId: pid })),
-      }),
+      ...(permissionIds.length > 0
+        ? [
+            this.prisma.rolePermission.createMany({
+              data: permissionIds.map((pid) => ({ roleId, permissionId: pid })),
+            }),
+          ]
+        : []),
     ]);
 
     const row = await this.prisma.role.findUniqueOrThrow({

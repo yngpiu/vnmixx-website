@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
@@ -26,6 +27,8 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+
+const CREATE_EMPLOYEE_FORM_ID = 'create-employee-dialog-form';
 
 const createEmployeeSchema = z.object({
   fullName: z
@@ -144,16 +147,24 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[min(90dvh,40rem)] overflow-y-auto sm:max-w-md"
+        className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
       >
-        <DialogHeader>
-          <DialogTitle>Thêm nhân viên</DialogTitle>
-          <DialogDescription>
-            Tạo tài khoản đăng nhập quản trị. Có thể gán một hoặc nhiều vai trò.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(submitCreate)} noValidate>
+        <div className="shrink-0 border-b px-6 py-4">
+          <DialogHeader>
+            <DialogTitle>Thêm nhân viên</DialogTitle>
+            <DialogDescription>
+              Tạo tài khoản đăng nhập quản trị. Có thể gán một hoặc nhiều vai trò.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+
+        <form
+          id={CREATE_EMPLOYEE_FORM_ID}
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4"
+          onSubmit={handleSubmit(submitCreate)}
+          noValidate
+        >
           <FieldGroup className="gap-4">
             {errors.root ? (
               <Field data-invalid>
@@ -244,20 +255,21 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
               <FieldError errors={[errors.roleIds]} />
             </Field>
           </FieldGroup>
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isPending}
-              onClick={() => onOpenChange(false)}
-            >
-              Hủy
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Đang tạo…' : 'Tạo nhân viên'}
-            </Button>
-          </div>
         </form>
+
+        <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 px-6 py-4 sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending}
+            onClick={() => onOpenChange(false)}
+          >
+            Hủy
+          </Button>
+          <Button type="submit" form={CREATE_EMPLOYEE_FORM_ID} disabled={isPending}>
+            {isPending ? 'Đang tạo…' : 'Tạo nhân viên'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -1,12 +1,10 @@
+import { adminModulePath } from '@/lib/admin-modules';
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Thêm mới · Vai trò · Vnmixx' };
+export const metadata: Metadata = { title: 'Vai trò · Vnmixx' };
 
-export default function RolesNewPage() {
-  return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-      <h1 className="text-lg font-medium tracking-tight">Thêm mới · Vai trò</h1>
-      <p className="max-w-xl text-sm text-muted-foreground">Đây là trang thêm mới vai trò.</p>
-    </div>
-  );
+/** Tạo vai trò qua dialog trên trang danh sách. */
+export default function RolesNewRedirectPage() {
+  redirect(adminModulePath('roles'));
 }
