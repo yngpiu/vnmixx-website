@@ -46,7 +46,7 @@ export class EmployeeAdminController {
   @ApiOperation({
     summary: 'Liệt kê nhân viên',
     description:
-      'Danh sách phân trang với tùy chọn tìm kiếm, lọc trạng thái hoạt động và bao gồm bản ghi đã xóa mềm.',
+      'Danh sách phân trang: tìm kiếm, lọc hoạt động, lọc vai trò. Mặc định chỉ bản ghi chưa xóa; `onlyDeleted=true` chỉ bản đã xóa; `isSoftDeleted=true` gồm cả hai.',
   })
   @ApiOkResponse({ type: EmployeeListResponseDto })
   @Get()
@@ -56,7 +56,9 @@ export class EmployeeAdminController {
       limit: query.limit!,
       search: query.search,
       isActive: query.isActive,
-      includeDeleted: query.includeDeleted,
+      isSoftDeleted: query.isSoftDeleted,
+      onlyDeleted: query.onlyDeleted,
+      roleId: query.roleId,
     });
   }
 
@@ -70,17 +72,23 @@ export class EmployeeAdminController {
 
   @ApiOperation({ summary: 'Tạo nhân viên mới' })
   @ApiCreatedResponse({ type: EmployeeDetailResponseDto })
-  @ApiBadRequestResponse({ description: 'Xác thực dữ liệu yêu cầu thất bại.' })
+  @ApiBadRequestResponse({
+    description: 'Xác thực dữ liệu thất bại hoặc có ID vai trò không tồn tại.',
+  })
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được sử dụng.' })
   @Post()
   create(@Body() dto: CreateEmployeeDto) {
     return this.employeeService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Cập nhật nhân viên' })
+  @ApiOperation({
+    summary: 'Cập nhật nhân viên',
+    description: 'Chỉ cho phép đổi trạng thái hoạt động và/hoặc đồng bộ vai trò.',
+  })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
   @ApiBadRequestResponse({
-    description: 'Xác thực dữ liệu thất bại hoặc không có trường nào được cung cấp.',
+    description:
+      'Không có trường nào được gửi, xác thực dữ liệu thất bại, hoặc có ID vai trò không tồn tại.',
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Patch(':id')

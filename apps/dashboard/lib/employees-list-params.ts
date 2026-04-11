@@ -19,15 +19,24 @@ export function toListEmployeesParams(
     }
   }
 
-  const archive = columnFilters.find((f) => f.id === 'archive');
-  const archiveVals = Array.isArray(archive?.value) ? (archive.value as string[]) : [];
-  const includeDeleted = archiveVals.includes('with_deleted');
+  const deletedFilter = columnFilters.find((f) => f.id === 'deleted');
+  const delStatuses = Array.isArray(deletedFilter?.value) ? (deletedFilter.value as string[]) : [];
+  let onlyDeleted: boolean | undefined;
+  let isSoftDeleted: boolean | undefined;
+  if (delStatuses.length === 1) {
+    if (delStatuses[0] === 'deleted') {
+      onlyDeleted = true;
+    }
+  } else if (delStatuses.length >= 2) {
+    isSoftDeleted = true;
+  }
 
   return {
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
     search,
     isActive,
-    includeDeleted,
+    ...(onlyDeleted === true ? { onlyDeleted: true } : {}),
+    ...(isSoftDeleted === true ? { isSoftDeleted: true } : {}),
   };
 }

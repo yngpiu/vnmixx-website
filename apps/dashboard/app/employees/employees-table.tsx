@@ -2,10 +2,18 @@
 
 import { EmployeesBulkActions } from '@/app/employees/employees-bulk-actions';
 import { employeesColumns } from '@/app/employees/employees-columns';
+import { EmployeesTableActionsProvider } from '@/app/employees/employees-table-actions-context';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
+import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
+import {
+  EditEmployeeDialog,
+  type EmployeeDialogMode,
+} from '@/components/employees/edit-employee-dialog';
+import { EmployeeDetailDialog } from '@/components/employees/employee-detail-dialog';
 import { useEmployeesListUrlState } from '@/hooks/use-employees-list-url-state';
 import { listEmployees } from '@/lib/api/employees';
 import { toListEmployeesParams } from '@/lib/employees-list-params';
+import type { EmployeeListItem } from '@/lib/types/employee';
 import {
   Table,
   TableBody,
@@ -26,20 +34,14 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import { AlertCircleIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-type TableColumnMeta = {
-  className?: string;
-  thClassName?: string;
-  tdClassName?: string;
-};
-
-function headMeta(header: { column: { columnDef: { meta?: unknown } } }): TableColumnMeta {
-  return (header.column.columnDef.meta as TableColumnMeta | undefined) ?? {};
+function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
+  return (header.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
 }
 
-function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): TableColumnMeta {
-  return (cell.column.columnDef.meta as TableColumnMeta | undefined) ?? {};
+function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
+  return (cell.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
 }
 
 const columns = employeesColumns;
@@ -61,6 +63,31 @@ export function EmployeesTable() {
 
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [employeeDialog, setEmployeeDialog] = useState<{
+    id: number;
+    mode: EmployeeDialogMode;
+  } | null>(null);
+  const [detailEmployeeId, setDetailEmployeeId] = useState<number | null>(null);
+
+  const openEmployeeDetail = useCallback((employee: EmployeeListItem) => {
+    setDetailEmployeeId(employee.id);
+  }, []);
+
+  const openEditRoles = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'roles' });
+  }, []);
+
+  const openToggleActive = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'active' });
+  }, []);
+
+  const openDeleteEmployee = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'delete' });
+  }, []);
+
+  const openRestoreEmployee = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'restore' });
+  }, []);
 
   const rows = data?.data ?? [];
   const pageCount = Math.max(data?.meta.totalPages ?? 1, 1);
@@ -107,99 +134,125 @@ export function EmployeesTable() {
   }
 
   return (
-    <div
-      className={cn(
-        'max-sm:has-[div[role="toolbar"]]:mb-16 flex flex-1 flex-col gap-4',
-        isLoading && 'opacity-70',
-      )}
+    <EmployeesTableActionsProvider
+      openEmployeeDetail={openEmployeeDetail}
+      openEditRoles={openEditRoles}
+      openToggleActive={openToggleActive}
+      openDeleteEmployee={openDeleteEmployee}
+      openRestoreEmployee={openRestoreEmployee}
     >
-      <DataTableToolbar
-        table={table}
-        searchPlaceholder="Tìm theo tên, email, SĐT…"
-        searchKey="fullName"
-        searchDebounceMs={350}
-        filters={[
-          {
-            columnId: 'isActive',
-            title: 'Trạng thái',
-            options: [
-              { label: 'Hoạt động', value: 'active' },
-              { label: 'Ngưng', value: 'inactive' },
-            ],
-          },
-          {
-            columnId: 'archive',
-            title: 'Bản ghi',
-            options: [{ label: 'Gồm đã xóa mềm', value: 'with_deleted' }],
-          },
-        ]}
-      />
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="group/row">
-                {headerGroup.headers.map((header) => {
-                  const hm = headMeta(header);
-                  return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        hm.className,
-                        hm.thClassName,
-                      )}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                  className="group/row"
-                >
-                  {row.getVisibleCells().map((cell) => {
-                    const cm = cellMeta(cell);
+      <div
+        className={cn(
+          'max-sm:has-[div[role="toolbar"]]:mb-16 flex flex-1 flex-col gap-4',
+          isLoading && 'opacity-70',
+        )}
+      >
+        <DataTableToolbar
+          table={table}
+          searchPlaceholder="Tìm theo tên, email, SĐT…"
+          searchKey="fullName"
+          searchDebounceMs={350}
+          filters={[
+            {
+              columnId: 'isActive',
+              title: 'Trạng thái hoạt động',
+              options: [
+                { label: 'Đang hoạt động', value: 'active' },
+                { label: 'Vô hiệu hóa', value: 'inactive' },
+              ],
+            },
+            {
+              columnId: 'deleted',
+              title: 'Trạng thái xóa',
+              options: [
+                { label: 'Chưa xóa', value: 'not_deleted' },
+                { label: 'Đã xóa', value: 'deleted' },
+              ],
+            },
+          ]}
+        />
+        <div className="overflow-hidden rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="group/row">
+                  {headerGroup.headers.map((header) => {
+                    const hm = headMeta(header);
                     return (
-                      <TableCell
-                        key={cell.id}
+                      <TableHead
+                        key={header.id}
+                        colSpan={header.colSpan}
                         className={cn(
                           'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                          cm.className,
-                          cm.tdClassName,
+                          hm.className,
+                          hm.thClassName,
                         )}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
                     );
                   })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  {isLoading ? 'Đang tải…' : 'Không có nhân viên phù hợp.'}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && 'selected'}
+                    className="group/row"
+                  >
+                    {row.getVisibleCells().map((cell) => {
+                      const cm = cellMeta(cell);
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
+                            cm.className,
+                            cm.tdClassName,
+                          )}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center text-muted-foreground"
+                  >
+                    {isLoading ? 'Đang tải…' : 'Không có nhân viên phù hợp.'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <DataTablePagination table={table} className="mt-auto" />
+        <EmployeesBulkActions table={table} />
       </div>
-      <DataTablePagination table={table} className="mt-auto" />
-      <EmployeesBulkActions table={table} />
-    </div>
+      <EmployeeDetailDialog
+        employeeId={detailEmployeeId}
+        open={detailEmployeeId !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setDetailEmployeeId(null);
+        }}
+      />
+      <EditEmployeeDialog
+        employeeId={employeeDialog?.id ?? null}
+        mode={employeeDialog?.mode ?? null}
+        open={employeeDialog !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setEmployeeDialog(null);
+        }}
+      />
+    </EmployeesTableActionsProvider>
   );
 }

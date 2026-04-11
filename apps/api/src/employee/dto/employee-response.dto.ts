@@ -26,6 +26,9 @@ export class EmployeeListItemResponseDto {
   @ApiProperty({ example: '+84901234567' })
   phoneNumber: string;
 
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/avatar.jpg', nullable: true })
+  avatarUrl: string | null;
+
   @ApiProperty({ example: true })
   isActive: boolean;
 
@@ -62,9 +65,6 @@ export class EmployeeListResponseDto {
 }
 
 export class EmployeeDetailResponseDto extends EmployeeListItemResponseDto {
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/avatar.jpg', nullable: true })
-  avatarUrl: string | null;
-
   @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
   updatedAt: Date;
 }

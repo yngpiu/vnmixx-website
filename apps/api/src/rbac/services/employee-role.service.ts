@@ -20,6 +20,11 @@ export class EmployeeRoleService {
     return result;
   }
 
+  /** Kiểm tra mọi ID vai trò tồn tại (dùng trước khi tạo nhân viên để tránh bản ghi không có vai trò khi ID sai). */
+  async ensureRoleIdsExist(roleIds: number[]): Promise<void> {
+    if (roleIds.length) await this.validateRoleIds(roleIds);
+  }
+
   async syncRoles(employeeId: number, roleIds: number[]): Promise<EmployeeWithRoles> {
     const exists = await this.employeeRoleRepo.employeeExists(employeeId);
     if (!exists) throw new NotFoundException(`Không tìm thấy nhân viên #${employeeId}`);

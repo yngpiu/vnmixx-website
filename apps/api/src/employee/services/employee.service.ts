@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { hash } from 'bcrypt';
+import { EmployeeRoleService } from '../../rbac/services/employee-role.service';
 import type { CreateEmployeeDto } from '../dto/create-employee.dto';
 import type { UpdateEmployeeDto } from '../dto/update-employee.dto';
 import {
@@ -18,14 +19,19 @@ const BCRYPT_ROUNDS = 10;
 
 @Injectable()
 export class EmployeeService {
-  constructor(private readonly employeeRepo: EmployeeRepository) {}
+  constructor(
+    private readonly employeeRepo: EmployeeRepository,
+    private readonly employeeRoleService: EmployeeRoleService,
+  ) {}
 
   async findList(params: {
     page: number;
     limit: number;
     search?: string;
     isActive?: boolean;
-    includeDeleted?: boolean;
+    isSoftDeleted?: boolean;
+    onlyDeleted?: boolean;
+    roleId?: number;
   }): Promise<PaginatedResult<EmployeeListItemView>> {
     return this.employeeRepo.findList(params);
   }
@@ -46,34 +52,46 @@ export class EmployeeService {
 
     const hashedPassword = await hash(dto.password, BCRYPT_ROUNDS);
 
-    return this.employeeRepo.create({
+    if (dto.roleIds?.length) {
+      await this.employeeRoleService.ensureRoleIdsExist(dto.roleIds);
+    }
+
+    const created = await this.employeeRepo.create({
       fullName: dto.fullName,
       email: dto.email,
       phoneNumber: dto.phoneNumber,
       hashedPassword,
     });
+
+    if (dto.roleIds?.length) {
+      await this.employeeRoleService.syncRoles(created.id, dto.roleIds);
+      return this.findById(created.id);
+    }
+
+    return created;
   }
 
   async update(id: number, dto: UpdateEmployeeDto): Promise<EmployeeDetailView> {
-    if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
+    const hasIsActive = dto.isActive !== undefined;
+    const hasRoleIds = dto.roleIds !== undefined;
+
+    if (!hasIsActive && !hasRoleIds) {
+      throw new BadRequestException('Cần cung cấp trạng thái hoặc danh sách vai trò');
     }
 
-    const data: {
-      fullName?: string;
-      phoneNumber?: string;
-      avatarUrl?: string;
-      isActive?: boolean;
-    } = {};
+    if (hasIsActive) {
+      const updated = await this.employeeRepo.update(id, { isActive: dto.isActive });
+      if (!updated) throw new NotFoundException('Không tìm thấy nhân viên');
+    } else {
+      const existing = await this.employeeRepo.findById(id);
+      if (!existing) throw new NotFoundException('Không tìm thấy nhân viên');
+    }
 
-    if (dto.fullName !== undefined) data.fullName = dto.fullName;
-    if (dto.phoneNumber !== undefined) data.phoneNumber = dto.phoneNumber;
-    if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl;
-    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (hasRoleIds) {
+      await this.employeeRoleService.syncRoles(id, dto.roleIds!);
+    }
 
-    const updated = await this.employeeRepo.update(id, data);
-    if (!updated) throw new NotFoundException('Không tìm thấy nhân viên');
-    return updated;
+    return this.findById(id);
   }
 
   async softDelete(id: number): Promise<void> {

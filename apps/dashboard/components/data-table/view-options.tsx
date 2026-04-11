@@ -1,5 +1,6 @@
 'use client';
 
+import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,
@@ -9,12 +10,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import type { Table } from '@tanstack/react-table';
+import type { Column, Table } from '@tanstack/react-table';
 import { SlidersHorizontal } from 'lucide-react';
 
 type DataTableViewOptionsProps<TData> = {
   table: Table<TData>;
 };
+
+function columnMenuLabel<TData>(column: Column<TData, unknown>): string {
+  const meta = column.columnDef.meta as DataTableColumnMeta | undefined;
+  return meta?.dataTableColumnLabel ?? column.id;
+}
 
 export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps<TData>) {
   return (
@@ -36,11 +42,10 @@ export function DataTableViewOptions<TData>({ table }: DataTableViewOptionsProps
           .map((column) => (
             <DropdownMenuCheckboxItem
               key={column.id}
-              className="capitalize"
               checked={column.getIsVisible()}
               onCheckedChange={(value) => column.toggleVisibility(!!value)}
             >
-              {column.id}
+              {columnMenuLabel(column)}
             </DropdownMenuCheckboxItem>
           ))}
       </DropdownMenuContent>

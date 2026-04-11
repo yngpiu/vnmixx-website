@@ -25,8 +25,20 @@ function parseColumnFilters(searchParams: URLSearchParams): ColumnFiltersState {
   if (statuses.length > 0) {
     filters.push({ id: 'isActive', value: statuses });
   }
-  if (searchParams.get('includeDeleted') === '1') {
-    filters.push({ id: 'archive', value: ['with_deleted'] });
+  const records = searchParams.getAll('record');
+  const hasDeleted = records.includes('deleted');
+  const hasNotDeleted = records.includes('not_deleted');
+  if (hasDeleted && hasNotDeleted) {
+    filters.push({ id: 'deleted', value: ['not_deleted', 'deleted'] });
+  } else if (hasDeleted) {
+    filters.push({ id: 'deleted', value: ['deleted'] });
+  } else if (hasNotDeleted) {
+    filters.push({ id: 'deleted', value: ['not_deleted'] });
+  } else if (
+    searchParams.get('isSoftDeleted') === '1' ||
+    searchParams.get('includeDeleted') === '1'
+  ) {
+    filters.push({ id: 'deleted', value: ['not_deleted', 'deleted'] });
   }
   return filters;
 }
@@ -57,10 +69,12 @@ function buildSearchParamsFromState(
     params.append('status', s);
   }
 
-  const archive = columnFilters.find((f) => f.id === 'archive');
-  const archiveVals = Array.isArray(archive?.value) ? (archive.value as string[]) : [];
-  if (archiveVals.includes('with_deleted')) {
-    params.set('includeDeleted', '1');
+  const deletedFilter = columnFilters.find((f) => f.id === 'deleted');
+  const delVals = Array.isArray(deletedFilter?.value) ? (deletedFilter.value as string[]) : [];
+  for (const v of delVals) {
+    if (v === 'deleted' || v === 'not_deleted') {
+      params.append('record', v);
+    }
   }
 
   return params;

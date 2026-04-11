@@ -12,6 +12,7 @@ export interface EmployeeListItem {
   fullName: string;
   email: string;
   phoneNumber: string;
+  avatarUrl: string | null;
   isActive: boolean;
   createdAt: string;
   deletedAt: string | null;
@@ -29,3 +30,21 @@ export interface EmployeeListResponse {
   data: EmployeeListItem[];
   meta: ListPaginationMeta;
 }
+
+/** Khớp `EmployeeDetailResponseDto` từ API. */
+export interface EmployeeDetail extends EmployeeListItem {
+  updatedAt: string;
+}
+
+export type CreateEmployeePayload = {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  roleIds?: number[];
+};
+
+export type UpdateEmployeePayload = {
+  isActive?: boolean;
+  roleIds?: number[];
+};

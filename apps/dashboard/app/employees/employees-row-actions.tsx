@@ -1,5 +1,6 @@
 'use client';
 
+import { useEmployeesTableActions } from '@/app/employees/employees-table-actions-context';
 import type { EmployeeListItem } from '@/lib/types/employee';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -11,15 +12,31 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
 import type { Row } from '@tanstack/react-table';
-import { ExternalLinkIcon, MoreHorizontalIcon, Trash2Icon, UserPenIcon } from 'lucide-react';
-import Link from 'next/link';
-import { toast } from 'sonner';
+import {
+  MoreHorizontalIcon,
+  RotateCcwIcon,
+  ScanEyeIcon,
+  Trash2Icon,
+  UserCogIcon,
+  UserRoundCheckIcon,
+  UserRoundXIcon,
+} from 'lucide-react';
 
 type EmployeesRowActionsProps = {
   row: Row<EmployeeListItem>;
 };
 
 export function EmployeesRowActions({ row }: EmployeesRowActionsProps) {
+  const {
+    openEmployeeDetail,
+    openEditRoles,
+    openToggleActive,
+    openDeleteEmployee,
+    openRestoreEmployee,
+  } = useEmployeesTableActions();
+  const isDeleted = Boolean(row.original.deletedAt);
+  const isActive = row.original.isActive;
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -28,40 +45,80 @@ export function EmployeesRowActions({ row }: EmployeesRowActionsProps) {
           <span className="sr-only">Mở menu</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem asChild>
-          <Link
-            href={`/employees/${row.original.id}`}
-            className="flex cursor-default items-center gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0"
-          >
-            Chi tiết
-            <DropdownMenuShortcut>
-              <ExternalLinkIcon className="size-4" />
-            </DropdownMenuShortcut>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            toast.info('Chỉnh sửa nhân viên sẽ có trong bản cập nhật tới.');
-          }}
-        >
-          Chỉnh sửa
-          <DropdownMenuShortcut>
-            <UserPenIcon className="size-4" />
-          </DropdownMenuShortcut>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={() => {
-            toast.info('Xóa nhân viên qua API sẽ được nối sau.');
-          }}
-        >
-          Xóa
-          <DropdownMenuShortcut>
-            <Trash2Icon className="size-4" />
-          </DropdownMenuShortcut>
-        </DropdownMenuItem>
+      <DropdownMenuContent align="end" className="w-52">
+        {isDeleted ? (
+          <>
+            <DropdownMenuItem
+              onClick={() => {
+                openEmployeeDetail(row.original);
+              }}
+            >
+              Chi tiết
+              <DropdownMenuShortcut>
+                <ScanEyeIcon className="size-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                openRestoreEmployee(row.original);
+              }}
+            >
+              Khôi phục
+              <DropdownMenuShortcut>
+                <RotateCcwIcon className="size-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </>
+        ) : (
+          <>
+            <DropdownMenuItem
+              onClick={() => {
+                openEmployeeDetail(row.original);
+              }}
+            >
+              Chi tiết
+              <DropdownMenuShortcut>
+                <ScanEyeIcon className="size-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                openEditRoles(row.original);
+              }}
+            >
+              Sửa vai trò
+              <DropdownMenuShortcut>
+                <UserCogIcon className="size-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                openToggleActive(row.original);
+              }}
+            >
+              {isActive ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
+              <DropdownMenuShortcut>
+                {isActive ? (
+                  <UserRoundXIcon className="size-4" />
+                ) : (
+                  <UserRoundCheckIcon className="size-4" />
+                )}
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => {
+                openDeleteEmployee(row.original);
+              }}
+            >
+              Xóa
+              <DropdownMenuShortcut>
+                <Trash2Icon className="size-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -1,5 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ArrayUnique,
+  IsArray,
+  IsEmail,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateEmployeeDto {
   @ApiProperty({ example: 'Trần Thị B', maxLength: 100 })
@@ -25,4 +36,16 @@ export class CreateEmployeeDto {
   @IsString()
   @MinLength(8)
   password: string;
+
+  @ApiPropertyOptional({
+    example: [1, 2],
+    description: 'ID các vai trò gán cho nhân viên sau khi tạo',
+    type: [Number],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  roleIds?: number[];
 }

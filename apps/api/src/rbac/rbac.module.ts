@@ -12,6 +12,7 @@ import { RoleService } from './services/role.service';
 
 @Module({
   imports: [AuthModule],
+  exports: [EmployeeRoleService],
   controllers: [RoleController, PermissionController, EmployeeRoleController],
   providers: [
     RoleService,

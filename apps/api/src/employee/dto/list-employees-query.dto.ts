@@ -34,9 +34,28 @@ export class ListEmployeesQueryDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Bao gồm nhân viên đã xóa mềm' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Khi true, trả về cả nhân viên đã xóa mềm và chưa xóa.',
+  })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
-  includeDeleted?: boolean;
+  isSoftDeleted?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Chỉ lấy nhân viên đã xóa mềm (ưu tiên hơn isSoftDeleted khi cả hai được gửi).',
+  })
+  @TransformQueryOptionalBoolean()
+  @IsBoolean()
+  @IsOptional()
+  onlyDeleted?: boolean;
+
+  @ApiPropertyOptional({ example: 1, description: 'Chỉ nhân viên đang có vai trò này' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  roleId?: number;
 }

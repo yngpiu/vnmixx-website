@@ -1,27 +1,21 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import { ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
 
 export class UpdateEmployeeDto {
-  @ApiPropertyOptional({ example: 'Trần Thị B', maxLength: 100 })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  fullName?: string;
-
-  @ApiPropertyOptional({ example: '+84901234567', maxLength: 20 })
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  phoneNumber?: string;
-
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/avatar.jpg', maxLength: 500 })
-  @IsOptional()
-  @IsUrl()
-  @MaxLength(500)
-  avatarUrl?: string;
-
   @ApiPropertyOptional({ example: true, description: 'Kích hoạt hoặc vô hiệu hóa nhân viên' })
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    example: [1],
+    description: 'Thay thế toàn bộ vai trò; gửi mảng rỗng để gỡ hết',
+    type: [Number],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  roleIds?: number[];
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useLogin } from '@/hooks/use-auth';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
 import {
@@ -26,7 +25,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
   const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
@@ -36,7 +34,18 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
   const loginMutation = useLogin();
 
   const onSubmit = (values: LoginFormValues) => {
-    loginMutation.mutate(values, {
+    form.clearErrors();
+    const parsed = loginSchema.safeParse(values);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0];
+        if (key === 'email' || key === 'password') {
+          form.setError(key, { message: issue.message });
+        }
+      }
+      return;
+    }
+    loginMutation.mutate(parsed.data, {
       onError: (err: Error) => {
         form.setError('root', { message: err.message });
       },

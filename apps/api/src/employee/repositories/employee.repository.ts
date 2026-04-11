@@ -7,6 +7,7 @@ export interface EmployeeListItemView {
   fullName: string;
   email: string;
   phoneNumber: string;
+  avatarUrl: string | null;
   isActive: boolean;
   createdAt: Date;
   deletedAt: Date | null;
@@ -32,6 +33,7 @@ const LIST_SELECT = {
   fullName: true,
   email: true,
   phoneNumber: true,
+  avatarUrl: true,
   isActive: true,
   createdAt: true,
   deletedAt: true,
@@ -53,13 +55,25 @@ export class EmployeeRepository {
     limit: number;
     search?: string;
     isActive?: boolean;
-    includeDeleted?: boolean;
+    isSoftDeleted?: boolean;
+    onlyDeleted?: boolean;
+    roleId?: number;
   }): Promise<PaginatedResult<EmployeeListItemView>> {
-    const { page, limit, search, isActive, includeDeleted } = params;
+    const { page, limit, search, isActive, isSoftDeleted, onlyDeleted, roleId } = params;
+
+    let deletedAtFilter: Prisma.EmployeeWhereInput;
+    if (onlyDeleted === true) {
+      deletedAtFilter = { NOT: { deletedAt: null } };
+    } else if (isSoftDeleted === true) {
+      deletedAtFilter = {};
+    } else {
+      deletedAtFilter = { deletedAt: null };
+    }
 
     const where: Prisma.EmployeeWhereInput = {
-      ...(includeDeleted ? {} : { deletedAt: null }),
+      ...deletedAtFilter,
       ...(isActive !== undefined && { isActive }),
+      ...(roleId !== undefined && { employeeRoles: { some: { roleId } } }),
       ...(search && {
         OR: [
           { fullName: { contains: search } },
