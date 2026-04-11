@@ -1,9 +1,6 @@
-import '@repo/ui/styles.css';
+import '@repo/ui/globals.css';
+import { montserrat } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
-import '../styles/globals.css';
-
-const geist = Geist({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'VNMIXX - Shop',
@@ -19,7 +16,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={geist.className}>{children}</body>
+      <body className={montserrat.className}>{children}</body>
     </html>
   );
 }

@@ -7,6 +7,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   outDir: 'dist/tsup',
-  external: ['react', 'react-dom'],
+  external: ['next', 'next/font/google', 'react', 'react-dom'],
   tsconfig: './tsconfig.json',
 });
