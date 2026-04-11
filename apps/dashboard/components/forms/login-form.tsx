@@ -1,49 +1,96 @@
+'use client';
+
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@repo/ui/components/ui/card';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
 import { cn } from '@repo/ui/lib/utils';
+import Image from 'next/image';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.email({ error: 'Địa chỉ email không hợp lệ.' }),
+  password: z.string().min(1, { error: 'Mật khẩu không được để trống.' }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (values: LoginFormValues) => {
+    console.log('Login form submitted', values);
+  };
+
+  const {
+    formState: { errors },
+  } = form;
+
+  const isPending = true;
+
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
-          <CardDescription>Enter your email below to login to your account</CardDescription>
+          <CardTitle>
+            <Image src="/images/logo.png" alt="Logo" width={150} height={150} className="mb-4" />
+            Đăng nhập vào hệ thống quản lý
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
             <FieldGroup>
-              <Field>
+              {errors.root ? (
+                <Field data-invalid>
+                  <FieldError errors={[errors.root]} />
+                </Field>
+              ) : null}
+              <Field data-invalid={Boolean(errors.email)}>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input id="email" type="email" placeholder="m@example.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  autoComplete="email"
+                  aria-invalid={Boolean(errors.email)}
+                  disabled={isPending}
+                  {...form.register('email')}
+                />
+                <FieldError errors={[errors.email]} />
+              </Field>
+              <Field data-invalid={Boolean(errors.password)}>
+                <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  aria-invalid={Boolean(errors.password)}
+                  disabled={isPending}
+                  {...form.register('password')}
+                />
+                <FieldError errors={[errors.password]} />
               </Field>
               <Field>
-                <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
-                <Input id="password" type="password" required />
-              </Field>
-              <Field>
-                <Button type="submit">Login</Button>
-                <Button variant="outline" type="button">
-                  Login with Google
+                <Button type="submit" disabled={isPending} className="w-full">
+                  {isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
                 </Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="#">Sign up</a>
+                  Không có tài khoản?{' '}
+                  <span className="cursor-pointer text-blue-500">Liên hệ quản lý</span>
                 </FieldDescription>
               </Field>
             </FieldGroup>

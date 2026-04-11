@@ -8,8 +8,7 @@ import {
   DEFAULT_REFRESH_EXPIRATION,
   LOGOUT_ALL_PREFIX,
 } from '../constants';
-import type { AuthResponse } from '../dto';
-import type { JwtPayload, RequestMeta } from '../interfaces';
+import type { JwtPayload, RequestMeta, TokenPair } from '../interfaces';
 import { CustomerRepository } from '../repositories/customer.repository';
 import { EmployeeRepository } from '../repositories/employee.repository';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
@@ -44,7 +43,7 @@ export class TokenService {
     meta: RequestMeta,
     roles: string[] = [],
     permissions: string[] = [],
-  ): Promise<AuthResponse> {
+  ): Promise<TokenPair> {
     const jti = randomUUID();
     const payload: JwtPayload = {
       sub: user.id,
@@ -68,12 +67,11 @@ export class TokenService {
       accessToken,
       refreshToken: rawRefreshToken,
       expiresIn: this.accessExpiration,
-      userType,
     };
   }
 
   /** Exchange a valid refresh token for a new token pair (rotation). */
-  async refreshTokens(refreshToken: string, meta: RequestMeta): Promise<AuthResponse> {
+  async refreshTokens(refreshToken: string, meta: RequestMeta): Promise<TokenPair> {
     const tokenHash = this.hashToken(refreshToken);
     const storedToken = await this.refreshTokenRepo.findByHash(tokenHash);
     if (!storedToken) {
@@ -104,12 +102,14 @@ export class TokenService {
 
   /** Revoke a single refresh token and blacklist the current mã truy cập. */
   async logout(
-    refreshToken: string,
+    refreshToken: string | undefined,
     accessTokenJti: string,
     accessTokenExp: number,
   ): Promise<void> {
-    const tokenHash = this.hashToken(refreshToken);
-    await this.refreshTokenRepo.revokeByHash(tokenHash);
+    if (refreshToken) {
+      const tokenHash = this.hashToken(refreshToken);
+      await this.refreshTokenRepo.revokeByHash(tokenHash);
+    }
     await this.blacklistAccessToken(accessTokenJti, accessTokenExp);
   }
 
@@ -134,7 +134,7 @@ export class TokenService {
     await this.markAllSessionsLoggedOut(userId, userType);
   }
 
-  private async refreshCustomerTokens(userId: number, meta: RequestMeta): Promise<AuthResponse> {
+  private async refreshCustomerTokens(userId: number, meta: RequestMeta): Promise<TokenPair> {
     const customer = await this.customerRepo.findById(userId);
     if (!customer || !customer.isActive || customer.deletedAt) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
@@ -146,7 +146,7 @@ export class TokenService {
     );
   }
 
-  private async refreshEmployeeTokens(userId: number, meta: RequestMeta): Promise<AuthResponse> {
+  private async refreshEmployeeTokens(userId: number, meta: RequestMeta): Promise<TokenPair> {
     const employee = await this.employeeRepo.findById(userId);
     if (!employee || !employee.isActive || employee.deletedAt) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');

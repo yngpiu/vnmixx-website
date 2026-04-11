@@ -39,3 +39,10 @@ export interface RequestMeta {
   ipAddress?: string;
   deviceInfo?: string;
 }
+
+/** Access payload for JSON + raw refresh for HttpOnly cookie only. */
+export interface TokenPair {
+  accessToken: string;
+  expiresIn: number;
+  refreshToken: string;
+}

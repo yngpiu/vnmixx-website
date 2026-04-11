@@ -1,12 +1,34 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+
+const DEFAULT_DEV_CORS_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3001',
+];
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
   const port = Number(process.env.PORT) || 4000;
+
+  app.use(cookieParser());
+
+  const corsOriginEnv = process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS;
+  const origin = corsOriginEnv
+    ? corsOriginEnv
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean)
+    : DEFAULT_DEV_CORS_ORIGINS;
+  app.enableCors({
+    origin,
+    credentials: true,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

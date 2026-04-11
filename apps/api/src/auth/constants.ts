@@ -6,6 +6,9 @@ export const DEFAULT_ACCESS_EXPIRATION = 900;
 /** Default refresh-token lifetime in seconds (7 days). */
 export const DEFAULT_REFRESH_EXPIRATION = 604_800;
 
+/** HttpOnly cookie name for opaque refresh token (path `/auth`). */
+export const REFRESH_TOKEN_COOKIE_NAME = 'vnmixx_refresh';
+
 /** Default OTP lifetime in seconds (5 min). */
 export const DEFAULT_OTP_EXPIRATION = CACHE_TTL.OTP;
 

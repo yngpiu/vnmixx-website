@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
 
-/** Shape returned by login / verify OTP / refresh endpoints. */
+/** JSON body for login / verify OTP / refresh (refresh token chỉ trong cookie HttpOnly). */
 export class AuthResponseDto {
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -9,35 +8,8 @@ export class AuthResponseDto {
   })
   accessToken: string;
 
-  @ApiProperty({
-    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    description: 'Mã làm mới dạng opaque dùng để lấy cặp token mới',
-  })
-  refreshToken: string;
-
   @ApiProperty({ example: 900, description: 'Thời hạn mã truy cập (giây)' })
   expiresIn: number;
-
-  @ApiProperty({
-    enum: ['CUSTOMER', 'EMPLOYEE'],
-    example: 'CUSTOMER',
-    description: 'Xác định loại người dùng đã được xác thực',
-  })
-  userType: 'CUSTOMER' | 'EMPLOYEE';
-}
-
-/** Type alias kept for internal use where full class is not needed. */
-export type AuthResponse = AuthResponseDto;
-
-/** DTO for refreshing an mã truy cập. */
-export class RefreshTokenDto {
-  @ApiProperty({
-    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    description: 'Mã làm mới dạng opaque được cấp khi đăng nhập',
-  })
-  @IsString()
-  @IsNotEmpty()
-  refreshToken: string;
 }
 
 /** Shape returned by profile endpoint. */

@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -11,7 +11,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { CurrentUser, Public, RequireUserType } from '../decorators';
 import {
   AuthResponseDto,
@@ -30,7 +30,12 @@ import {
 import type { AuthenticatedUser } from '../interfaces';
 import { CustomerAuthService } from '../services/customer-auth.service';
 import { TokenService } from '../services/token.service';
-import { extractRequestMeta } from '../utils';
+import {
+  authBodyFromPair,
+  clearRefreshTokenCookie,
+  extractRequestMeta,
+  setRefreshTokenCookie,
+} from '../utils';
 
 @Throttle({ default: { ttl: 60_000, limit: 10 } })
 @ApiTags('Auth')
@@ -53,10 +58,11 @@ export class CustomerAuthController {
     return this.customerAuth.registerCustomer(dto);
   }
 
-  @ApiOperation({ summary: 'Xác thực OTP email khách hàng và cấp cặp token' })
+  @ApiOperation({ summary: 'Xác thực OTP email khách hàng và đăng nhập' })
   @ApiOkResponse({
     type: AuthResponseDto,
-    description: 'Xác thực OTP thành công. Đã cấp cặp token.',
+    description:
+      'Xác thực OTP thành công. Trả accessToken trong JSON; refresh token trong cookie HttpOnly.',
   })
   @ApiTooManyRequestsResponse({
     description: 'Bạn đã thử OTP quá nhiều lần. Vui lòng thử lại sau.',
@@ -67,9 +73,16 @@ export class CustomerAuthController {
   async verifyOtp(
     @Body() dto: VerifyCustomerOtpDto,
     @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponseDto> {
     const identity = await this.customerAuth.verifyCustomerOtp(dto);
-    return this.tokenService.issueTokenPair(identity, 'CUSTOMER', extractRequestMeta(req));
+    const pair = await this.tokenService.issueTokenPair(
+      identity,
+      'CUSTOMER',
+      extractRequestMeta(req),
+    );
+    setRefreshTokenCookie(res, pair.refreshToken);
+    return authBodyFromPair(pair);
   }
 
   @ApiOperation({ summary: 'Gửi lại OTP xác thực email khách hàng' })
@@ -96,9 +109,19 @@ export class CustomerAuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Req() req: Request): Promise<AuthResponseDto> {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
     const identity = await this.customerAuth.loginCustomer(dto);
-    return this.tokenService.issueTokenPair(identity, 'CUSTOMER', extractRequestMeta(req));
+    const pair = await this.tokenService.issueTokenPair(
+      identity,
+      'CUSTOMER',
+      extractRequestMeta(req),
+    );
+    setRefreshTokenCookie(res, pair.refreshToken);
+    return authBodyFromPair(pair);
   }
 
   @ApiBearerAuth('access-token')
@@ -111,10 +134,12 @@ export class CustomerAuthController {
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ message: string }> {
     await this.customerAuth.changePassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
+    clearRefreshTokenCookie(res);
     return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };
   }
 
@@ -158,9 +183,13 @@ export class CustomerAuthController {
   @Public()
   @Post('forgot-password/reset')
   @HttpCode(HttpStatus.OK)
-  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string }> {
     const { customerId } = await this.customerAuth.resetPassword(dto);
     await this.tokenService.revokeAllSessions(customerId, 'CUSTOMER');
+    clearRefreshTokenCookie(res);
     return { message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.' };
   }
 }
