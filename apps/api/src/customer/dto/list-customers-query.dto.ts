@@ -34,9 +34,21 @@ export class ListCustomersQueryDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ example: false, description: 'Bao gồm khách hàng đã xóa mềm' })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Khi true, trả về cả khách hàng đã xóa mềm và chưa xóa.',
+  })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
-  includeDeleted?: boolean;
+  isSoftDeleted?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Chỉ lấy khách hàng đã xóa mềm (ưu tiên hơn isSoftDeleted khi cả hai được gửi).',
+  })
+  @TransformQueryOptionalBoolean()
+  @IsBoolean()
+  @IsOptional()
+  onlyDeleted?: boolean;
 }

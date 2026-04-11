@@ -13,6 +13,9 @@ export class CustomerListItemResponseDto {
   @ApiProperty({ example: '+84901234567' })
   phoneNumber: string;
 
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/avatar.jpg', nullable: true })
+  avatarUrl: string | null;
+
   @ApiPropertyOptional({ enum: ['MALE', 'FEMALE', 'OTHER'], nullable: true })
   gender: string | null;
 
@@ -51,9 +54,6 @@ export class CustomerListResponseDto {
 export class CustomerDetailResponseDto extends CustomerListItemResponseDto {
   @ApiPropertyOptional({ example: '1999-12-31', nullable: true })
   dob: Date | null;
-
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/avatar.jpg', nullable: true })
-  avatarUrl: string | null;
 
   @ApiPropertyOptional({ nullable: true })
   emailVerifiedAt: Date | null;

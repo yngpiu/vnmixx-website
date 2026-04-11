@@ -135,10 +135,6 @@ export const sidebarSections: SidebarSection[] = [
         title: 'Khách hàng',
         url: adminModulePath('customers'),
         icon: <UsersIcon />,
-        items: [
-          { title: 'Danh sách', url: adminModulePath('customers') },
-          { title: 'Thêm mới', url: adminModuleNewPath('customers') },
-        ],
       },
       {
         title: 'Nhân viên',

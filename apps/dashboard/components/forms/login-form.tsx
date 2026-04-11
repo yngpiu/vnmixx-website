@@ -63,7 +63,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
       <Card>
         <CardHeader>
           <CardTitle>
-            <Image src="/images/logo.png" alt="Logo" width={150} height={150} className="mb-4" />
+            <Image
+              src="/images/logo.png"
+              alt="Logo"
+              width={150}
+              height={150}
+              priority
+              className="mb-4 h-auto w-[150px]"
+            />
             Đăng nhập vào hệ thống quản lý
           </CardTitle>
         </CardHeader>

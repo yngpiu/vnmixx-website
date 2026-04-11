@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import type { Gender } from '../../../generated/prisma/client';
 import type { UpdateCustomerDto } from '../dto/update-customer.dto';
 import {
   CustomerRepository,
@@ -17,7 +16,8 @@ export class CustomerService {
     limit: number;
     search?: string;
     isActive?: boolean;
-    includeDeleted?: boolean;
+    isSoftDeleted?: boolean;
+    onlyDeleted?: boolean;
   }): Promise<PaginatedResult<CustomerListItemView>> {
     return this.customerRepo.findList(params);
   }
@@ -29,25 +29,11 @@ export class CustomerService {
   }
 
   async update(id: number, dto: UpdateCustomerDto): Promise<CustomerDetailView> {
-    if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
+    if (dto.isActive === undefined) {
+      throw new BadRequestException('Cần cung cấp trạng thái hoạt động');
     }
 
-    const data: {
-      fullName?: string;
-      phoneNumber?: string;
-      dob?: Date | null;
-      gender?: Gender | null;
-      isActive?: boolean;
-    } = {};
-
-    if (dto.fullName !== undefined) data.fullName = dto.fullName;
-    if (dto.phoneNumber !== undefined) data.phoneNumber = dto.phoneNumber;
-    if (dto.dob !== undefined) data.dob = new Date(dto.dob);
-    if (dto.gender !== undefined) data.gender = dto.gender as Gender;
-    if (dto.isActive !== undefined) data.isActive = dto.isActive;
-
-    const updated = await this.customerRepo.update(id, data);
+    const updated = await this.customerRepo.update(id, { isActive: dto.isActive });
     if (!updated) throw new NotFoundException('Không tìm thấy khách hàng');
     return updated;
   }
@@ -59,7 +45,8 @@ export class CustomerService {
 
   async restore(id: number): Promise<CustomerDetailView> {
     const restored = await this.customerRepo.restore(id);
-    if (!restored) throw new NotFoundException('Không tìm thấy khách hàng or not deleted');
+    if (!restored)
+      throw new NotFoundException('Không tìm thấy khách hàng hoặc bản ghi chưa bị xóa.');
     return restored;
   }
 }

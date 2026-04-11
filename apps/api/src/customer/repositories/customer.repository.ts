@@ -7,6 +7,7 @@ export interface CustomerListItemView {
   fullName: string;
   email: string;
   phoneNumber: string;
+  avatarUrl: string | null;
   gender: string | null;
   isActive: boolean;
   createdAt: Date;
@@ -15,7 +16,6 @@ export interface CustomerListItemView {
 
 export interface CustomerDetailView extends CustomerListItemView {
   dob: Date | null;
-  avatarUrl: string | null;
   emailVerifiedAt: Date | null;
   updatedAt: Date;
   _count: { addresses: number };
@@ -31,6 +31,7 @@ const LIST_SELECT = {
   fullName: true,
   email: true,
   phoneNumber: true,
+  avatarUrl: true,
   gender: true,
   isActive: true,
   createdAt: true,
@@ -40,7 +41,6 @@ const LIST_SELECT = {
 const DETAIL_SELECT = {
   ...LIST_SELECT,
   dob: true,
-  avatarUrl: true,
   emailVerifiedAt: true,
   updatedAt: true,
   _count: { select: { addresses: true } },
@@ -55,12 +55,22 @@ export class CustomerRepository {
     limit: number;
     search?: string;
     isActive?: boolean;
-    includeDeleted?: boolean;
+    isSoftDeleted?: boolean;
+    onlyDeleted?: boolean;
   }): Promise<PaginatedResult<CustomerListItemView>> {
-    const { page, limit, search, isActive, includeDeleted } = params;
+    const { page, limit, search, isActive, isSoftDeleted, onlyDeleted } = params;
+
+    let deletedAtFilter: Prisma.CustomerWhereInput;
+    if (onlyDeleted === true) {
+      deletedAtFilter = { NOT: { deletedAt: null } };
+    } else if (isSoftDeleted === true) {
+      deletedAtFilter = {};
+    } else {
+      deletedAtFilter = { deletedAt: null };
+    }
 
     const where: Prisma.CustomerWhereInput = {
-      ...(includeDeleted ? {} : { deletedAt: null }),
+      ...deletedAtFilter,
       ...(isActive !== undefined && { isActive }),
       ...(search && {
         OR: [
@@ -83,7 +93,7 @@ export class CustomerRepository {
     ]);
 
     return {
-      data,
+      data: data as unknown as CustomerListItemView[],
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

@@ -42,7 +42,7 @@ export class CustomerAdminController {
   @ApiOperation({
     summary: 'Liệt kê khách hàng',
     description:
-      'Danh sách phân trang với tùy chọn tìm kiếm, lọc trạng thái hoạt động và bao gồm bản ghi đã xóa mềm.',
+      'Danh sách phân trang: tìm kiếm, lọc hoạt động. Mặc định chỉ bản ghi chưa xóa; `onlyDeleted=true` chỉ đã xóa; `isSoftDeleted=true` gồm cả hai.',
   })
   @ApiOkResponse({ type: CustomerListResponseDto })
   @Get()
@@ -52,7 +52,8 @@ export class CustomerAdminController {
       limit: query.limit!,
       search: query.search,
       isActive: query.isActive,
-      includeDeleted: query.includeDeleted,
+      isSoftDeleted: query.isSoftDeleted,
+      onlyDeleted: query.onlyDeleted,
     });
   }
 
@@ -64,10 +65,13 @@ export class CustomerAdminController {
     return this.customerService.findById(id);
   }
 
-  @ApiOperation({ summary: 'Cập nhật khách hàng' })
+  @ApiOperation({
+    summary: 'Cập nhật khách hàng',
+    description: 'Chỉ cho phép đổi trạng thái hoạt động (kích hoạt / vô hiệu hóa).',
+  })
   @ApiOkResponse({ type: CustomerDetailResponseDto })
   @ApiBadRequestResponse({
-    description: 'Xác thực dữ liệu thất bại hoặc không có trường nào được cung cấp.',
+    description: 'Thiếu trạng thái hoặc xác thực dữ liệu thất bại.',
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Patch(':id')
