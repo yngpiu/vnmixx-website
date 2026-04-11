@@ -1,5 +1,6 @@
 'use client';
 
+import { useLogin } from '@/hooks/use-auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
@@ -32,15 +33,21 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
     },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
-    console.log('Login form submitted', values);
+  const loginMutation = useLogin();
+
+  const onSubmit = (values: LoginFormValues) => {
+    loginMutation.mutate(values, {
+      onError: (err: Error) => {
+        form.setError('root', { message: err.message });
+      },
+    });
   };
 
   const {
     formState: { errors },
   } = form;
 
-  const isPending = true;
+  const isPending = loginMutation.isPending;
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>

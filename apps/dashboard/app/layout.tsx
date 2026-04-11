@@ -1,6 +1,10 @@
+import { COOKIE_ACCESS_TOKEN } from '@/lib/constants';
+import { AuthProvider } from '@/providers/auth-provider';
+import { QueryProvider } from '@/providers/query-provider';
 import '@repo/ui/globals.css';
 import { montserrat } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
   title: 'VNMIXX - Dashboard',
@@ -13,10 +17,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(COOKIE_ACCESS_TOKEN)?.value ?? null;
+
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={montserrat.className}>{children}</body>
+      <body className={montserrat.className}>
+        <QueryProvider>
+          <AuthProvider accessToken={accessToken}>{children}</AuthProvider>
+        </QueryProvider>
+      </body>
     </html>
   );
 }

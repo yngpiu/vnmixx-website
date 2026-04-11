@@ -78,5 +78,6 @@ export function authBodyFromPair(pair: TokenPair): AuthResponseDto {
   return {
     accessToken: pair.accessToken,
     expiresIn: pair.expiresIn,
+    refreshToken: pair.refreshToken,
   };
 }

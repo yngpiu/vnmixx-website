@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-/** JSON body for login / verify OTP / refresh (refresh token chỉ trong cookie HttpOnly). */
+/** JSON body for login / verify OTP / refresh. Refresh token returned in both body and HttpOnly cookie. */
 export class AuthResponseDto {
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -10,6 +10,12 @@ export class AuthResponseDto {
 
   @ApiProperty({ example: 900, description: 'Thời hạn mã truy cập (giây)' })
   expiresIn: number;
+
+  @ApiProperty({
+    example: 'dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...',
+    description: 'Opaque refresh token (cũng set trong cookie HttpOnly)',
+  })
+  refreshToken: string;
 }
 
 /** Shape returned by profile endpoint. */
