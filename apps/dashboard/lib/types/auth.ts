@@ -10,6 +10,7 @@ export interface UserProfile {
   id: number;
   email: string;
   fullName: string;
+  avatarUrl?: string | null;
   userType: 'CUSTOMER' | 'EMPLOYEE';
   roles: string[];
   permissions: string[];

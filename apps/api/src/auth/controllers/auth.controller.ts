@@ -111,6 +111,7 @@ export class AuthController {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
+      avatarUrl: user.avatarUrl ?? null,
       userType: user.userType,
       roles: user.roles,
       permissions: user.permissions,

@@ -1,12 +1,14 @@
 'use client';
 
 import type { ComponentProps } from 'react';
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { sidebarSections } from '@/config/sidebar-menu';
+import { pravatarFromEmail } from '@/lib/avatar';
 import { dashboardRoutes } from '@/lib/routes';
+import { useAuthStore } from '@/stores/auth-store';
 import {
   Sidebar,
   SidebarContent,
@@ -20,15 +22,32 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 
-const data = {
-  user: {
-    name: 'Người dùng',
-    email: 'account@vnmixx.local',
-    avatar: '',
-  },
-};
-
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const profile = useAuthStore((s) => s.user);
+
+  const navUser = useMemo(() => {
+    if (profile) {
+      return {
+        name: profile.fullName,
+        email: profile.email,
+        avatar: profile.avatarUrl?.trim() || pravatarFromEmail(profile.email),
+      };
+    }
+    if (accessToken) {
+      return {
+        name: 'Đang tải…',
+        email: '',
+        avatar: '',
+      };
+    }
+    return {
+      name: 'Khách',
+      email: '',
+      avatar: '',
+    };
+  }, [accessToken, profile]);
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -63,7 +82,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={navUser} />
       </SidebarFooter>
     </Sidebar>
   );

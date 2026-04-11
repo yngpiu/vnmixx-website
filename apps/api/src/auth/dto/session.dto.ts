@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /** JSON body for login / verify OTP / refresh. Refresh token returned in both body and HttpOnly cookie. */
 export class AuthResponseDto {
@@ -28,6 +28,12 @@ export class ProfileResponseDto {
 
   @ApiProperty({ example: 'Nguyễn Văn A' })
   fullName: string;
+
+  @ApiPropertyOptional({
+    example: 'https://example.com/avatar.jpg',
+    description: 'URL ảnh đại diện (nếu có)',
+  })
+  avatarUrl?: string | null;
 
   @ApiProperty({ enum: ['CUSTOMER', 'EMPLOYEE'], example: 'CUSTOMER' })
   userType: 'CUSTOMER' | 'EMPLOYEE';

@@ -26,6 +26,7 @@ interface CustomerValidationView {
   id: number;
   email: string;
   fullName: string;
+  avatarUrl: string | null;
   isActive: boolean;
   deletedAt: Date | null;
 }
@@ -56,6 +57,7 @@ export class CustomerRepository {
         id: true,
         email: true,
         fullName: true,
+        avatarUrl: true,
         isActive: true,
         deletedAt: true,
       },

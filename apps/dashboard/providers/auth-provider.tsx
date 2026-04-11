@@ -1,7 +1,10 @@
 'use client';
 
+import '@/lib/api/interceptors';
+import { apiClient } from '@/lib/axios';
+import type { UserProfile } from '@/lib/types/auth';
 import { useAuthStore } from '@/stores/auth-store';
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, type ReactNode } from 'react';
 
 interface AuthProviderProps {
   /** Access token read from server-side cookie, passed down from layout. */
@@ -10,18 +13,39 @@ interface AuthProviderProps {
 }
 
 /**
- * Syncs the server-provided access token into the Zustand store
- * so client-side API calls (via axios interceptor) can use it.
- * Runs once on mount — subsequent token updates come from
- * the refresh interceptor or login mutation.
+ * Đồng bộ token từ cookie vào Zustand, gọi GET /auth/me để có profile ở client
+ * (footer sidebar, v.v.) kể cả sau F5.
  */
 export function AuthProvider({ accessToken, children }: AuthProviderProps) {
-  const isInitialized = useRef(false);
-  if (!isInitialized.current) {
+  useLayoutEffect(() => {
     if (accessToken) {
       useAuthStore.getState().setAccessToken(accessToken);
+    } else {
+      useAuthStore.getState().clearSession();
     }
-    isInitialized.current = true;
-  }
+  }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data } = await apiClient.get<UserProfile>('/auth/me');
+        if (!cancelled) {
+          useAuthStore.getState().setUser(data);
+        }
+      } catch {
+        if (!cancelled) {
+          useAuthStore.getState().setUser(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken]);
+
   return <>{children}</>;
 }

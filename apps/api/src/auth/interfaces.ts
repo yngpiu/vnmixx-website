@@ -23,6 +23,8 @@ export interface AuthenticatedUser {
   id: number;
   email: string;
   fullName: string;
+  /** Ảnh đại diện (nếu có) — lấy từ bảng employee/customer. */
+  avatarUrl?: string | null;
   userType: 'CUSTOMER' | 'EMPLOYEE';
   roles: string[];
   permissions: string[];
