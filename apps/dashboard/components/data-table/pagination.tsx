@@ -37,7 +37,7 @@ export function DataTablePagination<TData>({ table, className }: DataTablePagina
       style={{ overflowClipMargin: 1 }}
     >
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex w-full items-center justify-center text-sm font-medium sm:hidden ">
+        <div className="flex w-full shrink-0 items-center justify-center whitespace-nowrap text-sm font-medium sm:hidden">
           Trang {currentPage} / {totalPages}
         </div>
         <div className="flex items-center justify-center gap-2 sm:justify-end">
@@ -63,7 +63,7 @@ export function DataTablePagination<TData>({ table, className }: DataTablePagina
       </div>
 
       <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6 lg:gap-8">
-        <div className="hidden text-sm font-medium sm:block">
+        <div className="hidden shrink-0 whitespace-nowrap text-sm font-medium sm:block">
           Trang {currentPage} / {totalPages}
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
