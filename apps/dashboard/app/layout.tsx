@@ -7,6 +7,7 @@ import '@repo/ui/globals.css';
 import { inter } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'VNMIXX - Dashboard',
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <QueryProvider>
             <AuthProvider accessToken={accessToken}>
               <AppChrome>{children}</AppChrome>
+              <Toaster richColors closeButton position="top-center" />
             </AuthProvider>
           </QueryProvider>
         </DashboardTooltipProvider>
