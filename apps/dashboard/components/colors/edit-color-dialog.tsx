@@ -1,7 +1,7 @@
 'use client';
 
-import { listColors, updateColor } from '@/lib/api/colors';
-import type { ColorAdmin } from '@/lib/types/color';
+import { listPublicColors, updateColor } from '@/lib/api/colors';
+import type { ColorPublic } from '@/lib/types/color';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -55,12 +55,12 @@ export function EditColorDialog({ colorId, open, onOpenChange }: EditColorDialog
   const [hexError, setHexError] = useState<string | null>(null);
 
   const listQuery = useQuery({
-    queryKey: ['colors', 'list'],
-    queryFn: listColors,
+    queryKey: ['colors', 'public'],
+    queryFn: listPublicColors,
     enabled: open && colorId != null,
   });
 
-  const color: ColorAdmin | undefined = listQuery.data?.find((c) => c.id === colorId);
+  const color: ColorPublic | undefined = listQuery.data?.find((c) => c.id === colorId);
 
   useEffect(() => {
     if (!open) {
@@ -87,7 +87,7 @@ export function EditColorDialog({ colorId, open, onOpenChange }: EditColorDialog
       }),
     onSuccess: async () => {
       toast.success('Đã cập nhật màu.');
-      await queryClient.invalidateQueries({ queryKey: ['colors', 'list'] });
+      await queryClient.invalidateQueries({ queryKey: ['colors'] });
       onOpenChange(false);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),

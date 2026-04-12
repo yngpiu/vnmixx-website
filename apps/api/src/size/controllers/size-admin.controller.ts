@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -23,7 +24,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireUserType } from '../../auth/decorators';
-import { CreateSizeDto, SizeAdminResponseDto, UpdateSizeDto } from '../dto';
+import {
+  CreateSizeDto,
+  ListSizesQueryDto,
+  SizeAdminResponseDto,
+  SizeListResponseDto,
+  UpdateSizeDto,
+} from '../dto';
 import { SizeService } from '../services/size.service';
 
 @ApiTags('Sizes')
@@ -35,11 +42,20 @@ import { SizeService } from '../services/size.service';
 export class SizeAdminController {
   constructor(private readonly sizeService: SizeService) {}
 
-  @ApiOperation({ summary: 'Liệt kê tất cả kích thước (quản trị)' })
-  @ApiOkResponse({ type: [SizeAdminResponseDto] })
+  @ApiOperation({
+    summary: 'Liệt kê kích thước (quản trị)',
+    description: 'Phân trang, tìm theo nhãn, sắp xếp.',
+  })
+  @ApiOkResponse({ type: SizeListResponseDto })
   @Get()
-  findAll(): Promise<SizeAdminResponseDto[]> {
-    return this.sizeService.findAll();
+  findList(@Query() query: ListSizesQueryDto): Promise<SizeListResponseDto> {
+    return this.sizeService.findList({
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
   }
 
   @ApiOperation({ summary: 'Tạo kích thước mới' })

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface SizeView {
@@ -12,6 +13,11 @@ export interface SizeAdminView extends SizeView {
   updatedAt: Date;
 }
 
+export interface PaginatedSizeList {
+  data: SizeAdminView[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
 const SIZE_PUBLIC_SELECT = { id: true, label: true, sortOrder: true } as const;
 
 const SIZE_ADMIN_SELECT = {
@@ -23,6 +29,50 @@ const SIZE_ADMIN_SELECT = {
 @Injectable()
 export class SizeRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private buildListOrderBy(
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+  ): Prisma.SizeOrderByWithRelationInput {
+    const dir = sortOrder === 'asc' ? 'asc' : 'desc';
+    switch (sortBy) {
+      case 'label':
+        return { label: dir };
+      case 'sortOrder':
+        return { sortOrder: dir };
+      case 'updatedAt':
+        return { updatedAt: dir };
+      default:
+        return { sortOrder: 'asc' };
+    }
+  }
+
+  async findList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<PaginatedSizeList> {
+    const { page, limit, search, sortBy, sortOrder } = params;
+    const where: Prisma.SizeWhereInput = search ? { label: { contains: search } } : {};
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.size.count({ where }),
+      this.prisma.size.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: this.buildListOrderBy(sortBy, sortOrder),
+        select: SIZE_ADMIN_SELECT,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+    };
+  }
 
   findAllPublic(): Promise<SizeView[]> {
     return this.prisma.size.findMany({

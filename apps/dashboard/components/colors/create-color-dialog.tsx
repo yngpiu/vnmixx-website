@@ -64,7 +64,7 @@ export function CreateColorDialog({ open, onOpenChange }: CreateColorDialogProps
     mutationFn: () => createColor({ name: name.trim(), hexCode: normalizeHex(hexCode) }),
     onSuccess: async () => {
       toast.success('Đã tạo màu.');
-      await queryClient.invalidateQueries({ queryKey: ['colors', 'list'] });
+      await queryClient.invalidateQueries({ queryKey: ['colors'] });
       onOpenChange(false);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),

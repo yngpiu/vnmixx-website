@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -23,7 +24,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireUserType } from '../../auth/decorators';
-import { ColorAdminResponseDto, CreateColorDto, UpdateColorDto } from '../dto';
+import {
+  ColorAdminResponseDto,
+  ColorListResponseDto,
+  CreateColorDto,
+  ListColorsQueryDto,
+  UpdateColorDto,
+} from '../dto';
 import { ColorService } from '../services/color.service';
 
 @ApiTags('Colors')
@@ -35,11 +42,20 @@ import { ColorService } from '../services/color.service';
 export class ColorAdminController {
   constructor(private readonly colorService: ColorService) {}
 
-  @ApiOperation({ summary: 'Liệt kê tất cả màu sắc (quản trị)' })
-  @ApiOkResponse({ type: [ColorAdminResponseDto] })
+  @ApiOperation({
+    summary: 'Liệt kê màu sắc (quản trị)',
+    description: 'Phân trang, tìm theo tên hoặc HEX, sắp xếp.',
+  })
+  @ApiOkResponse({ type: ColorListResponseDto })
   @Get()
-  findAll(): Promise<ColorAdminResponseDto[]> {
-    return this.colorService.findAll();
+  findList(@Query() query: ListColorsQueryDto): Promise<ColorListResponseDto> {
+    return this.colorService.findList({
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
   }
 
   @ApiOperation({ summary: 'Tạo màu mới' })

@@ -3,7 +3,12 @@ import { Prisma } from '../../../generated/prisma/client';
 import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { CreateColorDto, UpdateColorDto } from '../dto';
-import { ColorAdminView, ColorRepository, ColorView } from '../repositories/color.repository';
+import {
+  ColorAdminView,
+  ColorRepository,
+  ColorView,
+  PaginatedColorList,
+} from '../repositories/color.repository';
 
 @Injectable()
 export class ColorService {
@@ -24,6 +29,16 @@ export class ColorService {
 
   findAll(): Promise<ColorAdminView[]> {
     return this.repository.findAll();
+  }
+
+  findList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<PaginatedColorList> {
+    return this.repository.findList(params);
   }
 
   async create(dto: CreateColorDto): Promise<ColorAdminView> {

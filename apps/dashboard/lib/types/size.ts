@@ -5,3 +5,18 @@ export type SizeAdmin = {
   createdAt: string;
   updatedAt: string;
 };
+
+/** GET /sizes — dùng cho form chọn kích cỡ (không có createdAt/updatedAt). */
+export type SizePublic = Pick<SizeAdmin, 'id' | 'label' | 'sortOrder'>;
+
+export type SizeListMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type SizeListResponse = {
+  data: SizeAdmin[];
+  meta: SizeListMeta;
+};

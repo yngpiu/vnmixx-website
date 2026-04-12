@@ -1,8 +1,23 @@
 import { apiClient } from '@/lib/axios';
-import type { SizeAdmin } from '@/lib/types/size';
+import type { SizeAdmin, SizeListResponse, SizePublic } from '@/lib/types/size';
 
-export async function listSizes(): Promise<SizeAdmin[]> {
-  const { data } = await apiClient.get<SizeAdmin[]>('/admin/sizes');
+export type ListSizesParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};
+
+/** Danh sách quản trị: phân trang + sort (GET /admin/sizes). */
+export async function listSizes(params: ListSizesParams = {}): Promise<SizeListResponse> {
+  const { data } = await apiClient.get<SizeListResponse>('/admin/sizes', { params });
+  return data;
+}
+
+/** Toàn bộ kích cỡ công khai — dùng cho form sản phẩm, dialog sửa (GET /sizes). */
+export async function listPublicSizes(): Promise<SizePublic[]> {
+  const { data } = await apiClient.get<SizePublic[]>('/sizes');
   return data;
 }
 

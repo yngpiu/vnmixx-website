@@ -2,9 +2,7 @@ import { apiClient } from '@/lib/axios';
 import type { CategoryAdmin } from '@/lib/types/category';
 
 export type ListCategoriesParams = {
-  /** Chỉ danh mục đã xóa (ưu tiên hơn isSoftDeleted khi cả hai được gửi). */
-  onlyDeleted?: boolean;
-  /** Gồm cả đã xóa và chưa xóa. */
+  isActive?: boolean;
   isSoftDeleted?: boolean;
 };
 

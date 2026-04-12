@@ -178,6 +178,7 @@ export function createCategoryColumns(opts: {
     {
       id: 'actions',
       cell: ({ row }) => <CategoriesRowActions row={row} />,
+      enableSorting: false,
       enableHiding: false,
       meta: {
         thClassName: 'text-end',

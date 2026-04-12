@@ -16,7 +16,8 @@ import {
 import { toListCategoriesParams } from '@/lib/categories-list-params';
 import { categoryDisplayName } from '@/lib/category-display-name';
 import { buildCategoryAdminTree, flattenVisibleCategoryRows } from '@/lib/category-tree';
-import type { CategoryAdminTreeNode, CategoryTableRow } from '@/lib/types/category';
+import { CATEGORY_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
+import type { CategoryAdmin, CategoryAdminTreeNode, CategoryTableRow } from '@/lib/types/category';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +43,7 @@ import {
   getCoreRowModel,
   useReactTable,
   type ColumnFiltersState,
+  type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
@@ -98,34 +100,51 @@ function keepIdsWithAncestors(rows: CategoryTableRow[], q: string): Set<number> 
   return keep;
 }
 
-/** Lọc client giống filterFn trên cột (dùng khi manualFiltering + phân trang theo gốc). */
-function filterCategoryRows(
-  rows: CategoryTableRow[],
-  globalFilter: string,
-  columnFilters: ColumnFiltersState,
-): CategoryTableRow[] {
-  let out = rows;
+/** Lọc client theo ô tìm (cột khác lọc qua API). */
+function filterCategoryRows(rows: CategoryTableRow[], globalFilter: string): CategoryTableRow[] {
   const q = globalFilter.trim().toLowerCase();
-  if (q) {
-    const keep = keepIdsWithAncestors(rows, q);
-    out = rows.filter((r) => keep.has(r.node.id));
-  }
-  for (const f of columnFilters) {
-    const values = f.value as string[] | undefined;
-    if (!values?.length) continue;
-    if (f.id === 'isActive') {
-      if (values.length >= 2) continue;
-      if (values[0] === 'active') {
-        out = out.filter((r) => r.node.isActive === true);
-      } else if (values[0] === 'inactive') {
-        out = out.filter((r) => r.node.isActive === false);
-      }
-    }
-  }
-  return out;
+  if (!q) return rows;
+  const keep = keepIdsWithAncestors(rows, q);
+  return rows.filter((r) => keep.has(r.node.id));
 }
 
-function orderedRootIds(rows: CategoryTableRow[]): number[] {
+const categorySortIds = CATEGORY_TABLE_SORT_IDS as readonly string[];
+
+function rootNodeForId(rows: CategoryTableRow[], rootId: number): CategoryAdmin | undefined {
+  return rows.find((r) => r.node.id === rootId)?.node;
+}
+
+function compareCategoryRoots(
+  rootIdA: number,
+  rootIdB: number,
+  rows: CategoryTableRow[],
+  sortId: string,
+  desc: boolean,
+): number {
+  const a = rootNodeForId(rows, rootIdA);
+  const b = rootNodeForId(rows, rootIdB);
+  if (!a || !b) return 0;
+  const dir = desc ? -1 : 1;
+  switch (sortId) {
+    case 'name':
+      return (
+        dir *
+        categoryDisplayName(a.name).localeCompare(categoryDisplayName(b.name), 'vi', {
+          sensitivity: 'base',
+        })
+      );
+    case 'slug':
+      return dir * a.slug.localeCompare(b.slug, 'vi');
+    case 'isActive':
+      return dir * (Number(a.isActive) - Number(b.isActive));
+    case 'updatedAt':
+      return dir * (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
+    default:
+      return 0;
+  }
+}
+
+function orderedRootIds(rows: CategoryTableRow[], sorting: SortingState): number[] {
   const seen = new Set<number>();
   const ids: number[] = [];
   for (const r of rows) {
@@ -134,7 +153,11 @@ function orderedRootIds(rows: CategoryTableRow[]): number[] {
       ids.push(r.rootId);
     }
   }
-  return ids;
+  const s = sorting[0];
+  if (!s || !categorySortIds.includes(s.id)) {
+    return ids;
+  }
+  return [...ids].sort((aa, bb) => compareCategoryRoots(aa, bb, rows, s.id, s.desc));
 }
 
 type CategoriesTableProps = {
@@ -147,6 +170,7 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
   const [detailCategory, setDetailCategory] = useState<CategoryAdminTreeNode | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CategoryAdminTreeNode | null>(null);
@@ -256,11 +280,14 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
   }, [tree, collapsedIds, globalFilter]);
 
   const filteredRows = useMemo(
-    () => filterCategoryRows(tableRows, globalFilter, columnFilters),
-    [tableRows, globalFilter, columnFilters],
+    () => filterCategoryRows(tableRows, globalFilter),
+    [tableRows, globalFilter],
   );
 
-  const rootIdsForPage = useMemo(() => orderedRootIds(filteredRows), [filteredRows]);
+  const rootIdsForPage = useMemo(
+    () => orderedRootIds(filteredRows, sorting),
+    [filteredRows, sorting],
+  );
 
   const pageCount = Math.max(1, Math.ceil(rootIdsForPage.length / pagination.pageSize));
 
@@ -287,13 +314,16 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
       columnFilters,
       columnVisibility,
       pagination,
+      sorting,
     },
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
+    onSortingChange: setSorting,
     manualPagination: true,
     manualFiltering: true,
+    manualSorting: true,
     pageCount,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => String(row.node.id),
@@ -301,7 +331,7 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
 
   useEffect(() => {
     setPagination((p) => (p.pageIndex === 0 ? p : { ...p, pageIndex: 0 }));
-  }, [globalFilter, columnFilters]);
+  }, [globalFilter, columnFilters, sorting]);
 
   useEffect(() => {
     setPagination((p) => {
@@ -349,6 +379,7 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
               {
                 columnId: 'isActive',
                 title: 'Trạng thái hoạt động',
+                selectionMode: 'single',
                 options: [
                   { label: 'Đang hoạt động', value: 'active' },
                   { label: 'Vô hiệu hóa', value: 'inactive' },
@@ -357,6 +388,7 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
               {
                 columnId: 'deleted',
                 title: 'Trạng thái xóa',
+                selectionMode: 'single',
                 options: [
                   { label: 'Chưa xóa', value: 'not_deleted' },
                   { label: 'Đã xóa', value: 'deleted' },

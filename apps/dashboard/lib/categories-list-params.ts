@@ -1,22 +1,23 @@
 import type { ListCategoriesParams } from '@/lib/api/categories';
+import { isSoftDeletedFromDeletedColumnFilter } from '@/lib/list-soft-deleted-from-column-filter';
 import type { ColumnFiltersState } from '@tanstack/react-table';
 
-/** Map bộ lọc cột «Trạng thái xóa» sang query API (cùng quy ước employee / customer). */
+/** Map bộ lọc cột sang query API. `isSoftDeleted` mặc định false (ẩn đã xóa mềm) trừ khi chọn «cả hai». */
 export function toListCategoriesParams(columnFilters: ColumnFiltersState): ListCategoriesParams {
-  const deletedFilter = columnFilters.find((f) => f.id === 'deleted');
-  const delStatuses = Array.isArray(deletedFilter?.value) ? (deletedFilter.value as string[]) : [];
-  let onlyDeleted: boolean | undefined;
-  let isSoftDeleted: boolean | undefined;
-  if (delStatuses.length === 1) {
-    if (delStatuses[0] === 'deleted') {
-      onlyDeleted = true;
-    }
-  } else if (delStatuses.length >= 2) {
-    isSoftDeleted = true;
+  const activeFilter = columnFilters.find((f) => f.id === 'isActive');
+  const actVals = Array.isArray(activeFilter?.value) ? (activeFilter.value as string[]) : [];
+  let isActive: boolean | undefined;
+  if (actVals.length === 1) {
+    if (actVals[0] === 'active') isActive = true;
+    else if (actVals[0] === 'inactive') isActive = false;
   }
 
+  const deletedFilter = columnFilters.find((f) => f.id === 'deleted');
+  const delStatuses = Array.isArray(deletedFilter?.value) ? (deletedFilter.value as string[]) : [];
+  const isSoftDeleted = isSoftDeletedFromDeletedColumnFilter(delStatuses);
+
   return {
-    ...(onlyDeleted === true ? { onlyDeleted: true } : {}),
-    ...(isSoftDeleted === true ? { isSoftDeleted: true } : {}),
+    ...(isActive !== undefined ? { isActive } : {}),
+    ...(isSoftDeleted !== undefined ? { isSoftDeleted } : {}),
   };
 }

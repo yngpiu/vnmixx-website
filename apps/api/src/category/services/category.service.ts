@@ -56,7 +56,7 @@ export class CategoryService {
   // ─── Admin ────────────────────────────────────────────────────────────────
 
   async findAll(opts?: {
-    onlyDeleted?: boolean;
+    isActive?: boolean;
     isSoftDeleted?: boolean;
   }): Promise<CategoryAdminView[]> {
     return this.repository.findAll(opts);

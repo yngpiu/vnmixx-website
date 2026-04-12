@@ -1,7 +1,7 @@
 'use client';
 
-import { listSizes, updateSize } from '@/lib/api/sizes';
-import type { SizeAdmin } from '@/lib/types/size';
+import { listPublicSizes, updateSize } from '@/lib/api/sizes';
+import type { SizePublic } from '@/lib/types/size';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -45,12 +45,12 @@ export function EditSizeDialog({ sizeId, open, onOpenChange }: EditSizeDialogPro
   const [labelError, setLabelError] = useState<string | null>(null);
 
   const listQuery = useQuery({
-    queryKey: ['sizes', 'list'],
-    queryFn: listSizes,
+    queryKey: ['sizes', 'public'],
+    queryFn: listPublicSizes,
     enabled: open && sizeId != null,
   });
 
-  const size: SizeAdmin | undefined = listQuery.data?.find((s) => s.id === sizeId);
+  const size: SizePublic | undefined = listQuery.data?.find((s) => s.id === sizeId);
 
   useEffect(() => {
     if (!open) {
@@ -74,7 +74,7 @@ export function EditSizeDialog({ sizeId, open, onOpenChange }: EditSizeDialogPro
     },
     onSuccess: async () => {
       toast.success('Đã cập nhật kích cỡ.');
-      await queryClient.invalidateQueries({ queryKey: ['sizes', 'list'] });
+      await queryClient.invalidateQueries({ queryKey: ['sizes'] });
       onOpenChange(false);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),

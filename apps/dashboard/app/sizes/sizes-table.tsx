@@ -1,7 +1,12 @@
 'use client';
 
+import { createSizesColumns } from '@/app/sizes/sizes-columns';
+import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
+import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { EditSizeDialog } from '@/components/sizes/edit-size-dialog';
+import { useSizesListUrlState } from '@/hooks/use-sizes-list-url-state';
 import { deleteSize, listSizes } from '@/lib/api/sizes';
+import { toListSizesParams } from '@/lib/sizes-list-params';
 import type { SizeAdmin } from '@/lib/types/size';
 import {
   AlertDialog,
@@ -13,16 +18,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@repo/ui/components/ui/alert-dialog';
-import { Button } from '@repo/ui/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from '@repo/ui/components/ui/dropdown-menu';
-import { Input } from '@repo/ui/components/ui/input';
 import {
   Table,
   TableBody,
@@ -31,10 +26,12 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui/components/ui/table';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { cn } from '@repo/ui/lib/utils';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { flexRender, getCoreRowModel, useReactTable, type OnChangeFn } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
-import { MoreHorizontalIcon, PencilIcon, Trash2Icon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { AlertCircleIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 function apiErrorMessage(err: unknown): string {
@@ -49,126 +46,183 @@ function apiErrorMessage(err: unknown): string {
   return 'Đã xảy ra lỗi.';
 }
 
-const updatedFormatter = new Intl.DateTimeFormat('vi-VN', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
+function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
+  return (header.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
+}
+
+function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
+  return (cell.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
+}
 
 export function SizesTable() {
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
+  const {
+    pagination,
+    onPaginationChange,
+    globalFilter,
+    onGlobalFilterChange,
+    sorting,
+    onSortingChange,
+    ensurePageInRange,
+  } = useSizesListUrlState();
+
   const [editId, setEditId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SizeAdmin | null>(null);
 
-  const {
-    data: rows = [],
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ['sizes', 'list'],
-    queryFn: listSizes,
+  const openEdit = useCallback((s: SizeAdmin) => setEditId(s.id), []);
+  const openDelete = useCallback((s: SizeAdmin) => setDeleteTarget(s), []);
+
+  const columns = useMemo(
+    () =>
+      createSizesColumns({
+        onEdit: openEdit,
+        onDelete: openDelete,
+      }),
+    [openEdit, openDelete],
+  );
+
+  const listParams = useMemo(
+    () => toListSizesParams(pagination, globalFilter, sorting),
+    [pagination, globalFilter, sorting],
+  );
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['sizes', 'admin', listParams],
+    queryFn: () => listSizes(listParams),
+    placeholderData: keepPreviousData,
   });
 
-  const sorted = useMemo(() => [...rows].sort((a, b) => a.sortOrder - b.sortOrder), [rows]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return sorted;
-    return sorted.filter((r) => r.label.toLowerCase().includes(q));
-  }, [sorted, search]);
+  const rows = data?.data ?? [];
+  const pageCount = Math.max(data?.meta.totalPages ?? 1, 1);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteSize(id),
-    onSuccess: async () => {
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['sizes'] });
       toast.success('Đã xóa kích cỡ.');
       setDeleteTarget(null);
-      await queryClient.invalidateQueries({ queryKey: ['sizes', 'list'] });
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const onGlobalFilterChangeTable: OnChangeFn<string> = (updater) => {
+    const next = typeof updater === 'function' ? updater(globalFilter) : updater;
+    onGlobalFilterChange(next ?? '');
+  };
+
+  const table = useReactTable({
+    data: rows,
+    columns,
+    pageCount,
+    state: {
+      pagination,
+      globalFilter,
+      sorting,
+    },
+    manualPagination: true,
+    manualSorting: true,
+    onPaginationChange,
+    onGlobalFilterChange: onGlobalFilterChangeTable,
+    onSortingChange,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => String(row.id),
+  });
+
+  useEffect(() => {
+    ensurePageInRange(table.getPageCount());
+  }, [table, ensurePageInRange, pageCount, listParams]);
+
+  if (isError) {
+    const message = error instanceof Error ? error.message : 'Không tải được danh sách kích cỡ.';
+    return (
+      <div
+        className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+        role="alert"
+      >
+        <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
+        <p>{message}</p>
+      </div>
+    );
+  }
+
+  const emptyMessage = globalFilter.trim()
+    ? 'Không có kích cỡ khớp bộ lọc.'
+    : 'Chưa có kích cỡ nào.';
+
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Input
-          placeholder="Lọc theo nhãn…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md"
+      <div
+        className={cn(
+          'max-sm:has-[div[role="toolbar"]]:mb-16 flex flex-1 flex-col gap-4',
+          isLoading && 'opacity-70',
+        )}
+      >
+        <DataTableToolbar
+          table={table}
+          searchPlaceholder="Tìm theo nhãn…"
+          globalFilterDebounceMs={350}
         />
-      </div>
-
-      {isError ? (
-        <p className="text-destructive text-sm" role="alert">
-          {error instanceof Error ? error.message : 'Không tải được danh sách kích cỡ.'}
-        </p>
-      ) : null}
-
-      <div className="rounded-xl border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Nhãn</TableHead>
-              <TableHead className="text-center tabular-nums">Thứ tự</TableHead>
-              <TableHead className="hidden lg:table-cell">Cập nhật</TableHead>
-              <TableHead className="w-12 text-end"> </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
-                  Đang tải…
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
-                  {search.trim() ? 'Không có kích cỡ khớp bộ lọc.' : 'Chưa có kích cỡ nào.'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="font-medium">{row.label}</TableCell>
-                  <TableCell className="text-center tabular-nums">{row.sortOrder}</TableCell>
-                  <TableCell className="text-muted-foreground hidden text-sm tabular-nums lg:table-cell">
-                    {updatedFormatter.format(new Date(row.updatedAt))}
-                  </TableCell>
-                  <TableCell className="text-end">
-                    <DropdownMenu modal={false}>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="size-8 p-0" type="button">
-                          <MoreHorizontalIcon className="size-4" />
-                          <span className="sr-only">Mở menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem onClick={() => setEditId(row.id)}>
-                          Sửa
-                          <DropdownMenuShortcut>
-                            <PencilIcon className="size-4" />
-                          </DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => setDeleteTarget(row)}
+        <div className="overflow-hidden rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="group/row">
+                  {headerGroup.headers.map((header) => {
+                    const hm = headMeta(header);
+                    return (
+                      <TableHead
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        className={cn(
+                          'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
+                          hm.className,
+                          hm.thClassName,
+                        )}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} className="group/row">
+                    {row.getVisibleCells().map((cell) => {
+                      const cm = cellMeta(cell);
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
+                            cm.className,
+                            cm.tdClassName,
+                          )}
                         >
-                          Xóa
-                          <DropdownMenuShortcut>
-                            <Trash2Icon className="size-4" />
-                          </DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="text-muted-foreground h-24 text-center"
+                  >
+                    {isLoading ? 'Đang tải…' : emptyMessage}
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <DataTablePagination table={table} className="mt-auto" />
       </div>
 
       <EditSizeDialog

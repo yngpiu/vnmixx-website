@@ -3,7 +3,12 @@ import { Prisma } from '../../../generated/prisma/client';
 import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { CreateSizeDto, UpdateSizeDto } from '../dto';
-import { SizeAdminView, SizeRepository, SizeView } from '../repositories/size.repository';
+import {
+  PaginatedSizeList,
+  SizeAdminView,
+  SizeRepository,
+  SizeView,
+} from '../repositories/size.repository';
 
 @Injectable()
 export class SizeService {
@@ -24,6 +29,16 @@ export class SizeService {
 
   findAll(): Promise<SizeAdminView[]> {
     return this.repository.findAll();
+  }
+
+  findList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<PaginatedSizeList> {
+    return this.repository.findList(params);
   }
 
   async create(dto: CreateSizeDto): Promise<SizeAdminView> {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
+import { softDeletedWhere } from '../../common/prisma/soft-deleted-where';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface CategoryParentView {
@@ -135,22 +136,18 @@ export class CategoryRepository {
   // ─── Admin (all states) ───────────────────────────────────────────────────
 
   async findAll(opts?: {
-    onlyDeleted?: boolean;
+    isActive?: boolean;
     isSoftDeleted?: boolean;
   }): Promise<CategoryAdminView[]> {
-    const { onlyDeleted, isSoftDeleted } = opts ?? {};
+    const { isActive, isSoftDeleted } = opts ?? {};
 
-    let deletedAtFilter: Prisma.CategoryWhereInput;
-    if (onlyDeleted === true) {
-      deletedAtFilter = { NOT: { deletedAt: null } };
-    } else if (isSoftDeleted === true) {
-      deletedAtFilter = {};
-    } else {
-      deletedAtFilter = { deletedAt: null };
-    }
+    const where: Prisma.CategoryWhereInput = {
+      ...softDeletedWhere(isSoftDeleted),
+      ...(isActive !== undefined && { isActive }),
+    };
 
     return this.prisma.category.findMany({
-      where: deletedAtFilter,
+      where,
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
       select: {
         ...CATEGORY_SELECT,

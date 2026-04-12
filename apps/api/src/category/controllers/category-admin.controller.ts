@@ -45,14 +45,14 @@ export class CategoryAdminController {
   @ApiOperation({
     summary: 'Liệt kê danh mục',
     description:
-      'Mặc định chỉ danh mục chưa xóa. `onlyDeleted=true` chỉ bản đã xóa; `isSoftDeleted=true` gồm cả hai (giống nhân viên / khách hàng).',
+      '`isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc (cùng quy ước danh sách admin khác).',
   })
   @ApiOkResponse({ type: [CategoryAdminResponseDto] })
   @Get()
   async findAll(@Query() query: ListCategoriesQueryDto): Promise<CategoryAdminResponseDto[]> {
     return this.categoryService.findAll({
-      ...(query.onlyDeleted === true ? { onlyDeleted: true } : {}),
-      ...(query.isSoftDeleted === true ? { isSoftDeleted: true } : {}),
+      ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
+      ...(query.isSoftDeleted !== undefined ? { isSoftDeleted: query.isSoftDeleted } : {}),
     });
   }
 

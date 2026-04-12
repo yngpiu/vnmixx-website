@@ -59,7 +59,7 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
     },
     onSuccess: async () => {
       toast.success('Đã tạo kích cỡ.');
-      await queryClient.invalidateQueries({ queryKey: ['sizes', 'list'] });
+      await queryClient.invalidateQueries({ queryKey: ['sizes'] });
       onOpenChange(false);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
