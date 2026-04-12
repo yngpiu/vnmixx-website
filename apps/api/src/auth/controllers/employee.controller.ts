@@ -8,7 +8,7 @@ import { EmployeeAuthService } from '../services/employee-auth.service';
 import { TokenService } from '../services/token.service';
 import { authBodyFromPair, extractRequestMeta, setRefreshTokenCookie } from '../utils';
 
-@Throttle({ default: { ttl: 60_000, limit: 5 } })
+@Throttle({ default: { ttl: 60_000, limit: 40 } })
 @ApiTags('Auth')
 @Controller('auth/admin')
 export class EmployeeAuthController {

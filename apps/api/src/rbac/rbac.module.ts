@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
-import { EmployeeRoleController } from './controllers/employee-role.controller';
 import { PermissionController } from './controllers/permission.controller';
 import { RoleController } from './controllers/role.controller';
 import { EmployeeRoleRepository } from './repositories/employee-role.repository';
@@ -13,7 +12,7 @@ import { RoleService } from './services/role.service';
 @Module({
   imports: [AuthModule],
   exports: [EmployeeRoleService],
-  controllers: [RoleController, PermissionController, EmployeeRoleController],
+  controllers: [RoleController, PermissionController],
   providers: [
     RoleService,
     PermissionService,
