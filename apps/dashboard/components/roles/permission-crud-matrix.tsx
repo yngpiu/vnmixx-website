@@ -73,7 +73,7 @@ export function PermissionCrudMatrix({
         <Table>
           <TableHeader>
             <TableRow className="border-b-0 hover:bg-transparent">
-              <TableHead className="bg-muted/60 text-foreground w-48 min-w-[12rem] ps-3 align-bottom">
+              <TableHead className="bg-muted/60 text-foreground w-48 min-w-48 ps-3 align-bottom">
                 Tài nguyên
               </TableHead>
               {CRUD_ACTIONS.map((action) => {
@@ -81,7 +81,7 @@ export function PermissionCrudMatrix({
                 return (
                   <TableHead
                     key={action}
-                    className="bg-muted/60 w-24 min-w-[5.5rem] text-center align-bottom"
+                    className="bg-muted/60 w-24 min-w-22 text-center align-bottom"
                   >
                     <div className="flex flex-col items-center gap-1.5 py-1">
                       <Checkbox
