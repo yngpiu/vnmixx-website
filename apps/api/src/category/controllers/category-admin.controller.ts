@@ -45,12 +45,15 @@ export class CategoryAdminController {
   @ApiOperation({
     summary: 'Liệt kê danh mục',
     description:
-      'Mặc định trả về danh mục đang hoạt động. Truyền `includeDeleted=true` để bao gồm bản ghi đã xóa mềm.',
+      'Mặc định chỉ danh mục chưa xóa. `onlyDeleted=true` chỉ bản đã xóa; `isSoftDeleted=true` gồm cả hai (giống nhân viên / khách hàng).',
   })
   @ApiOkResponse({ type: [CategoryAdminResponseDto] })
   @Get()
   async findAll(@Query() query: ListCategoriesQueryDto): Promise<CategoryAdminResponseDto[]> {
-    return this.categoryService.findAll(query.includeDeleted);
+    return this.categoryService.findAll({
+      ...(query.onlyDeleted === true ? { onlyDeleted: true } : {}),
+      ...(query.isSoftDeleted === true ? { isSoftDeleted: true } : {}),
+    });
   }
 
   @ApiOperation({ summary: 'Tạo danh mục mới' })
@@ -73,7 +76,7 @@ export class CategoryAdminController {
     return this.categoryService.update(id, dto);
   }
 
-  @ApiOperation({ summary: 'Xóa mềm danh mục' })
+  @ApiOperation({ summary: 'Xóa danh mục' })
   @ApiNoContentResponse({ description: 'Xóa danh mục thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @ApiConflictResponse({
@@ -85,7 +88,7 @@ export class CategoryAdminController {
     return this.categoryService.softDelete(id);
   }
 
-  @ApiOperation({ summary: 'Khôi phục danh mục đã xóa mềm' })
+  @ApiOperation({ summary: 'Khôi phục danh mục đã xóa' })
   @ApiOkResponse({ type: CategoryAdminResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @Patch(':id/restore')

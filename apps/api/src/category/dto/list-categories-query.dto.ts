@@ -6,11 +6,19 @@ import { TransformQueryOptionalBoolean } from '../../common/transforms/query-opt
 export class ListCategoriesQueryDto {
   @ApiPropertyOptional({
     example: false,
-    description: 'Bao gồm danh mục đã xóa mềm trong kết quả',
-    default: false,
+    description: 'Khi true, trả về cả danh mục đã xóa và chưa xóa.',
   })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
-  includeDeleted?: boolean;
+  isSoftDeleted?: boolean;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Chỉ lấy danh mục đã xóa (ưu tiên hơn isSoftDeleted khi cả hai được gửi).',
+  })
+  @TransformQueryOptionalBoolean()
+  @IsBoolean()
+  @IsOptional()
+  onlyDeleted?: boolean;
 }

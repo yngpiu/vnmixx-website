@@ -24,6 +24,9 @@ export class CategoryResponseDto {
   @ApiProperty({ example: false })
   isFeatured: boolean;
 
+  @ApiProperty({ example: true, description: 'Hiển thị / kinh doanh trên shop' })
+  isActive: boolean;
+
   @ApiProperty({ example: 0 })
   sortOrder: number;
 
@@ -54,6 +57,9 @@ export class CategoryTreeNodeDto {
 
   @ApiProperty({ example: false })
   isFeatured: boolean;
+
+  @ApiProperty({ example: true, description: 'Hiển thị / kinh doanh trên shop' })
+  isActive: boolean;
 
   @ApiProperty({ example: 0 })
   sortOrder: number;

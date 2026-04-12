@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface CategoryParentView {
@@ -12,6 +13,7 @@ interface CategoryView {
   name: string;
   slug: string;
   isFeatured: boolean;
+  isActive: boolean;
   sortOrder: number;
   parentId: number | null;
   parent: CategoryParentView | null;
@@ -33,6 +35,7 @@ interface CategoryTreeNode {
   name: string;
   slug: string;
   isFeatured: boolean;
+  isActive: boolean;
   sortOrder: number;
   children: CategoryTreeNode[];
 }
@@ -52,6 +55,7 @@ const CATEGORY_SELECT = {
   name: true,
   slug: true,
   isFeatured: true,
+  isActive: true,
   sortOrder: true,
   parentId: true,
   createdAt: true,
@@ -64,6 +68,7 @@ const TREE_NODE_SELECT = {
   name: true,
   slug: true,
   isFeatured: true,
+  isActive: true,
   sortOrder: true,
 } as const;
 
@@ -75,17 +80,17 @@ export class CategoryRepository {
 
   findActiveTree(): Promise<CategoryTreeNode[]> {
     return this.prisma.category.findMany({
-      where: { parentId: null, deletedAt: null },
+      where: { parentId: null, deletedAt: null, isActive: true },
       orderBy: { sortOrder: 'asc' },
       select: {
         ...TREE_NODE_SELECT,
         children: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, isActive: true },
           orderBy: { sortOrder: 'asc' },
           select: {
             ...TREE_NODE_SELECT,
             children: {
-              where: { deletedAt: null },
+              where: { deletedAt: null, isActive: true },
               orderBy: { sortOrder: 'asc' },
               select: {
                 ...TREE_NODE_SELECT,
@@ -100,7 +105,7 @@ export class CategoryRepository {
 
   findAllActive(): Promise<CategoryView[]> {
     return this.prisma.category.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, isActive: true },
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
       select: {
         ...CATEGORY_SELECT,
@@ -112,11 +117,11 @@ export class CategoryRepository {
     slug: string,
   ): Promise<(CategoryView & { children: CategoryTreeNode[] }) | null> {
     return this.prisma.category.findFirst({
-      where: { slug, deletedAt: null },
+      where: { slug, deletedAt: null, isActive: true },
       select: {
         ...CATEGORY_SELECT,
         children: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, isActive: true },
           orderBy: { sortOrder: 'asc' },
           select: {
             ...TREE_NODE_SELECT,
@@ -129,9 +134,23 @@ export class CategoryRepository {
 
   // ─── Admin (all states) ───────────────────────────────────────────────────
 
-  async findAll(includeDeleted = false): Promise<CategoryAdminView[]> {
+  async findAll(opts?: {
+    onlyDeleted?: boolean;
+    isSoftDeleted?: boolean;
+  }): Promise<CategoryAdminView[]> {
+    const { onlyDeleted, isSoftDeleted } = opts ?? {};
+
+    let deletedAtFilter: Prisma.CategoryWhereInput;
+    if (onlyDeleted === true) {
+      deletedAtFilter = { NOT: { deletedAt: null } };
+    } else if (isSoftDeleted === true) {
+      deletedAtFilter = {};
+    } else {
+      deletedAtFilter = { deletedAt: null };
+    }
+
     return this.prisma.category.findMany({
-      where: includeDeleted ? undefined : { deletedAt: null },
+      where: deletedAtFilter,
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
       select: {
         ...CATEGORY_SELECT,
@@ -161,6 +180,7 @@ export class CategoryRepository {
     name: string;
     slug: string;
     isFeatured: boolean;
+    isActive?: boolean;
     sortOrder: number;
     parentId?: number | null;
   }): Promise<CategoryAdminView> {
@@ -179,6 +199,7 @@ export class CategoryRepository {
       name?: string;
       slug?: string;
       isFeatured?: boolean;
+      isActive?: boolean;
       sortOrder?: number;
       parentId?: number | null;
     },
@@ -190,6 +211,52 @@ export class CategoryRepository {
         ...CATEGORY_SELECT,
         deletedAt: true,
       },
+    });
+  }
+
+  /**
+   * Cập nhật danh mục và đặt `isActive: false` cho mọi hậu duệ (theo từng cấp, trong một transaction).
+   * Dùng khi vô hiệu hóa cha để đồng bộ toàn bộ nhánh.
+   */
+  async updateAndCascadeDeactivateDescendants(
+    id: number,
+    data: {
+      name?: string;
+      slug?: string;
+      isFeatured?: boolean;
+      isActive?: boolean;
+      sortOrder?: number;
+      parentId?: number | null;
+    },
+  ): Promise<CategoryAdminView> {
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.category.update({
+        where: { id },
+        data,
+        select: {
+          ...CATEGORY_SELECT,
+          deletedAt: true,
+        },
+      });
+
+      let frontier: number[] = [id];
+      while (frontier.length > 0) {
+        const children = await tx.category.findMany({
+          where: { parentId: { in: frontier } },
+          select: { id: true },
+        });
+        const childIds = children.map((c) => c.id);
+        if (childIds.length === 0) break;
+
+        await tx.category.updateMany({
+          where: { id: { in: childIds } },
+          data: { isActive: false },
+        });
+
+        frontier = childIds;
+      }
+
+      return updated;
     });
   }
 
@@ -213,7 +280,7 @@ export class CategoryRepository {
 
   async hasActiveChildren(id: number): Promise<boolean> {
     const count = await this.prisma.category.count({
-      where: { parentId: id, deletedAt: null },
+      where: { parentId: id, deletedAt: null, isActive: true },
     });
     return count > 0;
   }

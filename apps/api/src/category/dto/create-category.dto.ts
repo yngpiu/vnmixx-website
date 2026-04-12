@@ -35,6 +35,11 @@ export class CreateCategoryDto {
   @IsOptional()
   isFeatured?: boolean;
 
+  @ApiPropertyOptional({ example: true, description: 'Đang hiển thị trên shop hay không' })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
+
   @ApiPropertyOptional({ example: 0, description: 'Thứ tự hiển thị', minimum: 0 })
   @IsInt()
   @IsOptional()

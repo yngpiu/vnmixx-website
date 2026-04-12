@@ -55,8 +55,11 @@ export class CategoryService {
 
   // ─── Admin ────────────────────────────────────────────────────────────────
 
-  async findAll(includeDeleted = false): Promise<CategoryAdminView[]> {
-    return this.repository.findAll(includeDeleted);
+  async findAll(opts?: {
+    onlyDeleted?: boolean;
+    isSoftDeleted?: boolean;
+  }): Promise<CategoryAdminView[]> {
+    return this.repository.findAll(opts);
   }
 
   async findById(id: number): Promise<CategoryAdminView> {
@@ -77,6 +80,7 @@ export class CategoryService {
         name: dto.name,
         slug: dto.slug,
         isFeatured: dto.isFeatured ?? false,
+        isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
         parentId: dto.parentId ?? null,
       });
@@ -105,14 +109,20 @@ export class CategoryService {
     // parentId not in dto -- keep existing; explicitly null means move to root
     const parentId = dto.parentId !== undefined ? dto.parentId : existing.parentId;
 
+    const updatePayload = {
+      ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.slug !== undefined && { slug: dto.slug }),
+      ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
+      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+      ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+      parentId,
+    };
+
     try {
-      const result = await this.repository.update(id, {
-        ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.slug !== undefined && { slug: dto.slug }),
-        ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
-        ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
-        parentId,
-      });
+      const result =
+        dto.isActive === false
+          ? await this.repository.updateAndCascadeDeactivateDescendants(id, updatePayload)
+          : await this.repository.update(id, updatePayload);
       await this.invalidateCache();
       return result;
     } catch (err) {
@@ -143,7 +153,12 @@ export class CategoryService {
     if (category.parentId !== null) {
       const parent = await this.repository.findById(category.parentId);
       if (parent?.deletedAt) {
-        throw new BadRequestException('Không thể khôi phục danh mục có danh mục cha đã bị xóa mềm');
+        throw new BadRequestException('Không thể khôi phục danh mục có danh mục cha đã bị xóa');
+      }
+      if (parent && !parent.isActive) {
+        throw new BadRequestException(
+          'Không thể khôi phục danh mục có danh mục cha đang vô hiệu hóa',
+        );
       }
     }
 
@@ -160,11 +175,14 @@ export class CategoryService {
       throw new NotFoundException(`Không tìm thấy danh mục cha #${parentId}`);
     }
     if (parent.deletedAt) {
-      throw new BadRequestException(`Parent category #${parentId} is soft-deleted`);
+      throw new BadRequestException(`Danh mục cha #${parentId} đã bị xóa`);
+    }
+    if (!parent.isActive) {
+      throw new BadRequestException(`Danh mục cha #${parentId} không còn hoạt động`);
     }
 
     const depth = await this.getAncestorDepth(parentId);
-    if (depth + 1 >= MAX_DEPTH) {
+    if (depth + 1 > MAX_DEPTH) {
       throw new BadRequestException(`Danh mục không thể vượt quá ${MAX_DEPTH} cấp`);
     }
   }
