@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `categories` ADD COLUMN `is_active` TINYINT NOT NULL DEFAULT 1;

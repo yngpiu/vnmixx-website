@@ -243,6 +243,7 @@ model Category {
   name       String    @db.VarChar(100)
   slug       String    @unique(map: "uk_categories_slug") @db.VarChar(120)
   isFeatured Boolean   @default(false) @map("is_featured") @db.TinyInt
+  isActive   Boolean   @default(true) @map("is_active") @db.TinyInt
   sortOrder  Int       @default(0) @map("sort_order") @db.SmallInt
   parentId   Int?      @map("parent_id") @db.UnsignedInt
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
