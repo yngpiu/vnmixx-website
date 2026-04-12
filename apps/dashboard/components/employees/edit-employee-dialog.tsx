@@ -357,7 +357,7 @@ export function EditEmployeeDialog({
           ) : null}
         </div>
 
-        <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 px-6 py-4 sm:justify-end">
+        <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 rounded-b-xl border-t bg-muted/50 px-6 py-4 sm:flex-row sm:justify-end">
           {footerSingleDismiss ? (
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {error || deletedBlock || restoreNotDeletedBlock ? 'Đóng' : 'Hủy'}

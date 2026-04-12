@@ -210,7 +210,7 @@ export function RolesTable() {
               lại.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2 px-6 py-4 sm:flex-row sm:justify-end">
             <AlertDialogCancel type="button">Hủy</AlertDialogCancel>
             <AlertDialogAction
               type="button"

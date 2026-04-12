@@ -28,7 +28,14 @@ function createCookieOptions(maxAge: number) {
 /** Extract error message from an axios error or fallback. */
 function extractErrorMessage(err: unknown): string {
   if (isAxiosError(err)) {
-    return err.response?.data?.message ?? err.response?.statusText ?? err.message;
+    const raw = err.response?.data as { message?: unknown } | undefined;
+    const m = raw?.message;
+    if (Array.isArray(m)) return m.map(String).join(', ');
+    if (typeof m === 'string' && m.trim()) return m;
+    if (err.response?.status === 429) {
+      return 'Quá nhiều lần thử đăng nhập. Đợi một phút rồi thử lại.';
+    }
+    return err.response?.statusText ?? err.message;
   }
   return err instanceof Error ? err.message : 'Unknown error';
 }

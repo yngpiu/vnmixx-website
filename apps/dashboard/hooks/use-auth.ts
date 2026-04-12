@@ -20,6 +20,9 @@ export function useLogin() {
     },
     onSuccess: ({ accessToken, user }) => {
       setSession(accessToken, user);
+      // Server Action đã set cookie; refresh để RootLayout đọc lại token trước khi chuyển trang
+      // (tránh AuthProvider vẫn nhận accessToken=null và clearSession xoá phiên vừa tạo).
+      router.refresh();
       router.push('/');
     },
   });

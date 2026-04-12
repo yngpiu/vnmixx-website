@@ -63,37 +63,21 @@ const catalogItems: SidebarNavItem[] = [
     title: 'Danh mục',
     url: adminModulePath('categories'),
     icon: <FolderTreeIcon />,
-    items: [
-      { title: 'Danh sách', url: adminModulePath('categories') },
-      { title: 'Thêm mới', url: adminModuleNewPath('categories') },
-    ],
   },
   {
     title: 'Màu sắc',
     url: adminModulePath('colors'),
     icon: <PaletteIcon />,
-    items: [
-      { title: 'Danh sách', url: adminModulePath('colors') },
-      { title: 'Thêm mới', url: adminModuleNewPath('colors') },
-    ],
   },
   {
     title: 'Kích cỡ',
     url: adminModulePath('sizes'),
     icon: <RulerIcon />,
-    items: [
-      { title: 'Danh sách', url: adminModulePath('sizes') },
-      { title: 'Thêm mới', url: adminModuleNewPath('sizes') },
-    ],
   },
   {
     title: 'Thuộc tính',
     url: adminModulePath('attributes'),
     icon: <TagsIcon />,
-    items: [
-      { title: 'Danh sách', url: adminModulePath('attributes') },
-      { title: 'Thêm mới', url: adminModuleNewPath('attributes') },
-    ],
   },
 ];
 

@@ -15,6 +15,11 @@ type DataTableToolbarProps<TData> = {
   searchKey?: string;
   /** When set with `searchKey`, URL/API updates wait until typing pauses (smoother search). */
   searchDebounceMs?: number;
+  /**
+   * Khi không dùng `searchKey` (lọc global): trì hoãn cập nhật `globalFilter` theo ms (giảm tải khi gõ).
+   * Mặc định 0 = cập nhật mỗi lần gõ.
+   */
+  globalFilterDebounceMs?: number;
   filters?: {
     columnId: string;
     title: string;
@@ -67,11 +72,53 @@ function DataTableToolbarDebouncedSearch<TData>({
   );
 }
 
+function DataTableToolbarDebouncedGlobalSearch<TData>({
+  table,
+  placeholder,
+  debounceMs,
+}: {
+  table: Table<TData>;
+  placeholder: string;
+  debounceMs: number;
+}) {
+  const committed = table.getState().globalFilter ?? '';
+  const [draft, setDraft] = useState(committed);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setDraft(committed);
+  }, [committed]);
+
+  useEffect(() => {
+    if (draft === committed) {
+      return;
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      table.setGlobalFilter(draft);
+    }, debounceMs);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [table, committed, debounceMs, draft]);
+
+  return (
+    <Input
+      placeholder={placeholder}
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      className="h-8 w-[150px] lg:w-[260px]"
+    />
+  );
+}
+
 export function DataTableToolbar<TData>({
   table,
   searchPlaceholder = 'Lọc…',
   searchKey,
   searchDebounceMs = 0,
+  globalFilterDebounceMs = 0,
   filters = [],
 }: DataTableToolbarProps<TData>) {
   const isFiltered =
@@ -99,6 +146,12 @@ export function DataTableToolbar<TData>({
               />
             )
           ) : null
+        ) : globalFilterDebounceMs > 0 ? (
+          <DataTableToolbarDebouncedGlobalSearch
+            table={table}
+            placeholder={searchPlaceholder}
+            debounceMs={globalFilterDebounceMs}
+          />
         ) : (
           <Input
             placeholder={searchPlaceholder}
