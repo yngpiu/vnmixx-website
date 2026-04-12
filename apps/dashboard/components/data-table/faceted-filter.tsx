@@ -26,6 +26,8 @@ type DataTableFacetedFilterProps<TData, TValue> = {
     value: string;
     icon?: ComponentType<{ className?: string }>;
   }[];
+  /** `single` = radio: chỉ một mục; chọn lại mục đang chọn thì bỏ lọc. */
+  selectionMode?: 'multi' | 'single';
   /** Bật khi dữ liệu đủ để hiển thị số lượng theo facet (danh sách client). */
   showCounts?: boolean;
 };
@@ -34,10 +36,12 @@ export function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
   options,
+  selectionMode = 'multi',
   showCounts = false,
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set((column?.getFilterValue() as string[] | undefined) ?? []);
+  const isSingle = selectionMode === 'single';
 
   return (
     <Popover>
@@ -88,6 +92,10 @@ export function DataTableFacetedFilter<TData, TValue>({
                     value={option.value}
                     keywords={[option.label]}
                     onSelect={() => {
+                      if (isSingle) {
+                        column?.setFilterValue(isSelected ? undefined : [option.value]);
+                        return;
+                      }
                       if (isSelected) {
                         selectedValues.delete(option.value);
                       } else {
@@ -99,13 +107,25 @@ export function DataTableFacetedFilter<TData, TValue>({
                   >
                     <div
                       className={cn(
-                        'flex size-4 items-center justify-center rounded-sm border border-primary',
-                        isSelected
-                          ? 'bg-primary text-primary-foreground'
-                          : 'opacity-50 [&_svg]:invisible',
+                        isSingle
+                          ? 'flex size-4 shrink-0 items-center justify-center rounded-full border border-primary'
+                          : 'flex size-4 items-center justify-center rounded-sm border border-primary',
+                        isSingle
+                          ? isSelected
+                            ? 'border-primary'
+                            : 'border-muted-foreground/40 opacity-70'
+                          : isSelected
+                            ? 'bg-primary text-primary-foreground'
+                            : 'opacity-50 [&_svg]:invisible',
                       )}
                     >
-                      <CheckIcon className="size-4 text-background" />
+                      {isSingle ? (
+                        isSelected ? (
+                          <span className="size-2 rounded-full bg-primary" />
+                        ) : null
+                      ) : (
+                        <CheckIcon className="size-4 text-background" />
+                      )}
                     </div>
                     {option.icon ? <option.icon className="size-4 text-muted-foreground" /> : null}
                     <span>{option.label}</span>

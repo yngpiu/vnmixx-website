@@ -23,6 +23,7 @@ type DataTableToolbarProps<TData> = {
   filters?: {
     columnId: string;
     title: string;
+    selectionMode?: 'multi' | 'single';
     options: {
       label: string;
       value: string;
@@ -172,6 +173,7 @@ export function DataTableToolbar<TData>({
                 column={column}
                 title={filter.title}
                 options={filter.options}
+                selectionMode={filter.selectionMode}
               />
             );
           })}
