@@ -1,12 +1,26 @@
+import { NewProductForm } from '@/app/products/new/new-product-form';
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = { title: 'Thêm mới · Sản phẩm · Vnmixx' };
 
+function NewProductSkeleton() {
+  return (
+    <div className="mx-auto max-w-3xl animate-pulse space-y-6 pb-12">
+      <div className="h-8 w-32 rounded-md bg-muted" />
+      <div className="h-10 w-2/3 max-w-md rounded-md bg-muted" />
+      <div className="h-64 rounded-xl border bg-muted/25" />
+      <div className="h-48 rounded-xl border bg-muted/25" />
+    </div>
+  );
+}
+
 export default function ProductsNewPage() {
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-6">
-      <h1 className="text-lg font-medium tracking-tight">Thêm mới · Sản phẩm</h1>
-      <p className="max-w-xl text-sm text-muted-foreground">Đây là trang thêm mới sản phẩm.</p>
+    <div className="flex flex-1 flex-col gap-4 p-4 pt-6 sm:gap-6">
+      <Suspense fallback={<NewProductSkeleton />}>
+        <NewProductForm />
+      </Suspense>
     </div>
   );
 }
