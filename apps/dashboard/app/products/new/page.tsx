@@ -6,11 +6,26 @@ export const metadata: Metadata = { title: 'Thêm mới · Sản phẩm · Vnmix
 
 function NewProductSkeleton() {
   return (
-    <div className="mx-auto max-w-3xl animate-pulse space-y-6 pb-12">
-      <div className="h-8 w-32 rounded-md bg-muted" />
-      <div className="h-10 w-2/3 max-w-md rounded-md bg-muted" />
-      <div className="h-64 rounded-xl border bg-muted/25" />
-      <div className="h-48 rounded-xl border bg-muted/25" />
+    <div className="mx-auto w-full max-w-6xl animate-pulse space-y-8 pb-16 xl:max-w-[1360px]">
+      <div className="flex flex-col gap-4 border-b pb-8 sm:flex-row sm:justify-between">
+        <div className="space-y-3">
+          <div className="h-8 w-40 rounded-md bg-muted" />
+          <div className="h-10 w-64 max-w-full rounded-md bg-muted" />
+          <div className="h-4 w-full max-w-xl rounded-md bg-muted" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-10 w-24 rounded-md bg-muted" />
+          <div className="h-10 w-32 rounded-md bg-muted" />
+        </div>
+      </div>
+      <div className="grid gap-8 xl:grid-cols-12">
+        <div className="space-y-8 xl:col-span-8">
+          <div className="h-72 rounded-2xl border bg-muted/20" />
+          <div className="h-40 rounded-2xl border bg-muted/20" />
+          <div className="h-56 rounded-2xl border bg-muted/20" />
+        </div>
+        <div className="h-96 rounded-2xl border bg-muted/20 xl:col-span-4" />
+      </div>
     </div>
   );
 }

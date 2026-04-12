@@ -51,6 +51,9 @@ export type CreateProductBody = {
   slug: string;
   description?: string;
   thumbnail?: string;
+  /** Nhiều danh mục lá (bảng nối). Ưu tiên hơn `categoryId` nếu cả hai có. */
+  categoryIds?: number[];
+  /** @deprecated Dùng `categoryIds`. */
   categoryId?: number;
   isActive?: boolean;
   attributeValueIds?: number[];

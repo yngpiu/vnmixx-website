@@ -1,36 +1,27 @@
 'use client';
 
+import { CategoryTreeMultiSelect } from '@/components/categories/category-tree-multi-select';
 import { MultiSelectPopover } from '@/components/multi-select-popover';
-import {
-  ProductImageUploadField,
-  ProductThumbnailUploadField,
-} from '@/components/products/product-image-upload-field';
+import { ProductThumbnailUploadField } from '@/components/products/product-image-upload-field';
+import { ProductImagesColorColumns } from '@/components/products/product-images-color-columns';
 import { listAttributes } from '@/lib/api/attributes';
 import { listCategories } from '@/lib/api/categories';
 import { listColors } from '@/lib/api/colors';
 import { createProduct } from '@/lib/api/products';
 import { listSizes } from '@/lib/api/sizes';
 import { categoryDisplayName } from '@/lib/category-display-name';
-import { buildCategoryAdminTree } from '@/lib/category-tree';
 import {
   cloudinaryUploadConfigured,
   cloudinaryUploadMissingMessage,
 } from '@/lib/cloudinary-client-upload';
-import type { CategoryAdminTreeNode } from '@/lib/types/category';
+import type { CategoryAdmin } from '@/lib/types/category';
 import type {
   CreateProductBody,
   CreateProductImageInput,
   CreateProductVariantInput,
 } from '@/lib/types/product';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@repo/ui/components/ui/card';
-import { Field, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';
+import { Field, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import {
@@ -40,11 +31,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
+import { Separator } from '@repo/ui/components/ui/separator';
 import { Switch } from '@repo/ui/components/ui/switch';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@repo/ui/components/ui/table';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { ArrowLeftIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import {
+  ArrowLeftIcon,
+  FolderTreeIcon,
+  ImageIcon,
+  LayersIcon,
+  PackageIcon,
+  PlusIcon,
+  TagIcon,
+  Trash2Icon,
+  XIcon,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -62,6 +72,21 @@ function apiErrorMessage(err: unknown): string {
   return 'Đã xảy ra lỗi.';
 }
 
+function formatCategoryPath(leafId: number, byId: Map<number, CategoryAdmin>): string {
+  const parts: string[] = [];
+  let id: number | null = leafId;
+  const seen = new Set<number>();
+  while (id != null && !seen.has(id)) {
+    seen.add(id);
+    const c = byId.get(id);
+    if (!c) break;
+    parts.push(categoryDisplayName(c.name));
+    id = c.parentId;
+  }
+  const path = parts.reverse().join(' › ');
+  return path || `#${leafId}`;
+}
+
 function suggestSlugFromName(name: string): string {
   const base = name
     .normalize('NFD')
@@ -71,15 +96,6 @@ function suggestSlugFromName(name: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
   return base || 'san-pham';
-}
-
-function collectLeafNodes(nodes: CategoryAdminTreeNode[]): CategoryAdminTreeNode[] {
-  const out: CategoryAdminTreeNode[] = [];
-  for (const n of nodes) {
-    if (n.children.length === 0) out.push(n);
-    else out.push(...collectLeafNodes(n.children));
-  }
-  return out;
 }
 
 type VariantDraft = {
@@ -102,7 +118,7 @@ export function NewProductForm() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState('');
   const [thumbnail, setThumbnail] = useState('');
-  const [categoryId, setCategoryId] = useState<string>('');
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [attributeValueIds, setAttributeValueIds] = useState<number[]>([]);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
@@ -121,11 +137,13 @@ export function NewProductForm() {
   const colors = useMemo(() => colorsQuery.data ?? [], [colorsQuery.data]);
   const sizes = useMemo(() => sizesQuery.data ?? [], [sizesQuery.data]);
 
-  const leafCategories = useMemo(() => {
-    const flat = categoriesQuery.data ?? [];
-    if (!flat.length) return [];
-    return collectLeafNodes(buildCategoryAdminTree(flat));
-  }, [categoriesQuery.data]);
+  const categoriesFlat = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
+
+  const categoriesById = useMemo(() => {
+    const m = new Map<number, CategoryAdmin>();
+    for (const c of categoriesFlat) m.set(c.id, c);
+    return m;
+  }, [categoriesFlat]);
 
   const colorIdsInVariantOrder = useMemo(() => {
     const seen = new Set<number>();
@@ -279,7 +297,7 @@ export function NewProductForm() {
       slug: slug.trim(),
       ...(description.trim() ? { description: description.trim() } : {}),
       ...(thumbnail.trim() ? { thumbnail: thumbnail.trim() } : {}),
-      ...(categoryId ? { categoryId: Number.parseInt(categoryId, 10) } : {}),
+      ...(categoryIds.length ? { categoryIds } : {}),
       isActive,
       ...(attributeValueIds.length ? { attributeValueIds } : {}),
       variants: parsedVariants,
@@ -315,81 +333,114 @@ export function NewProductForm() {
     );
   }
 
+  const sectionShell = 'overflow-hidden rounded-2xl border bg-card shadow-sm';
+
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-12">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" size="sm" className="gap-1" asChild>
-          <Link href="/products">
-            <ArrowLeftIcon className="size-4" />
-            Danh sách
-          </Link>
-        </Button>
-      </div>
+    <div className="mx-auto w-full max-w-6xl pb-20 xl:max-w-[1360px]">
+      <header className="mb-8 border-b pb-8">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 space-y-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground -ml-2.5 h-8 gap-1.5 px-2"
+              asChild
+            >
+              <Link href="/products">
+                <ArrowLeftIcon className="size-4 shrink-0" />
+                Quay lại danh sách
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Thêm sản phẩm</h1>
+              <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
+                Danh mục lá (cây + đã chọn), biến thể màu × size, giá và tồn. Ảnh Cloudinary
+                (thumbnail + gallery theo màu) nằm phía dưới form.
+              </p>
+            </div>
+          </div>
+          <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:justify-end lg:w-auto">
+            <Button type="button" variant="outline" className="sm:min-w-28" asChild disabled={busy}>
+              <Link href="/products">Hủy</Link>
+            </Button>
+            <Button type="button" className="sm:min-w-40" onClick={submit} disabled={busy}>
+              {busy ? 'Đang tạo…' : 'Tạo sản phẩm'}
+            </Button>
+          </div>
+        </div>
+      </header>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Thêm sản phẩm</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Gán danh mục lá (cấp cuối), ít nhất một biến thể (màu × size, SKU, giá, tồn). Ảnh tải trực
-          tiếp lên Cloudinary từ trình duyệt; gallery theo từng màu (trường{' '}
-          <code className="text-xs">color_id</code> trên{' '}
-          <code className="text-xs">product_images</code>).
-        </p>
-      </div>
-
-      {!cloudinaryUploadConfigured() ? (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
-          {cloudinaryUploadMissingMessage()} Preset unsigned — xem{' '}
-          <a
-            className="font-medium underline underline-offset-2"
-            href="https://cloudinary.com/documentation/react_image_and_video_upload"
-            target="_blank"
-            rel="noreferrer"
+      <div className="mx-auto mb-8 w-full max-w-4xl space-y-3">
+        {!cloudinaryUploadConfigured() ? (
+          <div
+            className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-50"
+            role="status"
           >
-            React image upload (Cloudinary)
-          </a>
-          .
-        </p>
-      ) : null}
+            {cloudinaryUploadMissingMessage()} Cần preset unsigned —{' '}
+            <a
+              className="font-medium underline underline-offset-2"
+              href="https://cloudinary.com/documentation/react_image_and_video_upload"
+              target="_blank"
+              rel="noreferrer"
+            >
+              hướng dẫn Cloudinary (React)
+            </a>
+            .
+          </div>
+        ) : null}
+        {formError ? (
+          <p
+            className="text-destructive bg-destructive/5 rounded-xl border border-destructive/20 px-4 py-3 text-sm"
+            role="alert"
+          >
+            {formError}
+          </p>
+        ) : null}
+      </div>
 
-      {formError ? (
-        <p className="text-destructive text-sm" role="alert">
-          {formError}
-        </p>
-      ) : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Thông tin chung</CardTitle>
-          <CardDescription>Tên hiển thị, slug đường dẫn, mô tả ngắn.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <FieldGroup className="gap-4">
-            <Field>
-              <FieldLabel htmlFor="np-name">Tên sản phẩm</FieldLabel>
-              <Input
-                id="np-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={busy}
-                maxLength={255}
-                placeholder="VD: Áo thun basic"
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="np-slug">Slug</FieldLabel>
-              <Input
-                id="np-slug"
-                value={slug}
-                onChange={(e) => {
-                  setSlugTouched(true);
-                  setSlug(e.target.value);
-                }}
-                disabled={busy}
-                maxLength={255}
-                className="font-mono text-sm"
-                placeholder="ao-thun-basic"
-              />
-            </Field>
+      <div className="mx-auto w-full max-w-4xl space-y-10">
+        <section className={sectionShell}>
+          <div className="bg-muted/40 flex flex-wrap items-center gap-3 border-b px-5 py-4 sm:px-6">
+            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+              <PackageIcon className="size-4" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold leading-tight">Thông tin chung</h2>
+              <p className="text-muted-foreground text-sm">
+                Tên, slug, mô tả và trạng thái hiển thị.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-6 p-5 sm:p-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="np-name">Tên sản phẩm</FieldLabel>
+                <Input
+                  id="np-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={busy}
+                  maxLength={255}
+                  placeholder="VD: Áo thun basic"
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="np-slug">Slug</FieldLabel>
+                <Input
+                  id="np-slug"
+                  value={slug}
+                  onChange={(e) => {
+                    setSlugTouched(true);
+                    setSlug(e.target.value);
+                  }}
+                  disabled={busy}
+                  maxLength={255}
+                  className="font-mono text-sm"
+                  placeholder="ao-thun-basic"
+                />
+              </Field>
+            </div>
             <Field>
               <FieldLabel htmlFor="np-desc">Mô tả</FieldLabel>
               <Textarea
@@ -397,48 +448,19 @@ export function NewProductForm() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={busy}
-                rows={4}
-                placeholder="Mô tả ngắn…"
+                rows={5}
+                className="min-h-[120px] resize-y"
+                placeholder="Mô tả ngắn cho trang chi tiết…"
               />
             </Field>
-            <Field>
-              <FieldLabel>Ảnh thumbnail</FieldLabel>
-              <p className="text-muted-foreground mb-2 text-xs">
-                Tuỳ chọn — một ảnh đại diện (upload lên Cloudinary).
-              </p>
-              <ProductThumbnailUploadField
-                url={thumbnail}
-                onUrlChange={setThumbnail}
-                disabled={busy || !cloudinaryUploadConfigured()}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Danh mục (chỉ cấp lá)</FieldLabel>
-              <Select
-                value={categoryId || '__none__'}
-                onValueChange={(v) => setCategoryId(v === '__none__' ? '' : v)}
-                disabled={busy || leafCategories.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Không gán danh mục" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Không chọn —</SelectItem>
-                  {leafCategories.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {categoryDisplayName(c.name)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {leafCategories.length === 0 && !categoriesQuery.isLoading ? (
-                <p className="text-muted-foreground text-xs">Chưa có danh mục lá để gán.</p>
-              ) : null}
-            </Field>
-            <div className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="bg-muted/30 flex flex-col gap-3 rounded-xl border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="np-active">Đang hiển thị</Label>
-                <p className="text-muted-foreground text-xs">Tắt nếu chưa muốn bán.</p>
+                <Label htmlFor="np-active" className="text-sm font-medium">
+                  Đang hiển thị
+                </Label>
+                <p className="text-muted-foreground text-xs">
+                  Tắt nếu chưa muốn hiển thị trên cửa hàng.
+                </p>
               </div>
               <Switch
                 id="np-active"
@@ -447,198 +469,324 @@ export function NewProductForm() {
                 disabled={busy}
               />
             </div>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Thuộc tính</CardTitle>
-          <CardDescription>
-            Chọn các giá trị (chất liệu, kiểu dáng, …) áp cho sản phẩm.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Field>
-            <FieldLabel>Giá trị thuộc tính</FieldLabel>
-            <MultiSelectPopover
-              options={attributeOptions}
-              value={attributeValueIds}
-              onChange={setAttributeValueIds}
-              disabled={busy || attributeOptions.length === 0}
-              placeholder="Chọn giá trị…"
-              modal={false}
-            />
-          </Field>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row flex-wrap items-end justify-between gap-2 space-y-0">
-          <div>
-            <CardTitle>Biến thể</CardTitle>
-            <CardDescription>
-              Mỗi dòng: màu × size, SKU duy nhất, giá (đ), giá sale (tuỳ chọn), tồn.
-            </CardDescription>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="gap-1"
-            onClick={addVariantRow}
-            disabled={busy || !colors.length || !sizes.length}
-          >
-            <PlusIcon className="size-4" />
-            Thêm dòng
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {variants.map((row, index) => (
-            <div
-              key={index}
-              className="flex flex-col gap-3 rounded-lg border p-3 md:grid md:grid-cols-[1fr_1fr_1.2fr_1fr_1fr_1fr_auto] md:items-end"
-            >
-              <Field>
-                <FieldLabel>Màu</FieldLabel>
-                <Select
-                  value={String(row.colorId)}
-                  onValueChange={(v) => updateVariant(index, { colorId: Number.parseInt(v, 10) })}
-                  disabled={busy}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {colors.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel>Size</FieldLabel>
-                <Select
-                  value={String(row.sizeId)}
-                  onValueChange={(v) => updateVariant(index, { sizeId: Number.parseInt(v, 10) })}
-                  disabled={busy}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sizes.map((s) => (
-                      <SelectItem key={s.id} value={String(s.id)}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel>SKU</FieldLabel>
-                <Input
-                  value={row.sku}
-                  onChange={(e) => updateVariant(index, { sku: e.target.value })}
-                  disabled={busy}
-                  maxLength={50}
-                  className="font-mono text-sm"
-                />
-              </Field>
-              <Field>
-                <FieldLabel>Giá (đ)</FieldLabel>
-                <Input
-                  type="number"
-                  min={0}
-                  value={row.price}
-                  onChange={(e) => updateVariant(index, { price: e.target.value })}
-                  disabled={busy}
-                />
-              </Field>
-              <Field>
-                <FieldLabel>Giá sale</FieldLabel>
-                <Input
-                  type="number"
-                  min={0}
-                  value={row.salePrice}
-                  onChange={(e) => updateVariant(index, { salePrice: e.target.value })}
-                  disabled={busy}
-                  placeholder="Tuỳ chọn"
-                />
-              </Field>
-              <Field>
-                <FieldLabel>Tồn</FieldLabel>
-                <Input
-                  type="number"
-                  min={0}
-                  value={row.onHand}
-                  onChange={(e) => updateVariant(index, { onHand: e.target.value })}
-                  disabled={busy}
-                />
-              </Field>
-              <div className="flex justify-end pb-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => removeVariantRow(index)}
-                  disabled={busy || variants.length <= 1}
-                  aria-label="Xóa dòng"
-                >
-                  <Trash2Icon className="size-4" />
-                </Button>
+        </section>
+
+        <section className={sectionShell}>
+          <div className="bg-muted/40 flex flex-wrap items-center gap-3 border-b px-5 py-4 sm:px-6">
+            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+              <FolderTreeIcon className="size-4" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold leading-tight">Danh mục</h2>
+              <p className="text-muted-foreground text-sm">
+                Hai cột cùng một khung: cây bên trái, đường dẫn đã chọn bên phải.
+              </p>
+            </div>
+          </div>
+          <div className="p-5 sm:p-6">
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:flex lg:h-[min(70vh,34rem)] lg:min-h-60 lg:max-h-[min(85vh,40rem)] lg:flex-col xl:min-h-64">
+              <div className="grid min-h-0 min-w-0 grid-cols-1 divide-y divide-border lg:grid-cols-2 lg:grid-rows-1 lg:divide-x lg:divide-y-0 lg:overflow-hidden lg:flex-1 lg:items-stretch">
+                <div className="flex h-full min-h-0 min-w-0 flex-col self-stretch overflow-hidden">
+                  <div className="bg-muted/40 flex min-h-17 shrink-0 flex-col justify-center border-b px-4 py-3 sm:min-h-18 sm:px-5">
+                    <h3 className="text-sm font-semibold tracking-tight">Cây danh mục</h3>
+                    <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
+                      Mở nhánh, tìm kiếm; chỉ mục lá có checkbox.
+                    </p>
+                  </div>
+                  <div className="flex h-full max-h-[min(58vh,26rem)] min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 lg:max-h-none">
+                    <CategoryTreeMultiSelect
+                      chrome="split"
+                      className="flex h-full min-h-0 flex-1 flex-col"
+                      categories={categoriesFlat}
+                      value={categoryIds}
+                      onChange={setCategoryIds}
+                      disabled={busy || categoriesFlat.length === 0}
+                    />
+                  </div>
+                </div>
+                <div className="flex h-full min-h-0 min-w-0 flex-col self-stretch overflow-hidden">
+                  <div className="bg-muted/40 flex min-h-17 shrink-0 flex-col justify-center border-b px-4 py-3 sm:min-h-18 sm:px-5">
+                    <h3 className="text-sm font-semibold tracking-tight">Đã chọn</h3>
+                    <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
+                      Đường dẫn gốc → lá; bấm X để gỡ từng mục.
+                    </p>
+                  </div>
+                  <div className="flex h-full max-h-[min(58vh,26rem)] min-h-0 flex-1 flex-col gap-2 overflow-hidden p-3 sm:p-4 lg:max-h-none">
+                    <div className="bg-background flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border shadow-sm">
+                      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain py-2 pl-1 pr-1 sm:px-2">
+                        {categoryIds.length === 0 ? (
+                          <p className="text-muted-foreground flex flex-1 items-center justify-center px-3 py-8 text-center text-sm leading-relaxed">
+                            Chưa chọn mục lá nào — tick ở cột trái để thêm vào đây.
+                          </p>
+                        ) : (
+                          <ul className="space-y-0.5">
+                            {categoryIds.map((id) => (
+                              <li
+                                key={id}
+                                className="hover:bg-muted/60 flex min-h-9 items-start gap-1 rounded-md py-0.5 pr-1 pl-1"
+                              >
+                                <span className="min-w-0 flex-1 px-1 text-sm leading-snug">
+                                  {formatCategoryPath(id, categoriesById)}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="text-muted-foreground hover:text-destructive size-7 shrink-0"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    setCategoryIds((prev) => prev.filter((x) => x !== id))
+                                  }
+                                  aria-label="Bỏ danh mục"
+                                >
+                                  <XIcon className="size-4" />
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-muted-foreground border-border/80 flex h-10 shrink-0 flex-nowrap items-center justify-between gap-2 border-t px-0.5 text-xs">
+                      <span className="shrink-0">
+                        <span className="text-foreground font-medium">{categoryIds.length}</span>{' '}
+                        đường dẫn
+                      </span>
+                      <span
+                        className="text-muted-foreground/90 min-w-0 truncate text-right"
+                        title="Đồng bộ với số mục lá đã tick"
+                      >
+                        Khớp mục lá đã tick
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
+          </div>
+        </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ảnh theo màu</CardTitle>
-          <CardDescription>
-            Mỗi màu đang có trong bảng biến thể có danh sách ảnh riêng (thứ tự = thứ tự hiển thị).
-            Thêm màu mới ở biến thể để thêm nhóm ảnh tương ứng.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {colorIdsInVariantOrder.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              Thêm ít nhất một dòng biến thể để gán ảnh theo màu.
-            </p>
-          ) : (
-            colorIdsInVariantOrder.map((colorId) => {
-              const colorName = colors.find((c) => c.id === colorId)?.name ?? `Màu #${colorId}`;
-              const urls = imagesByColorId[colorId] ?? [];
-              return (
-                <div key={colorId} className="space-y-2 rounded-lg border p-3">
-                  <p className="text-sm font-medium">{colorName}</p>
-                  <ProductImageUploadField
-                    disabled={busy || !cloudinaryUploadConfigured()}
-                    urls={urls}
-                    onUrlsChange={(next) =>
-                      setImagesByColorId((prev) => ({
-                        ...prev,
-                        [colorId]: next,
-                      }))
-                    }
-                    maxFiles={16}
-                    emptyHint="Chưa có ảnh cho màu này."
-                  />
-                </div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
+        <section className={sectionShell}>
+          <div className="bg-muted/40 flex flex-wrap items-center gap-3 border-b px-5 py-4 sm:px-6">
+            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+              <TagIcon className="size-4" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold leading-tight">Thuộc tính</h2>
+              <p className="text-muted-foreground text-sm">
+                Chất liệu, kiểu dáng, v.v. (tuỳ chọn).
+              </p>
+            </div>
+          </div>
+          <div className="p-5 sm:p-6">
+            <Field>
+              <FieldLabel>Giá trị thuộc tính</FieldLabel>
+              <MultiSelectPopover
+                options={attributeOptions}
+                value={attributeValueIds}
+                onChange={setAttributeValueIds}
+                disabled={busy || attributeOptions.length === 0}
+                placeholder="Chọn một hoặc nhiều giá trị…"
+                modal={false}
+              />
+            </Field>
+          </div>
+        </section>
 
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button type="button" variant="outline" asChild disabled={busy}>
+        <section className={sectionShell}>
+          <div className="bg-muted/40 flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 sm:px-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+                <LayersIcon className="size-4" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold leading-tight">Biến thể</h2>
+                <p className="text-muted-foreground text-sm">
+                  Màu × size, SKU, giá (đ), giá sale, tồn kho.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="gap-1"
+              onClick={addVariantRow}
+              disabled={busy || !colors.length || !sizes.length}
+            >
+              <PlusIcon className="size-4" />
+              Thêm dòng
+            </Button>
+          </div>
+          <div className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="min-w-30 pl-5">Màu</TableHead>
+                  <TableHead className="min-w-26">Size</TableHead>
+                  <TableHead className="min-w-34">SKU</TableHead>
+                  <TableHead className="min-w-26">Giá (đ)</TableHead>
+                  <TableHead className="min-w-26">Giá sale</TableHead>
+                  <TableHead className="min-w-22">Tồn</TableHead>
+                  <TableHead className="w-12 pr-5 text-right" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {variants.map((row, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="pl-5 align-middle">
+                      <Select
+                        value={String(row.colorId)}
+                        onValueChange={(v) =>
+                          updateVariant(index, { colorId: Number.parseInt(v, 10) })
+                        }
+                        disabled={busy}
+                      >
+                        <SelectTrigger className="h-9 w-full min-w-26">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {colors.map((c) => (
+                            <SelectItem key={c.id} value={String(c.id)}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Select
+                        value={String(row.sizeId)}
+                        onValueChange={(v) =>
+                          updateVariant(index, { sizeId: Number.parseInt(v, 10) })
+                        }
+                        disabled={busy}
+                      >
+                        <SelectTrigger className="h-9 w-full min-w-22">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sizes.map((s) => (
+                            <SelectItem key={s.id} value={String(s.id)}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Input
+                        value={row.sku}
+                        onChange={(e) => updateVariant(index, { sku: e.target.value })}
+                        disabled={busy}
+                        maxLength={50}
+                        className="h-9 font-mono text-sm"
+                        placeholder="SKU"
+                      />
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.price}
+                        onChange={(e) => updateVariant(index, { price: e.target.value })}
+                        disabled={busy}
+                        className="h-9"
+                      />
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.salePrice}
+                        onChange={(e) => updateVariant(index, { salePrice: e.target.value })}
+                        disabled={busy}
+                        className="h-9"
+                        placeholder="—"
+                      />
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.onHand}
+                        onChange={(e) => updateVariant(index, { onHand: e.target.value })}
+                        disabled={busy}
+                        className="h-9"
+                      />
+                    </TableCell>
+                    <TableCell className="pr-5 text-right align-middle">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => removeVariantRow(index)}
+                        disabled={busy || variants.length <= 1}
+                        aria-label="Xóa dòng"
+                      >
+                        <Trash2Icon className="size-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+
+        <section className={sectionShell}>
+          <div className="bg-muted/40 flex flex-wrap items-center gap-3 border-b px-5 py-4 sm:px-6">
+            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+              <ImageIcon className="size-4" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold leading-tight">Ảnh sản phẩm</h2>
+              <p className="text-muted-foreground text-sm">
+                Thumbnail + gallery theo mỗi màu (cột dọc). Nhiều màu: cuộn ngang. Kéo cầm ⋮⋮ để sắp
+                xếp ảnh (sortOrder).
+              </p>
+            </div>
+          </div>
+          <div className="space-y-4 px-4 py-4 sm:px-5 sm:py-5">
+            <div className="rounded-xl border bg-muted/10 p-3 sm:p-4">
+              <Field>
+                <FieldLabel>Ảnh đại diện (thumbnail)</FieldLabel>
+                <p className="text-muted-foreground mb-3 text-xs leading-relaxed">
+                  Tuỳ chọn — hiển thị trong danh sách / thẻ sản phẩm.
+                </p>
+                <ProductThumbnailUploadField
+                  url={thumbnail}
+                  onUrlChange={setThumbnail}
+                  disabled={busy || !cloudinaryUploadConfigured()}
+                />
+              </Field>
+            </div>
+            <Separator />
+            <ProductImagesColorColumns
+              colorIds={colorIdsInVariantOrder}
+              colorLabel={(id) => colors.find((c) => c.id === id)?.name ?? `Màu #${id}`}
+              imagesByColorId={imagesByColorId}
+              onUrlsChange={(colorId, urls) =>
+                setImagesByColorId((prev) => ({
+                  ...prev,
+                  [colorId]: urls,
+                }))
+              }
+              disabled={busy || !cloudinaryUploadConfigured()}
+              maxFilesPerColor={16}
+            />
+          </div>
+        </section>
+      </div>
+
+      <Separator className="my-12" />
+
+      <div className="mx-auto flex w-full max-w-4xl flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" className="sm:min-w-28" asChild disabled={busy}>
           <Link href="/products">Hủy</Link>
         </Button>
-        <Button type="button" onClick={submit} disabled={busy}>
+        <Button type="button" className="sm:min-w-40" onClick={submit} disabled={busy}>
           {busy ? 'Đang tạo…' : 'Tạo sản phẩm'}
         </Button>
       </div>

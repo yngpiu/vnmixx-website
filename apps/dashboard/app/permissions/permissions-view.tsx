@@ -1,18 +1,11 @@
 'use client';
 
 import { listPermissions } from '@/lib/api/rbac';
-import { permissionModuleLabel } from '@/lib/permission-label';
+import { permissionModuleLabel, permissionModuleTitle } from '@/lib/permission-label';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Input } from '@repo/ui/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@repo/ui/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
+import { SearchIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 export function PermissionsView() {
@@ -39,22 +32,49 @@ export function PermissionsView() {
     );
   }, [permissions, search]);
 
+  const groups = useMemo(() => {
+    const map = new Map<string, typeof filtered>();
+    for (const p of filtered) {
+      const key = permissionModuleLabel(p.name);
+      const list = map.get(key) ?? [];
+      list.push(p);
+      map.set(key, list);
+    }
+    const entries = [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    for (const [, list] of entries) {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return entries;
+  }, [filtered]);
+
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Quyền</h2>
-        <p className="text-muted-foreground">
-          Danh mục quyền trong hệ thống (đồng bộ từ backend). Dùng khi cấu hình vai trò — gán quyền
-          qua màn hình vai trò.
-        </p>
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Quyền</h2>
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+            Danh mục quyền đồng bộ từ backend, nhóm theo tài nguyên. Khi cấu hình vai trò, gán quyền
+            tại màn hình vai trò (ma trận CRUD).
+          </p>
+        </div>
+        <Badge variant="secondary" className="w-fit shrink-0 font-normal">
+          {filtered.length} quyền
+        </Badge>
       </div>
 
-      <Input
-        placeholder="Lọc theo mã quyền, nhóm hoặc mô tả…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-md"
-      />
+      <div className="relative max-w-md">
+        <SearchIcon
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+          aria-hidden
+        />
+        <Input
+          placeholder="Lọc theo mã, nhóm hoặc mô tả…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="ps-9"
+          aria-label="Lọc danh sách quyền"
+        />
+      </div>
 
       {isError ? (
         <p className="text-destructive text-sm" role="alert">
@@ -62,48 +82,47 @@ export function PermissionsView() {
         </p>
       ) : null}
 
-      <div className="rounded-xl border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[min(28%,10rem)]">Nhóm</TableHead>
-              <TableHead>Mã quyền</TableHead>
-              <TableHead className="hidden md:table-cell">Mô tả</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-muted-foreground h-24 text-center">
-                  Đang tải…
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-muted-foreground h-24 text-center">
-                  {search.trim() ? 'Không có quyền khớp bộ lọc.' : 'Chưa có quyền nào.'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>
-                    <Badge variant="outline" className="font-normal">
-                      {permissionModuleLabel(p.name)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{p.name}</code>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground hidden max-w-xl text-sm md:table-cell">
-                    {p.description ?? '—'}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {isLoading ? (
+        <p className="text-muted-foreground py-12 text-center text-sm">Đang tải…</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-muted-foreground py-12 text-center text-sm">
+          {search.trim() ? 'Không có quyền khớp bộ lọc.' : 'Chưa có quyền nào.'}
+        </p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {groups.map(([moduleKey, items]) => (
+            <section
+              key={moduleKey}
+              className="bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm"
+            >
+              <header className="bg-muted/50 flex items-center justify-between gap-2 border-b px-4 py-3">
+                <h3 className="text-sm font-semibold tracking-tight">
+                  {permissionModuleTitle(moduleKey)}
+                </h3>
+                <span className="text-muted-foreground tabular-nums text-xs">{items.length}</span>
+              </header>
+              <ul className="divide-border/80 max-h-[min(22rem,55vh)] divide-y overflow-y-auto">
+                {items.map((p) => (
+                  <li key={p.id} className="hover:bg-muted/30 px-4 py-3 transition-colors">
+                    <div className="flex flex-col gap-1">
+                      <code className="text-foreground bg-muted/80 w-fit rounded-md px-2 py-0.5 font-mono text-xs">
+                        {p.name}
+                      </code>
+                      {p.description ? (
+                        <p className="text-muted-foreground text-xs leading-snug">
+                          {p.description}
+                        </p>
+                      ) : (
+                        <p className="text-muted-foreground/70 text-xs italic">Không có mô tả</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

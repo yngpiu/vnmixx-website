@@ -140,8 +140,14 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
             </Field>
           </FieldGroup>
 
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium">Quyền</p>
+          <div className="border-border/80 flex flex-col gap-3 border-t pt-5">
+            <div>
+              <p className="text-sm font-semibold">Gán quyền</p>
+              <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                Ma trận theo tài nguyên: Tạo, Xem, Sửa, Xóa. Dùng ô tick cột hoặc hàng để chọn
+                nhanh.
+              </p>
+            </div>
             {permissionsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">Đang tải danh sách quyền…</p>
             ) : permissionsQuery.isError ? (

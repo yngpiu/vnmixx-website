@@ -24,7 +24,7 @@ export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
           <div className="flex min-w-0 items-center gap-3">
             <div className="bg-muted relative size-10 shrink-0 overflow-hidden rounded-md border">
               {p.thumbnail ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={p.thumbnail} alt="" className="size-full object-cover" />
               ) : (
                 <span className="text-muted-foreground flex size-full items-center justify-center text-[10px]">

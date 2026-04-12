@@ -188,9 +188,9 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
                   </p>
                 ) : (
                   <>
-                    <p className="text-muted-foreground text-xs">
-                      Ma trận Tạo / Xem / Sửa / Xóa theo tài nguyên — tick ô hoặc dùng checkbox cột
-                      / hàng để gán hàng loạt.
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      Ma trận theo tài nguyên (Tạo · Xem · Sửa · Xóa). Tick từng ô hoặc dùng
+                      checkbox ở đầu cột / hàng để gán hàng loạt.
                     </p>
                     <PermissionCrudMatrix
                       permissions={allPermissions}

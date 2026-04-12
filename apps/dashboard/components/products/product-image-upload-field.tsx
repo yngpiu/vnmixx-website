@@ -15,6 +15,8 @@ type ProductImageUploadFieldProps = {
   maxFiles?: number;
   accept?: string;
   emptyHint?: string;
+  /** Pixel size class for each preview tile */
+  previewSize?: 'sm' | 'md';
 };
 
 export function ProductImageUploadField({
@@ -24,6 +26,7 @@ export function ProductImageUploadField({
   maxFiles = 12,
   accept = 'image/jpeg,image/png,image/webp,image/gif',
   emptyHint = 'Chưa có ảnh',
+  previewSize = 'sm',
 }: ProductImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -53,6 +56,9 @@ export function ProductImageUploadField({
   const removeAt = (index: number) => {
     onUrlsChange(urls.filter((_, i) => i !== index));
   };
+
+  const tileClass = previewSize === 'md' ? 'size-28' : 'size-20';
+  const imgSizes = previewSize === 'md' ? '112px' : '80px';
 
   const move = (from: number, to: number) => {
     if (to < 0 || to >= urls.length) return;
@@ -98,13 +104,13 @@ export function ProductImageUploadField({
       {urls.length === 0 ? (
         <p className="text-muted-foreground text-xs">{emptyHint}</p>
       ) : (
-        <ul className="flex flex-wrap gap-2">
+        <ul className="flex flex-wrap gap-2.5">
           {urls.map((url, i) => (
             <li
               key={`${url}-${i}`}
-              className="bg-muted relative size-20 overflow-hidden rounded-md border"
+              className={`bg-muted relative overflow-hidden rounded-lg border shadow-sm ${tileClass}`}
             >
-              <Image src={url} alt="" fill className="object-cover" sizes="80px" unoptimized />
+              <Image src={url} alt="" fill className="object-cover" sizes={imgSizes} unoptimized />
               <div className="absolute right-0.5 top-0.5 flex gap-0.5">
                 <Button
                   type="button"
@@ -206,11 +212,13 @@ export function ProductThumbnailUploadField({
           {uploading ? 'Đang tải…' : url ? 'Đổi ảnh' : 'Chọn ảnh'}
         </Button>
         {url ? (
-          <div className="relative size-16 overflow-hidden rounded-md border">
-            <Image src={url} alt="" fill className="object-cover" sizes="64px" unoptimized />
+          <div className="relative size-24 overflow-hidden rounded-lg border shadow-sm ring-1 ring-border/60">
+            <Image src={url} alt="" fill className="object-cover" sizes="96px" unoptimized />
           </div>
         ) : (
-          <p className="text-muted-foreground text-xs">Tuỳ chọn — hiển thị trong danh sách.</p>
+          <div className="text-muted-foreground flex min-h-24 min-w-34 items-center justify-center rounded-lg border border-dashed bg-muted/30 px-3 text-center text-xs">
+            Ảnh đại diện (tuỳ chọn)
+          </div>
         )}
       </div>
       {url ? (
