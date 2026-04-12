@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+
+export interface PaginatedResult<T> {
+  data: T[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}
 
 export interface RoleListView {
   id: number;
@@ -75,6 +81,78 @@ export class RoleRepository {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
+  }
+
+  private buildListOrderBy(
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+  ): Prisma.RoleOrderByWithRelationInput {
+    const dir = sortOrder === 'asc' ? 'asc' : 'desc';
+    switch (sortBy) {
+      case 'name':
+        return { name: dir };
+      case 'description':
+        return { description: dir };
+      case 'updatedAt':
+        return { updatedAt: dir };
+      case 'createdAt':
+        return { createdAt: dir };
+      case 'permissionCount':
+        return { rolePermissions: { _count: dir } };
+      default:
+        return { id: 'asc' };
+    }
+  }
+
+  async findList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<PaginatedResult<RoleListView>> {
+    const { page, limit, search, sortBy, sortOrder } = params;
+    const q = search?.trim();
+    const where: Prisma.RoleWhereInput = q
+      ? {
+          OR: [{ name: { contains: q } }, { description: { contains: q } }],
+        }
+      : {};
+
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.role.count({ where }),
+      this.prisma.role.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: this.buildListOrderBy(sortBy, sortOrder),
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: { select: { rolePermissions: true } },
+        },
+      }),
+    ]);
+
+    return {
+      data: rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        permissionCount: r._count.rolePermissions,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      })),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findById(id: number): Promise<RoleDetailView | null> {

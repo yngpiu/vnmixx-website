@@ -5,8 +5,8 @@ import { RolesTable } from '@/app/roles/roles-table';
 
 export function RolesView() {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Vai trò</h2>
           <p className="text-muted-foreground">
@@ -16,6 +16,6 @@ export function RolesView() {
         <RolesPrimaryButtons />
       </div>
       <RolesTable />
-    </div>
+    </>
   );
 }

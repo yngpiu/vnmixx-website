@@ -1,4 +1,4 @@
-/** Khớp `RoleResponseDto` từ API (GET /admin/roles). */
+/** Khớp phần tử `data[]` trong `RoleListResponseDto` (GET /admin/roles). */
 export interface RoleListItem {
   id: number;
   name: string;

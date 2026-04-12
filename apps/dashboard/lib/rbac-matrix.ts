@@ -1,3 +1,4 @@
+import { permissionModuleDisplayName } from '@/lib/permission-label';
 import type { Permission } from '@/lib/types/rbac';
 
 export const CRUD_ACTIONS = ['create', 'read', 'update', 'delete'] as const;
@@ -10,20 +11,8 @@ export const CRUD_LABELS: Record<CrudAction, string> = {
   delete: 'Xóa',
 };
 
-const RESOURCE_LABELS: Record<string, string> = {
-  rbac: 'Phân quyền',
-  order: 'Đơn hàng',
-  customer: 'Khách hàng',
-  employee: 'Nhân viên',
-  product: 'Sản phẩm',
-  category: 'Danh mục',
-  color: 'Màu sắc',
-  size: 'Kích cỡ',
-  attribute: 'Thuộc tính',
-};
-
 export function resourceDisplayLabel(resource: string): string {
-  return RESOURCE_LABELS[resource] ?? resource;
+  return permissionModuleDisplayName(resource);
 }
 
 export type CrudMatrixRow = {

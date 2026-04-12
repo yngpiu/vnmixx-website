@@ -1,8 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
+
+const EMPLOYEE_SORT_BY = ['fullName', 'email', 'phoneNumber', 'isActive', 'createdAt'] as const;
 
 export class ListEmployeesQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
@@ -28,7 +30,10 @@ export class ListEmployeesQueryDto {
   @IsOptional()
   search?: string;
 
-  @ApiPropertyOptional({ example: true, description: 'Lọc theo trạng thái hoạt động' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Không gửi = không lọc; true/false = chỉ hoạt động / chỉ vô hiệu.',
+  })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
@@ -36,21 +41,12 @@ export class ListEmployeesQueryDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Khi true, trả về cả nhân viên đã xóa mềm và chưa xóa.',
+    description: 'Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa.',
   })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
   isSoftDeleted?: boolean;
-
-  @ApiPropertyOptional({
-    example: false,
-    description: 'Chỉ lấy nhân viên đã xóa mềm (ưu tiên hơn isSoftDeleted khi cả hai được gửi).',
-  })
-  @TransformQueryOptionalBoolean()
-  @IsBoolean()
-  @IsOptional()
-  onlyDeleted?: boolean;
 
   @ApiPropertyOptional({ example: 1, description: 'Chỉ nhân viên đang có vai trò này' })
   @Type(() => Number)
@@ -58,4 +54,19 @@ export class ListEmployeesQueryDto {
   @Min(1)
   @IsOptional()
   roleId?: number;
+
+  @ApiPropertyOptional({
+    example: 'createdAt',
+    enum: EMPLOYEE_SORT_BY,
+    description: 'Trường sắp xếp (mặc định createdAt giảm dần khi không gửi).',
+  })
+  @IsString()
+  @IsIn([...EMPLOYEE_SORT_BY])
+  @IsOptional()
+  sortBy?: (typeof EMPLOYEE_SORT_BY)[number];
+
+  @ApiPropertyOptional({ example: 'desc', enum: ['asc', 'desc'] })
+  @IsIn(['asc', 'desc'])
+  @IsOptional()
+  sortOrder?: 'asc' | 'desc';
 }

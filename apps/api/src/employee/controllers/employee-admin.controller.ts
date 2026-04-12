@@ -46,7 +46,7 @@ export class EmployeeAdminController {
   @ApiOperation({
     summary: 'Liệt kê nhân viên',
     description:
-      'Danh sách phân trang: tìm kiếm, lọc hoạt động, lọc vai trò. Mặc định chỉ bản ghi chưa xóa; `onlyDeleted=true` chỉ bản đã xóa; `isSoftDeleted=true` gồm cả hai.',
+      'Phân trang, tìm kiếm, lọc vai trò. `isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc.',
   })
   @ApiOkResponse({ type: EmployeeListResponseDto })
   @Get()
@@ -57,8 +57,9 @@ export class EmployeeAdminController {
       search: query.search,
       isActive: query.isActive,
       isSoftDeleted: query.isSoftDeleted,
-      onlyDeleted: query.onlyDeleted,
       roleId: query.roleId,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
   }
 

@@ -1,19 +1,8 @@
 'use client';
 
-import { EMPLOYEE_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
+import { ROLE_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
 import { appendSortingToSearchParams, sortingStateFromUrl } from '@/lib/data-table-sort-url';
-import {
-  parseDeletedColumnFilter,
-  parseIsActiveColumnFilter,
-  setIsActiveUrlParam,
-  setSoftDeletedUrlParam,
-} from '@/lib/list-admin-filters-url';
-import type {
-  ColumnFiltersState,
-  OnChangeFn,
-  PaginationState,
-  SortingState,
-} from '@tanstack/react-table';
+import type { OnChangeFn, PaginationState, SortingState } from '@tanstack/react-table';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 
@@ -28,22 +17,9 @@ function clampPageSize(n: number): number {
   return n;
 }
 
-function parseColumnFilters(searchParams: URLSearchParams): ColumnFiltersState {
-  const filters: ColumnFiltersState = [];
-  const q = searchParams.get('q')?.trim();
-  if (q) {
-    filters.push({ id: 'fullName', value: q });
-  }
-  const isActiveF = parseIsActiveColumnFilter(searchParams);
-  if (isActiveF) filters.push(isActiveF);
-  const deletedF = parseDeletedColumnFilter(searchParams);
-  if (deletedF) filters.push(deletedF);
-  return filters;
-}
-
 function buildSearchParamsFromState(
   pagination: PaginationState,
-  columnFilters: ColumnFiltersState,
+  globalFilter: string,
   sorting: SortingState,
 ): URLSearchParams {
   const params = new URLSearchParams();
@@ -55,29 +31,23 @@ function buildSearchParamsFromState(
   if (pageSize !== DEFAULT_PAGE_SIZE) {
     params.set('pageSize', String(pageSize));
   }
-
-  const qFilter = columnFilters.find((f) => f.id === 'fullName');
-  const q = typeof qFilter?.value === 'string' ? qFilter.value.trim() : '';
+  const q = globalFilter.trim();
   if (q) {
     params.set('q', q);
   }
-
-  setIsActiveUrlParam(params, columnFilters);
-  setSoftDeletedUrlParam(params, columnFilters);
-
-  appendSortingToSearchParams(params, sorting, EMPLOYEE_TABLE_SORT_IDS);
+  appendSortingToSearchParams(params, sorting, ROLE_TABLE_SORT_IDS);
   return params;
 }
 
-export function useEmployeesListUrlState() {
+export function useRolesListUrlState() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const columnFilters = useMemo(() => parseColumnFilters(searchParams), [searchParams]);
+  const globalFilter = useMemo(() => searchParams.get('q')?.trim() ?? '', [searchParams]);
 
   const sorting = useMemo(
-    () => sortingStateFromUrl(searchParams, EMPLOYEE_TABLE_SORT_IDS),
+    () => sortingStateFromUrl(searchParams, ROLE_TABLE_SORT_IDS),
     [searchParams],
   );
 
@@ -100,23 +70,22 @@ export function useEmployeesListUrlState() {
   const onPaginationChange: OnChangeFn<PaginationState> = useCallback(
     (updater) => {
       const next = typeof updater === 'function' ? updater(pagination) : updater;
-      const params = buildSearchParamsFromState(next, columnFilters, sorting);
+      const params = buildSearchParamsFromState(next, globalFilter, sorting);
       replaceUrl(params);
     },
-    [pagination, columnFilters, sorting, replaceUrl],
+    [pagination, globalFilter, sorting, replaceUrl],
   );
 
-  const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
-    (updater) => {
-      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+  const onGlobalFilterChange = useCallback(
+    (value: string) => {
       const params = buildSearchParamsFromState(
         { pageIndex: 0, pageSize: pagination.pageSize },
-        next,
+        value,
         sorting,
       );
       replaceUrl(params);
     },
-    [pagination.pageSize, columnFilters, sorting, replaceUrl],
+    [pagination.pageSize, sorting, replaceUrl],
   );
 
   const onSortingChange: OnChangeFn<SortingState> = useCallback(
@@ -124,37 +93,35 @@ export function useEmployeesListUrlState() {
       const next = typeof updater === 'function' ? updater(sorting) : updater;
       const params = buildSearchParamsFromState(
         { pageIndex: 0, pageSize: pagination.pageSize },
-        columnFilters,
+        globalFilter,
         next,
       );
       replaceUrl(params);
     },
-    [pagination.pageSize, columnFilters, sorting, replaceUrl],
+    [pagination.pageSize, globalFilter, sorting, replaceUrl],
   );
 
   const ensurePageInRange = useCallback(
     (pageCount: number) => {
-      if (pageCount <= 0) {
-        return;
-      }
+      if (pageCount <= 0) return;
       const current = pagination.pageIndex + 1;
       if (current > pageCount) {
         const params = buildSearchParamsFromState(
           { pageIndex: pageCount - 1, pageSize: pagination.pageSize },
-          columnFilters,
+          globalFilter,
           sorting,
         );
         replaceUrl(params);
       }
     },
-    [pagination, columnFilters, sorting, replaceUrl],
+    [pagination, globalFilter, sorting, replaceUrl],
   );
 
   return {
     pagination,
     onPaginationChange,
-    columnFilters,
-    onColumnFiltersChange,
+    globalFilter,
+    onGlobalFilterChange,
     sorting,
     onSortingChange,
     ensurePageInRange,

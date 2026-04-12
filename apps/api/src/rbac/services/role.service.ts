@@ -9,6 +9,7 @@ import { RefreshTokenRepository } from '../../auth/repositories/refresh-token.re
 import type { CreateRoleDto, UpdateRoleDto } from '../dto';
 import { PermissionRepository } from '../repositories/permission.repository';
 import {
+  type PaginatedResult,
   type RoleDetailView,
   type RoleListView,
   RoleRepository,
@@ -22,8 +23,14 @@ export class RoleService {
     private readonly refreshTokenRepo: RefreshTokenRepository,
   ) {}
 
-  async findAll(): Promise<RoleListView[]> {
-    return this.roleRepo.findAll();
+  async findList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<PaginatedResult<RoleListView>> {
+    return this.roleRepo.findList(params);
   }
 
   async findById(id: number): Promise<RoleDetailView> {

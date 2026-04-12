@@ -1,6 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PermissionResponseDto } from './permission-response.dto';
 
+class PaginationMeta {
+  @ApiProperty({ example: 1 })
+  page: number;
+
+  @ApiProperty({ example: 20 })
+  limit: number;
+
+  @ApiProperty({ example: 50 })
+  total: number;
+
+  @ApiProperty({ example: 3 })
+  totalPages: number;
+}
+
 export class RoleResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -39,4 +53,12 @@ export class RoleDetailResponseDto {
 
   @ApiProperty({ type: [PermissionResponseDto] })
   permissions: PermissionResponseDto[];
+}
+
+export class RoleListResponseDto {
+  @ApiProperty({ type: [RoleResponseDto] })
+  data: RoleResponseDto[];
+
+  @ApiProperty({ type: PaginationMeta })
+  meta: PaginationMeta;
 }

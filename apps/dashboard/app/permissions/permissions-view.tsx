@@ -1,7 +1,7 @@
 'use client';
 
 import { listPermissions } from '@/lib/api/rbac';
-import { permissionModuleLabel, permissionModuleTitle } from '@/lib/permission-label';
+import { permissionModuleDisplayName, permissionModuleLabel } from '@/lib/permission-label';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Input } from '@repo/ui/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
@@ -97,7 +97,7 @@ export function PermissionsView() {
             >
               <header className="bg-muted/50 flex items-center justify-between gap-2 border-b px-4 py-3">
                 <h3 className="text-sm font-semibold tracking-tight">
-                  {permissionModuleTitle(moduleKey)}
+                  {permissionModuleDisplayName(moduleKey)}
                 </h3>
                 <span className="text-muted-foreground tabular-nums text-xs">{items.length}</span>
               </header>

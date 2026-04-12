@@ -11,11 +11,10 @@ export type ListEmployeesParams = {
   limit?: number;
   search?: string;
   isActive?: boolean;
-  /** Gồm cả nhân viên đã xóa mềm (cùng với chưa xóa). */
   isSoftDeleted?: boolean;
-  /** Chỉ nhân viên đã xóa (ưu tiên hơn isSoftDeleted nếu cả hai được gửi). */
-  onlyDeleted?: boolean;
   roleId?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 };
 
 export async function listEmployees(

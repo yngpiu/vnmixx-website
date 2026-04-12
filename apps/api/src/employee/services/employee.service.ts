@@ -30,8 +30,9 @@ export class EmployeeService {
     search?: string;
     isActive?: boolean;
     isSoftDeleted?: boolean;
-    onlyDeleted?: boolean;
     roleId?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResult<EmployeeListItemView>> {
     return this.employeeRepo.findList(params);
   }

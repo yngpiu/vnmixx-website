@@ -13,6 +13,19 @@ export type RoleListItem = {
   updatedAt: string;
 };
 
+export type RoleListMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+/** Khớp `RoleListResponseDto` — GET /admin/roles. */
+export type RoleListResponse = {
+  data: RoleListItem[];
+  meta: RoleListMeta;
+};
+
 export type RoleDetail = {
   id: number;
   name: string;

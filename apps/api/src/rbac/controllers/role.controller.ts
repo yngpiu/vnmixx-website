@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -26,8 +27,9 @@ import {
 import { RequirePermissions, RequireUserType } from '../../auth/decorators';
 import {
   CreateRoleDto,
+  ListRolesQueryDto,
   RoleDetailResponseDto,
-  RoleResponseDto,
+  RoleListResponseDto,
   SyncPermissionsDto,
   UpdateRoleDto,
 } from '../dto';
@@ -42,12 +44,21 @@ import { RoleService } from '../services/role.service';
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
-  @ApiOperation({ summary: 'Liệt kê tất cả vai trò' })
-  @ApiOkResponse({ type: [RoleResponseDto] })
+  @ApiOperation({
+    summary: 'Liệt kê vai trò',
+    description: 'Danh sách phân trang; tìm theo tên hoặc mô tả qua tham số search.',
+  })
+  @ApiOkResponse({ type: RoleListResponseDto })
   @RequirePermissions('rbac.read')
   @Get()
-  async findAll(): Promise<RoleResponseDto[]> {
-    return this.roleService.findAll();
+  async findList(@Query() query: ListRolesQueryDto): Promise<RoleListResponseDto> {
+    return this.roleService.findList({
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
   }
 
   @ApiOperation({ summary: 'Lấy chi tiết vai trò kèm quyền' })

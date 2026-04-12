@@ -34,7 +34,7 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import { AlertCircleIcon } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
   return (header.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
@@ -52,12 +52,19 @@ export function EmployeesTable() {
     onPaginationChange,
     columnFilters,
     onColumnFiltersChange,
+    sorting,
+    onSortingChange,
     ensurePageInRange,
   } = useEmployeesListUrlState();
 
+  const listParams = useMemo(
+    () => toListEmployeesParams(pagination, columnFilters, sorting),
+    [pagination, columnFilters, sorting],
+  );
+
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['employees', 'list', pagination, columnFilters],
-    queryFn: () => listEmployees(toListEmployeesParams(pagination, columnFilters)),
+    queryKey: ['employees', 'list', listParams],
+    queryFn: () => listEmployees(listParams),
     placeholderData: keepPreviousData,
   });
 
@@ -101,12 +108,15 @@ export function EmployeesTable() {
       rowSelection,
       columnFilters,
       columnVisibility,
+      sorting,
     },
     manualPagination: true,
     manualFiltering: true,
+    manualSorting: true,
     enableRowSelection: true,
     onPaginationChange,
     onColumnFiltersChange,
+    onSortingChange,
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
@@ -156,6 +166,7 @@ export function EmployeesTable() {
             {
               columnId: 'isActive',
               title: 'Trạng thái hoạt động',
+              selectionMode: 'single',
               options: [
                 { label: 'Đang hoạt động', value: 'active' },
                 { label: 'Vô hiệu hóa', value: 'inactive' },
@@ -164,6 +175,7 @@ export function EmployeesTable() {
             {
               columnId: 'deleted',
               title: 'Trạng thái xóa',
+              selectionMode: 'single',
               options: [
                 { label: 'Chưa xóa', value: 'not_deleted' },
                 { label: 'Đã xóa', value: 'deleted' },

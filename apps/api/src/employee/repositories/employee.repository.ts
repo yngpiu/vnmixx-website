@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
+import { softDeletedWhere } from '../../common/prisma/soft-deleted-where';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface EmployeeListItemView {
@@ -50,28 +51,41 @@ const DETAIL_SELECT = {
 export class EmployeeRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private buildListOrderBy(
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+  ): Prisma.EmployeeOrderByWithRelationInput {
+    const dir = sortOrder === 'asc' ? 'asc' : 'desc';
+    switch (sortBy) {
+      case 'fullName':
+        return { fullName: dir };
+      case 'email':
+        return { email: dir };
+      case 'phoneNumber':
+        return { phoneNumber: dir };
+      case 'isActive':
+        return { isActive: dir };
+      case 'createdAt':
+        return { createdAt: dir };
+      default:
+        return { createdAt: 'desc' };
+    }
+  }
+
   async findList(params: {
     page: number;
     limit: number;
     search?: string;
     isActive?: boolean;
     isSoftDeleted?: boolean;
-    onlyDeleted?: boolean;
     roleId?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResult<EmployeeListItemView>> {
-    const { page, limit, search, isActive, isSoftDeleted, onlyDeleted, roleId } = params;
-
-    let deletedAtFilter: Prisma.EmployeeWhereInput;
-    if (onlyDeleted === true) {
-      deletedAtFilter = { NOT: { deletedAt: null } };
-    } else if (isSoftDeleted === true) {
-      deletedAtFilter = {};
-    } else {
-      deletedAtFilter = { deletedAt: null };
-    }
+    const { page, limit, search, isActive, isSoftDeleted, roleId, sortBy, sortOrder } = params;
 
     const where: Prisma.EmployeeWhereInput = {
-      ...deletedAtFilter,
+      ...softDeletedWhere(isSoftDeleted),
       ...(isActive !== undefined && { isActive }),
       ...(roleId !== undefined && { employeeRoles: { some: { roleId } } }),
       ...(search && {
@@ -89,7 +103,7 @@ export class EmployeeRepository {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: this.buildListOrderBy(sortBy, sortOrder),
         select: LIST_SELECT,
       }),
     ]);

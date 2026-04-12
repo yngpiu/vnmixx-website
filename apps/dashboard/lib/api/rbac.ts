@@ -3,7 +3,7 @@ import type {
   CreateRolePayload,
   Permission,
   RoleDetail,
-  RoleListItem,
+  RoleListResponse,
   UpdateRolePayload,
 } from '@/lib/types/rbac';
 
@@ -12,8 +12,16 @@ export async function listPermissions(): Promise<Permission[]> {
   return data;
 }
 
-export async function listRoles(): Promise<RoleListItem[]> {
-  const { data } = await apiClient.get<RoleListItem[]>('/admin/roles');
+export type ListRolesParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export async function listRoles(params: ListRolesParams = {}): Promise<RoleListResponse> {
+  const { data } = await apiClient.get<RoleListResponse>('/admin/roles', { params });
   return data;
 }
 

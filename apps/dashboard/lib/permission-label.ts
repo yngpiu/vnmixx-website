@@ -4,12 +4,23 @@ export function permissionModuleLabel(permissionName: string): string {
   return dot === -1 ? permissionName : permissionName.slice(0, dot);
 }
 
-/** Hiển thị nhóm quyền cho UI (vd. `product_category` → `Product category`). */
-export function permissionModuleTitle(moduleKey: string): string {
+/** Tên hiển thị tiếng Việt cho tiền tố tài nguyên trong mã quyền (đồng bộ với ma trận CRUD). */
+const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
+  rbac: 'Phân quyền',
+  order: 'Đơn hàng',
+  customer: 'Khách hàng',
+  employee: 'Nhân viên',
+  product: 'Sản phẩm',
+  category: 'Danh mục',
+  color: 'Màu sắc',
+  size: 'Kích cỡ',
+  attribute: 'Thuộc tính',
+};
+
+/**
+ * Tiêu đề nhóm quyền cho UI (tiếng Việt). Nếu chưa khai báo trong bảng map, trả về mã gốc.
+ */
+export function permissionModuleDisplayName(moduleKey: string): string {
   if (!moduleKey) return moduleKey;
-  return moduleKey
-    .split(/[._-]+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
+  return PERMISSION_RESOURCE_LABELS_VI[moduleKey] ?? moduleKey;
 }
