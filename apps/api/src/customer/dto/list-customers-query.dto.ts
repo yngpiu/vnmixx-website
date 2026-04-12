@@ -1,8 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
+
+const CUSTOMER_SORT_BY = ['fullName', 'email', 'phoneNumber', 'isActive', 'createdAt'] as const;
 
 export class ListCustomersQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
@@ -28,7 +30,10 @@ export class ListCustomersQueryDto {
   @IsOptional()
   search?: string;
 
-  @ApiPropertyOptional({ example: true, description: 'Lọc theo trạng thái hoạt động' })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Không gửi = không lọc; true/false = chỉ hoạt động / chỉ vô hiệu.',
+  })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
@@ -36,19 +41,21 @@ export class ListCustomersQueryDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Khi true, trả về cả khách hàng đã xóa mềm và chưa xóa.',
+    description: 'Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa.',
   })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
   isSoftDeleted?: boolean;
 
-  @ApiPropertyOptional({
-    example: false,
-    description: 'Chỉ lấy khách hàng đã xóa mềm (ưu tiên hơn isSoftDeleted khi cả hai được gửi).',
-  })
-  @TransformQueryOptionalBoolean()
-  @IsBoolean()
+  @ApiPropertyOptional({ example: 'createdAt', enum: CUSTOMER_SORT_BY })
+  @IsString()
+  @IsIn([...CUSTOMER_SORT_BY])
   @IsOptional()
-  onlyDeleted?: boolean;
+  sortBy?: (typeof CUSTOMER_SORT_BY)[number];
+
+  @ApiPropertyOptional({ example: 'desc', enum: ['asc', 'desc'] })
+  @IsIn(['asc', 'desc'])
+  @IsOptional()
+  sortOrder?: 'asc' | 'desc';
 }

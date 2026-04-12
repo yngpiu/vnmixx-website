@@ -42,7 +42,7 @@ export class CustomerAdminController {
   @ApiOperation({
     summary: 'Liệt kê khách hàng',
     description:
-      'Danh sách phân trang: tìm kiếm, lọc hoạt động. Mặc định chỉ bản ghi chưa xóa; `onlyDeleted=true` chỉ đã xóa; `isSoftDeleted=true` gồm cả hai.',
+      'Phân trang, tìm kiếm. `isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc tương ứng.',
   })
   @ApiOkResponse({ type: CustomerListResponseDto })
   @Get()
@@ -53,7 +53,8 @@ export class CustomerAdminController {
       search: query.search,
       isActive: query.isActive,
       isSoftDeleted: query.isSoftDeleted,
-      onlyDeleted: query.onlyDeleted,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
   }
 

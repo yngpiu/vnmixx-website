@@ -17,7 +17,8 @@ export class CustomerService {
     search?: string;
     isActive?: boolean;
     isSoftDeleted?: boolean;
-    onlyDeleted?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResult<CustomerListItemView>> {
     return this.customerRepo.findList(params);
   }

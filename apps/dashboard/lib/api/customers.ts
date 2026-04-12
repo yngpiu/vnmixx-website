@@ -7,7 +7,8 @@ export type ListCustomersParams = {
   search?: string;
   isActive?: boolean;
   isSoftDeleted?: boolean;
-  onlyDeleted?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 };
 
 export async function listCustomers(

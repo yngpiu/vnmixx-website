@@ -1,7 +1,7 @@
 'use client';
 
 import { CustomersRowActions } from '@/app/customers/customers-row-actions';
-import { DataTableColumnHeader } from '@/components/data-table';
+import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { LongText } from '@/components/long-text';
 import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/lib/avatar';
@@ -51,6 +51,7 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
     enableSorting: false,
     enableHiding: false,
   },
+  dataTableSttColumnDef<CustomerListItem>(),
   {
     accessorKey: 'fullName',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Họ tên" />,
@@ -82,7 +83,6 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
       ),
       dataTableColumnLabel: 'Họ tên',
     } satisfies DataTableColumnMeta,
-    enableSorting: false,
     enableHiding: false,
   },
   {
@@ -94,14 +94,12 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
       </LongText>
     ),
     meta: { dataTableColumnLabel: 'Email' } satisfies DataTableColumnMeta,
-    enableSorting: false,
   },
   {
     accessorKey: 'phoneNumber',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Điện thoại" />,
     cell: ({ row }) => <div className="tabular-nums">{row.getValue('phoneNumber')}</div>,
     meta: { dataTableColumnLabel: 'Điện thoại' } satisfies DataTableColumnMeta,
-    enableSorting: false,
   },
   {
     id: 'gender',
@@ -146,7 +144,6 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
       return true;
     },
     meta: { dataTableColumnLabel: 'Trạng thái hoạt động' } satisfies DataTableColumnMeta,
-    enableSorting: false,
   },
   {
     accessorKey: 'createdAt',
@@ -157,7 +154,6 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
       </span>
     ),
     meta: { dataTableColumnLabel: 'Tạo lúc' } satisfies DataTableColumnMeta,
-    enableSorting: false,
   },
   {
     id: 'deleted',
@@ -177,6 +173,7 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
   {
     id: 'actions',
     cell: ({ row }) => <CustomersRowActions row={row} />,
+    enableSorting: false,
     enableHiding: false,
   },
 ];

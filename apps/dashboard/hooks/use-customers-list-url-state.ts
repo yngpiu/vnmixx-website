@@ -1,6 +1,19 @@
 'use client';
 
-import type { ColumnFiltersState, OnChangeFn, PaginationState } from '@tanstack/react-table';
+import { CUSTOMER_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
+import { appendSortingToSearchParams, sortingStateFromUrl } from '@/lib/data-table-sort-url';
+import {
+  parseDeletedColumnFilter,
+  parseIsActiveColumnFilter,
+  setIsActiveUrlParam,
+  setSoftDeletedUrlParam,
+} from '@/lib/list-admin-filters-url';
+import type {
+  ColumnFiltersState,
+  OnChangeFn,
+  PaginationState,
+  SortingState,
+} from '@tanstack/react-table';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 
@@ -21,31 +34,17 @@ function parseColumnFilters(searchParams: URLSearchParams): ColumnFiltersState {
   if (q) {
     filters.push({ id: 'fullName', value: q });
   }
-  const statuses = searchParams.getAll('status');
-  if (statuses.length > 0) {
-    filters.push({ id: 'isActive', value: statuses });
-  }
-  const records = searchParams.getAll('record');
-  const hasDeleted = records.includes('deleted');
-  const hasNotDeleted = records.includes('not_deleted');
-  if (hasDeleted && hasNotDeleted) {
-    filters.push({ id: 'deleted', value: ['not_deleted', 'deleted'] });
-  } else if (hasDeleted) {
-    filters.push({ id: 'deleted', value: ['deleted'] });
-  } else if (hasNotDeleted) {
-    filters.push({ id: 'deleted', value: ['not_deleted'] });
-  } else if (
-    searchParams.get('isSoftDeleted') === '1' ||
-    searchParams.get('includeDeleted') === '1'
-  ) {
-    filters.push({ id: 'deleted', value: ['not_deleted', 'deleted'] });
-  }
+  const isActiveF = parseIsActiveColumnFilter(searchParams);
+  if (isActiveF) filters.push(isActiveF);
+  const deletedF = parseDeletedColumnFilter(searchParams);
+  if (deletedF) filters.push(deletedF);
   return filters;
 }
 
 function buildSearchParamsFromState(
   pagination: PaginationState,
   columnFilters: ColumnFiltersState,
+  sorting: SortingState,
 ): URLSearchParams {
   const params = new URLSearchParams();
   const page = pagination.pageIndex + 1;
@@ -63,20 +62,10 @@ function buildSearchParamsFromState(
     params.set('q', q);
   }
 
-  const statusFilter = columnFilters.find((f) => f.id === 'isActive');
-  const statuses = Array.isArray(statusFilter?.value) ? (statusFilter!.value as string[]) : [];
-  for (const s of statuses) {
-    params.append('status', s);
-  }
+  setIsActiveUrlParam(params, columnFilters);
+  setSoftDeletedUrlParam(params, columnFilters);
 
-  const deletedFilter = columnFilters.find((f) => f.id === 'deleted');
-  const delVals = Array.isArray(deletedFilter?.value) ? (deletedFilter.value as string[]) : [];
-  for (const v of delVals) {
-    if (v === 'deleted' || v === 'not_deleted') {
-      params.append('record', v);
-    }
-  }
-
+  appendSortingToSearchParams(params, sorting, CUSTOMER_TABLE_SORT_IDS);
   return params;
 }
 
@@ -86,6 +75,11 @@ export function useCustomersListUrlState() {
   const searchParams = useSearchParams();
 
   const columnFilters = useMemo(() => parseColumnFilters(searchParams), [searchParams]);
+
+  const sorting = useMemo(
+    () => sortingStateFromUrl(searchParams, CUSTOMER_TABLE_SORT_IDS),
+    [searchParams],
+  );
 
   const pagination: PaginationState = useMemo(() => {
     const rawPage = Number.parseInt(searchParams.get('page') ?? `${DEFAULT_PAGE}`, 10);
@@ -106,10 +100,10 @@ export function useCustomersListUrlState() {
   const onPaginationChange: OnChangeFn<PaginationState> = useCallback(
     (updater) => {
       const next = typeof updater === 'function' ? updater(pagination) : updater;
-      const params = buildSearchParamsFromState(next, columnFilters);
+      const params = buildSearchParamsFromState(next, columnFilters, sorting);
       replaceUrl(params);
     },
-    [pagination, columnFilters, replaceUrl],
+    [pagination, columnFilters, sorting, replaceUrl],
   );
 
   const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
@@ -118,10 +112,24 @@ export function useCustomersListUrlState() {
       const params = buildSearchParamsFromState(
         { pageIndex: 0, pageSize: pagination.pageSize },
         next,
+        sorting,
       );
       replaceUrl(params);
     },
-    [pagination.pageSize, columnFilters, replaceUrl],
+    [pagination.pageSize, columnFilters, sorting, replaceUrl],
+  );
+
+  const onSortingChange: OnChangeFn<SortingState> = useCallback(
+    (updater) => {
+      const next = typeof updater === 'function' ? updater(sorting) : updater;
+      const params = buildSearchParamsFromState(
+        { pageIndex: 0, pageSize: pagination.pageSize },
+        columnFilters,
+        next,
+      );
+      replaceUrl(params);
+    },
+    [pagination.pageSize, columnFilters, sorting, replaceUrl],
   );
 
   const ensurePageInRange = useCallback(
@@ -134,11 +142,12 @@ export function useCustomersListUrlState() {
         const params = buildSearchParamsFromState(
           { pageIndex: pageCount - 1, pageSize: pagination.pageSize },
           columnFilters,
+          sorting,
         );
         replaceUrl(params);
       }
     },
-    [pagination, columnFilters, replaceUrl],
+    [pagination, columnFilters, sorting, replaceUrl],
   );
 
   return {
@@ -146,6 +155,8 @@ export function useCustomersListUrlState() {
     onPaginationChange,
     columnFilters,
     onColumnFiltersChange,
+    sorting,
+    onSortingChange,
     ensurePageInRange,
   };
 }

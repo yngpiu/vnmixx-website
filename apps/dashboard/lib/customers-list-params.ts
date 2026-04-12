@@ -1,9 +1,14 @@
 import type { ListCustomersParams } from '@/lib/api/customers';
-import type { ColumnFiltersState, PaginationState } from '@tanstack/react-table';
+import { CUSTOMER_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
+import { isSoftDeletedFromDeletedColumnFilter } from '@/lib/list-soft-deleted-from-column-filter';
+import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
+
+const sortIds = CUSTOMER_TABLE_SORT_IDS as readonly string[];
 
 export function toListCustomersParams(
   pagination: PaginationState,
   columnFilters: ColumnFiltersState,
+  sorting: SortingState,
 ): ListCustomersParams {
   const qFilter = columnFilters.find((f) => f.id === 'fullName');
   const search = typeof qFilter?.value === 'string' ? qFilter.value.trim() || undefined : undefined;
@@ -21,22 +26,21 @@ export function toListCustomersParams(
 
   const deletedFilter = columnFilters.find((f) => f.id === 'deleted');
   const delStatuses = Array.isArray(deletedFilter?.value) ? (deletedFilter.value as string[]) : [];
-  let onlyDeleted: boolean | undefined;
-  let isSoftDeleted: boolean | undefined;
-  if (delStatuses.length === 1) {
-    if (delStatuses[0] === 'deleted') {
-      onlyDeleted = true;
-    }
-  } else if (delStatuses.length >= 2) {
-    isSoftDeleted = true;
-  }
+  const isSoftDeleted = isSoftDeletedFromDeletedColumnFilter(delStatuses);
 
-  return {
+  const base: ListCustomersParams = {
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
     search,
     isActive,
-    ...(onlyDeleted === true ? { onlyDeleted: true } : {}),
-    ...(isSoftDeleted === true ? { isSoftDeleted: true } : {}),
+    ...(isSoftDeleted !== undefined ? { isSoftDeleted } : {}),
   };
+
+  const s = sorting[0];
+  if (s && sortIds.includes(s.id)) {
+    base.sortBy = s.id;
+    base.sortOrder = s.desc ? 'desc' : 'asc';
+  }
+
+  return base;
 }

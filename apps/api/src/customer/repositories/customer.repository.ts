@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
+import { softDeletedWhere } from '../../common/prisma/soft-deleted-where';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface CustomerListItemView {
@@ -50,27 +51,40 @@ const DETAIL_SELECT = {
 export class CustomerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private buildListOrderBy(
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+  ): Prisma.CustomerOrderByWithRelationInput {
+    const dir = sortOrder === 'asc' ? 'asc' : 'desc';
+    switch (sortBy) {
+      case 'fullName':
+        return { fullName: dir };
+      case 'email':
+        return { email: dir };
+      case 'phoneNumber':
+        return { phoneNumber: dir };
+      case 'isActive':
+        return { isActive: dir };
+      case 'createdAt':
+        return { createdAt: dir };
+      default:
+        return { createdAt: 'desc' };
+    }
+  }
+
   async findList(params: {
     page: number;
     limit: number;
     search?: string;
     isActive?: boolean;
     isSoftDeleted?: boolean;
-    onlyDeleted?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResult<CustomerListItemView>> {
-    const { page, limit, search, isActive, isSoftDeleted, onlyDeleted } = params;
-
-    let deletedAtFilter: Prisma.CustomerWhereInput;
-    if (onlyDeleted === true) {
-      deletedAtFilter = { NOT: { deletedAt: null } };
-    } else if (isSoftDeleted === true) {
-      deletedAtFilter = {};
-    } else {
-      deletedAtFilter = { deletedAt: null };
-    }
+    const { page, limit, search, isActive, isSoftDeleted, sortBy, sortOrder } = params;
 
     const where: Prisma.CustomerWhereInput = {
-      ...deletedAtFilter,
+      ...softDeletedWhere(isSoftDeleted),
       ...(isActive !== undefined && { isActive }),
       ...(search && {
         OR: [
@@ -87,7 +101,7 @@ export class CustomerRepository {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: this.buildListOrderBy(sortBy, sortOrder),
         select: LIST_SELECT,
       }),
     ]);
