@@ -51,7 +51,11 @@ export class ProductAdminController {
 
   // ─── Product CRUD ──────────────────────────────────────────────────────────
 
-  @ApiOperation({ summary: 'Liệt kê sản phẩm (quản trị)' })
+  @ApiOperation({
+    summary: 'Liệt kê sản phẩm (quản trị)',
+    description:
+      '`isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc tương ứng.',
+  })
   @ApiOkResponse({ type: ProductAdminListResponseDto })
   @Get()
   findAll(@Query() query: ListAdminProductsQueryDto) {

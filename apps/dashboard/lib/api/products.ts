@@ -7,7 +7,9 @@ export type ListProductsParams = {
   search?: string;
   categoryId?: number;
   isActive?: boolean;
-  includeDeleted?: boolean;
+  isSoftDeleted?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 };
 
 export async function listProducts(

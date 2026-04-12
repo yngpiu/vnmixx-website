@@ -1,6 +1,6 @@
 'use client';
 
-import { DataTableColumnHeader } from '@/components/data-table';
+import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { categoryDisplayName } from '@/lib/category-display-name';
 import type { ProductAdminListItem } from '@/lib/types/product';
@@ -14,6 +14,7 @@ const updatedAtFormatter = new Intl.DateTimeFormat('vi-VN', {
 
 export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
   return [
+    dataTableSttColumnDef<ProductAdminListItem>(),
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Sản phẩm" />,
@@ -44,7 +45,6 @@ export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
         );
       },
       meta: { dataTableColumnLabel: 'Sản phẩm' } satisfies DataTableColumnMeta,
-      enableSorting: false,
     },
     {
       accessorKey: 'slug',
@@ -58,7 +58,6 @@ export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
         thClassName: 'hidden md:table-cell',
         tdClassName: 'hidden md:table-cell',
       } satisfies DataTableColumnMeta,
-      enableSorting: false,
     },
     {
       id: 'category',
@@ -79,14 +78,12 @@ export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
         thClassName: 'hidden lg:table-cell',
         tdClassName: 'hidden lg:table-cell',
       } satisfies DataTableColumnMeta,
-      enableSorting: false,
     },
     {
       accessorKey: 'variantCount',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Biến thể" />,
       cell: ({ row }) => <span className="tabular-nums text-sm">{row.original.variantCount}</span>,
       meta: { dataTableColumnLabel: 'Biến thể' } satisfies DataTableColumnMeta,
-      enableSorting: false,
     },
     {
       accessorKey: 'totalStock',
@@ -121,7 +118,6 @@ export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
         ),
       filterFn: () => true,
       meta: { dataTableColumnLabel: 'Hoạt động' } satisfies DataTableColumnMeta,
-      enableSorting: false,
     },
     {
       accessorKey: 'updatedAt',
@@ -137,7 +133,6 @@ export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
         thClassName: 'hidden xl:table-cell',
         tdClassName: 'hidden xl:table-cell',
       } satisfies DataTableColumnMeta,
-      enableSorting: false,
     },
     {
       id: 'categoryId',
@@ -152,6 +147,21 @@ export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
         thClassName: 'hidden',
         tdClassName: 'hidden',
         dataTableColumnLabel: 'Danh mục (lọc)',
+      } satisfies DataTableColumnMeta,
+    },
+    {
+      id: 'deleted',
+      accessorFn: () => '',
+      header: () => null,
+      cell: () => null,
+      enableSorting: false,
+      enableHiding: false,
+      filterFn: () => true,
+      meta: {
+        className: 'hidden',
+        thClassName: 'hidden',
+        tdClassName: 'hidden',
+        dataTableColumnLabel: 'Trạng thái xóa',
       } satisfies DataTableColumnMeta,
     },
   ];

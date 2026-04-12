@@ -1,6 +1,19 @@
 'use client';
 
-import type { ColumnFiltersState, OnChangeFn, PaginationState } from '@tanstack/react-table';
+import { PRODUCT_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
+import { appendSortingToSearchParams, sortingStateFromUrl } from '@/lib/data-table-sort-url';
+import {
+  parseDeletedColumnFilter,
+  parseIsActiveColumnFilter,
+  setIsActiveUrlParam,
+  setSoftDeletedUrlParam,
+} from '@/lib/list-admin-filters-url';
+import type {
+  ColumnFiltersState,
+  OnChangeFn,
+  PaginationState,
+  SortingState,
+} from '@tanstack/react-table';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 
@@ -17,10 +30,8 @@ function clampPageSize(n: number): number {
 
 function parseColumnFilters(searchParams: URLSearchParams): ColumnFiltersState {
   const filters: ColumnFiltersState = [];
-  const statuses = searchParams.getAll('status');
-  if (statuses.length > 0) {
-    filters.push({ id: 'isActive', value: statuses });
-  }
+  const isActiveF = parseIsActiveColumnFilter(searchParams);
+  if (isActiveF) filters.push(isActiveF);
   const cat = searchParams.get('category');
   if (cat) {
     const id = Number.parseInt(cat, 10);
@@ -28,6 +39,8 @@ function parseColumnFilters(searchParams: URLSearchParams): ColumnFiltersState {
       filters.push({ id: 'categoryId', value: [String(id)] });
     }
   }
+  const deletedF = parseDeletedColumnFilter(searchParams);
+  if (deletedF) filters.push(deletedF);
   return filters;
 }
 
@@ -35,6 +48,7 @@ function buildSearchParamsFromState(
   pagination: PaginationState,
   columnFilters: ColumnFiltersState,
   globalFilter: string,
+  sorting: SortingState,
 ): URLSearchParams {
   const params = new URLSearchParams();
   const page = pagination.pageIndex + 1;
@@ -51,11 +65,7 @@ function buildSearchParamsFromState(
     params.set('q', q);
   }
 
-  const statusFilter = columnFilters.find((f) => f.id === 'isActive');
-  const statuses = Array.isArray(statusFilter?.value) ? (statusFilter!.value as string[]) : [];
-  for (const s of statuses) {
-    if (typeof s === 'string' && s) params.append('status', s);
-  }
+  setIsActiveUrlParam(params, columnFilters);
 
   const catFilter = columnFilters.find((f) => f.id === 'categoryId');
   const cats = Array.isArray(catFilter?.value) ? (catFilter!.value as string[]) : [];
@@ -64,6 +74,9 @@ function buildSearchParamsFromState(
     params.set('category', catOnly);
   }
 
+  setSoftDeletedUrlParam(params, columnFilters);
+
+  appendSortingToSearchParams(params, sorting, PRODUCT_TABLE_SORT_IDS);
   return params;
 }
 
@@ -75,6 +88,11 @@ export function useProductsListUrlState() {
   const columnFilters = useMemo(() => parseColumnFilters(searchParams), [searchParams]);
 
   const globalFilter = useMemo(() => searchParams.get('q')?.trim() ?? '', [searchParams]);
+
+  const sorting = useMemo(
+    () => sortingStateFromUrl(searchParams, PRODUCT_TABLE_SORT_IDS),
+    [searchParams],
+  );
 
   const pagination: PaginationState = useMemo(() => {
     const rawPage = Number.parseInt(searchParams.get('page') ?? `${DEFAULT_PAGE}`, 10);
@@ -95,10 +113,10 @@ export function useProductsListUrlState() {
   const onPaginationChange: OnChangeFn<PaginationState> = useCallback(
     (updater) => {
       const next = typeof updater === 'function' ? updater(pagination) : updater;
-      const params = buildSearchParamsFromState(next, columnFilters, globalFilter);
+      const params = buildSearchParamsFromState(next, columnFilters, globalFilter, sorting);
       replaceUrl(params);
     },
-    [pagination, columnFilters, globalFilter, replaceUrl],
+    [pagination, columnFilters, globalFilter, sorting, replaceUrl],
   );
 
   const onGlobalFilterChange = useCallback(
@@ -107,10 +125,11 @@ export function useProductsListUrlState() {
         { pageIndex: 0, pageSize: pagination.pageSize },
         columnFilters,
         value,
+        sorting,
       );
       replaceUrl(params);
     },
-    [pagination.pageSize, columnFilters, replaceUrl],
+    [pagination.pageSize, columnFilters, sorting, replaceUrl],
   );
 
   const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
@@ -120,10 +139,25 @@ export function useProductsListUrlState() {
         { pageIndex: 0, pageSize: pagination.pageSize },
         next,
         globalFilter,
+        sorting,
       );
       replaceUrl(params);
     },
-    [pagination.pageSize, columnFilters, globalFilter, replaceUrl],
+    [pagination.pageSize, columnFilters, globalFilter, sorting, replaceUrl],
+  );
+
+  const onSortingChange: OnChangeFn<SortingState> = useCallback(
+    (updater) => {
+      const next = typeof updater === 'function' ? updater(sorting) : updater;
+      const params = buildSearchParamsFromState(
+        { pageIndex: 0, pageSize: pagination.pageSize },
+        columnFilters,
+        globalFilter,
+        next,
+      );
+      replaceUrl(params);
+    },
+    [pagination.pageSize, columnFilters, globalFilter, sorting, replaceUrl],
   );
 
   const ensurePageInRange = useCallback(
@@ -135,11 +169,12 @@ export function useProductsListUrlState() {
           { pageIndex: pageCount - 1, pageSize: pagination.pageSize },
           columnFilters,
           globalFilter,
+          sorting,
         );
         replaceUrl(params);
       }
     },
-    [pagination, columnFilters, globalFilter, replaceUrl],
+    [pagination, columnFilters, globalFilter, sorting, replaceUrl],
   );
 
   return {
@@ -149,6 +184,8 @@ export function useProductsListUrlState() {
     onColumnFiltersChange,
     globalFilter,
     onGlobalFilterChange,
+    sorting,
+    onSortingChange,
     ensurePageInRange,
   };
 }

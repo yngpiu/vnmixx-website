@@ -6,9 +6,9 @@ import { ProductThumbnailUploadField } from '@/components/products/product-image
 import { ProductImagesColorColumns } from '@/components/products/product-images-color-columns';
 import { listAttributes } from '@/lib/api/attributes';
 import { listCategories } from '@/lib/api/categories';
-import { listColors } from '@/lib/api/colors';
+import { listPublicColors } from '@/lib/api/colors';
 import { createProduct } from '@/lib/api/products';
-import { listSizes } from '@/lib/api/sizes';
+import { listPublicSizes } from '@/lib/api/sizes';
 import { categoryDisplayName } from '@/lib/category-display-name';
 import {
   cloudinaryUploadConfigured,
@@ -126,11 +126,11 @@ export function NewProductForm() {
   const [imagesByColorId, setImagesByColorId] = useState<Record<number, string[]>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
-  const colorsQuery = useQuery({ queryKey: ['colors', 'list'], queryFn: listColors });
-  const sizesQuery = useQuery({ queryKey: ['sizes', 'list'], queryFn: listSizes });
+  const colorsQuery = useQuery({ queryKey: ['colors', 'public'], queryFn: listPublicColors });
+  const sizesQuery = useQuery({ queryKey: ['sizes', 'public'], queryFn: listPublicSizes });
   const categoriesQuery = useQuery({
-    queryKey: ['categories', 'list'],
-    queryFn: () => listCategories(),
+    queryKey: ['categories', 'list', { isSoftDeleted: false }],
+    queryFn: () => listCategories({ isSoftDeleted: false }),
   });
   const attributesQuery = useQuery({ queryKey: ['attributes', 'list'], queryFn: listAttributes });
 

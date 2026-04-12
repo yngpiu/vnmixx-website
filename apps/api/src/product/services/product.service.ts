@@ -81,7 +81,9 @@ export class ProductService {
       search: query.search,
       categoryId: query.categoryId,
       isActive: query.isActive,
-      includeDeleted: query.includeDeleted,
+      isSoftDeleted: query.isSoftDeleted,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
 
     return {

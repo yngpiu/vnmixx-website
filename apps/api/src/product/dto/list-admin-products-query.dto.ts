@@ -1,8 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
+
+const ADMIN_PRODUCT_SORT_BY = [
+  'name',
+  'slug',
+  'createdAt',
+  'updatedAt',
+  'isActive',
+  'variantCount',
+  'category',
+] as const;
 
 export class ListAdminProductsQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
@@ -32,15 +42,32 @@ export class ListAdminProductsQueryDto {
   @IsOptional()
   categoryId?: number;
 
-  @ApiPropertyOptional({ example: true })
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Không gửi = không lọc; true/false = chỉ đang bán / chỉ ngừng.',
+  })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ example: false })
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa.',
+  })
   @TransformQueryOptionalBoolean()
   @IsBoolean()
   @IsOptional()
-  includeDeleted?: boolean;
+  isSoftDeleted?: boolean;
+
+  @ApiPropertyOptional({ example: 'updatedAt', enum: ADMIN_PRODUCT_SORT_BY })
+  @IsString()
+  @IsIn([...ADMIN_PRODUCT_SORT_BY])
+  @IsOptional()
+  sortBy?: (typeof ADMIN_PRODUCT_SORT_BY)[number];
+
+  @ApiPropertyOptional({ example: 'desc', enum: ['asc', 'desc'] })
+  @IsIn(['asc', 'desc'])
+  @IsOptional()
+  sortOrder?: 'asc' | 'desc';
 }

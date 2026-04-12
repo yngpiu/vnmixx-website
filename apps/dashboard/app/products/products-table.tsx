@@ -44,14 +44,16 @@ export function ProductsTable() {
     onColumnFiltersChange,
     globalFilter,
     onGlobalFilterChange,
+    sorting,
+    onSortingChange,
     ensurePageInRange,
   } = useProductsListUrlState();
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const { data: categoriesData } = useQuery({
-    queryKey: ['categories', 'list', { forProductFilter: true }],
-    queryFn: () => listCategories(),
+    queryKey: ['categories', 'list', { forProductFilter: true, isSoftDeleted: false }],
+    queryFn: () => listCategories({ isSoftDeleted: false }),
   });
 
   const categoryFilterOptions = useMemo(() => {
@@ -63,8 +65,8 @@ export function ProductsTable() {
   }, [categoriesData]);
 
   const listParams = useMemo(
-    () => toListProductsParams(pagination, columnFilters, globalFilter),
-    [pagination, columnFilters, globalFilter],
+    () => toListProductsParams(pagination, columnFilters, globalFilter, sorting),
+    [pagination, columnFilters, globalFilter, sorting],
   );
 
   const { data, isLoading, isError, error } = useQuery({
@@ -92,13 +94,16 @@ export function ProductsTable() {
       columnFilters,
       columnVisibility,
       globalFilter,
+      sorting,
     },
     manualPagination: true,
     manualFiltering: true,
+    manualSorting: true,
     onPaginationChange,
     onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: onGlobalFilterChangeTable,
+    onSortingChange,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => String(row.id),
   });
@@ -135,9 +140,19 @@ export function ProductsTable() {
           {
             columnId: 'isActive',
             title: 'Hoạt động',
+            selectionMode: 'single',
             options: [
               { label: 'Đang bật', value: 'active' },
               { label: 'Đang tắt', value: 'inactive' },
+            ],
+          },
+          {
+            columnId: 'deleted',
+            title: 'Trạng thái xóa',
+            selectionMode: 'single',
+            options: [
+              { label: 'Chưa xóa', value: 'not_deleted' },
+              { label: 'Đã xóa', value: 'deleted' },
             ],
           },
           ...(categoryFilterOptions.length

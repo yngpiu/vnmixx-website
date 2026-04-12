@@ -1,10 +1,15 @@
 import type { ListProductsParams } from '@/lib/api/products';
-import type { ColumnFiltersState, PaginationState } from '@tanstack/react-table';
+import { PRODUCT_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
+import { isSoftDeletedFromDeletedColumnFilter } from '@/lib/list-soft-deleted-from-column-filter';
+import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
+
+const sortIds = PRODUCT_TABLE_SORT_IDS as readonly string[];
 
 export function toListProductsParams(
   pagination: PaginationState,
   columnFilters: ColumnFiltersState,
   globalFilter: string,
+  sorting: SortingState,
 ): ListProductsParams {
   const search = globalFilter.trim() || undefined;
 
@@ -25,11 +30,24 @@ export function toListProductsParams(
     if (Number.isFinite(n) && n >= 1) categoryId = n;
   }
 
-  return {
+  const deletedFilter = columnFilters.find((f) => f.id === 'deleted');
+  const delStatuses = Array.isArray(deletedFilter?.value) ? (deletedFilter.value as string[]) : [];
+  const isSoftDeleted = isSoftDeletedFromDeletedColumnFilter(delStatuses);
+
+  const base: ListProductsParams = {
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
     search,
     ...(categoryId !== undefined ? { categoryId } : {}),
     ...(isActive !== undefined ? { isActive } : {}),
+    ...(isSoftDeleted !== undefined ? { isSoftDeleted } : {}),
   };
+
+  const s = sorting[0];
+  if (s && sortIds.includes(s.id)) {
+    base.sortBy = s.id;
+    base.sortOrder = s.desc ? 'desc' : 'asc';
+  }
+
+  return base;
 }

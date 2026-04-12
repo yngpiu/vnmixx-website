@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
+import { softDeletedWhere } from '../../common/prisma/soft-deleted-where';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // ─── View types ─────────────────────────────────────────────────────────────
@@ -243,18 +244,45 @@ export class ProductRepository {
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
 
+  private buildAdminListOrderBy(
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+  ): Prisma.ProductOrderByWithRelationInput {
+    const dir = sortOrder === 'asc' ? 'asc' : 'desc';
+    switch (sortBy) {
+      case 'name':
+        return { name: dir };
+      case 'slug':
+        return { slug: dir };
+      case 'createdAt':
+        return { createdAt: dir };
+      case 'updatedAt':
+        return { updatedAt: dir };
+      case 'isActive':
+        return { isActive: dir };
+      case 'variantCount':
+        return { variants: { _count: dir } };
+      case 'category':
+        return { category: { name: dir } };
+      default:
+        return { updatedAt: 'desc' };
+    }
+  }
+
   async findAdminList(params: {
     page: number;
     limit: number;
     search?: string;
     categoryId?: number;
     isActive?: boolean;
-    includeDeleted?: boolean;
+    isSoftDeleted?: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResult<ProductAdminListItemView & { totalStock: number }>> {
-    const { page, limit, search, categoryId, isActive, includeDeleted } = params;
+    const { page, limit, search, categoryId, isActive, isSoftDeleted, sortBy, sortOrder } = params;
 
     const where: Prisma.ProductWhereInput = {
-      ...(includeDeleted ? {} : { deletedAt: null }),
+      ...softDeletedWhere(isSoftDeleted),
       ...(search && { name: { contains: search } }),
       ...(categoryId !== undefined && {
         OR: [{ categoryId }, { productCategories: { some: { categoryId } } }],
@@ -268,7 +296,7 @@ export class ProductRepository {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: this.buildAdminListOrderBy(sortBy, sortOrder),
         select: {
           id: true,
           name: true,
