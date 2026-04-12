@@ -351,6 +351,10 @@ export async function seedProducts(): Promise<void> {
           },
         });
 
+        await tx.productCategory.create({
+          data: { productId: product.id, categoryId: category.id },
+        });
+
         if (attrPick.length > 0) {
           await tx.productAttribute.createMany({
             data: attrPick.map((attributeValueId) => ({ productId: product.id, attributeValueId })),
