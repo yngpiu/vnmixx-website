@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsBoolean,
@@ -105,7 +106,21 @@ export class CreateProductDto {
   @IsInt()
   @Min(1)
   @IsOptional()
+  /** @deprecated Dùng `categoryIds` để gán nhiều danh mục; nếu chỉ gửi một id có thể dùng trường này. */
   categoryId?: number;
+
+  @ApiPropertyOptional({
+    example: [3, 12],
+    type: [Number],
+    description:
+      'Nhiều danh mục (thường là các lá). Trùng với `categoryId` đơn lẻ thì ưu tiên mảng này.',
+  })
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @IsOptional()
+  categoryIds?: number[];
 
   @ApiPropertyOptional({ example: true })
   @IsBoolean()

@@ -249,6 +249,13 @@ export class ProductAdminDetailResponseDto {
   @ApiPropertyOptional({ type: CategoryBriefDto, nullable: true })
   category: CategoryBriefDto | null;
 
+  @ApiPropertyOptional({
+    example: [3, 12],
+    type: [Number],
+    description: 'Danh mục đã gán (bảng nối).',
+  })
+  categoryIds?: number[];
+
   @ApiProperty({ type: [ProductAttributeDto] })
   attributes: ProductAttributeDto[];
 

@@ -65,6 +65,7 @@ export interface ProductAdminDetailView extends ProductDetailView {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  productCategories?: { categoryId: number }[];
   variants: (ProductDetailView['variants'][number] & {
     isActive: boolean;
     createdAt: Date;
@@ -113,6 +114,18 @@ const PRODUCT_ATTRIBUTE_SELECT = {
   },
 } as const;
 
+/** Slug danh mục khớp chính nút, con hoặc cháu (tối đa 3 tầng — giữ đồng bộ với bộ lọc cũ). */
+function categoryWhereMatchesSlugTree(slug: string): Prisma.CategoryWhereInput {
+  return {
+    deletedAt: null,
+    OR: [
+      { slug },
+      { parent: { slug, deletedAt: null } },
+      { parent: { parent: { slug, deletedAt: null } } },
+    ],
+  };
+}
+
 @Injectable()
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -140,14 +153,14 @@ export class ProductRepository {
       deletedAt: null,
       ...(search && { name: { contains: search } }),
       ...(categorySlug && {
-        category: {
-          deletedAt: null,
-          OR: [
-            { slug: categorySlug },
-            { parent: { slug: categorySlug, deletedAt: null } },
-            { parent: { parent: { slug: categorySlug, deletedAt: null } } },
-          ],
-        },
+        OR: [
+          { category: categoryWhereMatchesSlugTree(categorySlug) },
+          {
+            productCategories: {
+              some: { category: categoryWhereMatchesSlugTree(categorySlug) },
+            },
+          },
+        ],
       }),
     };
 
@@ -243,7 +256,9 @@ export class ProductRepository {
     const where: Prisma.ProductWhereInput = {
       ...(includeDeleted ? {} : { deletedAt: null }),
       ...(search && { name: { contains: search } }),
-      ...(categoryId !== undefined && { categoryId }),
+      ...(categoryId !== undefined && {
+        OR: [{ categoryId }, { productCategories: { some: { categoryId } } }],
+      }),
       ...(isActive !== undefined && { isActive }),
     };
 
@@ -298,6 +313,7 @@ export class ProductRepository {
         updatedAt: true,
         deletedAt: true,
         category: { select: CATEGORY_BRIEF_SELECT },
+        productCategories: { select: { categoryId: true } },
         productAttributes: { select: PRODUCT_ATTRIBUTE_SELECT },
         variants: {
           select: {
@@ -317,6 +333,24 @@ export class ProductRepository {
     }) as unknown as Promise<ProductAdminDetailView | null>;
   }
 
+  /** Xóa toàn bộ liên kết danh mục, ghi lại danh sách, đồng bộ `category_id` = phần tử đầu (hoặc null). */
+  async syncProductCategories(productId: number, categoryIds: number[]): Promise<void> {
+    const unique = [...new Set(categoryIds)].filter((id) => id >= 1);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.productCategory.deleteMany({ where: { productId } });
+      if (unique.length > 0) {
+        await tx.productCategory.createMany({
+          data: unique.map((categoryId) => ({ productId, categoryId })),
+          skipDuplicates: true,
+        });
+      }
+      await tx.product.update({
+        where: { id: productId },
+        data: { categoryId: unique[0] ?? null },
+      });
+    });
+  }
+
   // ─── Create (transaction) ──────────────────────────────────────────────────
 
   async createFull(data: {
@@ -325,6 +359,7 @@ export class ProductRepository {
     description?: string | null;
     thumbnail?: string | null;
     categoryId?: number | null;
+    categoryIds: number[];
     isActive?: boolean;
     attributeValueIds: number[];
     variants: {
@@ -349,7 +384,7 @@ export class ProductRepository {
           slug: data.slug,
           description: data.description ?? null,
           thumbnail: data.thumbnail ?? null,
-          categoryId: data.categoryId ?? null,
+          categoryId: data.categoryIds[0] ?? data.categoryId ?? null,
           isActive: data.isActive ?? true,
         },
       });
@@ -388,6 +423,17 @@ export class ProductRepository {
             altText: img.altText ?? null,
             sortOrder: img.sortOrder ?? 0,
           })),
+        });
+      }
+
+      const uniqueCatIds = [...new Set(data.categoryIds)].filter((id) => id >= 1);
+      if (uniqueCatIds.length > 0) {
+        await tx.productCategory.createMany({
+          data: uniqueCatIds.map((categoryId) => ({
+            productId: created.id,
+            categoryId,
+          })),
+          skipDuplicates: true,
         });
       }
 

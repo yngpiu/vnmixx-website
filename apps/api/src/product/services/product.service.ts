@@ -109,17 +109,9 @@ export class ProductService {
   }
 
   async create(dto: CreateProductDto) {
-    if (dto.categoryId) {
-      const exists = await this.repository.categoryExists(dto.categoryId);
-      if (!exists)
-        throw new BadRequestException(
-          `Không tìm thấy danh mục #${dto.categoryId} hoặc danh mục đã bị xóa`,
-        );
-      const isLeaf = await this.repository.isLeafCategory(dto.categoryId);
-      if (!isLeaf)
-        throw new BadRequestException(
-          `Category #${dto.categoryId} has subcategories. Products can only be added to leaf categories`,
-        );
+    const categoryIds = this.resolveProductCategoryIdsInput(dto.categoryIds, dto.categoryId);
+    if (categoryIds.length > 0) {
+      await this.assertCategoriesExistAndLeaf(categoryIds);
     }
 
     const attrValueIds = dto.attributeValueIds ?? [];
@@ -155,7 +147,8 @@ export class ProductService {
         slug: dto.slug,
         description: dto.description,
         thumbnail: dto.thumbnail,
-        categoryId: dto.categoryId,
+        categoryId: categoryIds[0] ?? null,
+        categoryIds,
         isActive: dto.isActive,
         attributeValueIds: attrValueIds,
         variants: dto.variants,
@@ -172,17 +165,17 @@ export class ProductService {
   async update(id: number, dto: UpdateProductDto) {
     const existing = await this.findAdminByIdOrFail(id);
 
-    if (dto.categoryId) {
-      const exists = await this.repository.categoryExists(dto.categoryId);
-      if (!exists)
-        throw new BadRequestException(
-          `Không tìm thấy danh mục #${dto.categoryId} hoặc danh mục đã bị xóa`,
-        );
-      const isLeaf = await this.repository.isLeafCategory(dto.categoryId);
-      if (!isLeaf)
-        throw new BadRequestException(
-          `Category #${dto.categoryId} has subcategories. Products can only be added to leaf categories`,
-        );
+    let categoryIdsToSync: number[] | undefined;
+    if (dto.categoryIds !== undefined) {
+      categoryIdsToSync = this.dedupePositiveIds(dto.categoryIds);
+    } else if (dto.categoryId !== undefined) {
+      categoryIdsToSync = dto.categoryId ? [dto.categoryId] : [];
+    }
+    if (categoryIdsToSync !== undefined) {
+      if (categoryIdsToSync.length > 0) {
+        await this.assertCategoriesExistAndLeaf(categoryIdsToSync);
+      }
+      await this.repository.syncProductCategories(id, categoryIdsToSync);
     }
 
     try {
@@ -191,7 +184,6 @@ export class ProductService {
         ...(dto.slug !== undefined && { slug: dto.slug }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.thumbnail !== undefined && { thumbnail: dto.thumbnail }),
-        ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       });
       await this.invalidateProductCache(existing.slug);
@@ -411,6 +403,14 @@ export class ProductService {
   }
 
   private transformAdminDetail(product: ProductAdminDetailView) {
+    const categoryIdsFromJoin = product.productCategories?.map((r) => r.categoryId) ?? [];
+    const categoryIds =
+      categoryIdsFromJoin.length > 0
+        ? categoryIdsFromJoin
+        : product.category
+          ? [product.category.id]
+          : [];
+
     return {
       id: product.id,
       name: product.name,
@@ -419,6 +419,7 @@ export class ProductService {
       thumbnail: product.thumbnail,
       isActive: product.isActive,
       category: product.category,
+      categoryIds,
       attributes: product.productAttributes.map((pa) => ({
         name: pa.attributeValue.attribute.name,
         value: pa.attributeValue.value,
@@ -430,6 +431,34 @@ export class ProductService {
       updatedAt: product.updatedAt,
       deletedAt: product.deletedAt,
     };
+  }
+
+  private dedupePositiveIds(ids: number[]): number[] {
+    return [...new Set(ids.filter((id) => Number.isInteger(id) && id >= 1))];
+  }
+
+  /** Ưu tiên `categoryIds`; nếu rỗng thì dùng `categoryId` đơn (legacy). */
+  private resolveProductCategoryIdsInput(
+    categoryIds: number[] | undefined,
+    categoryId: number | undefined,
+  ): number[] {
+    const fromArr = this.dedupePositiveIds(categoryIds ?? []);
+    if (fromArr.length > 0) return fromArr;
+    if (categoryId != null && categoryId >= 1) return [categoryId];
+    return [];
+  }
+
+  private async assertCategoriesExistAndLeaf(categoryIds: number[]): Promise<void> {
+    for (const cid of categoryIds) {
+      const exists = await this.repository.categoryExists(cid);
+      if (!exists)
+        throw new BadRequestException(`Không tìm thấy danh mục #${cid} hoặc danh mục đã bị xóa`);
+      const isLeaf = await this.repository.isLeafCategory(cid);
+      if (!isLeaf)
+        throw new BadRequestException(
+          `Danh mục #${cid} vẫn còn danh mục con; chỉ được gán danh mục lá.`,
+        );
+    }
   }
 
   private async invalidateProductCache(slug: string): Promise<void> {

@@ -1,5 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class UpdateProductDto {
   @ApiPropertyOptional({ example: 'Áo Basic Tee V2', maxLength: 255 })
@@ -33,6 +43,14 @@ export class UpdateProductDto {
   @Min(1)
   @IsOptional()
   categoryId?: number;
+
+  @ApiPropertyOptional({ example: [3, 12], type: [Number] })
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @IsOptional()
+  categoryIds?: number[];
 
   @ApiPropertyOptional({ example: true })
   @IsBoolean()
