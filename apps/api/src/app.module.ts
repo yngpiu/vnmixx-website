@@ -16,10 +16,12 @@ import { CoreModule } from './core/core.module';
 import { CustomerModule } from './customer/customer.module';
 import { EmployeeModule } from './employee/employee.module';
 import { LocationModule } from './location/location.module';
+import { MediaModule } from './media/media.module';
 import { OrderModule } from './order/order.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductModule } from './product/product.module';
 import { ProfileModule } from './profile/profile.module';
+import { R2Module } from './r2/r2.module';
 import { RbacModule } from './rbac/rbac.module';
 import { RedisModule } from './redis/redis.module';
 import { ThrottlerStorageRedis } from './redis/throttler-storage-redis';
@@ -62,6 +64,8 @@ import { WishlistModule } from './wishlist/wishlist.module';
     ShippingModule,
     WishlistModule,
     OrderModule,
+    R2Module,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [

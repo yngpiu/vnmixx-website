@@ -4,6 +4,7 @@ import { adminModuleNewPath, adminModulePath } from '@/lib/admin-modules';
 import { dashboardRoutes } from '@/lib/routes';
 import {
   FolderTreeIcon,
+  ImageIcon,
   KeyRoundIcon,
   LayoutDashboardIcon,
   PackageIcon,
@@ -63,6 +64,11 @@ const catalogItems: SidebarNavItem[] = [
     title: 'Danh mục',
     url: adminModulePath('categories'),
     icon: <FolderTreeIcon />,
+  },
+  {
+    title: 'Thư viện ảnh',
+    url: '/media',
+    icon: <ImageIcon />,
   },
   {
     title: 'Màu sắc',

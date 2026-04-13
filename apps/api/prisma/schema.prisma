@@ -106,6 +106,7 @@ model Employee {
   employeeRoles  EmployeeRole[]
   refreshTokens  RefreshToken[]
   stockMovements StockMovement[]
+  mediaFiles     MediaFile[]
 
   @@map("employees")
 }
@@ -604,4 +605,36 @@ model RefreshToken {
   @@index([expiresAt], map: "idx_refresh_expires")
   @@index([revokedAt], map: "idx_refresh_revoked")
   @@map("refresh_tokens")
+}
+
+// ─── Media Files ─────────────────────────────────────────
+
+model MediaFile {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  key        String    @unique(map: "uk_media_key") @db.VarChar(500)
+  fileName   String    @map("file_name") @db.VarChar(255)
+  // One logical folder per file ("" = root). Public URL is not stored; use R2_PUBLIC_URL + key at runtime.
+  folder     String    @default("") @db.VarChar(500)
+  mimeType   String    @map("mime_type") @db.VarChar(100)
+  size       Int       @db.UnsignedInt
+  width      Int?      @db.UnsignedSmallInt
+  height     Int?      @db.UnsignedSmallInt
+  uploadedBy Int?      @map("uploaded_by") @db.UnsignedInt
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  employee Employee? @relation(fields: [uploadedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([folder], map: "idx_media_folder")
+  @@index([mimeType], map: "idx_media_mime")
+  @@index([uploadedBy], map: "idx_media_uploaded_by")
+  @@map("media_files")
+}
+
+model MediaFolder {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  path      String   @unique(map: "uk_media_folder_path") @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  @@map("media_folders")
 }

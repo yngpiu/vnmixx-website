@@ -51,7 +51,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </Breadcrumb>
           </div>
         </header>
-        {children}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

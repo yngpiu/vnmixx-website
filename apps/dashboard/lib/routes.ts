@@ -27,6 +27,7 @@ export function dashboardBreadcrumbPageTitle(pathname: string): string {
   if (path === '/' || path === dashboardRoutes.root) return 'Tổng quan';
   if (path === dashboardRoutes.analytics) return 'Phân tích';
   if (path === dashboardRoutes.reports) return 'Báo cáo';
+  if (path === '/media') return 'Thư viện ảnh';
 
   const newMatch = /^\/([^/]+)\/new\/?$/.exec(path);
   const newSlug = newMatch?.[1];
