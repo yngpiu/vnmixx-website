@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -37,10 +38,15 @@ import {
 } from '../dto';
 import { MediaService, type UploadedFileInput } from '../services/media.service';
 
-/** Max file size: 10 MB */
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+/** Max file size transport limit: 50 MB */
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 /** Max files per upload: 20 */
 const MAX_FILES_COUNT = 20;
+const ALLOWED_MIME_PREFIXES = ['image/', 'video/'] as const;
+
+function isAllowedMimeType(mimeType: string): boolean {
+  return ALLOWED_MIME_PREFIXES.some((prefix) => mimeType.startsWith(prefix));
+}
 
 @ApiTags('Media')
 @ApiBearerAuth('access-token')
@@ -73,6 +79,9 @@ export class MediaAdminController {
   @UseInterceptors(
     FilesInterceptor('files', MAX_FILES_COUNT, {
       limits: { fileSize: MAX_FILE_SIZE },
+      fileFilter: (_, file, callback) => {
+        callback(null, isAllowedMimeType(file.mimetype));
+      },
     }),
   )
   @Post('upload')
@@ -81,6 +90,9 @@ export class MediaAdminController {
     @Body() dto: UploadMediaDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Chỉ hỗ trợ upload ảnh hoặc video.');
+    }
     const inputs: UploadedFileInput[] = files.map((f) => ({
       originalname: f.originalname,
       mimetype: f.mimetype,
@@ -102,6 +114,14 @@ export class MediaAdminController {
   @Post('folders')
   async createFolder(@Body() dto: CreateFolderDto) {
     return this.mediaService.createFolder(dto);
+  }
+
+  @ApiOperation({ summary: 'Xóa thư mục và toàn bộ nội dung bên trong' })
+  @ApiOkResponse({ description: 'Kết quả xóa thư mục.' })
+  @Delete('folders')
+  @HttpCode(HttpStatus.OK)
+  async deleteFolder(@Query('path') path: string) {
+    return this.mediaService.deleteFolder(path);
   }
 
   @ApiOperation({ summary: 'Xóa nhiều files cùng lúc' })

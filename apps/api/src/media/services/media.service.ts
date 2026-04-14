@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { MediaFile as MediaFileRow } from '../../../generated/prisma/client';
 import { R2Service } from '../../r2/r2.service';
 import type {
@@ -23,6 +23,23 @@ function generateObjectKey(folder: string, fileName: string): string {
   const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const prefix = folder ? `${folder}/` : '';
   return `${prefix}${timestamp}-${rand}-${safe}`;
+}
+
+function isAllowedMediaMimeType(mimeType: string): boolean {
+  return mimeType.startsWith('image/') || mimeType.startsWith('video/');
+}
+
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+
+function isAllowedMediaFileSize(file: UploadedFileInput): boolean {
+  if (file.mimetype.startsWith('image/')) {
+    return file.size <= MAX_IMAGE_SIZE;
+  }
+  if (file.mimetype.startsWith('video/')) {
+    return file.size <= MAX_VIDEO_SIZE;
+  }
+  return false;
 }
 
 export type UploadedFileInput = {
@@ -62,6 +79,15 @@ export class MediaService {
   }
 
   async uploadFile(file: UploadedFileInput, dto: UploadMediaDto, employeeId?: number) {
+    if (!isAllowedMediaMimeType(file.mimetype)) {
+      throw new BadRequestException('Chỉ hỗ trợ upload ảnh hoặc video.');
+    }
+    if (!isAllowedMediaFileSize(file)) {
+      if (file.mimetype.startsWith('image/')) {
+        throw new BadRequestException('Ảnh vượt quá giới hạn 10MB.');
+      }
+      throw new BadRequestException('Video vượt quá giới hạn 50MB.');
+    }
     const folder = normalizeFolder(dto.folder);
     const key = generateObjectKey(folder, file.originalname);
     await this.r2.uploadFile(key, file.buffer, file.mimetype);
