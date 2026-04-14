@@ -261,7 +261,7 @@ export function MediaGrid({
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-20">
         <ImageIcon className="text-muted-foreground/30 size-16" />
-        <p className="text-muted-foreground text-sm">Không có file nào trong thư mục này.</p>
+        <p className="text-muted-foreground text-sm">Không có tệp tin nào trong thư mục này.</p>
       </div>
     );
   }

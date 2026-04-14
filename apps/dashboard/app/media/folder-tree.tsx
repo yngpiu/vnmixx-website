@@ -15,6 +15,7 @@ import {
   FolderIcon,
   FolderOpenIcon,
   FolderPlusIcon,
+  Trash2Icon,
   UploadIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -25,6 +26,7 @@ type FolderTreeProps = {
   onFolderSelect: (path: string) => void;
   onUpload: (folder: string) => void;
   onCreateFolder: (parentFolder: string) => void;
+  onDeleteFolder: (folderPath: string) => void;
 };
 
 /** Build a nested folder tree from flat folder paths. */
@@ -53,6 +55,7 @@ function FolderTreeNode({
   onSelect,
   onUpload,
   onCreateFolder,
+  onDeleteFolder,
   depth = 0,
 }: {
   node: FolderNode;
@@ -60,6 +63,7 @@ function FolderTreeNode({
   onSelect: (path: string) => void;
   onUpload: (folder: string) => void;
   onCreateFolder: (parentFolder: string) => void;
+  onDeleteFolder: (folderPath: string) => void;
   depth?: number;
 }) {
   const isActive = currentFolder === node.path;
@@ -118,12 +122,20 @@ function FolderTreeNode({
         <ContextMenuContent className="w-48">
           <ContextMenuItem onClick={() => onUpload(node.path)}>
             <UploadIcon className="mr-2 size-4" />
-            Tải file lên đây
+            Tải tệp tin lên đây
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={() => onCreateFolder(node.path)}>
             <FolderPlusIcon className="mr-2 size-4" />
             Tạo thư mục con
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={() => onDeleteFolder(node.path)}
+          >
+            <Trash2Icon className="mr-2 size-4" />
+            Xóa thư mục
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -138,6 +150,7 @@ function FolderTreeNode({
               onSelect={onSelect}
               onUpload={onUpload}
               onCreateFolder={onCreateFolder}
+              onDeleteFolder={onDeleteFolder}
               depth={depth + 1}
             />
           ))}
@@ -153,6 +166,7 @@ export function FolderTree({
   onFolderSelect,
   onUpload,
   onCreateFolder,
+  onDeleteFolder,
 }: FolderTreeProps) {
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
@@ -168,6 +182,7 @@ export function FolderTree({
               onSelect={onFolderSelect}
               onUpload={onUpload}
               onCreateFolder={onCreateFolder}
+              onDeleteFolder={onDeleteFolder}
             />
           ))}
         </div>
@@ -175,7 +190,7 @@ export function FolderTree({
       <ContextMenuContent className="w-48">
         <ContextMenuItem onClick={() => onUpload('')}>
           <UploadIcon className="mr-2 size-4" />
-          Tải file lên thư mục gốc
+          Tải tệp tin lên thư mục gốc
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onClick={() => onCreateFolder('')}>
