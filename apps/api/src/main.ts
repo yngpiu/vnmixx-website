@@ -2,6 +2,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 
 const DEFAULT_DEV_CORS_ORIGINS = [
@@ -15,6 +16,16 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
   const port = Number(process.env.PORT) || 4000;
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const startedAt = Date.now();
+    res.on('finish', () => {
+      const durationInMilliseconds = Date.now() - startedAt;
+      logger.log(
+        `${req.method} ${req.originalUrl} ${res.statusCode} - ${durationInMilliseconds}ms`,
+      );
+    });
+    next();
+  });
 
   app.use(cookieParser());
 
