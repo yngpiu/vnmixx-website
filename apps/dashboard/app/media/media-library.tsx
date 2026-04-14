@@ -1,7 +1,17 @@
 'use client';
 
-import { deleteMedia, listFolders, listMedia } from '@/lib/api/media';
+import { deleteFolder, deleteMedia, listFolders, listMedia } from '@/lib/api/media';
 import type { ListMediaParams, MediaFile } from '@/lib/types/media';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@repo/ui/components/ui/alert-dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import {
@@ -11,10 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/ui/components/ui/select';
-import { Separator } from '@repo/ui/components/ui/separator';
 import { cn } from '@repo/ui/lib/utils';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FolderIcon, GridIcon, ImageIcon, ListIcon, SearchIcon, XIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  CopyIcon,
+  DownloadIcon,
+  FolderIcon,
+  FolderPlusIcon,
+  GridIcon,
+  ImageIcon,
+  ListIcon,
+  SearchIcon,
+  UploadIcon,
+  XIcon,
+} from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -26,7 +47,7 @@ import { UploadDialog } from './upload-dialog';
 type ViewMode = 'grid' | 'list';
 type SortBy = 'fileName' | 'createdAt' | 'size';
 type SortOrder = 'asc' | 'desc';
-type MimeFilter = 'all' | 'image' | 'video' | 'application';
+type MimeFilter = 'all' | 'image' | 'video';
 
 const PAGE_SIZE = 24;
 
@@ -34,7 +55,6 @@ const MIME_LABELS: Record<MimeFilter, string> = {
   all: 'Tất cả',
   image: 'Ảnh',
   video: 'Video',
-  application: 'Tài liệu',
 };
 
 const SORT_LABELS: Record<SortBy, string> = {
@@ -75,6 +95,9 @@ export function MediaLibrary() {
   const [uploadFolder, setUploadFolder] = useState('');
   const [createFolderParent, setCreateFolderParent] = useState('');
   const [previewFile, setPreviewFile] = useState<MediaFile | null>(null);
+  const [isPreviewUrlCopied, setIsPreviewUrlCopied] = useState(false);
+  const [deleteFileTarget, setDeleteFileTarget] = useState<MediaFile | null>(null);
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<string | null>(null);
 
   const listScrollRef = useRef<HTMLDivElement>(null);
 
@@ -125,25 +148,41 @@ export function MediaLibrary() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteMedia(id),
     onSuccess: () => {
-      toast.success('Đã xóa file.');
+      toast.success('Đã xóa tệp tin.');
       queryClient.invalidateQueries({ queryKey: ['media'] });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Xóa file thất bại.');
+      toast.error(err instanceof Error ? err.message : 'Xóa tệp tin thất bại.');
+    },
+  });
+  const deleteFolderMutation = useMutation({
+    mutationFn: (folderPath: string) => deleteFolder(folderPath),
+    onSuccess: (_result, deletedFolderPath) => {
+      toast.success('Đã xóa thư mục.');
+      if (
+        currentFolder === deletedFolderPath ||
+        currentFolder.startsWith(`${deletedFolderPath}/`)
+      ) {
+        setCurrentFolder('');
+      }
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      queryClient.invalidateQueries({ queryKey: ['media-folders'] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Xóa thư mục thất bại.');
     },
   });
 
-  const handleDelete = useCallback(
-    (file: MediaFile) => {
-      if (window.confirm(`Xóa "${file.fileName}"?`)) {
-        deleteMutation.mutate(file.id);
-      }
-    },
-    [deleteMutation],
-  );
+  const handleDelete = useCallback((file: MediaFile) => {
+    setDeleteFileTarget(file);
+  }, []);
 
   const handlePreview = useCallback((file: MediaFile) => {
+    setIsPreviewUrlCopied(false);
     setPreviewFile(file);
+  }, []);
+  const handleDeleteFolder = useCallback((folderPath: string) => {
+    setDeleteFolderTarget(folderPath);
   }, []);
 
   /** Flatten all pages into a single deduplicated array. */
@@ -230,6 +269,7 @@ export function MediaLibrary() {
             onFolderSelect={setCurrentFolder}
             onUpload={handleOpenUpload}
             onCreateFolder={handleOpenCreateFolder}
+            onDeleteFolder={handleDeleteFolder}
           />
         </div>
 
@@ -312,7 +352,30 @@ export function MediaLibrary() {
               <span className="text-xs font-medium">{sortOrder === 'asc' ? '↑' : '↓'}</span>
             </Button>
 
-            <Separator orientation="vertical" className="h-5" />
+            <div className="h-5 w-px shrink-0 self-center bg-border" />
+
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5"
+              onClick={() => handleOpenUpload(currentFolder)}
+            >
+              <UploadIcon className="size-3.5" />
+              Tệp tin mới
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5"
+              onClick={() => handleOpenCreateFolder(currentFolder)}
+            >
+              <FolderPlusIcon className="size-3.5" />
+              Thư mục mới
+            </Button>
+
+            <div className="h-5 w-px shrink-0 self-center bg-border" />
 
             {/* View mode toggle */}
             <div className="flex rounded-md border">
@@ -384,7 +447,7 @@ export function MediaLibrary() {
                 <section className="space-y-3">
                   {allItems.length > 0 ? (
                     <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                      File ({total})
+                      Tệp tin ({total})
                     </p>
                   ) : null}
                   <MediaGrid
@@ -415,6 +478,88 @@ export function MediaLibrary() {
         onClose={() => setIsCreateFolderOpen(false)}
         parentFolder={createFolderParent}
       />
+      <AlertDialog
+        open={deleteFileTarget != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteFileTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa tệp tin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteFileTarget
+                ? `Tệp tin "${deleteFileTarget.fileName}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 px-6 py-4 sm:flex-row sm:justify-end">
+            <AlertDialogCancel type="button" disabled={deleteMutation.isPending}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending || !deleteFileTarget}
+              onClick={() => {
+                if (!deleteFileTarget) {
+                  return;
+                }
+                deleteMutation.mutate(deleteFileTarget.id, {
+                  onSuccess: () => {
+                    setDeleteFileTarget(null);
+                  },
+                });
+              }}
+            >
+              Xóa tệp tin
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={deleteFolderTarget != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteFolderTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa thư mục?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteFolderTarget
+                ? `Thư mục "${deleteFolderTarget}" và toàn bộ tệp tin/thư mục con bên trong sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 px-6 py-4 sm:flex-row sm:justify-end">
+            <AlertDialogCancel type="button" disabled={deleteFolderMutation.isPending}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteFolderMutation.isPending || !deleteFolderTarget}
+              onClick={() => {
+                if (!deleteFolderTarget) {
+                  return;
+                }
+                deleteFolderMutation.mutate(deleteFolderTarget, {
+                  onSuccess: () => {
+                    setDeleteFolderTarget(null);
+                  },
+                });
+              }}
+            >
+              Xóa thư mục
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {previewFile ? (
         <div
@@ -475,12 +620,30 @@ export function MediaLibrary() {
                 <Button
                   size="sm"
                   variant="outline"
+                  className="h-8 w-8 p-0"
                   onClick={() => {
                     navigator.clipboard.writeText(previewFile.url);
-                    toast.success('Đã sao chép URL.');
+                    setIsPreviewUrlCopied(true);
+                    window.setTimeout(() => setIsPreviewUrlCopied(false), 1200);
                   }}
+                  aria-label={isPreviewUrlCopied ? 'Copied' : 'Copy URL'}
+                  title={isPreviewUrlCopied ? 'Copied' : 'Copy URL'}
                 >
-                  Copy
+                  {isPreviewUrlCopied ? (
+                    <CheckIcon className="size-4" />
+                  ) : (
+                    <CopyIcon className="size-4" />
+                  )}
+                </Button>
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0" asChild>
+                  <a
+                    href={previewFile.url}
+                    download={previewFile.fileName}
+                    aria-label="Download file"
+                    title="Download"
+                  >
+                    <DownloadIcon className="size-4" />
+                  </a>
                 </Button>
               </div>
             </div>
