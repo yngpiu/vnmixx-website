@@ -4,10 +4,22 @@ import { createProductColumns } from '@/app/products/products-columns';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { useProductsListUrlState } from '@/hooks/use-products-list-url-state';
+import { adminModuleEditPath } from '@/lib/admin-modules';
 import { listCategories } from '@/lib/api/categories';
-import { listProducts } from '@/lib/api/products';
+import { deleteProduct, listProducts, restoreProduct, updateProduct } from '@/lib/api/products';
 import { categoryDisplayName } from '@/lib/category-display-name';
 import { toListProductsParams } from '@/lib/products-list-params';
+import type { ProductAdminListItem } from '@/lib/types/product';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@repo/ui/components/ui/alert-dialog';
 import {
   Table,
   TableBody,
@@ -17,15 +29,18 @@ import {
   TableRow,
 } from '@repo/ui/components/ui/table';
 import { cn } from '@repo/ui/lib/utils';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
+import { isAxiosError } from 'axios';
 import { AlertCircleIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
   return (header.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
@@ -35,7 +50,21 @@ function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): DataTabl
   return (cell.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
 }
 
+function apiErrorMessage(err: unknown): string {
+  if (isAxiosError(err)) {
+    const body = err.response?.data as { message?: unknown };
+    const m = body?.message;
+    if (Array.isArray(m)) return m.join(', ');
+    if (typeof m === 'string') return m;
+    return err.message;
+  }
+  if (err instanceof Error) return err.message;
+  return 'Đã xảy ra lỗi.';
+}
+
 export function ProductsTable() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const {
     pagination,
     onPaginationChange,
@@ -47,6 +76,8 @@ export function ProductsTable() {
   } = useProductsListUrlState();
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [deleteTarget, setDeleteTarget] = useState<ProductAdminListItem | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<ProductAdminListItem | null>(null);
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories', 'list', { forProductFilter: true, isSoftDeleted: false }],
@@ -72,7 +103,60 @@ export function ProductsTable() {
     placeholderData: keepPreviousData,
   });
 
-  const columns = useMemo(() => createProductColumns(), []);
+  const invalidateProductsList = async (): Promise<void> => {
+    await queryClient.invalidateQueries({ queryKey: ['products', 'list'] });
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: (vars: { id: number; isActive: boolean }) =>
+      updateProduct(vars.id, { isActive: vars.isActive }),
+    onSuccess: async (_data, variables) => {
+      toast.success(variables.isActive ? 'Đã hiển thị sản phẩm.' : 'Đã ẩn sản phẩm.');
+      await invalidateProductsList();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteProduct(id),
+    onSuccess: async () => {
+      setDeleteTarget(null);
+      toast.success('Đã xóa sản phẩm.');
+      await invalidateProductsList();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: number) => restoreProduct(id),
+    onSuccess: async () => {
+      toast.success('Đã khôi phục sản phẩm.');
+      await invalidateProductsList();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const columns = useMemo(
+    () =>
+      createProductColumns({
+        onDetail: (product) => {
+          router.push(`/products/${product.id}`);
+        },
+        onEdit: (product) => {
+          router.push(adminModuleEditPath('products', product.id));
+        },
+        onToggleActive: (product) => {
+          setToggleTarget(product);
+        },
+        onDelete: (product) => {
+          setDeleteTarget(product);
+        },
+        onRestore: (product) => {
+          restoreMutation.mutate(product.id);
+        },
+      }),
+    [restoreMutation, router],
+  );
 
   const rows = data?.data ?? [];
   const pageCount = Math.max(data?.meta.totalPages ?? 1, 1);
@@ -116,110 +200,189 @@ export function ProductsTable() {
   }
 
   return (
-    <div
-      className={cn(
-        'max-sm:has-[div[role="toolbar"]]:mb-16 flex flex-1 flex-col gap-4',
-        isLoading && 'opacity-70',
-      )}
-    >
-      <DataTableToolbar
-        table={table}
-        searchPlaceholder="Tìm theo tên sản phẩm…"
-        searchKey="name"
-        searchDebounceMs={350}
-        filters={[
-          {
-            columnId: 'isActive',
-            title: 'Hoạt động',
-            selectionMode: 'single',
-            options: [
-              { label: 'Đang bật', value: 'active' },
-              { label: 'Đang tắt', value: 'inactive' },
-            ],
-          },
-          {
-            columnId: 'deleted',
-            title: 'Trạng thái xóa',
-            selectionMode: 'single',
-            options: [
-              { label: 'Chưa xóa', value: 'not_deleted' },
-              { label: 'Đã xóa', value: 'deleted' },
-            ],
-          },
-          ...(categoryFilterOptions.length
-            ? [
-                {
-                  columnId: 'categoryId' as const,
-                  title: 'Danh mục',
-                  options: categoryFilterOptions,
-                },
-              ]
-            : []),
-        ]}
-      />
+    <>
+      <div
+        className={cn(
+          'max-sm:has-[div[role="toolbar"]]:mb-16 flex flex-1 flex-col gap-4',
+          isLoading && 'opacity-70',
+        )}
+      >
+        <DataTableToolbar
+          table={table}
+          searchPlaceholder="Tìm theo tên sản phẩm…"
+          searchKey="name"
+          searchDebounceMs={350}
+          filters={[
+            {
+              columnId: 'isActive',
+              title: 'Hoạt động',
+              selectionMode: 'single',
+              options: [
+                { label: 'Đang bật', value: 'active' },
+                { label: 'Đang tắt', value: 'inactive' },
+              ],
+            },
+            {
+              columnId: 'deleted',
+              title: 'Trạng thái xóa',
+              selectionMode: 'single',
+              options: [
+                { label: 'Chưa xóa', value: 'not_deleted' },
+                { label: 'Đã xóa', value: 'deleted' },
+              ],
+            },
+            ...(categoryFilterOptions.length
+              ? [
+                  {
+                    columnId: 'categoryId' as const,
+                    title: 'Danh mục',
+                    options: categoryFilterOptions,
+                  },
+                ]
+              : []),
+          ]}
+        />
 
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="group/row">
-                {headerGroup.headers.map((header) => {
-                  const hm = headMeta(header);
-                  return (
-                    <TableHead
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className={cn(
-                        'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                        hm.className,
-                        hm.thClassName,
-                      )}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="group/row">
-                  {row.getVisibleCells().map((cell) => {
-                    const cm = cellMeta(cell);
+        <div className="overflow-hidden rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="group/row">
+                  {headerGroup.headers.map((header) => {
+                    const hm = headMeta(header);
                     return (
-                      <TableCell
-                        key={cell.id}
+                      <TableHead
+                        key={header.id}
+                        colSpan={header.colSpan}
                         className={cn(
                           'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
-                          cm.className,
-                          cm.tdClassName,
+                          hm.className,
+                          hm.thClassName,
                         )}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
                     );
                   })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="text-muted-foreground h-24 text-center"
-                >
-                  {isLoading ? 'Đang tải…' : 'Không có sản phẩm phù hợp.'}
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} className="group/row">
+                    {row.getVisibleCells().map((cell) => {
+                      const cm = cellMeta(cell);
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            'bg-background group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted',
+                            cm.className,
+                            cm.tdClassName,
+                          )}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="text-muted-foreground h-24 text-center"
+                  >
+                    {isLoading ? 'Đang tải…' : 'Không có sản phẩm phù hợp.'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <DataTablePagination table={table} className="mt-auto" />
       </div>
 
-      <DataTablePagination table={table} className="mt-auto" />
-    </div>
+      <AlertDialog
+        open={toggleTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setToggleTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {toggleTarget?.isActive ? 'Ẩn sản phẩm?' : 'Hiện sản phẩm?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {toggleTarget
+                ? toggleTarget.isActive
+                  ? `Sản phẩm "${toggleTarget.name}" sẽ bị ẩn khỏi cửa hàng.`
+                  : `Sản phẩm "${toggleTarget.name}" sẽ hiển thị lại trên cửa hàng.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 px-6 py-4 sm:flex-row sm:justify-end">
+            <AlertDialogCancel type="button" disabled={updateMutation.isPending}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={updateMutation.isPending || !toggleTarget}
+              onClick={() => {
+                if (!toggleTarget) return;
+                updateMutation.mutate(
+                  { id: toggleTarget.id, isActive: !toggleTarget.isActive },
+                  {
+                    onSuccess: () => {
+                      setToggleTarget(null);
+                    },
+                  },
+                );
+              }}
+            >
+              Xác nhận
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa sản phẩm?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `Sản phẩm "${deleteTarget.name}" sẽ được xóa mềm và có thể khôi phục sau.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 px-6 py-4 sm:flex-row sm:justify-end">
+            <AlertDialogCancel type="button" disabled={deleteMutation.isPending}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending || !deleteTarget}
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+              }}
+            >
+              Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

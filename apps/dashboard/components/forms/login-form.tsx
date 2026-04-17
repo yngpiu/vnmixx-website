@@ -11,8 +11,16 @@ import {
   FieldLabel,
 } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@repo/ui/components/ui/input-group';
 import { cn } from '@repo/ui/lib/utils';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -24,6 +32,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const form = useForm<LoginFormValues>({
     defaultValues: {
       email: '',
@@ -98,14 +107,32 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               </Field>
               <Field data-invalid={Boolean(errors.password)}>
                 <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  aria-invalid={Boolean(errors.password)}
-                  disabled={isPending}
-                  {...form.register('password')}
-                />
+                <InputGroup>
+                  <InputGroupInput
+                    id="password"
+                    type={isPasswordVisible ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    aria-invalid={Boolean(errors.password)}
+                    disabled={isPending}
+                    {...form.register('password')}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      type="button"
+                      size="icon-xs"
+                      variant="ghost"
+                      onClick={() => setIsPasswordVisible((previousState) => !previousState)}
+                      aria-label={isPasswordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                      disabled={isPending}
+                    >
+                      {isPasswordVisible ? (
+                        <EyeOffIcon className="size-4" />
+                      ) : (
+                        <EyeIcon className="size-4" />
+                      )}
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
                 <FieldError errors={[errors.password]} />
               </Field>
               <Field>

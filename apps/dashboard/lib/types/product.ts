@@ -30,12 +30,57 @@ export type ProductAdminListResponse = {
   meta: ProductListMeta;
 };
 
+export type ProductAdminVariant = {
+  id: number;
+  colorId: number;
+  sizeId: number;
+  color?: {
+    id: number;
+    name: string;
+    hexCode: string;
+  };
+  size?: {
+    id: number;
+    label: string;
+    sortOrder: number;
+  };
+  sku: string;
+  price: number;
+  onHand: number;
+  reserved: number;
+  isActive: boolean;
+  deletedAt: string | null;
+};
+
+export type ProductAdminImage = {
+  id: number;
+  colorId: number | null;
+  url: string;
+  altText: string | null;
+  sortOrder: number;
+};
+
+export type ProductAdminDetail = {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  thumbnail: string | null;
+  isActive: boolean;
+  category: ProductCategoryBrief | null;
+  categoryIds?: number[];
+  variants: ProductAdminVariant[];
+  images: ProductAdminImage[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
 export type CreateProductVariantInput = {
   colorId: number;
   sizeId: number;
   sku: string;
   price: number;
-  salePrice?: number;
   onHand: number;
 };
 
@@ -58,4 +103,14 @@ export type CreateProductBody = {
   isActive?: boolean;
   variants: CreateProductVariantInput[];
   images?: CreateProductImageInput[];
+};
+
+export type UpdateProductBody = {
+  name?: string;
+  slug?: string;
+  description?: string;
+  thumbnail?: string;
+  categoryId?: number;
+  categoryIds?: number[];
+  isActive?: boolean;
 };

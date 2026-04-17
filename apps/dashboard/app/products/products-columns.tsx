@@ -6,13 +6,24 @@ import { categoryDisplayName } from '@/lib/category-display-name';
 import type { ProductAdminListItem } from '@/lib/types/product';
 import { Badge } from '@repo/ui/components/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
+import { ProductsRowActions } from './products-row-actions';
 
 const updatedAtFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
   timeStyle: 'short',
 });
 
-export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
+type ProductColumnActions = {
+  onDetail: (product: ProductAdminListItem) => void;
+  onEdit: (product: ProductAdminListItem) => void;
+  onToggleActive: (product: ProductAdminListItem) => void;
+  onDelete: (product: ProductAdminListItem) => void;
+  onRestore: (product: ProductAdminListItem) => void;
+};
+
+export function createProductColumns(
+  actions: ProductColumnActions,
+): ColumnDef<ProductAdminListItem>[] {
   return [
     dataTableSttColumnDef<ProductAdminListItem>(),
     {
@@ -162,6 +173,27 @@ export function createProductColumns(): ColumnDef<ProductAdminListItem>[] {
         thClassName: 'hidden',
         tdClassName: 'hidden',
         dataTableColumnLabel: 'Trạng thái xóa',
+      } satisfies DataTableColumnMeta,
+    },
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <ProductsRowActions
+          row={row}
+          onDetail={actions.onDetail}
+          onEdit={actions.onEdit}
+          onToggleActive={actions.onToggleActive}
+          onDelete={actions.onDelete}
+          onRestore={actions.onRestore}
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      meta: {
+        dataTableColumnLabel: 'Thao tác',
+        className: 'w-12 text-right',
+        thClassName: 'w-12 text-right',
+        tdClassName: 'w-12 text-right',
       } satisfies DataTableColumnMeta,
     },
   ];

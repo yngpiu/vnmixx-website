@@ -93,3 +93,7 @@ export function adminModulePath(slug: AdminModuleSlug): string {
 export function adminModuleNewPath(slug: AdminModuleSlug): string {
   return `/${slug}/new`;
 }
+
+export function adminModuleEditPath(slug: AdminModuleSlug, id: number): string {
+  return `/${slug}/${id}/edit`;
+}

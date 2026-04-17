@@ -38,13 +38,13 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
       return {
         name: 'Đang tải…',
         email: '',
-        avatar: '',
+        avatar: undefined,
       };
     }
     return {
       name: 'Khách',
       email: '',
-      avatar: '',
+      avatar: undefined,
     };
   }, [accessToken, profile]);
 

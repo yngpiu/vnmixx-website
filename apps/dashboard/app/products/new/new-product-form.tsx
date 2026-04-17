@@ -104,7 +104,6 @@ type VariantDraft = {
   sizeId: number;
   sku: string;
   price: string;
-  salePrice: string;
   onHand: string;
 };
 
@@ -190,7 +189,6 @@ export function NewProductForm() {
         sizeId: s0.id,
         sku: '',
         price: '0',
-        salePrice: '',
         onHand: '0',
       },
     ]);
@@ -227,19 +225,6 @@ export function NewProductForm() {
         setFormError(`Biến thể #${i + 1}: Giá không hợp lệ.`);
         return null;
       }
-      let salePrice: number | undefined;
-      if (v.salePrice.trim()) {
-        const sp = Number.parseInt(v.salePrice, 10);
-        if (!Number.isFinite(sp) || sp < 0) {
-          setFormError(`Biến thể #${i + 1}: Giá khuyến mãi không hợp lệ.`);
-          return null;
-        }
-        if (sp >= price) {
-          setFormError(`Biến thể #${i + 1}: Giá sale phải nhỏ hơn giá bán.`);
-          return null;
-        }
-        salePrice = sp;
-      }
       const onHand = Number.parseInt(v.onHand, 10);
       if (!Number.isFinite(onHand) || onHand < 0) {
         setFormError(`Biến thể #${i + 1}: Tồn kho không hợp lệ.`);
@@ -256,7 +241,6 @@ export function NewProductForm() {
         sizeId: v.sizeId,
         sku,
         price,
-        ...(salePrice !== undefined ? { salePrice } : {}),
         onHand,
       });
     }
@@ -306,10 +290,7 @@ export function NewProductForm() {
     const c = colors[0]?.id;
     const s = sizes[0]?.id;
     if (c == null || s == null) return;
-    setVariants((prev) => [
-      ...prev,
-      { colorId: c, sizeId: s, sku: '', price: '0', salePrice: '', onHand: '0' },
-    ]);
+    setVariants((prev) => [...prev, { colorId: c, sizeId: s, sku: '', price: '0', onHand: '0' }]);
   };
 
   const removeVariantRow = (index: number) => {
@@ -559,7 +540,6 @@ export function NewProductForm() {
                   <TableHead className="min-w-26">Size</TableHead>
                   <TableHead className="min-w-34">SKU</TableHead>
                   <TableHead className="min-w-26">Giá (đ)</TableHead>
-                  <TableHead className="min-w-26">Giá sale</TableHead>
                   <TableHead className="min-w-22">Tồn</TableHead>
                   <TableHead className="w-12 pr-5 text-right" />
                 </TableRow>
@@ -625,17 +605,6 @@ export function NewProductForm() {
                         onChange={(e) => updateVariant(index, { price: e.target.value })}
                         disabled={busy}
                         className="h-9"
-                      />
-                    </TableCell>
-                    <TableCell className="align-middle">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={row.salePrice}
-                        onChange={(e) => updateVariant(index, { salePrice: e.target.value })}
-                        disabled={busy}
-                        className="h-9"
-                        placeholder="—"
                       />
                     </TableCell>
                     <TableCell className="align-middle">

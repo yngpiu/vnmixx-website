@@ -1,8 +1,10 @@
 'use client';
 
+import { CreateFolderDialog } from '@/app/media/create-folder-dialog';
 import { FolderTree } from '@/app/media/folder-tree';
 import { MediaGrid } from '@/app/media/media-grid';
-import { deleteMedia, listFolders, listMedia } from '@/lib/api/media';
+import { UploadDialog } from '@/app/media/upload-dialog';
+import { deleteFolder, deleteMedia, listFolders, listMedia } from '@/lib/api/media';
 import type { MediaFile } from '@/lib/types/media';
 import {
   AlertDialog,
@@ -35,7 +37,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   ArrowUpDownIcon,
   CopyIcon,
-  EyeIcon,
+  FolderIcon,
   GridIcon,
   ListIcon,
   Loader2Icon,
@@ -91,6 +93,11 @@ export function MediaPickerDialog({
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
   const [previewFile, setPreviewFile] = useState<MediaFile | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MediaFile | null>(null);
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState<string | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  const [uploadFolder, setUploadFolder] = useState('');
+  const [createFolderParent, setCreateFolderParent] = useState('');
   const listScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -176,6 +183,25 @@ export function MediaPickerDialog({
       toast.error(err instanceof Error ? err.message : 'Xóa tệp tin thất bại.');
     },
   });
+  const deleteFolderMutation = useMutation({
+    mutationFn: (folderPath: string) => deleteFolder(folderPath),
+    onSuccess: async (_result, deletedFolderPath) => {
+      toast.success('Đã xóa thư mục.');
+      if (
+        currentFolder === deletedFolderPath ||
+        currentFolder.startsWith(`${deletedFolderPath}/`)
+      ) {
+        setCurrentFolder('');
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['media-picker'] }),
+        queryClient.invalidateQueries({ queryKey: ['media-picker-folders'] }),
+      ]);
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : 'Xóa thư mục thất bại.');
+    },
+  });
   const breadcrumbs = useMemo(() => {
     const parts: { label: string; path: string }[] = [{ label: 'Gốc', path: '' }];
     if (currentFolder) {
@@ -198,6 +224,17 @@ export function MediaPickerDialog({
   }, [folders, currentFolder]);
   const toggleSortOrder = () => {
     setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+  };
+  const handleOpenUpload = (folder: string) => {
+    setUploadFolder(folder);
+    setIsUploadOpen(true);
+  };
+  const handleOpenCreateFolder = (parentFolder: string) => {
+    setCreateFolderParent(parentFolder);
+    setIsCreateFolderOpen(true);
+  };
+  const handleDeleteFolder = (folderPath: string) => {
+    setDeleteFolderTarget(folderPath);
   };
   const toggleSelect = (url: string) => {
     setSelectedSet((prev) => {
@@ -232,9 +269,9 @@ export function MediaPickerDialog({
               folders={folders}
               currentFolder={currentFolder}
               onFolderSelect={setCurrentFolder}
-              onUpload={() => {}}
-              onCreateFolder={() => {}}
-              onDeleteFolder={() => {}}
+              onUpload={handleOpenUpload}
+              onCreateFolder={handleOpenCreateFolder}
+              onDeleteFolder={handleDeleteFolder}
             />
           </div>
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -343,7 +380,7 @@ export function MediaPickerDialog({
                               onClick={() => setCurrentFolder(folderPath)}
                               title={folderPath}
                             >
-                              <span className="text-(--primary) text-lg">📁</span>
+                              <FolderIcon className="size-7 text-(--primary) transition-transform group-hover:scale-105" />
                               <span className="block w-full truncate text-xs font-medium">
                                 {name}
                               </span>
@@ -394,7 +431,7 @@ export function MediaPickerDialog({
             </div>
           </div>
         </div>
-        <DialogFooter className="shrink-0 border-t px-6 py-4">
+        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-background px-6 py-4">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Hủy
           </Button>
@@ -432,6 +469,47 @@ export function MediaPickerDialog({
               }}
             >
               Xóa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={deleteFolderTarget != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteFolderTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa thư mục?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteFolderTarget
+                ? `Thư mục "${deleteFolderTarget}" và toàn bộ tệp tin/thư mục con bên trong sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button" disabled={deleteFolderMutation.isPending}>
+              Hủy
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteFolderMutation.isPending || !deleteFolderTarget}
+              onClick={() => {
+                if (!deleteFolderTarget) {
+                  return;
+                }
+                deleteFolderMutation.mutate(deleteFolderTarget, {
+                  onSuccess: () => {
+                    setDeleteFolderTarget(null);
+                  },
+                });
+              }}
+            >
+              Xóa thư mục
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -484,21 +562,28 @@ export function MediaPickerDialog({
                 >
                   <CopyIcon className="size-4" />
                 </Button>
-                <Button
-                  size="icon"
-                  className="size-8"
-                  title="Chọn ảnh này"
-                  onClick={() => {
-                    toggleSelect(previewFile.url);
-                  }}
-                >
-                  <EyeIcon className="size-4" />
-                </Button>
               </div>
             </div>
           </DialogContent>
         ) : null}
       </Dialog>
+      <UploadDialog
+        isOpen={isUploadOpen}
+        onClose={() => {
+          setIsUploadOpen(false);
+          void queryClient.invalidateQueries({ queryKey: ['media-picker'] });
+          void queryClient.invalidateQueries({ queryKey: ['media-picker-folders'] });
+        }}
+        folder={uploadFolder}
+      />
+      <CreateFolderDialog
+        isOpen={isCreateFolderOpen}
+        onClose={() => {
+          setIsCreateFolderOpen(false);
+          void queryClient.invalidateQueries({ queryKey: ['media-picker-folders'] });
+        }}
+        parentFolder={createFolderParent}
+      />
     </Dialog>
   );
 }
