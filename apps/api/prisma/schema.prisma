@@ -68,6 +68,11 @@ enum StockMovementType {
   RETURN
 }
 
+enum AuditLogStatus {
+  SUCCESS
+  FAILED
+}
+
 // ─── Customers ───────────────────────────────────────────
 
 model Customer {
@@ -97,23 +102,47 @@ model Customer {
 // ─── Employees ───────────────────────────────────────────
 
 model Employee {
-  id             Int       @id @default(autoincrement()) @db.UnsignedInt
-  fullName       String    @map("full_name") @db.VarChar(100)
-  email          String    @unique(map: "uk_employees_email") @db.VarChar(255)
-  phoneNumber    String    @unique(map: "uk_employees_phone") @map("phone_number") @db.VarChar(20)
-  hashedPassword String    @map("hashed_password") @db.VarChar(255)
-  avatarUrl      String?   @map("avatar_url") @db.VarChar(500)
+  id             Int            @id @default(autoincrement()) @db.UnsignedInt
+  fullName       String         @map("full_name") @db.VarChar(100)
+  email          String         @unique(map: "uk_employees_email") @db.VarChar(255)
+  phoneNumber    String         @unique(map: "uk_employees_phone") @map("phone_number") @db.VarChar(20)
+  hashedPassword String         @map("hashed_password") @db.VarChar(255)
+  avatarUrl      String?        @map("avatar_url") @db.VarChar(500)
   status         EmployeeStatus @default(ACTIVE)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamp(0)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt      DateTime?      @map("deleted_at") @db.Timestamp(0)
 
-  employeeRoles  EmployeeRole[]
-  refreshTokens  RefreshToken[]
-  stockMovements StockMovement[]
-  mediaFiles     MediaFile[]
+  employeeRoles    EmployeeRole[]
+  refreshTokens    RefreshToken[]
+  stockMovements   StockMovement[]
+  mediaFiles       MediaFile[]
+  auditLogsAsActor AuditLog[]      @relation("AuditLogActor")
 
   @@map("employees")
+}
+
+model AuditLog {
+  id              Int            @id @default(autoincrement()) @db.UnsignedInt
+  actorEmployeeId Int?           @map("actor_employee_id") @db.UnsignedInt
+  action          String         @db.VarChar(120)
+  resourceType    String         @map("resource_type") @db.VarChar(80)
+  resourceId      String?        @map("resource_id") @db.VarChar(64)
+  requestId       String?        @map("request_id") @db.VarChar(64)
+  ipAddress       String?        @map("ip_address") @db.VarChar(45)
+  userAgent       String?        @map("user_agent") @db.VarChar(500)
+  beforeData      Json?          @map("before_data")
+  afterData       Json?          @map("after_data")
+  status          AuditLogStatus
+  errorMessage    String?        @map("error_message") @db.VarChar(500)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+
+  actorEmployee Employee? @relation("AuditLogActor", fields: [actorEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([actorEmployeeId, createdAt], map: "idx_audit_logs_actor_created")
+  @@index([resourceType, resourceId, createdAt], map: "idx_audit_logs_resource_created")
+  @@index([action, createdAt], map: "idx_audit_logs_action_created")
+  @@map("audit_logs")
 }
 
 // ─── RBAC ────────────────────────────────────────────────
@@ -256,9 +285,9 @@ model Category {
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
   deletedAt  DateTime? @map("deleted_at") @db.Timestamp(0)
 
-  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  children Category[] @relation("CategoryTree")
-  products Product[]
+  parent            Category?         @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  children          Category[]        @relation("CategoryTree")
+  products          Product[]
   productCategories ProductCategory[]
 
   @@index([parentId], map: "idx_categories_parent")
@@ -310,7 +339,7 @@ model Product {
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamp(0)
 
-  category          Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  category          Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   productCategories ProductCategory[]
   variants          ProductVariant[]
   images            ProductImage[]
@@ -321,7 +350,9 @@ model Product {
   @@map("products")
 }
 
-/** Gán nhiều danh mục (thường là các lá) cho một sản phẩm. `Product.categoryId` giữ danh mục hiển thị chính (= phần tử đầu khi tạo). */
+/**
+ * Gán nhiều danh mục (thường là các lá) cho một sản phẩm. `Product.categoryId` giữ danh mục hiển thị chính (= phần tử đầu khi tạo).
+ */
 model ProductCategory {
   productId  Int @map("product_id") @db.UnsignedInt
   categoryId Int @map("category_id") @db.UnsignedInt
@@ -574,18 +605,18 @@ model RefreshToken {
 // ─── Media Files ─────────────────────────────────────────
 
 model MediaFile {
-  id         Int       @id @default(autoincrement()) @db.UnsignedInt
-  key        String    @unique(map: "uk_media_key") @db.VarChar(500)
-  fileName   String    @map("file_name") @db.VarChar(255)
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  key        String   @unique(map: "uk_media_key") @db.VarChar(500)
+  fileName   String   @map("file_name") @db.VarChar(255)
   // One logical folder per file ("" = root). Public URL is not stored; use R2_PUBLIC_URL + key at runtime.
-  folder     String    @default("") @db.VarChar(500)
-  mimeType   String    @map("mime_type") @db.VarChar(100)
-  size       Int       @db.UnsignedInt
-  width      Int?      @db.UnsignedSmallInt
-  height     Int?      @db.UnsignedSmallInt
-  uploadedBy Int?      @map("uploaded_by") @db.UnsignedInt
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+  folder     String   @default("") @db.VarChar(500)
+  mimeType   String   @map("mime_type") @db.VarChar(100)
+  size       Int      @db.UnsignedInt
+  width      Int?     @db.UnsignedSmallInt
+  height     Int?     @db.UnsignedSmallInt
+  uploadedBy Int?     @map("uploaded_by") @db.UnsignedInt
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
 
   employee Employee? @relation(fields: [uploadedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 

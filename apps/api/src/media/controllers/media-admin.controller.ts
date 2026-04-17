@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -27,6 +28,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
@@ -89,6 +92,7 @@ export class MediaAdminController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body() dto: UploadMediaDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Chỉ hỗ trợ upload ảnh hoặc video.');
@@ -99,7 +103,12 @@ export class MediaAdminController {
       buffer: f.buffer,
       size: f.size,
     }));
-    return this.mediaService.uploadFiles(inputs, dto, user.id);
+    return this.mediaService.uploadFiles(
+      inputs,
+      dto,
+      user.id,
+      buildAuditRequestContext(request, user),
+    );
   }
 
   @ApiOperation({ summary: 'Liệt kê tất cả thư mục' })
@@ -112,32 +121,49 @@ export class MediaAdminController {
   @ApiOperation({ summary: 'Tạo thư mục mới (ảo)' })
   @ApiOkResponse({ description: 'Thư mục đã tạo.' })
   @Post('folders')
-  async createFolder(@Body() dto: CreateFolderDto) {
-    return this.mediaService.createFolder(dto);
+  async createFolder(
+    @Body() dto: CreateFolderDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.mediaService.createFolder(dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xóa thư mục và toàn bộ nội dung bên trong' })
   @ApiOkResponse({ description: 'Kết quả xóa thư mục.' })
   @Delete('folders')
   @HttpCode(HttpStatus.OK)
-  async deleteFolder(@Query('path') path: string) {
-    return this.mediaService.deleteFolder(path);
+  async deleteFolder(
+    @Query('path') path: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.mediaService.deleteFolder(path, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xóa nhiều files cùng lúc' })
   @ApiOkResponse({ description: 'Số files đã xóa.' })
   @Post('batch-delete')
   @HttpCode(HttpStatus.OK)
-  async batchDelete(@Body() dto: BatchDeleteMediaDto) {
-    return this.mediaService.batchDeleteMedia(dto);
+  async batchDelete(
+    @Body() dto: BatchDeleteMediaDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.mediaService.batchDeleteMedia(dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Di chuyển file sang thư mục khác' })
   @ApiOkResponse({ description: 'File đã được di chuyển.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Patch(':id/move')
-  async moveMedia(@Param('id', ParseIntPipe) id: number, @Body() dto: MoveMediaDto) {
-    return this.mediaService.moveMedia(id, dto);
+  async moveMedia(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: MoveMediaDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.mediaService.moveMedia(id, dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xóa một file' })
@@ -145,7 +171,11 @@ export class MediaAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteMedia(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.mediaService.deleteMedia(id);
+  async deleteMedia(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    return this.mediaService.deleteMedia(id, buildAuditRequestContext(request, user));
   }
 }

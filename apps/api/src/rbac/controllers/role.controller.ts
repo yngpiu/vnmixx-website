@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -24,7 +25,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { RequirePermissions, RequireUserType } from '../../auth/decorators';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
+import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   CreateRoleDto,
   ListRolesQueryDto,
@@ -79,8 +83,12 @@ export class RoleController {
   @ApiConflictResponse({ description: 'Tên vai trò đã được sử dụng.' })
   @RequirePermissions('rbac.create')
   @Post()
-  async create(@Body() dto: CreateRoleDto): Promise<RoleDetailResponseDto> {
-    return this.roleService.create(dto);
+  async create(
+    @Body() dto: CreateRoleDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<RoleDetailResponseDto> {
+    return this.roleService.create(dto, buildAuditRequestContext(request, user));
   }
 
   // API cập nhật tên, mô tả và thay đổi danh sách quyền của vai trò
@@ -96,8 +104,10 @@ export class RoleController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRoleDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<RoleDetailResponseDto> {
-    return this.roleService.update(id, dto);
+    return this.roleService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
   // API xóa hoàn toàn một vai trò khỏi hệ thống
@@ -108,7 +118,11 @@ export class RoleController {
   @RequirePermissions('rbac.delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.roleService.delete(id);
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    return this.roleService.delete(id, buildAuditRequestContext(request, user));
   }
 }

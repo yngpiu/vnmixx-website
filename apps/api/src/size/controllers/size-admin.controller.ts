@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -23,7 +24,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { RequireUserType } from '../../auth/decorators';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   CreateSizeDto,
   ListSizesQueryDto,
@@ -62,8 +66,12 @@ export class SizeAdminController {
   @ApiCreatedResponse({ type: SizeAdminResponseDto })
   @ApiConflictResponse({ description: 'Nhãn kích thước đã được sử dụng.' })
   @Post()
-  create(@Body() dto: CreateSizeDto): Promise<SizeAdminResponseDto> {
-    return this.sizeService.create(dto);
+  create(
+    @Body() dto: CreateSizeDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<SizeAdminResponseDto> {
+    return this.sizeService.create(dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Cập nhật kích thước' })
@@ -74,8 +82,10 @@ export class SizeAdminController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateSizeDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<SizeAdminResponseDto> {
-    return this.sizeService.update(id, dto);
+    return this.sizeService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xóa kích thước' })
@@ -84,7 +94,11 @@ export class SizeAdminController {
   @ApiConflictResponse({ description: 'Không thể xóa kích thước vì đang được sử dụng.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.sizeService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    return this.sizeService.remove(id, buildAuditRequestContext(request, user));
   }
 }

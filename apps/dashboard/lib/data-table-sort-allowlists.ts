@@ -1,4 +1,4 @@
-/** Id cột TanStack khớp `sortBy` API — dùng cho URL và gọi list. */
+/** Id cột TanStack khớp `sortBy` API khi gọi list. */
 export const EMPLOYEE_TABLE_SORT_IDS = [
   'fullName',
   'email',

@@ -46,6 +46,9 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
   if (path === '/media') {
     return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Thư viện ảnh' }];
   }
+  if (path === '/audit-logs') {
+    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Audit log' }];
+  }
   const newMatch = /^\/([^/]+)\/new\/?$/.exec(path);
   const newSlug = newMatch?.[1];
   if (newSlug && isAdminModuleSlug(newSlug)) {

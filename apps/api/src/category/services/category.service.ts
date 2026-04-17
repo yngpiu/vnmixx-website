@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { CACHE_KEYS, CACHE_PATTERNS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
@@ -22,6 +24,7 @@ export class CategoryService {
   constructor(
     private readonly repository: CategoryRepository,
     private readonly redis: RedisService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   // ─── Public ───────────────────────────────────────────────────────────────
@@ -70,12 +73,15 @@ export class CategoryService {
     return category;
   }
 
-  async create(dto: CreateCategoryDto): Promise<CategoryAdminView> {
-    if (dto.parentId !== undefined) {
-      await this.validateParentForCreate(dto.parentId);
-    }
-
+  async create(
+    dto: CreateCategoryDto,
+    auditContext: AuditRequestContext = {},
+  ): Promise<CategoryAdminView> {
     try {
+      if (dto.parentId !== undefined) {
+        await this.validateParentForCreate(dto.parentId);
+      }
+
       const result = await this.repository.create({
         name: dto.name,
         slug: dto.slug,
@@ -85,86 +91,174 @@ export class CategoryService {
         parentId: dto.parentId ?? null,
       });
       await this.invalidateCache();
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'category.create',
+        resourceType: 'category',
+        resourceId: String(result.id),
+        status: AuditLogStatus.SUCCESS,
+        afterData: result,
+      });
       return result;
-    } catch (err) {
-      this.handleUniqueViolation(err, dto.slug);
-      throw err;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'category.create',
+        resourceType: 'category',
+        status: AuditLogStatus.FAILED,
+        afterData: dto,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      this.handleUniqueViolation(error, dto.slug);
+      throw error;
     }
   }
 
-  async update(id: number, dto: UpdateCategoryDto): Promise<CategoryAdminView> {
-    const existing = await this.findById(id);
-
-    if (dto.parentId !== undefined) {
-      const newParentId = dto.parentId;
-      if (newParentId !== null) {
-        if (newParentId === id) {
-          throw new BadRequestException('Danh mục không thể là danh mục cha của chính nó');
-        }
-        await this.validateParentForCreate(newParentId);
-        await this.validateNoCircularRef(id, newParentId);
-      }
-    }
-
-    // parentId not in dto -- keep existing; explicitly null means move to root
-    const parentId = dto.parentId !== undefined ? dto.parentId : existing.parentId;
-
-    const updatePayload = {
-      ...(dto.name !== undefined && { name: dto.name }),
-      ...(dto.slug !== undefined && { slug: dto.slug }),
-      ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
-      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
-      ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
-      parentId,
-    };
-
+  async update(
+    id: number,
+    dto: UpdateCategoryDto,
+    auditContext: AuditRequestContext = {},
+  ): Promise<CategoryAdminView> {
+    let beforeData: CategoryAdminView | undefined;
     try {
+      const existing = await this.findById(id);
+      beforeData = existing;
+
+      if (dto.parentId !== undefined) {
+        const newParentId = dto.parentId;
+        if (newParentId !== null) {
+          if (newParentId === id) {
+            throw new BadRequestException('Danh mục không thể là danh mục cha của chính nó');
+          }
+          await this.validateParentForCreate(newParentId);
+          await this.validateNoCircularRef(id, newParentId);
+        }
+      }
+
+      // parentId not in dto -- keep existing; explicitly null means move to root
+      const parentId = dto.parentId !== undefined ? dto.parentId : existing.parentId;
+
+      const updatePayload = {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.slug !== undefined && { slug: dto.slug }),
+        ...(dto.isFeatured !== undefined && { isFeatured: dto.isFeatured }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+        parentId,
+      };
+
       const result =
         dto.isActive === false
           ? await this.repository.updateAndCascadeDeactivateDescendants(id, updatePayload)
           : await this.repository.update(id, updatePayload);
       await this.invalidateCache();
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'category.update',
+        resourceType: 'category',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData,
+        afterData: result,
+      });
       return result;
-    } catch (err) {
-      if (dto.slug) this.handleUniqueViolation(err, dto.slug);
-      throw err;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'category.update',
+        resourceType: 'category',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData,
+        afterData: dto,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      if (dto.slug) this.handleUniqueViolation(error, dto.slug);
+      throw error;
     }
   }
 
-  async softDelete(id: number): Promise<void> {
-    await this.findById(id);
+  async softDelete(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
+    const beforeData = await this.repository.findById(id);
+    try {
+      await this.findById(id);
 
-    const hasChildren = await this.repository.hasActiveChildren(id);
-    if (hasChildren) {
-      throw new ConflictException('Không thể xóa danh mục còn danh mục con đang hoạt động');
+      const hasChildren = await this.repository.hasActiveChildren(id);
+      if (hasChildren) {
+        throw new ConflictException('Không thể xóa danh mục còn danh mục con đang hoạt động');
+      }
+
+      await this.repository.softDelete(id);
+      await this.invalidateCache();
+      const afterData = await this.repository.findById(id);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'category.delete',
+        resourceType: 'category',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: beforeData ?? undefined,
+        afterData: afterData ?? undefined,
+      });
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'category.delete',
+        resourceType: 'category',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData: beforeData ?? undefined,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
     }
-
-    await this.repository.softDelete(id);
-    await this.invalidateCache();
   }
 
-  async restore(id: number): Promise<CategoryAdminView> {
-    const category = await this.findById(id);
+  async restore(id: number, auditContext: AuditRequestContext = {}): Promise<CategoryAdminView> {
+    const beforeSnapshot = await this.repository.findById(id);
+    try {
+      const category = await this.findById(id);
 
-    if (!category.deletedAt) {
-      throw new BadRequestException('Danh mục chưa bị xóa');
-    }
-
-    if (category.parentId !== null) {
-      const parent = await this.repository.findById(category.parentId);
-      if (parent?.deletedAt) {
-        throw new BadRequestException('Không thể khôi phục danh mục có danh mục cha đã bị xóa');
+      if (!category.deletedAt) {
+        throw new BadRequestException('Danh mục chưa bị xóa');
       }
-      if (parent && !parent.isActive) {
-        throw new BadRequestException(
-          'Không thể khôi phục danh mục có danh mục cha đang vô hiệu hóa',
-        );
-      }
-    }
 
-    const result = await this.repository.restore(id);
-    await this.invalidateCache();
-    return result;
+      if (category.parentId !== null) {
+        const parent = await this.repository.findById(category.parentId);
+        if (parent?.deletedAt) {
+          throw new BadRequestException('Không thể khôi phục danh mục có danh mục cha đã bị xóa');
+        }
+        if (parent && !parent.isActive) {
+          throw new BadRequestException(
+            'Không thể khôi phục danh mục có danh mục cha đang vô hiệu hóa',
+          );
+        }
+      }
+
+      const result = await this.repository.restore(id);
+      await this.invalidateCache();
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'category.restore',
+        resourceType: 'category',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: beforeSnapshot ?? undefined,
+        afterData: result,
+      });
+      return result;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'category.restore',
+        resourceType: 'category',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData: beforeSnapshot ?? undefined,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────

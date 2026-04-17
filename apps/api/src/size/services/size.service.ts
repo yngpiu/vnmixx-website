@@ -1,5 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { CreateSizeDto, UpdateSizeDto } from '../dto';
@@ -15,6 +17,7 @@ export class SizeService {
   constructor(
     private readonly repository: SizeRepository,
     private readonly redis: RedisService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
@@ -41,44 +44,106 @@ export class SizeService {
     return this.repository.findList(params);
   }
 
-  async create(dto: CreateSizeDto): Promise<SizeAdminView> {
+  async create(dto: CreateSizeDto, auditContext: AuditRequestContext = {}): Promise<SizeAdminView> {
     try {
       const result = await this.repository.create({
         label: dto.label,
         sortOrder: dto.sortOrder ?? 0,
       });
       await this.invalidateCache();
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'size.create',
+        resourceType: 'size',
+        resourceId: String(result.id),
+        status: AuditLogStatus.SUCCESS,
+        afterData: result,
+      });
       return result;
-    } catch (err) {
-      this.handleUniqueViolation(err);
-      throw err;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'size.create',
+        resourceType: 'size',
+        status: AuditLogStatus.FAILED,
+        afterData: dto,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      this.handleUniqueViolation(error);
+      throw error;
     }
   }
 
-  async update(id: number, dto: UpdateSizeDto): Promise<SizeAdminView> {
-    await this.findByIdOrFail(id);
+  async update(
+    id: number,
+    dto: UpdateSizeDto,
+    auditContext: AuditRequestContext = {},
+  ): Promise<SizeAdminView> {
+    let beforeData: SizeAdminView | undefined;
     try {
+      beforeData = await this.findByIdOrFail(id);
       const result = await this.repository.update(id, {
         ...(dto.label !== undefined && { label: dto.label }),
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       });
       await this.invalidateCache();
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'size.update',
+        resourceType: 'size',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData,
+        afterData: result,
+      });
       return result;
-    } catch (err) {
-      this.handleUniqueViolation(err);
-      throw err;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'size.update',
+        resourceType: 'size',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData,
+        afterData: dto,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      this.handleUniqueViolation(error);
+      throw error;
     }
   }
 
-  async remove(id: number): Promise<void> {
-    await this.findByIdOrFail(id);
+  async remove(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
+    const beforeData = await this.repository.findById(id);
+    try {
+      await this.findByIdOrFail(id);
 
-    if (await this.repository.hasVariants(id)) {
-      throw new ConflictException('Không thể xóa kích thước đang được biến thể sản phẩm sử dụng');
+      if (await this.repository.hasVariants(id)) {
+        throw new ConflictException('Không thể xóa kích thước đang được biến thể sản phẩm sử dụng');
+      }
+
+      await this.repository.delete(id);
+      await this.invalidateCache();
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'size.delete',
+        resourceType: 'size',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: beforeData ?? undefined,
+      });
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'size.delete',
+        resourceType: 'size',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData: beforeData ?? undefined,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
     }
-
-    await this.repository.delete(id);
-    await this.invalidateCache();
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────

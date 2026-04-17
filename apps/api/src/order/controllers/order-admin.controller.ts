@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -9,7 +9,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { RequireUserType } from '../../auth/decorators';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   ListAdminOrdersQueryDto,
   OrderAdminDetailResponseDto,
@@ -46,8 +49,12 @@ export class OrderAdminController {
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép xác nhận.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
   @Patch(':orderCode/confirm')
-  async confirmOrder(@Param('orderCode') orderCode: string): Promise<OrderAdminDetailResponseDto> {
-    return this.orderAdminService.confirmOrder(orderCode);
+  async confirmOrder(
+    @Param('orderCode') orderCode: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<OrderAdminDetailResponseDto> {
+    return this.orderAdminService.confirmOrder(orderCode, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Hủy đơn hàng (admin)' })
@@ -55,8 +62,12 @@ export class OrderAdminController {
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép hủy.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
   @Patch(':orderCode/cancel')
-  async cancelOrder(@Param('orderCode') orderCode: string): Promise<OrderAdminDetailResponseDto> {
-    return this.orderAdminService.cancelOrder(orderCode);
+  async cancelOrder(
+    @Param('orderCode') orderCode: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<OrderAdminDetailResponseDto> {
+    return this.orderAdminService.cancelOrder(orderCode, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xác nhận thanh toán chuyển khoản' })
@@ -66,7 +77,12 @@ export class OrderAdminController {
   @Patch(':orderCode/confirm-payment')
   async confirmPayment(
     @Param('orderCode') orderCode: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<OrderAdminDetailResponseDto> {
-    return this.orderAdminService.confirmPayment(orderCode);
+    return this.orderAdminService.confirmPayment(
+      orderCode,
+      buildAuditRequestContext(request, user),
+    );
   }
 }

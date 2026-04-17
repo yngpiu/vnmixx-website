@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -9,6 +9,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import { EmployeeProfileResponseDto, UpdateEmployeeProfileDto } from '../dto';
@@ -45,7 +47,12 @@ export class EmployeeProfileController {
   async updateProfile(
     @Body() dto: UpdateEmployeeProfileDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.profileService.updateEmployeeProfile(user.id, dto);
+    return this.profileService.updateEmployeeProfile(
+      user.id,
+      dto,
+      buildAuditRequestContext(request, user),
+    );
   }
 }

@@ -22,6 +22,8 @@ export const CACHE_KEYS = {
   // Auth and security
   TOKEN_BLACKLIST: (jti: string) => `bl:${jti}`,
   LOGOUT_ALL: (userType: string, userId: number | string) => `loa:${userType}:${userId}`,
+  /** Cached roles + permission names for an employee (invalidated on RBAC changes). */
+  EMPLOYEE_AUTHZ: (employeeId: number) => `authz:emp:${employeeId}`,
   CUSTOMER_OTP_VERIFY: (email: string) => `otp:customer:verify:${email}`,
   CUSTOMER_OTP_ATTEMPTS: (email: string) => `otp:customer:attempts:${email}`,
   CUSTOMER_OTP_RESEND: (email: string) => `otp:customer:resend:${email}`,
@@ -49,6 +51,11 @@ export const CACHE_TTL = {
   OTP: 300, // 5min
   OTP_RESEND_COOLDOWN: 60, // 1min
   RESET_TOKEN: 600, // 10min
+  /**
+   * Employee roles/permissions snapshot for JWT validation.
+   * Freshness is enforced by invalidation on RBAC/employee-role changes; TTL is only a fallback.
+   */
+  EMPLOYEE_AUTHZ: 86_400, // 24h
 } as const;
 
 // ─── Redis key prefixes (for legacy callsites) ───────────────────────────────

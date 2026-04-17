@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule, ThrottlerStorage } from '@nestjs/throt
 import { AddressModule } from './address/address.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuditLogModule } from './audit-log/audit-log.module';
 import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { CategoryModule } from './category/category.module';
@@ -47,6 +48,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     PrismaModule,
     RedisModule,
     CommonModule,
+    AuditLogModule,
     AuthModule,
     CartModule,
     ProfileModule,

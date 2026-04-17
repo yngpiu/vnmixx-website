@@ -34,14 +34,8 @@ export class EmployeeAuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponseDto> {
-    const { user, roles, permissions } = await this.employeeAuth.loginEmployee(dto);
-    const pair = await this.tokenService.issueTokenPair(
-      user,
-      'EMPLOYEE',
-      extractRequestMeta(req),
-      roles,
-      permissions,
-    );
+    const { user } = await this.employeeAuth.loginEmployee(dto);
+    const pair = await this.tokenService.issueTokenPair(user, 'EMPLOYEE', extractRequestMeta(req));
     setRefreshTokenCookie(res, pair.refreshToken);
     return authBodyFromPair(pair);
   }

@@ -6,7 +6,9 @@ export function permissionModuleLabel(permissionName: string): string {
 
 /** Tên hiển thị tiếng Việt cho tiền tố tài nguyên trong mã quyền (đồng bộ với ma trận CRUD). */
 const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
+  audit: 'Nhật ký thao tác',
   rbac: 'Phân quyền',
+  role: 'Vai trò',
   order: 'Đơn hàng',
   customer: 'Khách hàng',
   employee: 'Nhân viên',
@@ -14,6 +16,7 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   category: 'Danh mục',
   color: 'Màu sắc',
   size: 'Kích cỡ',
+  media: 'Thư viện ảnh',
 };
 
 /**

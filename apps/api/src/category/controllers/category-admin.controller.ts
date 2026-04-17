@@ -11,6 +11,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -24,7 +25,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { RequireUserType } from '../../auth/decorators';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   CategoryAdminResponseDto,
   CreateCategoryDto,
@@ -60,8 +64,12 @@ export class CategoryAdminController {
   @ApiCreatedResponse({ type: CategoryAdminResponseDto })
   @ApiConflictResponse({ description: 'Slug danh mục đã được sử dụng.' })
   @Post()
-  async create(@Body() dto: CreateCategoryDto): Promise<CategoryAdminResponseDto> {
-    return this.categoryService.create(dto);
+  async create(
+    @Body() dto: CreateCategoryDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<CategoryAdminResponseDto> {
+    return this.categoryService.create(dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Cập nhật danh mục' })
@@ -72,8 +80,10 @@ export class CategoryAdminController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCategoryDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<CategoryAdminResponseDto> {
-    return this.categoryService.update(id, dto);
+    return this.categoryService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xóa danh mục' })
@@ -84,15 +94,23 @@ export class CategoryAdminController {
   })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.categoryService.softDelete(id);
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    return this.categoryService.softDelete(id, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Khôi phục danh mục đã xóa' })
   @ApiOkResponse({ type: CategoryAdminResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @Patch(':id/restore')
-  async restore(@Param('id', ParseIntPipe) id: number): Promise<CategoryAdminResponseDto> {
-    return this.categoryService.restore(id);
+  async restore(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<CategoryAdminResponseDto> {
+    return this.categoryService.restore(id, buildAuditRequestContext(request, user));
   }
 }

@@ -12,15 +12,13 @@ interface EmployeeAuthIdentity {
 
 export interface EmployeeAuthResult {
   user: EmployeeAuthIdentity;
-  roles: string[];
-  permissions: string[];
 }
 
 @Injectable()
 export class EmployeeAuthService {
   constructor(private readonly employeeRepo: EmployeeRepository) {}
 
-  /** Authenticate an employee and return identity with roles/permissions. */
+  /** Authenticate an employee; roles/permissions resolve on each JWT-validated request. */
   async loginEmployee(dto: LoginDto): Promise<EmployeeAuthResult> {
     const employee = await this.employeeRepo.findByEmail(dto.email);
     if (!employee || employee.deletedAt) {
@@ -33,12 +31,8 @@ export class EmployeeAuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
     }
-    const { roles, permissions } = await this.employeeRepo.loadPermissions(employee.id);
-
     return {
       user: { id: employee.id, email: employee.email, fullName: employee.fullName },
-      roles,
-      permissions,
     };
   }
 }

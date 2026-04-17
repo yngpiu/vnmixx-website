@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { seedAddresses } from './seed-addresses';
+import { seedAuditLogs } from './seed-audit-logs';
 import { seedCategories } from './seed-categories';
 import { seedCustomers } from './seed-customers';
 import { seedEmployees } from './seed-employees';
@@ -28,6 +29,7 @@ async function main() {
   await seedAddresses();
   await seedWishlists();
   await seedOrders();
+  await seedAuditLogs();
 
   console.log('--- COMPREHENSIVE SEEDING COMPLETED ---');
 }

@@ -1,0 +1,54 @@
+import { Injectable } from '@nestjs/common';
+import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
+import { RedisService } from '../../redis/redis.service';
+import { EmployeeRepository } from '../repositories/employee.repository';
+
+interface EmployeeAuthzSnapshot {
+  readonly roles: string[];
+  readonly permissions: string[];
+}
+
+/**
+ * Caches employee role names and permission names for JWT validation.
+ * Call invalidate / invalidateMany when RBAC or employee roles change; TTL is a long fallback only.
+ */
+@Injectable()
+export class EmployeeAuthzCacheService {
+  private readonly ttlSeconds: number = CACHE_TTL.EMPLOYEE_AUTHZ;
+
+  constructor(
+    private readonly redis: RedisService,
+    private readonly employeeRepo: EmployeeRepository,
+  ) {}
+
+  /** Returns roles and permissions, using Redis when possible. */
+  async getRolesAndPermissions(employeeId: number): Promise<EmployeeAuthzSnapshot> {
+    const key = CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId);
+    const cached = await this.redis.getClient().get(key);
+    if (cached) {
+      return JSON.parse(cached) as EmployeeAuthzSnapshot;
+    }
+    const loaded = await this.employeeRepo.loadPermissions(employeeId);
+    const snapshot: EmployeeAuthzSnapshot = {
+      roles: loaded.roles,
+      permissions: loaded.permissions,
+    };
+    await this.redis.getClient().setex(key, this.ttlSeconds, JSON.stringify(snapshot));
+    return snapshot;
+  }
+
+  /** Drop cached authz for one employee. */
+  async invalidate(employeeId: number): Promise<void> {
+    await this.redis.getClient().del(CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId));
+  }
+
+  /** Drop cached authz for many employees (e.g. after role permission sync). */
+  async invalidateMany(employeeIds: readonly number[]): Promise<void> {
+    const uniqueIds = [...new Set(employeeIds)];
+    if (!uniqueIds.length) {
+      return;
+    }
+    const keys = uniqueIds.map((id) => CACHE_KEYS.EMPLOYEE_AUTHZ(id));
+    await this.redis.getClient().del(...keys);
+  }
+}

@@ -4,7 +4,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import type { Column, Table } from '@tanstack/react-table';
 import { XIcon } from 'lucide-react';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { DataTableFacetedFilter } from './faceted-filter';
 import { DataTableViewOptions } from './view-options';
@@ -30,6 +30,8 @@ type DataTableToolbarProps<TData> = {
       icon?: ComponentType<{ className?: string }>;
     }[];
   }[];
+  /** Bộ lọc tùy biến (vd. infinite select) — hiển thị cùng hàng với các faceted filter. */
+  filterExtras?: ReactNode;
 };
 
 function DataTableToolbarDebouncedSearch<TData>({
@@ -121,6 +123,7 @@ export function DataTableToolbar<TData>({
   searchDebounceMs = 0,
   globalFilterDebounceMs = 0,
   filters = [],
+  filterExtras,
 }: DataTableToolbarProps<TData>) {
   const isFiltered =
     table.getState().columnFilters.length > 0 || Boolean(table.getState().globalFilter);
@@ -162,6 +165,7 @@ export function DataTableToolbar<TData>({
           />
         )}
         <div className="flex flex-wrap gap-2">
+          {filterExtras ?? null}
           {filters.map((filter) => {
             const column = table.getColumn(filter.columnId);
             if (!column) {

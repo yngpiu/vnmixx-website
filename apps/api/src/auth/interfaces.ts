@@ -1,15 +1,9 @@
-/** JWT payload embedded in the mã truy cập. */
+/** JWT payload embedded in the mã truy cập (minimal claims; employee authz loaded per request). */
 export interface JwtPayload {
   /** User ID (maps to customer.id or employee.id) */
   sub: number;
-  /** User email address */
-  email: string;
   /** Discriminator: which table the user belongs to */
   userType: 'CUSTOMER' | 'EMPLOYEE';
-  /** Employee role names (empty for customers) */
-  roles?: string[];
-  /** Employee permission names (empty for customers) */
-  permissions?: string[];
   /** JWT issued-at (added by @nestjs/jwt) */
   iat?: number;
   /** JWT expiration (added by @nestjs/jwt) */

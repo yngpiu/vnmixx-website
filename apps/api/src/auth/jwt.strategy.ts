@@ -8,6 +8,7 @@ import { BLACKLIST_PREFIX, LOGOUT_ALL_PREFIX } from './constants';
 import type { AuthenticatedUser, JwtPayload } from './interfaces';
 import { CustomerRepository } from './repositories/customer.repository';
 import { EmployeeRepository } from './repositories/employee.repository';
+import { EmployeeAuthzCacheService } from './services/employee-authz-cache.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -15,6 +16,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     configService: ConfigService,
     private readonly customerRepo: CustomerRepository,
     private readonly employeeRepo: EmployeeRepository,
+    private readonly employeeAuthzCache: EmployeeAuthzCacheService,
     private readonly redis: RedisService,
   ) {
     super({
@@ -87,14 +89,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!employee || employee.status !== EmployeeStatus.ACTIVE || employee.deletedAt) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
     }
+    const { roles, permissions } = await this.employeeAuthzCache.getRolesAndPermissions(
+      employee.id,
+    );
     return {
       id: employee.id,
       email: employee.email,
       fullName: employee.fullName,
       avatarUrl: employee.avatarUrl,
       userType: 'EMPLOYEE',
-      roles: payload.roles ?? [],
-      permissions: payload.permissions ?? [],
+      roles,
+      permissions,
       jti: payload.jti!,
       exp: payload.exp!,
       iat: payload.iat!,

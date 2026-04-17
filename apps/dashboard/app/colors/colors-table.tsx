@@ -4,7 +4,7 @@ import { createColorsColumns } from '@/app/colors/colors-columns';
 import { EditColorDialog } from '@/components/colors/edit-color-dialog';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { useColorsListUrlState } from '@/hooks/use-colors-list-url-state';
+import { useColorsListTableState } from '@/hooks/use-colors-list-table-state';
 import { deleteColor, listColors } from '@/lib/api/colors';
 import { toListColorsParams } from '@/lib/colors-list-params';
 import type { ColorAdmin } from '@/lib/types/color';
@@ -64,7 +64,7 @@ export function ColorsTable() {
     sorting,
     onSortingChange,
     ensurePageInRange,
-  } = useColorsListUrlState();
+  } = useColorsListTableState();
 
   const [editId, setEditId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ColorAdmin | null>(null);

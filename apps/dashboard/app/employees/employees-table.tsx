@@ -9,8 +9,8 @@ import {
   EditEmployeeDialog,
   type EmployeeDialogMode,
 } from '@/components/employees/edit-employee-dialog';
-import { EmployeeDetailDialog } from '@/components/employees/employee-detail-dialog';
-import { useEmployeesListUrlState } from '@/hooks/use-employees-list-url-state';
+import { useEmployeesListTableState } from '@/hooks/use-employees-list-table-state';
+import { adminModuleDetailPath } from '@/lib/admin-modules';
 import { listEmployees } from '@/lib/api/employees';
 import { toListEmployeesParams } from '@/lib/employees-list-params';
 import type { EmployeeListItem } from '@/lib/types/employee';
@@ -34,6 +34,7 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import { AlertCircleIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
@@ -47,6 +48,7 @@ function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): DataTabl
 const columns = employeesColumns;
 
 export function EmployeesTable() {
+  const router = useRouter();
   const {
     pagination,
     onPaginationChange,
@@ -55,7 +57,7 @@ export function EmployeesTable() {
     sorting,
     onSortingChange,
     ensurePageInRange,
-  } = useEmployeesListUrlState();
+  } = useEmployeesListTableState();
 
   const listParams = useMemo(
     () => toListEmployeesParams(pagination, columnFilters, sorting),
@@ -74,11 +76,12 @@ export function EmployeesTable() {
     id: number;
     mode: EmployeeDialogMode;
   } | null>(null);
-  const [detailEmployeeId, setDetailEmployeeId] = useState<number | null>(null);
-
-  const openEmployeeDetail = useCallback((employee: EmployeeListItem) => {
-    setDetailEmployeeId(employee.id);
-  }, []);
+  const openEmployeeDetail = useCallback(
+    (employee: EmployeeListItem) => {
+      router.push(adminModuleDetailPath('employees', employee.id));
+    },
+    [router],
+  );
 
   const openEditRoles = useCallback((employee: EmployeeListItem) => {
     setEmployeeDialog({ id: employee.id, mode: 'roles' });
@@ -250,13 +253,6 @@ export function EmployeesTable() {
         <DataTablePagination table={table} className="mt-auto" />
         <EmployeesBulkActions table={table} />
       </div>
-      <EmployeeDetailDialog
-        employeeId={detailEmployeeId}
-        open={detailEmployeeId !== null}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) setDetailEmployeeId(null);
-        }}
-      />
       <EditEmployeeDialog
         employeeId={employeeDialog?.id ?? null}
         mode={employeeDialog?.mode ?? null}

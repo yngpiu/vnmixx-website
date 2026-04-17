@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditLogModule } from '../audit-log/audit-log.module';
 import { AuthModule } from '../auth/auth.module';
 import { PermissionController } from './controllers/permission.controller';
 import { RoleController } from './controllers/role.controller';
@@ -11,7 +12,7 @@ import { RoleService } from './services/role.service';
 
 // Module quản lý phân quyền dựa trên vai trò (Role-Based Access Control)
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AuditLogModule],
   exports: [EmployeeRoleService],
   controllers: [RoleController, PermissionController],
   providers: [

@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -24,7 +25,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { RequireUserType } from '../../auth/decorators';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   CreateEmployeeDto,
   EmployeeDetailResponseDto,
@@ -78,8 +82,12 @@ export class EmployeeAdminController {
   })
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được sử dụng.' })
   @Post()
-  create(@Body() dto: CreateEmployeeDto) {
-    return this.employeeService.create(dto);
+  create(
+    @Body() dto: CreateEmployeeDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.employeeService.create(dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({
@@ -93,8 +101,13 @@ export class EmployeeAdminController {
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Patch(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEmployeeDto) {
-    return this.employeeService.update(id, dto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateEmployeeDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.employeeService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xóa mềm nhân viên' })
@@ -102,15 +115,23 @@ export class EmployeeAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.employeeService.softDelete(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    return this.employeeService.softDelete(id, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Khôi phục nhân viên đã xóa mềm' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên hoặc nhân viên chưa bị xóa.' })
   @Patch(':id/restore')
-  restore(@Param('id', ParseIntPipe) id: number) {
-    return this.employeeService.restore(id);
+  restore(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.employeeService.restore(id, buildAuditRequestContext(request, user));
   }
 }

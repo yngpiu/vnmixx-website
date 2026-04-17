@@ -3,7 +3,7 @@
 import { createProductColumns } from '@/app/products/products-columns';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { useProductsListUrlState } from '@/hooks/use-products-list-url-state';
+import { useProductsListTableState } from '@/hooks/use-products-list-table-state';
 import { adminModuleEditPath } from '@/lib/admin-modules';
 import { listCategories } from '@/lib/api/categories';
 import { deleteProduct, listProducts, restoreProduct, updateProduct } from '@/lib/api/products';
@@ -73,7 +73,7 @@ export function ProductsTable() {
     sorting,
     onSortingChange,
     ensurePageInRange,
-  } = useProductsListUrlState();
+  } = useProductsListTableState();
 
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [deleteTarget, setDeleteTarget] = useState<ProductAdminListItem | null>(null);

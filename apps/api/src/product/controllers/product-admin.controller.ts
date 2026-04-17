@@ -11,6 +11,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -25,7 +26,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { RequireUserType } from '../../auth/decorators';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   CreateImageDto,
   CreateProductDto,
@@ -74,8 +78,12 @@ export class ProductAdminController {
   @ApiBadRequestResponse({ description: 'Xác thực dữ liệu yêu cầu thất bại.' })
   @ApiConflictResponse({ description: 'Slug hoặc SKU sản phẩm đã được sử dụng.' })
   @Post()
-  create(@Body() dto: CreateProductDto) {
-    return this.productService.create(dto);
+  create(
+    @Body() dto: CreateProductDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.productService.create(dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Cập nhật thông tin cơ bản sản phẩm' })
@@ -83,8 +91,13 @@ export class ProductAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @ApiConflictResponse({ description: 'Slug sản phẩm đã được sử dụng.' })
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateProductDto) {
-    return this.productService.update(id, dto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateProductDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.productService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xóa mềm sản phẩm và các biến thể' })
@@ -92,16 +105,24 @@ export class ProductAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.productService.softDelete(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    return this.productService.softDelete(id, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Khôi phục sản phẩm đã xóa mềm' })
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Patch(':id/restore')
-  restore(@Param('id', ParseIntPipe) id: number) {
-    return this.productService.restore(id);
+  restore(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.productService.restore(id, buildAuditRequestContext(request, user));
   }
 
   // ─── Variants ──────────────────────────────────────────────────────────────
@@ -111,8 +132,13 @@ export class ProductAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @ApiConflictResponse({ description: 'SKU biến thể hoặc tổ hợp màu-kích thước đã được sử dụng.' })
   @Post(':id/variants')
-  createVariant(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateVariantDto) {
-    return this.productService.createVariant(id, dto);
+  createVariant(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateVariantDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.productService.createVariant(id, dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Cập nhật biến thể (giá, tồn kho, trạng thái)' })
@@ -123,8 +149,15 @@ export class ProductAdminController {
     @Param('id', ParseIntPipe) id: number,
     @Param('variantId', ParseIntPipe) variantId: number,
     @Body() dto: UpdateVariantDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.productService.updateVariant(id, variantId, dto);
+    return this.productService.updateVariant(
+      id,
+      variantId,
+      dto,
+      buildAuditRequestContext(request, user),
+    );
   }
 
   @ApiOperation({ summary: 'Xóa mềm biến thể' })
@@ -135,8 +168,14 @@ export class ProductAdminController {
   removeVariant(
     @Param('id', ParseIntPipe) id: number,
     @Param('variantId', ParseIntPipe) variantId: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<void> {
-    return this.productService.softDeleteVariant(id, variantId);
+    return this.productService.softDeleteVariant(
+      id,
+      variantId,
+      buildAuditRequestContext(request, user),
+    );
   }
 
   // ─── Images ────────────────────────────────────────────────────────────────
@@ -145,8 +184,13 @@ export class ProductAdminController {
   @ApiCreatedResponse({ description: 'Thêm hình ảnh sản phẩm thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Post(':id/images')
-  createImage(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateImageDto) {
-    return this.productService.createImage(id, dto);
+  createImage(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateImageDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ) {
+    return this.productService.createImage(id, dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Cập nhật hình ảnh' })
@@ -157,8 +201,15 @@ export class ProductAdminController {
     @Param('id', ParseIntPipe) id: number,
     @Param('imageId', ParseIntPipe) imageId: number,
     @Body() dto: UpdateImageDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.productService.updateImage(id, imageId, dto);
+    return this.productService.updateImage(
+      id,
+      imageId,
+      dto,
+      buildAuditRequestContext(request, user),
+    );
   }
 
   @ApiOperation({ summary: 'Xóa hình ảnh' })
@@ -169,7 +220,9 @@ export class ProductAdminController {
   removeImage(
     @Param('id', ParseIntPipe) id: number,
     @Param('imageId', ParseIntPipe) imageId: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<void> {
-    return this.productService.deleteImage(id, imageId);
+    return this.productService.deleteImage(id, imageId, buildAuditRequestContext(request, user));
   }
 }

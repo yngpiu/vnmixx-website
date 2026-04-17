@@ -16,6 +16,7 @@ function crud(
 
 /** Quyền theo domain — mỗi tài nguyên: create, read, update, delete. */
 const PERMISSIONS: { name: string; description: string }[] = [
+  { name: 'audit.read', description: 'Audit log: xem lịch sử thao tác quản trị' },
   ...crud('rbac', {
     create: 'RBAC: tạo vai trò',
     read: 'RBAC: xem vai trò, quyền, gán vai trò nhân viên',
@@ -113,7 +114,8 @@ const ROLES: RoleSeed[] = [
     description:
       'Tạo tài khoản nhân viên, gán vai trò và quyền; phù hợp người phụ trách hệ thống hoặc HR không cần thao tác đơn/hàng.',
     permissionNames: PERMISSIONS.filter(
-      (p) => p.name.startsWith('rbac.') || p.name.startsWith('employee.'),
+      (p) =>
+        p.name.startsWith('rbac.') || p.name.startsWith('employee.') || p.name === 'audit.read',
     ).map((p) => p.name),
   },
 ];

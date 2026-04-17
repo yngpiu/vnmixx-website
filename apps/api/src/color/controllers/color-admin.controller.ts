@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -23,7 +24,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { RequireUserType } from '../../auth/decorators';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   ColorAdminResponseDto,
   ColorListResponseDto,
@@ -62,8 +66,12 @@ export class ColorAdminController {
   @ApiCreatedResponse({ type: ColorAdminResponseDto })
   @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
   @Post()
-  create(@Body() dto: CreateColorDto): Promise<ColorAdminResponseDto> {
-    return this.colorService.create(dto);
+  create(
+    @Body() dto: CreateColorDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<ColorAdminResponseDto> {
+    return this.colorService.create(dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Cập nhật màu' })
@@ -74,8 +82,10 @@ export class ColorAdminController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateColorDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<ColorAdminResponseDto> {
-    return this.colorService.update(id, dto);
+    return this.colorService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Xóa màu' })
@@ -84,7 +94,11 @@ export class ColorAdminController {
   @ApiConflictResponse({ description: 'Không thể xóa màu vì đang được sử dụng.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.colorService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    return this.colorService.remove(id, buildAuditRequestContext(request, user));
   }
 }

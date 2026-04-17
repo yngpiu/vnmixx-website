@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { adminModuleNewPath, adminModulePath } from '@/lib/admin-modules';
 import { dashboardRoutes } from '@/lib/routes';
 import {
+  FileClockIcon,
   FolderTreeIcon,
   ImageIcon,
   LayoutDashboardIcon,
@@ -124,6 +125,11 @@ export const sidebarSections: SidebarSection[] = [
         title: 'Vai trò',
         url: adminModulePath('roles'),
         icon: <ShieldIcon />,
+      },
+      {
+        title: 'Audit log',
+        url: '/audit-logs',
+        icon: <FileClockIcon />,
       },
     ],
   },

@@ -35,7 +35,6 @@ import {
   UploadIcon,
   XIcon,
 } from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { CreateFolderDialog } from './create-folder-dialog';
@@ -63,26 +62,8 @@ const SORT_LABELS: Record<SortBy, string> = {
 };
 
 export function MediaLibrary() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-
-  // currentFolder is derived from URL ?folder= param
-  const currentFolder = searchParams.get('folder') ?? '';
-
-  const setCurrentFolder = useCallback(
-    (folder: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (folder) {
-        params.set('folder', folder);
-      } else {
-        params.delete('folder');
-      }
-      router.push(`${pathname}?${params.toString()}`);
-    },
-    [router, pathname, searchParams],
-  );
+  const [currentFolder, setCurrentFolder] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [mimeFilter, setMimeFilter] = useState<MimeFilter>('all');

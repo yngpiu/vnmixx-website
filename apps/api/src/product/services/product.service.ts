@@ -5,7 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { CACHE_KEYS, CACHE_PATTERNS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import {
@@ -31,6 +33,7 @@ export class ProductService {
   constructor(
     private readonly repository: ProductRepository,
     private readonly redis: RedisService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
@@ -109,32 +112,32 @@ export class ProductService {
     return this.transformAdminDetail(product);
   }
 
-  async create(dto: CreateProductDto) {
-    const categoryIds = this.resolveProductCategoryIdsInput(dto.categoryIds, dto.categoryId);
-    if (categoryIds.length > 0) {
-      await this.assertCategoriesExistAndLeaf(categoryIds);
-    }
-
-    const colorIds = dto.variants.map((v) => v.colorId);
-    const sizeIds = dto.variants.map((v) => v.sizeId);
-
-    const [colorsValid, sizesValid] = await Promise.all([
-      this.repository.colorsExist(colorIds),
-      this.repository.sizesExist(sizeIds),
-    ]);
-    if (!colorsValid) throw new BadRequestException('Một hoặc nhiều ID màu sắc không hợp lệ');
-    if (!sizesValid) throw new BadRequestException('Một hoặc nhiều ID kích thước không hợp lệ');
-
-    this.validateVariantCombos(dto.variants);
-    this.validateSkuUniqueness(dto.variants);
-
-    for (const v of dto.variants) {
-      if (await this.repository.skuExists(v.sku)) {
-        throw new ConflictException(`SKU "${v.sku}" đã tồn tại`);
-      }
-    }
-
+  async create(dto: CreateProductDto, auditContext: AuditRequestContext = {}) {
     try {
+      const categoryIds = this.resolveProductCategoryIdsInput(dto.categoryIds, dto.categoryId);
+      if (categoryIds.length > 0) {
+        await this.assertCategoriesExistAndLeaf(categoryIds);
+      }
+
+      const colorIds = dto.variants.map((v) => v.colorId);
+      const sizeIds = dto.variants.map((v) => v.sizeId);
+
+      const [colorsValid, sizesValid] = await Promise.all([
+        this.repository.colorsExist(colorIds),
+        this.repository.sizesExist(sizeIds),
+      ]);
+      if (!colorsValid) throw new BadRequestException('Một hoặc nhiều ID màu sắc không hợp lệ');
+      if (!sizesValid) throw new BadRequestException('Một hoặc nhiều ID kích thước không hợp lệ');
+
+      this.validateVariantCombos(dto.variants);
+      this.validateSkuUniqueness(dto.variants);
+
+      for (const v of dto.variants) {
+        if (await this.repository.skuExists(v.sku)) {
+          throw new ConflictException(`SKU "${v.sku}" đã tồn tại`);
+        }
+      }
+
       const autoThumbnail = this.resolveCreateThumbnail({
         requestedThumbnail: dto.thumbnail,
         variants: dto.variants,
@@ -152,30 +155,54 @@ export class ProductService {
         images: dto.images ?? [],
       });
       await this.invalidateProductCache(dto.slug);
-      return this.transformAdminDetail(product);
-    } catch (err) {
-      this.handleUniqueViolation(err);
-      throw err;
+      const afterData = this.transformAdminDetail(product);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.create',
+        resourceType: 'product',
+        resourceId: String(afterData.id),
+        status: AuditLogStatus.SUCCESS,
+        afterData,
+      });
+      return afterData;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.create',
+        resourceType: 'product',
+        status: AuditLogStatus.FAILED,
+        afterData: {
+          name: dto.name,
+          slug: dto.slug,
+          variantCount: dto.variants?.length ?? 0,
+          imageCount: dto.images?.length ?? 0,
+        },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      this.handleUniqueViolation(error);
+      throw error;
     }
   }
 
-  async update(id: number, dto: UpdateProductDto) {
-    const existing = await this.findAdminByIdOrFail(id);
-
-    let categoryIdsToSync: number[] | undefined;
-    if (dto.categoryIds !== undefined) {
-      categoryIdsToSync = this.dedupePositiveIds(dto.categoryIds);
-    } else if (dto.categoryId !== undefined) {
-      categoryIdsToSync = dto.categoryId ? [dto.categoryId] : [];
-    }
-    if (categoryIdsToSync !== undefined) {
-      if (categoryIdsToSync.length > 0) {
-        await this.assertCategoriesExistAndLeaf(categoryIdsToSync);
-      }
-      await this.repository.syncProductCategories(id, categoryIdsToSync);
-    }
-
+  async update(id: number, dto: UpdateProductDto, auditContext: AuditRequestContext = {}) {
+    let beforeData: ProductAdminDetailView | undefined;
     try {
+      const existing = await this.findAdminByIdOrFail(id);
+      beforeData = existing;
+
+      let categoryIdsToSync: number[] | undefined;
+      if (dto.categoryIds !== undefined) {
+        categoryIdsToSync = this.dedupePositiveIds(dto.categoryIds);
+      } else if (dto.categoryId !== undefined) {
+        categoryIdsToSync = dto.categoryId ? [dto.categoryId] : [];
+      }
+      if (categoryIdsToSync !== undefined) {
+        if (categoryIdsToSync.length > 0) {
+          await this.assertCategoriesExistAndLeaf(categoryIdsToSync);
+        }
+        await this.repository.syncProductCategories(id, categoryIdsToSync);
+      }
+
       const product = await this.repository.updateBasicInfo(id, {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.slug !== undefined && { slug: dto.slug }),
@@ -187,138 +214,365 @@ export class ProductService {
       if (dto.slug && dto.slug !== existing.slug) {
         await this.redis.del(CACHE_KEYS.PRODUCT_SLUG(dto.slug));
       }
-      return this.transformAdminDetail(product);
-    } catch (err) {
-      this.handleUniqueViolation(err);
-      throw err;
+      const afterData = this.transformAdminDetail(product);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.update',
+        resourceType: 'product',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData,
+        afterData,
+      });
+      return afterData;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.update',
+        resourceType: 'product',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData,
+        afterData: dto,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      this.handleUniqueViolation(error);
+      throw error;
     }
   }
 
-  async softDelete(id: number): Promise<void> {
-    const product = await this.findAdminByIdOrFail(id);
-    await this.repository.softDelete(id);
-    await this.invalidateProductCache(product.slug);
+  async softDelete(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
+    const beforeData = await this.findAdminByIdOrFail(id);
+    try {
+      await this.repository.softDelete(id);
+      await this.invalidateProductCache(beforeData.slug);
+      const afterRow = await this.repository.findAdminById(id);
+      const afterData = afterRow ? this.transformAdminDetail(afterRow) : undefined;
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.delete',
+        resourceType: 'product',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData,
+        afterData,
+      });
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.delete',
+        resourceType: 'product',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
-  async restore(id: number) {
-    const product = await this.findAdminByIdOrFail(id);
-    if (!product.deletedAt) throw new BadRequestException('Sản phẩm chưa bị xóa');
+  async restore(id: number, auditContext: AuditRequestContext = {}) {
+    const beforeData = await this.findAdminByIdOrFail(id);
+    try {
+      if (!beforeData.deletedAt) throw new BadRequestException('Sản phẩm chưa bị xóa');
 
-    const restored = await this.repository.restore(id);
-    await this.invalidateProductCache(product.slug);
-    return this.transformAdminDetail(restored);
+      const restored = await this.repository.restore(id);
+      await this.invalidateProductCache(beforeData.slug);
+      const afterData = this.transformAdminDetail(restored);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.restore',
+        resourceType: 'product',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData,
+        afterData,
+      });
+      return afterData;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.restore',
+        resourceType: 'product',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
   // ─── Variants ──────────────────────────────────────────────────────────────
 
-  async createVariant(productId: number, dto: CreateVariantDto) {
-    const product = await this.findAdminByIdOrFail(productId);
-
-    const [colorsValid, sizesValid] = await Promise.all([
-      this.repository.colorsExist([dto.colorId]),
-      this.repository.sizesExist([dto.sizeId]),
-    ]);
-    if (!colorsValid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
-    if (!sizesValid) throw new BadRequestException(`Không tìm thấy kích thước #${dto.sizeId}`);
-
-    if (await this.repository.skuExists(dto.sku)) {
-      throw new ConflictException(`SKU "${dto.sku}" đã tồn tại`);
-    }
-
+  async createVariant(
+    productId: number,
+    dto: CreateVariantDto,
+    auditContext: AuditRequestContext = {},
+  ) {
     try {
+      const product = await this.findAdminByIdOrFail(productId);
+
+      const [colorsValid, sizesValid] = await Promise.all([
+        this.repository.colorsExist([dto.colorId]),
+        this.repository.sizesExist([dto.sizeId]),
+      ]);
+      if (!colorsValid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
+      if (!sizesValid) throw new BadRequestException(`Không tìm thấy kích thước #${dto.sizeId}`);
+
+      if (await this.repository.skuExists(dto.sku)) {
+        throw new ConflictException(`SKU "${dto.sku}" đã tồn tại`);
+      }
+
       const result = await this.repository.createVariant(productId, dto);
       await this.invalidateProductCache(product.slug);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.variant.create',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.SUCCESS,
+        afterData: { productId, variant: result },
+      });
       return result;
-    } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.variant.create',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.FAILED,
+        afterData: { productId, sku: dto.sku, colorId: dto.colorId, sizeId: dto.sizeId },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException(
           'Biến thể với tổ hợp màu + kích thước này đã tồn tại cho sản phẩm',
         );
       }
-      throw err;
+      throw error;
     }
   }
 
-  async updateVariant(productId: number, variantId: number, dto: UpdateVariantDto) {
-    const product = await this.findAdminByIdOrFail(productId);
-    const variant = await this.repository.findVariantById(variantId);
-    if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
-    if (variant.productId !== productId) {
-      throw new BadRequestException(
-        `Variant #${variantId} does not belong to product #${productId}`,
-      );
-    }
+  async updateVariant(
+    productId: number,
+    variantId: number,
+    dto: UpdateVariantDto,
+    auditContext: AuditRequestContext = {},
+  ) {
+    let beforeData: Awaited<ReturnType<ProductRepository['findVariantById']>> | undefined;
+    try {
+      const product = await this.findAdminByIdOrFail(productId);
+      const variant = await this.repository.findVariantById(variantId);
+      if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
+      if (variant.productId !== productId) {
+        throw new BadRequestException(
+          `Variant #${variantId} does not belong to product #${productId}`,
+        );
+      }
 
-    const result = await this.repository.updateVariant(variantId, {
-      ...(dto.price !== undefined && { price: dto.price }),
-      ...(dto.onHand !== undefined && { onHand: dto.onHand }),
-      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
-    });
-    await this.invalidateProductCache(product.slug);
-    return result;
+      beforeData = variant;
+      const result = await this.repository.updateVariant(variantId, {
+        ...(dto.price !== undefined && { price: dto.price }),
+        ...(dto.onHand !== undefined && { onHand: dto.onHand }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+      });
+      await this.invalidateProductCache(product.slug);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.variant.update',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: { productId, variantId, variant: beforeData },
+        afterData: { productId, variantId, variant: result },
+      });
+      return result;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.variant.update',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.FAILED,
+        beforeData:
+          beforeData !== undefined ? { productId, variantId, variant: beforeData } : undefined,
+        afterData: dto,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
-  async softDeleteVariant(productId: number, variantId: number): Promise<void> {
-    const product = await this.findAdminByIdOrFail(productId);
-    const variant = await this.repository.findVariantById(variantId);
-    if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
-    if (variant.productId !== productId) {
-      throw new BadRequestException(
-        `Variant #${variantId} does not belong to product #${productId}`,
-      );
-    }
+  async softDeleteVariant(
+    productId: number,
+    variantId: number,
+    auditContext: AuditRequestContext = {},
+  ): Promise<void> {
+    let variant: Awaited<ReturnType<ProductRepository['findVariantById']>> | undefined;
+    try {
+      const product = await this.findAdminByIdOrFail(productId);
+      variant = await this.repository.findVariantById(variantId);
+      if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
+      if (variant.productId !== productId) {
+        throw new BadRequestException(
+          `Variant #${variantId} does not belong to product #${productId}`,
+        );
+      }
 
-    await this.repository.softDeleteVariant(variantId);
-    await this.invalidateProductCache(product.slug);
+      await this.repository.softDeleteVariant(variantId);
+      await this.invalidateProductCache(product.slug);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.variant.delete',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: { productId, variantId, variant },
+      });
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.variant.delete',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.FAILED,
+        beforeData: variant !== undefined ? { productId, variantId, variant } : undefined,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
   // ─── Images ────────────────────────────────────────────────────────────────
 
-  async createImage(productId: number, dto: CreateImageDto) {
-    const product = await this.findAdminByIdOrFail(productId);
+  async createImage(
+    productId: number,
+    dto: CreateImageDto,
+    auditContext: AuditRequestContext = {},
+  ) {
+    try {
+      const product = await this.findAdminByIdOrFail(productId);
 
-    if (dto.colorId) {
-      const valid = await this.repository.colorsExist([dto.colorId]);
-      if (!valid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
+      if (dto.colorId) {
+        const valid = await this.repository.colorsExist([dto.colorId]);
+        if (!valid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
+      }
+
+      const result = await this.repository.createImage(productId, dto);
+      await this.invalidateProductCache(product.slug);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.image.create',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.SUCCESS,
+        afterData: { productId, image: result },
+      });
+      return result;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.image.create',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.FAILED,
+        afterData: { productId, url: dto.url, colorId: dto.colorId, sortOrder: dto.sortOrder },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
     }
-
-    const result = await this.repository.createImage(productId, dto);
-    await this.invalidateProductCache(product.slug);
-    return result;
   }
 
-  async updateImage(productId: number, imageId: number, dto: UpdateImageDto) {
-    const product = await this.findAdminByIdOrFail(productId);
-    const image = await this.repository.findImageById(imageId);
-    if (!image) throw new NotFoundException(`Không tìm thấy hình ảnh #${imageId}`);
-    if (image.productId !== productId) {
-      throw new BadRequestException(`Hình ảnh #${imageId} không thuộc về sản phẩm #${productId}`);
-    }
+  async updateImage(
+    productId: number,
+    imageId: number,
+    dto: UpdateImageDto,
+    auditContext: AuditRequestContext = {},
+  ) {
+    let beforeData: Awaited<ReturnType<ProductRepository['findImageById']>> | undefined;
+    try {
+      const product = await this.findAdminByIdOrFail(productId);
+      const image = await this.repository.findImageById(imageId);
+      if (!image) throw new NotFoundException(`Không tìm thấy hình ảnh #${imageId}`);
+      if (image.productId !== productId) {
+        throw new BadRequestException(`Hình ảnh #${imageId} không thuộc về sản phẩm #${productId}`);
+      }
 
-    if (dto.colorId) {
-      const valid = await this.repository.colorsExist([dto.colorId]);
-      if (!valid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
-    }
+      if (dto.colorId) {
+        const valid = await this.repository.colorsExist([dto.colorId]);
+        if (!valid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
+      }
 
-    const result = await this.repository.updateImage(imageId, {
-      ...(dto.colorId !== undefined && { colorId: dto.colorId }),
-      ...(dto.altText !== undefined && { altText: dto.altText }),
-      ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
-    });
-    await this.invalidateProductCache(product.slug);
-    return result;
+      beforeData = image;
+      const result = await this.repository.updateImage(imageId, {
+        ...(dto.colorId !== undefined && { colorId: dto.colorId }),
+        ...(dto.altText !== undefined && { altText: dto.altText }),
+        ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+      });
+      await this.invalidateProductCache(product.slug);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.image.update',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: { productId, imageId, image: beforeData },
+        afterData: { productId, imageId, image: result },
+      });
+      return result;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.image.update',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.FAILED,
+        beforeData:
+          beforeData !== undefined ? { productId, imageId, image: beforeData } : undefined,
+        afterData: dto,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
-  async deleteImage(productId: number, imageId: number): Promise<void> {
-    const product = await this.findAdminByIdOrFail(productId);
-    const image = await this.repository.findImageById(imageId);
-    if (!image) throw new NotFoundException(`Không tìm thấy hình ảnh #${imageId}`);
-    if (image.productId !== productId) {
-      throw new BadRequestException(`Hình ảnh #${imageId} không thuộc về sản phẩm #${productId}`);
-    }
+  async deleteImage(
+    productId: number,
+    imageId: number,
+    auditContext: AuditRequestContext = {},
+  ): Promise<void> {
+    let image: Awaited<ReturnType<ProductRepository['findImageById']>> | undefined;
+    try {
+      const product = await this.findAdminByIdOrFail(productId);
+      image = await this.repository.findImageById(imageId);
+      if (!image) throw new NotFoundException(`Không tìm thấy hình ảnh #${imageId}`);
+      if (image.productId !== productId) {
+        throw new BadRequestException(`Hình ảnh #${imageId} không thuộc về sản phẩm #${productId}`);
+      }
 
-    await this.repository.deleteImage(imageId);
-    await this.invalidateProductCache(product.slug);
+      await this.repository.deleteImage(imageId);
+      await this.invalidateProductCache(product.slug);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.image.delete',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: { productId, imageId, image },
+      });
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'product.image.delete',
+        resourceType: 'product',
+        resourceId: String(productId),
+        status: AuditLogStatus.FAILED,
+        beforeData: image !== undefined ? { productId, imageId, image } : undefined,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────

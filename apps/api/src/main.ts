@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
 
 const DEFAULT_DEV_CORS_ORIGINS = [
@@ -17,11 +18,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = Number(process.env.PORT) || 4000;
   app.use((req: Request, res: Response, next: NextFunction) => {
+    const requestWithId = req as Request & { requestId?: string };
+    requestWithId.requestId = randomUUID();
+    res.setHeader('x-request-id', requestWithId.requestId);
     const startedAt = Date.now();
     res.on('finish', () => {
       const durationInMilliseconds = Date.now() - startedAt;
       logger.log(
-        `${req.method} ${req.originalUrl} ${res.statusCode} - ${durationInMilliseconds}ms`,
+        `${req.method} ${req.originalUrl} ${res.statusCode} [${requestWithId.requestId}] - ${durationInMilliseconds}ms`,
       );
     });
     next();

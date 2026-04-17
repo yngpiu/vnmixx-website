@@ -14,6 +14,7 @@ import { EmployeeRepository } from './repositories/employee.repository';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 import { CustomerAuthService } from './services/customer-auth.service';
 import { EmployeeAuthService } from './services/employee-auth.service';
+import { EmployeeAuthzCacheService } from './services/employee-authz-cache.service';
 import { TokenService } from './services/token.service';
 
 @Module({
@@ -30,6 +31,7 @@ import { TokenService } from './services/token.service';
   controllers: [AuthController, CustomerAuthController, EmployeeAuthController],
   providers: [
     TokenService,
+    EmployeeAuthzCacheService,
     CustomerAuthService,
     EmployeeAuthService,
     CustomerRepository,
@@ -39,6 +41,6 @@ import { TokenService } from './services/token.service';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: AuthorizationGuard },
   ],
-  exports: [TokenService, JwtModule, RefreshTokenRepository],
+  exports: [TokenService, JwtModule, RefreshTokenRepository, EmployeeAuthzCacheService],
 })
 export class AuthModule {}

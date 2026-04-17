@@ -4,7 +4,7 @@ import { createSizesColumns } from '@/app/sizes/sizes-columns';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { EditSizeDialog } from '@/components/sizes/edit-size-dialog';
-import { useSizesListUrlState } from '@/hooks/use-sizes-list-url-state';
+import { useSizesListTableState } from '@/hooks/use-sizes-list-table-state';
 import { deleteSize, listSizes } from '@/lib/api/sizes';
 import { toListSizesParams } from '@/lib/sizes-list-params';
 import type { SizeAdmin } from '@/lib/types/size';
@@ -64,7 +64,7 @@ export function SizesTable() {
     sorting,
     onSortingChange,
     ensurePageInRange,
-  } = useSizesListUrlState();
+  } = useSizesListTableState();
 
   const [editId, setEditId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SizeAdmin | null>(null);

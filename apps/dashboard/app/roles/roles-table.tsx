@@ -5,7 +5,7 @@ import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { RoleDetailDialog } from '@/components/roles/role-detail-dialog';
 import { RoleEditDialog } from '@/components/roles/role-edit-dialog';
-import { useRolesListUrlState } from '@/hooks/use-roles-list-url-state';
+import { useRolesListTableState } from '@/hooks/use-roles-list-table-state';
 import { deleteRole, listRoles } from '@/lib/api/rbac';
 import { toListRolesParams } from '@/lib/roles-list-params';
 import type { RoleListItem } from '@/lib/types/rbac';
@@ -65,7 +65,7 @@ export function RolesTable() {
     sorting,
     onSortingChange,
     ensurePageInRange,
-  } = useRolesListUrlState();
+  } = useRolesListTableState();
 
   const [detailId, setDetailId] = useState<number | null>(null);
   const [editId, setEditId] = useState<number | null>(null);

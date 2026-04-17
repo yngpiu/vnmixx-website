@@ -10,7 +10,7 @@ import {
 } from '@/components/customers/edit-customer-dialog';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { useCustomersListUrlState } from '@/hooks/use-customers-list-url-state';
+import { useCustomersListTableState } from '@/hooks/use-customers-list-table-state';
 import { listCustomers } from '@/lib/api/customers';
 import { toListCustomersParams } from '@/lib/customers-list-params';
 import type { CustomerListItem } from '@/lib/types/customer';
@@ -55,7 +55,7 @@ export function CustomersTable() {
     sorting,
     onSortingChange,
     ensurePageInRange,
-  } = useCustomersListUrlState();
+  } = useCustomersListTableState();
 
   const listParams = useMemo(
     () => toListCustomersParams(pagination, columnFilters, sorting),

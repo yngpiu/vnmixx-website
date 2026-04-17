@@ -42,16 +42,11 @@ export class TokenService {
     user: TokenIdentity,
     userType: 'CUSTOMER' | 'EMPLOYEE',
     meta: RequestMeta,
-    roles: string[] = [],
-    permissions: string[] = [],
   ): Promise<TokenPair> {
     const jti = randomUUID();
     const payload: JwtPayload = {
       sub: user.id,
-      email: user.email,
       userType,
-      roles,
-      permissions,
       jti,
     };
     const accessToken = this.jwt.sign(payload, { expiresIn: this.accessExpiration });
@@ -152,13 +147,10 @@ export class TokenService {
     if (!employee || employee.status !== EmployeeStatus.ACTIVE || employee.deletedAt) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
     }
-    const { roles, permissions } = await this.employeeRepo.loadPermissions(employee.id);
     return this.issueTokenPair(
       { id: employee.id, email: employee.email, fullName: employee.fullName },
       'EMPLOYEE',
       meta,
-      roles,
-      permissions,
     );
   }
 
