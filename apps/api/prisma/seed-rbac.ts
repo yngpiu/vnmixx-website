@@ -97,7 +97,7 @@ const ROLES: RoleSeed[] = [
   {
     name: 'Chuyên viên hàng hóa',
     description:
-      'Merchandising: giá, ảnh, mô tả, SKU, nhóm màu–size–thuộc tính và danh mục; không đụng đến phân quyền.',
+      'Merchandising: giá, ảnh, mô tả, SKU, nhóm màu–size và danh mục; không đụng đến phân quyền.',
     permissionNames: PERMISSIONS.filter((p) => /^(product|category|color|size)\./.test(p.name)).map(
       (p) => p.name,
     ),
@@ -127,6 +127,11 @@ export async function seedRbac(): Promise<void> {
   const prisma = new PrismaClient({ adapter });
 
   try {
+    // Remove deprecated attribute permissions from older seeds.
+    await prisma.permission.deleteMany({
+      where: { name: { startsWith: 'attribute.' } },
+    });
+
     await prisma.permission.createMany({
       data: PERMISSIONS.map(({ name, description }) => ({ name, description })),
       skipDuplicates: true,

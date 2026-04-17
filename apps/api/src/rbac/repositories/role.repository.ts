@@ -113,11 +113,7 @@ export class RoleRepository {
   }): Promise<PaginatedResult<RoleListView>> {
     const { page, limit, search, sortBy, sortOrder } = params;
     const q = search?.trim();
-    const where: Prisma.RoleWhereInput = q
-      ? {
-          OR: [{ name: { contains: q } }, { description: { contains: q } }],
-        }
-      : {};
+    const where: Prisma.RoleWhereInput = q ? { name: { contains: q } } : {};
 
     const [total, rows] = await this.prisma.$transaction([
       this.prisma.role.count({ where }),

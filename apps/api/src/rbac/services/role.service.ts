@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
-import { RefreshTokenRepository } from '../../auth/repositories/refresh-token.repository';
+import { TokenService } from '../../auth/services/token.service';
 import type { CreateRoleDto, UpdateRoleDto } from '../dto';
 import { PermissionRepository } from '../repositories/permission.repository';
 import {
@@ -20,7 +20,7 @@ export class RoleService {
   constructor(
     private readonly roleRepo: RoleRepository,
     private readonly permissionRepo: PermissionRepository,
-    private readonly refreshTokenRepo: RefreshTokenRepository,
+    private readonly tokenService: TokenService,
   ) {}
 
   async findList(params: {
@@ -99,7 +99,7 @@ export class RoleService {
 
   private async revokeTokensForEmployees(employeeIds: number[]): Promise<void> {
     await Promise.all(
-      employeeIds.map((eid) => this.refreshTokenRepo.revokeAllByUser(eid, 'EMPLOYEE')),
+      employeeIds.map((employeeId) => this.tokenService.revokeAllSessions(employeeId, 'EMPLOYEE')),
     );
   }
 
