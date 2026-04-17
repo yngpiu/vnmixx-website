@@ -7,10 +7,12 @@ export interface PermissionView {
   description: string | null;
 }
 
+// Repository truy vấn các quyền hạn từ cơ sở dữ liệu
 @Injectable()
 export class PermissionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lấy danh sách toàn bộ quyền hạn hiện có, sắp xếp theo tên
   async findAll(): Promise<PermissionView[]> {
     return this.prisma.permission.findMany({
       orderBy: { name: 'asc' },
@@ -18,6 +20,7 @@ export class PermissionRepository {
     });
   }
 
+  // Kiểm tra xem tất cả các ID quyền trong danh sách có tồn tại hay không
   async existAll(ids: number[]): Promise<boolean> {
     const count = await this.prisma.permission.count({
       where: { id: { in: ids } },

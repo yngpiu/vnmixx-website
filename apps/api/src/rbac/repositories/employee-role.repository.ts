@@ -8,10 +8,12 @@ export interface EmployeeWithRoles {
   roles: { id: number; name: string; description: string | null }[];
 }
 
+// Repository quản lý liên kết giữa nhân viên và các vai trò
 @Injectable()
 export class EmployeeRoleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lấy danh sách thông tin nhân viên kèm các vai trò đang được gán
   async findByEmployeeId(employeeId: number): Promise<EmployeeWithRoles | null> {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
@@ -37,6 +39,7 @@ export class EmployeeRoleRepository {
     };
   }
 
+  // Cập nhật lại danh sách vai trò cho một nhân viên (Xóa cũ, thêm mới)
   async syncRoles(employeeId: number, roleIds: number[]): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.employeeRole.deleteMany({ where: { employeeId } }),
@@ -50,6 +53,7 @@ export class EmployeeRoleRepository {
     ]);
   }
 
+  // Kiểm tra xem nhân viên có tồn tại và chưa bị xóa hay không
   async employeeExists(employeeId: number): Promise<boolean> {
     const count = await this.prisma.employee.count({
       where: { id: employeeId, deletedAt: null },

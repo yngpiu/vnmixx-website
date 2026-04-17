@@ -1,6 +1,59 @@
 #!/usr/bin/env sh
-files=$(git diff --cached --name-only --diff-filter=ACMR)
+# Filter staged files by target extensions
+files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx|json|css|scss|md)$')
+
 if [ -n "$files" ]; then
+  echo "Running pre-commit hooks on staged files..."
+  
+  # Run Prettier
   echo "$files" | tr '\n' '\0' | xargs -0 pnpm exec prettier --write --ignore-unknown
-  git update-index --again
+  
+  # Group files by app/package to run correct eslint
+  api_files=""
+  dashboard_files=""
+  shop_files=""
+  
+  for file in $files; do
+    if echo "$file" | grep -q "^apps/api/"; then
+      # Strip prefix for local execution
+      rel_file=$(echo "$file" | sed 's|^apps/api/||')
+      api_files="$api_files $rel_file"
+    elif echo "$file" | grep -q "^apps/dashboard/"; then
+      rel_file=$(echo "$file" | sed 's|^apps/dashboard/||')
+      dashboard_files="$dashboard_files $rel_file"
+    elif echo "$file" | grep -q "^apps/shop/"; then
+      rel_file=$(echo "$file" | sed 's|^apps/shop/||')
+      shop_files="$shop_files $rel_file"
+    fi
+  done
+
+  # Lint API files
+  if [ -n "$api_files" ]; then
+    echo "Linting API files..."
+    if ! pnpm --filter api exec eslint --fix $api_files; then
+      echo "ESLint found unfixable errors in API. Commit blocked."
+      exit 1
+    fi
+  fi
+
+  # Lint Dashboard files
+  if [ -n "$dashboard_files" ]; then
+    echo "Linting Dashboard files..."
+    if ! pnpm --filter dashboard exec eslint --fix $dashboard_files; then
+      echo "ESLint found unfixable errors in Dashboard. Commit blocked."
+      exit 1
+    fi
+  fi
+
+  # Lint Shop files
+  if [ -n "$shop_files" ]; then
+    echo "Linting Shop files..."
+    if ! pnpm --filter shop exec eslint --fix $shop_files; then
+      echo "ESLint found unfixable errors in Shop. Commit blocked."
+      exit 1
+    fi
+  fi
+
+  # Re-stage files that might have been modified by prettier/eslint --fix
+  echo "$files" | tr '\n' '\0' | xargs -0 git add
 fi

@@ -9,6 +9,7 @@ import { EmployeeRoleService } from './services/employee-role.service';
 import { PermissionService } from './services/permission.service';
 import { RoleService } from './services/role.service';
 
+// Module quản lý phân quyền dựa trên vai trò (Role-Based Access Control)
 @Module({
   imports: [AuthModule],
   exports: [EmployeeRoleService],

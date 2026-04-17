@@ -56,10 +56,12 @@ function toDetailView(row: {
   };
 }
 
+// Repository quản lý các truy vấn DB liên quan đến bảng roles và role_permissions
 @Injectable()
 export class RoleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lấy toàn bộ danh sách vai trò (dạng ngắn gọn)
   async findAll(): Promise<RoleListView[]> {
     const roles = await this.prisma.role.findMany({
       orderBy: { id: 'asc' },
@@ -83,6 +85,7 @@ export class RoleRepository {
     }));
   }
 
+  // Xây dựng điều kiện sắp xếp động dựa trên tham số
   private buildListOrderBy(
     sortBy?: string,
     sortOrder?: 'asc' | 'desc',
@@ -104,6 +107,7 @@ export class RoleRepository {
     }
   }
 
+  // Tìm kiếm danh sách vai trò có phân trang
   async findList(params: {
     page: number;
     limit: number;
@@ -151,6 +155,7 @@ export class RoleRepository {
     };
   }
 
+  // Lấy chi tiết một vai trò kèm theo danh sách quyền
   async findById(id: number): Promise<RoleDetailView | null> {
     const row = await this.prisma.role.findUnique({
       where: { id },
@@ -159,6 +164,7 @@ export class RoleRepository {
     return row ? toDetailView(row) : null;
   }
 
+  // Tạo vai trò mới và các liên kết quyền tương ứng trong cùng một transaction
   async create(data: {
     name: string;
     description?: string;
@@ -181,6 +187,7 @@ export class RoleRepository {
     return toDetailView(row);
   }
 
+  // Cập nhật thông tin cơ bản của vai trò
   async update(id: number, data: { name?: string; description?: string }): Promise<RoleDetailView> {
     const row = await this.prisma.role.update({
       where: { id },
@@ -190,13 +197,17 @@ export class RoleRepository {
     return toDetailView(row);
   }
 
+  // Xóa bản ghi vai trò (cascade delete sẽ tự xóa các bảng nối)
   async delete(id: number): Promise<void> {
     await this.prisma.role.delete({ where: { id } });
   }
 
+  // Thay thế toàn bộ danh sách quyền của một vai trò
   async syncPermissions(roleId: number, permissionIds: number[]): Promise<RoleDetailView> {
     await this.prisma.$transaction([
+      // Xóa tất cả quyền cũ
       this.prisma.rolePermission.deleteMany({ where: { roleId } }),
+      // Thêm các quyền mới
       ...(permissionIds.length > 0
         ? [
             this.prisma.rolePermission.createMany({
@@ -213,6 +224,7 @@ export class RoleRepository {
     return toDetailView(row);
   }
 
+  // Tìm danh sách ID nhân viên đang sở hữu một vai trò cụ thể
   async findEmployeeIdsByRoleId(roleId: number): Promise<number[]> {
     const rows = await this.prisma.employeeRole.findMany({
       where: { roleId },

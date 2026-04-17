@@ -26,6 +26,12 @@ type EmployeeSeed = {
  */
 const EMPLOYEES: EmployeeSeed[] = [
   {
+    fullName: 'Vnmixx Admin',
+    phoneNumber: '0925010098',
+    email: 'vnmixx@gmail.com',
+    roleName: 'Chủ cửa hàng',
+  },
+  {
     fullName: 'Nguyễn Hoàng Nam',
     phoneNumber: '0987654321',
     email: 'nam.nguyen.cuahang@gmail.com',

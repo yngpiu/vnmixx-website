@@ -12,9 +12,9 @@ import {
 
 export class CreateCategoryDto {
   @ApiProperty({ example: 'Áo sơ mi', description: 'Tên danh mục', maxLength: 100 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
+  @IsString({ message: 'Tên danh mục phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Tên danh mục không được để trống' })
+  @MaxLength(100, { message: 'Tên danh mục không được vượt quá 100 ký tự' })
   name: string;
 
   @ApiProperty({
@@ -22,28 +22,28 @@ export class CreateCategoryDto {
     description: 'Slug thân thiện URL (chữ thường, chỉ dùng dấu gạch nối)',
     maxLength: 120,
   })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
+  @IsString({ message: 'Slug phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Slug không được để trống' })
+  @MaxLength(120, { message: 'Slug không được vượt quá 120 ký tự' })
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message: 'slug chỉ được chứa chữ thường, số và dấu gạch nối',
+    message: 'Slug chỉ được chứa chữ thường, số và dấu gạch nối',
   })
   slug: string;
 
   @ApiPropertyOptional({ example: false, description: 'Danh mục nổi bật hay không' })
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái nổi bật phải là kiểu boolean' })
   @IsOptional()
   isFeatured?: boolean;
 
   @ApiPropertyOptional({ example: true, description: 'Đang hiển thị trên shop hay không' })
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái hoạt động phải là kiểu boolean' })
   @IsOptional()
   isActive?: boolean;
 
   @ApiPropertyOptional({ example: 0, description: 'Thứ tự hiển thị', minimum: 0 })
-  @IsInt()
+  @IsInt({ message: 'Thứ tự hiển thị phải là số nguyên' })
   @IsOptional()
-  @Min(0)
+  @Min(0, { message: 'Thứ tự hiển thị phải lớn hơn hoặc bằng 0' })
   sortOrder?: number;
 
   @ApiPropertyOptional({
@@ -51,8 +51,8 @@ export class CreateCategoryDto {
     description: 'ID danh mục cha (tối đa 3 cấp)',
     minimum: 1,
   })
-  @IsInt()
+  @IsInt({ message: 'ID danh mục cha phải là số nguyên' })
   @IsOptional()
-  @Min(1)
+  @Min(1, { message: 'ID danh mục cha phải lớn hơn hoặc bằng 1' })
   parentId?: number;
 }

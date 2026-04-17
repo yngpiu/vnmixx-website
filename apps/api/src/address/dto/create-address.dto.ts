@@ -11,42 +11,42 @@ import {
 
 export class CreateAddressDto {
   @ApiProperty({ example: 'Nguyễn Văn A', maxLength: 100 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
+  @IsString({ message: 'Họ tên phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Họ tên không được để trống' })
+  @MaxLength(100, { message: 'Họ tên không được vượt quá 100 ký tự' })
   fullName: string;
 
   @ApiProperty({ example: '0901234567', maxLength: 20 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
+  @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
+  @MaxLength(20, { message: 'Số điện thoại không được vượt quá 20 ký tự' })
   phoneNumber: string;
 
   @ApiProperty({ example: 1, description: 'ID tỉnh/thành phố' })
-  @IsInt()
+  @IsInt({ message: 'ID tỉnh/thành phố phải là số nguyên' })
   cityId: number;
 
   @ApiProperty({ example: 1, description: 'ID quận/huyện (phải thuộc tỉnh/thành phố)' })
-  @IsInt()
+  @IsInt({ message: 'ID quận/huyện phải là số nguyên' })
   districtId: number;
 
   @ApiProperty({ example: 1, description: 'ID phường/xã (phải thuộc quận/huyện)' })
-  @IsInt()
+  @IsInt({ message: 'ID phường/xã phải là số nguyên' })
   wardId: number;
 
   @ApiProperty({ example: '123 Nguyễn Huệ', maxLength: 255 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
+  @IsString({ message: 'Địa chỉ chi tiết phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Địa chỉ chi tiết không được để trống' })
+  @MaxLength(255, { message: 'Địa chỉ chi tiết không được vượt quá 255 ký tự' })
   addressLine: string;
 
   @ApiPropertyOptional({ enum: ['HOME', 'OFFICE'], default: 'HOME' })
-  @IsEnum(['HOME', 'OFFICE'] as const)
+  @IsEnum(['HOME', 'OFFICE'] as const, { message: 'Loại địa chỉ không hợp lệ' })
   @IsOptional()
   type?: 'HOME' | 'OFFICE';
 
   @ApiPropertyOptional({ example: false, default: false })
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái mặc định phải là kiểu boolean' })
   @IsOptional()
   isDefault?: boolean;
 }

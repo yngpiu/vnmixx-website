@@ -19,9 +19,9 @@ enum GenderInput {
 /** DTO for customer registration. Employees are created by admins. */
 export class RegisterDto {
   @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ và tên', maxLength: 100 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
+  @IsString({ message: 'Họ tên phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Họ tên không được để trống' })
+  @MaxLength(100, { message: 'Họ tên không được vượt quá 100 ký tự' })
   fullName: string;
 
   @ApiProperty({
@@ -29,9 +29,9 @@ export class RegisterDto {
     description: 'Địa chỉ email duy nhất',
     maxLength: 255,
   })
-  @IsEmail()
-  @IsNotEmpty()
-  @MaxLength(255)
+  @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
+  @IsNotEmpty({ message: 'Email không được để trống' })
+  @MaxLength(255, { message: 'Email không được vượt quá 255 ký tự' })
   email: string;
 
   @ApiProperty({
@@ -39,10 +39,10 @@ export class RegisterDto {
     description: 'Số điện thoại theo định dạng hợp lệ',
     maxLength: 20,
   })
-  @IsString()
-  @IsNotEmpty()
-  @Matches(/^[0-9+\-\s()]+$/, { message: 'số điện thoại không đúng định dạng hợp lệ' })
-  @MaxLength(20)
+  @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
+  @Matches(/^[0-9+\-\s()]+$/, { message: 'Số điện thoại không đúng định dạng hợp lệ' })
+  @MaxLength(20, { message: 'Số điện thoại không được vượt quá 20 ký tự' })
   phoneNumber: string;
 
   @ApiProperty({
@@ -51,20 +51,20 @@ export class RegisterDto {
     minLength: 8,
     maxLength: 72,
   })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(8)
-  @MaxLength(72)
+  @IsString({ message: 'Mật khẩu phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
+  @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
+  @MaxLength(72, { message: 'Mật khẩu không được vượt quá 72 ký tự' })
   password: string;
 
   @ApiPropertyOptional({ example: '1999-12-31', description: 'Ngày sinh (YYYY-MM-DD)' })
   @IsOptional()
-  @IsString()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'ngày sinh phải theo định dạng YYYY-MM-DD' })
+  @IsString({ message: 'Ngày sinh phải là chuỗi ký tự' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Ngày sinh phải theo định dạng YYYY-MM-DD' })
   dob?: string;
 
   @ApiPropertyOptional({ enum: GenderInput, example: GenderInput.MALE, description: 'Giới tính' })
   @IsOptional()
-  @IsEnum(GenderInput)
+  @IsEnum(GenderInput, { message: 'Giới tính không hợp lệ' })
   gender?: GenderInput;
 }

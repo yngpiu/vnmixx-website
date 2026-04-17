@@ -3,14 +3,14 @@ import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-v
 
 export class CreateSizeDto {
   @ApiProperty({ example: 'M', maxLength: 10 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(10)
+  @IsString({ message: 'Nhãn kích thước phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Nhãn kích thước không được để trống' })
+  @MaxLength(10, { message: 'Nhãn kích thước không được vượt quá 10 ký tự' })
   label: string;
 
   @ApiPropertyOptional({ example: 2, minimum: 0 })
-  @IsInt()
+  @IsInt({ message: 'Thứ tự hiển thị phải là số nguyên' })
   @IsOptional()
-  @Min(0)
+  @Min(0, { message: 'Thứ tự hiển thị phải lớn hơn hoặc bằng 0' })
   sortOrder?: number;
 }

@@ -6,12 +6,12 @@ export class VerifyCustomerOtpDto {
     example: 'customer@example.com',
     description: 'Email khách hàng dùng trong lúc đăng ký',
   })
-  @IsEmail()
-  @IsNotEmpty()
+  @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
+  @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;
 
   @ApiProperty({ example: '123456', description: 'Mã OTP 6 chữ số được gửi qua email' })
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Mã OTP không được để trống' })
   @Matches(/^\d{6}$/, { message: 'OTP phải là mã số gồm 6 chữ số' })
   otp: string;
 }
@@ -21,8 +21,8 @@ export class ResendCustomerOtpDto {
     example: 'customer@example.com',
     description: 'Email khách hàng đang chờ xác thực',
   })
-  @IsEmail()
-  @IsNotEmpty()
+  @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
+  @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;
 }
 

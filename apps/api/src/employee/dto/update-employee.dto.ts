@@ -9,7 +9,7 @@ export class UpdateEmployeeDto {
     description: 'Trạng thái tài khoản nhân viên',
   })
   @IsOptional()
-  @IsIn([...EMPLOYEE_STATUS])
+  @IsIn([...EMPLOYEE_STATUS], { message: 'Trạng thái nhân viên không hợp lệ' })
   status?: (typeof EMPLOYEE_STATUS)[number];
 
   @ApiPropertyOptional({
@@ -18,9 +18,9 @@ export class UpdateEmployeeDto {
     type: [Number],
   })
   @IsOptional()
-  @IsArray()
-  @ArrayUnique()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
+  @IsArray({ message: 'Danh sách vai trò phải là một mảng' })
+  @ArrayUnique({ message: 'Các vai trò không được trùng lặp' })
+  @IsInt({ each: true, message: 'Mỗi ID vai trò phải là số nguyên' })
+  @Min(1, { each: true, message: 'Mỗi ID vai trò phải lớn hơn hoặc bằng 1' })
   roleIds?: number[];
 }

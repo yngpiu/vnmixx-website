@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -33,6 +34,7 @@ import {
 } from '../dto';
 import { RoleService } from '../services/role.service';
 
+// Controller quản lý các vai trò (roles) và gán quyền cho vai trò
 @ApiTags('RBAC')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -42,6 +44,7 @@ import { RoleService } from '../services/role.service';
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
+  // API lấy danh sách vai trò có phân trang, tìm kiếm và sắp xếp
   @ApiOperation({
     summary: 'Liệt kê vai trò',
     description: 'Danh sách phân trang; tìm theo tên hoặc mô tả qua tham số search.',
@@ -59,6 +62,7 @@ export class RoleController {
     });
   }
 
+  // API lấy thông tin chi tiết của một vai trò kèm các quyền đã gán
   @ApiOperation({ summary: 'Lấy chi tiết vai trò kèm quyền' })
   @ApiOkResponse({ type: RoleDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
@@ -68,8 +72,10 @@ export class RoleController {
     return this.roleService.findById(id);
   }
 
+  // API tạo vai trò mới và gán danh sách quyền ban đầu
   @ApiOperation({ summary: 'Tạo vai trò mới' })
   @ApiCreatedResponse({ type: RoleDetailResponseDto })
+  @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ hoặc ID quyền không tồn tại.' })
   @ApiConflictResponse({ description: 'Tên vai trò đã được sử dụng.' })
   @RequirePermissions('rbac.create')
   @Post()
@@ -77,9 +83,13 @@ export class RoleController {
     return this.roleService.create(dto);
   }
 
+  // API cập nhật tên, mô tả và thay đổi danh sách quyền của vai trò
   @ApiOperation({ summary: 'Cập nhật vai trò và quyền' })
   @ApiOkResponse({ type: RoleDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
+  @ApiBadRequestResponse({
+    description: 'Dữ liệu không hợp lệ, ID quyền không tồn tại, hoặc cố gắng sửa vai trò hệ thống.',
+  })
   @ApiConflictResponse({ description: 'Tên vai trò đã được sử dụng.' })
   @RequirePermissions('rbac.update')
   @Put(':id')
@@ -90,9 +100,11 @@ export class RoleController {
     return this.roleService.update(id, dto);
   }
 
+  // API xóa hoàn toàn một vai trò khỏi hệ thống
   @ApiOperation({ summary: 'Xóa vai trò' })
   @ApiNoContentResponse({ description: 'Xóa vai trò thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
+  @ApiBadRequestResponse({ description: 'Không được phép xóa vai trò hệ thống.' })
   @RequirePermissions('rbac.delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)

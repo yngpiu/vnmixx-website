@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 /** DTO for both customer and employee login. */
 export class LoginDto {
@@ -7,8 +7,8 @@ export class LoginDto {
     example: 'customer@example.com',
     description: 'Địa chỉ email đã đăng ký',
   })
-  @IsEmail()
-  @IsNotEmpty()
+  @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
+  @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;
 
   @ApiProperty({
@@ -16,7 +16,8 @@ export class LoginDto {
     description: 'Mật khẩu tài khoản (tối thiểu 8 ký tự)',
     minLength: 8,
   })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Mật khẩu phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
+  @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   password: string;
 }

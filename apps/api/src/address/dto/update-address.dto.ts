@@ -3,43 +3,43 @@ import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'clas
 
 export class UpdateAddressDto {
   @ApiPropertyOptional({ example: 'Nguyễn Văn A', maxLength: 100 })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Họ tên phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Họ tên không được để trống' })
   @IsOptional()
-  @MaxLength(100)
+  @MaxLength(100, { message: 'Họ tên không được vượt quá 100 ký tự' })
   fullName?: string;
 
   @ApiPropertyOptional({ example: '0901234567', maxLength: 20 })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
   @IsOptional()
-  @MaxLength(20)
+  @MaxLength(20, { message: 'Số điện thoại không được vượt quá 20 ký tự' })
   phoneNumber?: string;
 
   @ApiPropertyOptional({ example: 1, description: 'ID tỉnh/thành phố' })
-  @IsInt()
+  @IsInt({ message: 'ID tỉnh/thành phố phải là số nguyên' })
   @IsOptional()
   cityId?: number;
 
   @ApiPropertyOptional({ example: 1, description: 'ID quận/huyện (phải thuộc tỉnh/thành phố)' })
-  @IsInt()
+  @IsInt({ message: 'ID quận/huyện phải là số nguyên' })
   @IsOptional()
   districtId?: number;
 
   @ApiPropertyOptional({ example: 1, description: 'ID phường/xã (phải thuộc quận/huyện)' })
-  @IsInt()
+  @IsInt({ message: 'ID phường/xã phải là số nguyên' })
   @IsOptional()
   wardId?: number;
 
   @ApiPropertyOptional({ example: '123 Nguyễn Huệ', maxLength: 255 })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Địa chỉ chi tiết phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Địa chỉ chi tiết không được để trống' })
   @IsOptional()
-  @MaxLength(255)
+  @MaxLength(255, { message: 'Địa chỉ chi tiết không được vượt quá 255 ký tự' })
   addressLine?: string;
 
   @ApiPropertyOptional({ enum: ['HOME', 'OFFICE'] })
-  @IsEnum(['HOME', 'OFFICE'] as const)
+  @IsEnum(['HOME', 'OFFICE'] as const, { message: 'Loại địa chỉ không hợp lệ' })
   @IsOptional()
   type?: 'HOME' | 'OFFICE';
 }

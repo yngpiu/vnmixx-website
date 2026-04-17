@@ -17,28 +17,28 @@ const ADMIN_PRODUCT_SORT_BY = [
 export class ListAdminProductsQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'Trang phải là số nguyên' })
+  @Min(1, { message: 'Trang phải lớn hơn hoặc bằng 1' })
   @IsOptional()
   page?: number = 1;
 
   @ApiPropertyOptional({ example: 20, minimum: 1, maximum: 100 })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
+  @IsInt({ message: 'Giới hạn phải là số nguyên' })
+  @Min(1, { message: 'Giới hạn phải lớn hơn hoặc bằng 1' })
+  @Max(100, { message: 'Giới hạn không được vượt quá 100' })
   @IsOptional()
   limit?: number = 20;
 
   @ApiPropertyOptional({ example: 'basic tee' })
-  @IsString()
+  @IsString({ message: 'Từ khóa tìm kiếm phải là chuỗi ký tự' })
   @IsOptional()
   search?: string;
 
   @ApiPropertyOptional({ example: 3 })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'ID danh mục phải là số nguyên' })
+  @Min(1, { message: 'ID danh mục phải lớn hơn hoặc bằng 1' })
   @IsOptional()
   categoryId?: number;
 
@@ -47,7 +47,7 @@ export class ListAdminProductsQueryDto {
     description: 'Không gửi = không lọc; true/false = chỉ đang bán / chỉ ngừng.',
   })
   @TransformQueryOptionalBoolean()
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái hoạt động phải là kiểu boolean' })
   @IsOptional()
   isActive?: boolean;
 
@@ -56,18 +56,18 @@ export class ListAdminProductsQueryDto {
     description: 'Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa.',
   })
   @TransformQueryOptionalBoolean()
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái xóa phải là kiểu boolean' })
   @IsOptional()
   isSoftDeleted?: boolean;
 
   @ApiPropertyOptional({ example: 'updatedAt', enum: ADMIN_PRODUCT_SORT_BY })
-  @IsString()
-  @IsIn([...ADMIN_PRODUCT_SORT_BY])
+  @IsString({ message: 'Trường sắp xếp phải là chuỗi ký tự' })
+  @IsIn([...ADMIN_PRODUCT_SORT_BY], { message: 'Trường sắp xếp không hợp lệ' })
   @IsOptional()
   sortBy?: (typeof ADMIN_PRODUCT_SORT_BY)[number];
 
   @ApiPropertyOptional({ example: 'desc', enum: ['asc', 'desc'] })
-  @IsIn(['asc', 'desc'])
+  @IsIn(['asc', 'desc'], { message: 'Thứ tự sắp xếp phải là asc hoặc desc' })
   @IsOptional()
   sortOrder?: 'asc' | 'desc';
 }

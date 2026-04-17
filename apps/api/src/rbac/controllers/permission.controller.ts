@@ -11,6 +11,7 @@ import { RequirePermissions, RequireUserType } from '../../auth/decorators';
 import { PermissionResponseDto } from '../dto';
 import { PermissionService } from '../services/permission.service';
 
+// Controller quản lý danh sách các quyền (permissions) trong hệ thống
 @ApiTags('RBAC')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -20,6 +21,7 @@ import { PermissionService } from '../services/permission.service';
 export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
 
+  // API lấy toàn bộ danh sách các quyền hiện có
   @ApiOperation({ summary: 'Liệt kê tất cả quyền' })
   @ApiOkResponse({ type: [PermissionResponseDto] })
   @RequirePermissions('rbac.read')

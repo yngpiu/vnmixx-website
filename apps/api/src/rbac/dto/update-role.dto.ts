@@ -1,18 +1,26 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateRoleDto {
   @ApiPropertyOptional({ example: 'editor', description: 'Tên vai trò duy nhất', maxLength: 50 })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Tên vai trò phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Tên vai trò không được để trống' })
   @IsOptional()
-  @MaxLength(50)
+  @MaxLength(50, { message: 'Tên vai trò không được vượt quá 50 ký tự' })
   name?: string;
 
   @ApiPropertyOptional({ example: 'Can edit content', maxLength: 255 })
-  @IsString()
+  @IsString({ message: 'Mô tả phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(255)
+  @MaxLength(255, { message: 'Mô tả không được vượt quá 255 ký tự' })
   description?: string;
 
   @ApiPropertyOptional({
@@ -20,8 +28,9 @@ export class UpdateRoleDto {
     description: 'Danh sách ID quyền gán cho vai trò (có thể rỗng để gỡ hết).',
     type: [Number],
   })
-  @IsArray()
-  @IsInt({ each: true })
+  @IsArray({ message: 'Danh sách ID quyền phải là một mảng' })
+  @ArrayUnique({ message: 'Các ID quyền không được trùng lặp' })
+  @IsInt({ each: true, message: 'Mỗi ID quyền phải là một số nguyên' })
   @IsOptional()
   permissionIds?: number[];
 }

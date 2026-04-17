@@ -9,7 +9,7 @@ export class ListCategoriesQueryDto {
     description: 'Không gửi = không lọc; true/false = chỉ đang bật / chỉ tắt.',
   })
   @TransformQueryOptionalBoolean()
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái hoạt động phải là kiểu boolean' })
   @IsOptional()
   isActive?: boolean;
 
@@ -18,7 +18,7 @@ export class ListCategoriesQueryDto {
     description: 'Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa.',
   })
   @TransformQueryOptionalBoolean()
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái xóa phải là kiểu boolean' })
   @IsOptional()
   isSoftDeleted?: boolean;
 }

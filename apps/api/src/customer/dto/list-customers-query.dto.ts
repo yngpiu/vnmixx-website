@@ -9,16 +9,16 @@ const CUSTOMER_SORT_BY = ['fullName', 'email', 'phoneNumber', 'isActive', 'creat
 export class ListCustomersQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'Trang phải là số nguyên' })
+  @Min(1, { message: 'Trang phải lớn hơn hoặc bằng 1' })
   @IsOptional()
   page?: number = 1;
 
   @ApiPropertyOptional({ example: 20, minimum: 1, maximum: 100 })
   @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
+  @IsInt({ message: 'Giới hạn phải là số nguyên' })
+  @Min(1, { message: 'Giới hạn phải lớn hơn hoặc bằng 1' })
+  @Max(100, { message: 'Giới hạn không được vượt quá 100' })
   @IsOptional()
   limit?: number = 20;
 
@@ -26,7 +26,7 @@ export class ListCustomersQueryDto {
     example: 'Nguyễn',
     description: 'Tìm kiếm theo tên, email hoặc số điện thoại',
   })
-  @IsString()
+  @IsString({ message: 'Từ khóa tìm kiếm phải là chuỗi ký tự' })
   @IsOptional()
   search?: string;
 
@@ -35,7 +35,7 @@ export class ListCustomersQueryDto {
     description: 'Không gửi = không lọc; true/false = chỉ hoạt động / chỉ vô hiệu.',
   })
   @TransformQueryOptionalBoolean()
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái hoạt động phải là kiểu boolean' })
   @IsOptional()
   isActive?: boolean;
 
@@ -44,18 +44,18 @@ export class ListCustomersQueryDto {
     description: 'Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa.',
   })
   @TransformQueryOptionalBoolean()
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái xóa phải là kiểu boolean' })
   @IsOptional()
   isSoftDeleted?: boolean;
 
   @ApiPropertyOptional({ example: 'createdAt', enum: CUSTOMER_SORT_BY })
-  @IsString()
-  @IsIn([...CUSTOMER_SORT_BY])
+  @IsString({ message: 'Trường sắp xếp phải là chuỗi ký tự' })
+  @IsIn([...CUSTOMER_SORT_BY], { message: 'Trường sắp xếp không hợp lệ' })
   @IsOptional()
   sortBy?: (typeof CUSTOMER_SORT_BY)[number];
 
   @ApiPropertyOptional({ example: 'desc', enum: ['asc', 'desc'] })
-  @IsIn(['asc', 'desc'])
+  @IsIn(['asc', 'desc'], { message: 'Thứ tự sắp xếp phải là asc hoặc desc' })
   @IsOptional()
   sortOrder?: 'asc' | 'desc';
 }

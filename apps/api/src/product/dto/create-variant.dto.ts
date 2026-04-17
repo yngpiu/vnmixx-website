@@ -3,28 +3,28 @@ import { IsInt, IsNotEmpty, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateVariantDto {
   @ApiProperty({ example: 1 })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'ID màu sắc phải là số nguyên' })
+  @Min(1, { message: 'ID màu sắc phải lớn hơn hoặc bằng 1' })
   colorId: number;
 
   @ApiProperty({ example: 1 })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'ID kích thước phải là số nguyên' })
+  @Min(1, { message: 'ID kích thước phải lớn hơn hoặc bằng 1' })
   sizeId: number;
 
   @ApiProperty({ example: 'BT-WHITE-L', maxLength: 50 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
+  @IsString({ message: 'SKU phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'SKU không được để trống' })
+  @MaxLength(50, { message: 'SKU không được vượt quá 50 ký tự' })
   sku: string;
 
   @ApiProperty({ example: 299000 })
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'Giá phải là số nguyên' })
+  @Min(0, { message: 'Giá không được âm' })
   price: number;
 
   @ApiProperty({ example: 50, description: 'Tồn kho thực tế ban đầu' })
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'Số lượng tồn kho phải là số nguyên' })
+  @Min(0, { message: 'Số lượng tồn kho không được âm' })
   onHand: number;
 }

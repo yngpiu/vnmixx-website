@@ -1,4 +1,4 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
@@ -47,6 +47,13 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
+      stopAtFirstError: true,
+      exceptionFactory: (errors) => {
+        const messages = errors.map((error) => {
+          return error.constraints ? Object.values(error.constraints)[0] : 'Dữ liệu không hợp lệ';
+        });
+        return new BadRequestException(messages);
+      },
     }),
   );
 

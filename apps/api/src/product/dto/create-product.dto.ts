@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsInt,
@@ -17,88 +18,88 @@ import {
 
 export class CreateProductVariantDto {
   @ApiProperty({ example: 1 })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'ID màu sắc phải là số nguyên' })
+  @Min(1, { message: 'ID màu sắc phải lớn hơn hoặc bằng 1' })
   colorId: number;
 
   @ApiProperty({ example: 1 })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'ID kích thước phải là số nguyên' })
+  @Min(1, { message: 'ID kích thước phải lớn hơn hoặc bằng 1' })
   sizeId: number;
 
   @ApiProperty({ example: 'BT-WHITE-S', maxLength: 50 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(50)
+  @IsString({ message: 'SKU phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'SKU không được để trống' })
+  @MaxLength(50, { message: 'SKU không được vượt quá 50 ký tự' })
   sku: string;
 
   @ApiProperty({ example: 299000 })
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'Giá phải là số nguyên' })
+  @Min(0, { message: 'Giá không được âm' })
   price: number;
 
   @ApiProperty({ example: 50, description: 'Tồn kho thực tế ban đầu' })
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'Số lượng tồn kho phải là số nguyên' })
+  @Min(0, { message: 'Số lượng tồn kho không được âm' })
   onHand: number;
 }
 
 export class CreateProductImageDto {
   @ApiProperty({ example: 'https://example.com/image.jpg' })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(500)
+  @IsString({ message: 'URL hình ảnh phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'URL hình ảnh không được để trống' })
+  @MaxLength(500, { message: 'URL hình ảnh không được vượt quá 500 ký tự' })
   url: string;
 
   @ApiPropertyOptional({ example: 1, nullable: true })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'ID màu sắc phải là số nguyên' })
+  @Min(1, { message: 'ID màu sắc phải lớn hơn hoặc bằng 1' })
   @IsOptional()
   colorId?: number;
 
   @ApiPropertyOptional({ example: 'Trắng - mặt trước', maxLength: 255, nullable: true })
-  @IsString()
+  @IsString({ message: 'Mô tả ảnh phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(255)
+  @MaxLength(255, { message: 'Mô tả ảnh không được vượt quá 255 ký tự' })
   altText?: string;
 
   @ApiPropertyOptional({ example: 0 })
-  @IsInt()
-  @Min(0)
+  @IsInt({ message: 'Thứ tự hiển thị phải là số nguyên' })
+  @Min(0, { message: 'Thứ tự hiển thị phải lớn hơn hoặc bằng 0' })
   @IsOptional()
   sortOrder?: number;
 }
 
 export class CreateProductDto {
   @ApiProperty({ example: 'Áo Basic Tee', maxLength: 255 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
+  @IsString({ message: 'Tên sản phẩm phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Tên sản phẩm không được để trống' })
+  @MaxLength(255, { message: 'Tên sản phẩm không được vượt quá 255 ký tự' })
   name: string;
 
   @ApiProperty({ example: 'ao-basic-tee', maxLength: 255 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
+  @IsString({ message: 'Slug phải là chuỗi ký tự' })
+  @IsNotEmpty({ message: 'Slug không được để trống' })
+  @MaxLength(255, { message: 'Slug không được vượt quá 255 ký tự' })
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message: 'slug chỉ được chứa chữ thường, số và dấu gạch nối',
+    message: 'Slug chỉ được chứa chữ thường, số và dấu gạch nối',
   })
   slug: string;
 
   @ApiPropertyOptional({ example: 'Áo thun basic chất cotton...', nullable: true })
-  @IsString()
+  @IsString({ message: 'Mô tả sản phẩm phải là chuỗi ký tự' })
   @IsOptional()
   description?: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/thumb.jpg', nullable: true })
-  @IsString()
+  @IsString({ message: 'URL ảnh đại diện phải là chuỗi ký tự' })
   @IsOptional()
-  @MaxLength(500)
+  @MaxLength(500, { message: 'URL ảnh đại diện không được vượt quá 500 ký tự' })
   thumbnail?: string;
 
   @ApiPropertyOptional({ example: 3, nullable: true })
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'ID danh mục phải là số nguyên' })
+  @Min(1, { message: 'ID danh mục phải lớn hơn hoặc bằng 1' })
   @IsOptional()
   /** @deprecated Dùng `categoryIds` để gán nhiều danh mục; nếu chỉ gửi một id có thể dùng trường này. */
   categoryId?: number;
@@ -109,27 +110,28 @@ export class CreateProductDto {
     description:
       'Nhiều danh mục (thường là các lá). Trùng với `categoryId` đơn lẻ thì ưu tiên mảng này.',
   })
-  @IsArray()
-  @ArrayMaxSize(40)
-  @IsInt({ each: true })
-  @Min(1, { each: true })
+  @IsArray({ message: 'Danh sách ID danh mục phải là một mảng' })
+  @ArrayMaxSize(40, { message: 'Không được gán quá 40 danh mục' })
+  @IsInt({ each: true, message: 'Mỗi ID danh mục phải là số nguyên' })
+  @Min(1, { each: true, message: 'Mỗi ID danh mục phải lớn hơn hoặc bằng 1' })
+  @ArrayUnique({ message: 'Các ID danh mục không được trùng lặp' })
   @IsOptional()
   categoryIds?: number[];
 
   @ApiPropertyOptional({ example: true })
-  @IsBoolean()
+  @IsBoolean({ message: 'Trạng thái hoạt động phải là kiểu boolean' })
   @IsOptional()
   isActive?: boolean;
 
   @ApiProperty({ type: [CreateProductVariantDto] })
-  @IsArray()
-  @ArrayMinSize(1)
+  @IsArray({ message: 'Danh sách biến thể phải là một mảng' })
+  @ArrayMinSize(1, { message: 'Phải có ít nhất một biến thể' })
   @ValidateNested({ each: true })
   @Type(() => CreateProductVariantDto)
   variants: CreateProductVariantDto[];
 
   @ApiPropertyOptional({ type: [CreateProductImageDto] })
-  @IsArray()
+  @IsArray({ message: 'Danh sách hình ảnh phải là một mảng' })
   @ValidateNested({ each: true })
   @Type(() => CreateProductImageDto)
   @IsOptional()
