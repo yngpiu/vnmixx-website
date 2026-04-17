@@ -1,6 +1,7 @@
 'use client';
 
 import { PermissionCrudMatrix } from '@/components/roles/permission-crud-matrix';
+import { RoleFormTabs } from '@/components/roles/role-form-tabs';
 import { createRole, listPermissions } from '@/lib/api/rbac';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui/components/ui/button';
@@ -56,6 +57,7 @@ type CreateRoleDialogProps = {
 
 export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) {
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<'meta' | 'perms'>('meta');
   const [assignedIds, setAssignedIds] = useState<Set<number>>(() => new Set());
   const form = useForm<CreateRoleFormValues>({
     resolver: zodResolver(createRoleSchema),
@@ -73,6 +75,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
 
   useEffect(() => {
     if (!open) return;
+    setTab('meta');
     form.reset({
       name: '',
       description: '',
@@ -123,67 +126,75 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
 
         <form
           id={CREATE_ROLE_FORM_ID}
-          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={(e) => {
             e.preventDefault();
             void submit(e);
           }}
           noValidate
         >
-          <FieldGroup>
-            <Field data-invalid={Boolean(errors.name)}>
-              <FieldLabel htmlFor="create-role-name">Tên vai trò</FieldLabel>
-              <Input
-                id="create-role-name"
-                {...register('name')}
-                aria-invalid={Boolean(errors.name)}
-                disabled={busy}
-                maxLength={50}
-                placeholder="VD: Kế toán"
-              />
-              {errors.name ? <FieldError errors={[errors.name]} /> : null}
-            </Field>
-            <Field data-invalid={Boolean(errors.description)}>
-              <FieldLabel htmlFor="create-role-desc">Mô tả</FieldLabel>
-              <Textarea
-                id="create-role-desc"
-                {...register('description')}
-                aria-invalid={Boolean(errors.description)}
-                disabled={busy}
-                maxLength={255}
-                rows={3}
-                placeholder="Mô tả ngắn cho vai trò này"
-              />
-              {errors.description ? <FieldError errors={[errors.description]} /> : null}
-            </Field>
-          </FieldGroup>
-
-          <div className=" flex flex-col gap-3">
-            <div>
-              <p className="text-sm font-semibold">Gán quyền</p>
-            </div>
-            {permissionsQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">Đang tải danh sách quyền…</p>
-            ) : permissionsQuery.isError ? (
-              <p className="text-destructive text-sm" role="alert">
-                Không tải được danh sách quyền.
-              </p>
-            ) : (
-              <PermissionCrudMatrix
-                permissions={permissionsQuery.data ?? []}
-                assignedIds={assignedIds}
-                disabled={busy}
-                onAssignedChange={(id, assigned) => {
-                  setAssignedIds((prev) => {
-                    const next = new Set(prev);
-                    if (assigned) next.add(id);
-                    else next.delete(id);
-                    return next;
-                  });
-                }}
-              />
-            )}
-          </div>
+          <RoleFormTabs
+            tab={tab}
+            onTabChange={setTab}
+            metaContent={
+              <FieldGroup>
+                <Field data-invalid={Boolean(errors.name)}>
+                  <FieldLabel htmlFor="create-role-name">Tên vai trò</FieldLabel>
+                  <Input
+                    id="create-role-name"
+                    {...register('name')}
+                    aria-invalid={Boolean(errors.name)}
+                    disabled={busy}
+                    maxLength={50}
+                    placeholder="VD: Kế toán"
+                  />
+                  {errors.name ? <FieldError errors={[errors.name]} /> : null}
+                </Field>
+                <Field data-invalid={Boolean(errors.description)}>
+                  <FieldLabel htmlFor="create-role-desc">Mô tả</FieldLabel>
+                  <Textarea
+                    id="create-role-desc"
+                    {...register('description')}
+                    aria-invalid={Boolean(errors.description)}
+                    disabled={busy}
+                    maxLength={255}
+                    rows={3}
+                    placeholder="Mô tả ngắn cho vai trò này"
+                  />
+                  {errors.description ? <FieldError errors={[errors.description]} /> : null}
+                </Field>
+              </FieldGroup>
+            }
+            permissionsContent={
+              <>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Ma trận theo tài nguyên (Tạo · Xem · Sửa · Xóa). Tick từng ô hoặc dùng checkbox ở
+                  đầu cột / hàng để gán hàng loạt.
+                </p>
+                {permissionsQuery.isLoading ? (
+                  <p className="text-muted-foreground text-sm">Đang tải danh sách quyền…</p>
+                ) : permissionsQuery.isError ? (
+                  <p className="text-destructive text-sm" role="alert">
+                    Không tải được danh sách quyền.
+                  </p>
+                ) : (
+                  <PermissionCrudMatrix
+                    permissions={permissionsQuery.data ?? []}
+                    assignedIds={assignedIds}
+                    disabled={busy}
+                    onAssignedChange={(id, assigned) => {
+                      setAssignedIds((prev) => {
+                        const next = new Set(prev);
+                        if (assigned) next.add(id);
+                        else next.delete(id);
+                        return next;
+                      });
+                    }}
+                  />
+                )}
+              </>
+            }
+          />
         </form>
 
         <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 px-6 py-4 sm:justify-end">

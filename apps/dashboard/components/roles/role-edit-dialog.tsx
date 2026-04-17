@@ -1,7 +1,8 @@
 'use client';
 
 import { PermissionCrudMatrix } from '@/components/roles/permission-crud-matrix';
-import { getRole, listPermissions, syncRolePermissions, updateRole } from '@/lib/api/rbac';
+import { RoleFormTabs } from '@/components/roles/role-form-tabs';
+import { getRole, listPermissions, updateRole } from '@/lib/api/rbac';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -13,7 +14,6 @@ import {
 } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/ui/tabs';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
@@ -74,34 +74,25 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
     setAssignedIds(new Set(detail.permissions.map((p) => p.id)));
   }, [open, detail]);
 
-  const patchMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: () => {
       if (roleId == null) throw new Error('Thiếu vai trò');
       return updateRole(roleId, {
         name: name.trim(),
         description: description.trim() || undefined,
+        permissionIds: [...assignedIds],
       });
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['roles'] });
-      toast.success('Đã cập nhật thông tin vai trò.');
+      toast.success(
+        tab === 'meta' ? 'Đã cập nhật thông tin vai trò.' : 'Đã cập nhật quyền cho vai trò.',
+      );
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const syncMutation = useMutation({
-    mutationFn: () => {
-      if (roleId == null) throw new Error('Thiếu vai trò');
-      return syncRolePermissions(roleId, [...assignedIds]);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['roles'] });
-      toast.success('Đã cập nhật quyền cho vai trò.');
-    },
-    onError: (err) => toast.error(apiErrorMessage(err)),
-  });
-
-  const busy = patchMutation.isPending || syncMutation.isPending;
+  const busy = saveMutation.isPending;
   const canSaveMeta = name.trim().length > 0;
 
   return (
@@ -133,82 +124,66 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
 
         {detail && !detailQuery.isError ? (
           <>
-            <Tabs
-              value={tab}
-              onValueChange={(v) => setTab(v as RoleEditTab)}
-              className="flex min-h-0 flex-1 flex-col gap-0"
-            >
-              <div className="shrink-0 px-6 pt-3">
-                <TabsList className="w-full sm:w-auto">
-                  <TabsTrigger value="meta" className="flex-1 sm:flex-none">
-                    Thông tin
-                  </TabsTrigger>
-                  <TabsTrigger value="perms" className="flex-1 sm:flex-none">
-                    Quyền
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-
-              <TabsContent
-                value="meta"
-                className="mt-0 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pt-4 pb-4"
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="role-edit-name">Tên vai trò</Label>
-                  <Input
-                    id="role-edit-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    disabled={busy}
-                    maxLength={50}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role-edit-desc">Mô tả</Label>
-                  <Textarea
-                    id="role-edit-desc"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    disabled={busy}
-                    rows={3}
-                    maxLength={255}
-                  />
-                </div>
-              </TabsContent>
-
-              <TabsContent
-                value="perms"
-                className="mt-0 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-6 pt-4 pb-4"
-              >
-                {permissionsQuery.isLoading ? (
-                  <p className="text-muted-foreground text-sm">Đang tải danh sách quyền…</p>
-                ) : permissionsQuery.isError ? (
-                  <p className="text-destructive text-sm" role="alert">
-                    Không tải được danh sách quyền.
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-muted-foreground text-xs leading-relaxed">
-                      Ma trận theo tài nguyên (Tạo · Xem · Sửa · Xóa). Tick từng ô hoặc dùng
-                      checkbox ở đầu cột / hàng để gán hàng loạt.
-                    </p>
-                    <PermissionCrudMatrix
-                      permissions={allPermissions}
-                      assignedIds={assignedIds}
+            <RoleFormTabs
+              tab={tab}
+              onTabChange={(value) => setTab(value as RoleEditTab)}
+              metaContent={
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="role-edit-name">Tên vai trò</Label>
+                    <Input
+                      id="role-edit-name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                       disabled={busy}
-                      onAssignedChange={(id, assigned) => {
-                        setAssignedIds((prev) => {
-                          const next = new Set(prev);
-                          if (assigned) next.add(id);
-                          else next.delete(id);
-                          return next;
-                        });
-                      }}
+                      maxLength={50}
                     />
-                  </>
-                )}
-              </TabsContent>
-            </Tabs>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role-edit-desc">Mô tả</Label>
+                    <Textarea
+                      id="role-edit-desc"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      disabled={busy}
+                      rows={3}
+                      maxLength={255}
+                    />
+                  </div>
+                </>
+              }
+              permissionsContent={
+                <>
+                  {permissionsQuery.isLoading ? (
+                    <p className="text-muted-foreground text-sm">Đang tải danh sách quyền…</p>
+                  ) : permissionsQuery.isError ? (
+                    <p className="text-destructive text-sm" role="alert">
+                      Không tải được danh sách quyền.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-muted-foreground text-xs leading-relaxed">
+                        Ma trận theo tài nguyên (Tạo · Xem · Sửa · Xóa). Tick từng ô hoặc dùng
+                        checkbox ở đầu cột / hàng để gán hàng loạt.
+                      </p>
+                      <PermissionCrudMatrix
+                        permissions={allPermissions}
+                        assignedIds={assignedIds}
+                        disabled={busy}
+                        onAssignedChange={(id, assigned) => {
+                          setAssignedIds((prev) => {
+                            const next = new Set(prev);
+                            if (assigned) next.add(id);
+                            else next.delete(id);
+                            return next;
+                          });
+                        }}
+                      />
+                    </>
+                  )}
+                </>
+              }
+            />
 
             <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 px-6 py-4 sm:justify-end">
               <Button
@@ -223,13 +198,13 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
                 <Button
                   type="button"
                   disabled={busy || !canSaveMeta}
-                  onClick={() => patchMutation.mutate()}
+                  onClick={() => saveMutation.mutate()}
                 >
-                  {patchMutation.isPending ? 'Đang lưu…' : 'Lưu thông tin'}
+                  {saveMutation.isPending ? 'Đang lưu…' : 'Lưu thông tin'}
                 </Button>
               ) : (
-                <Button type="button" disabled={busy} onClick={() => syncMutation.mutate()}>
-                  {syncMutation.isPending ? 'Đang lưu…' : 'Lưu quyền'}
+                <Button type="button" disabled={busy} onClick={() => saveMutation.mutate()}>
+                  {saveMutation.isPending ? 'Đang lưu…' : 'Lưu quyền'}
                 </Button>
               )}
             </DialogFooter>

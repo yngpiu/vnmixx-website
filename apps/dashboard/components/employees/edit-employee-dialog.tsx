@@ -1,6 +1,6 @@
 'use client';
 
-import { MultiSelectPopover } from '@/components/multi-select-popover';
+import { SearchableMultiSelect } from '@/components/searchable-multi-select';
 import { deleteEmployee, getEmployee, restoreEmployee, updateEmployee } from '@/lib/api/employees';
 import { listRoles } from '@/lib/api/roles';
 import type { UpdateEmployeePayload } from '@/lib/types/employee';
@@ -311,14 +311,15 @@ export function EditEmployeeDialog({
                     control={rolesControl}
                     render={({ field }) => {
                       const roles = rolesQuery.data ?? [];
-                      const options = roles.map((r) => ({ value: r.id, label: r.name }));
+                      const options = roles.map((role) => ({ value: role.id, label: role.name }));
                       return (
-                        <MultiSelectPopover
+                        <SearchableMultiSelect
                           options={options}
                           value={field.value}
                           onChange={field.onChange}
                           disabled={rolesFormDisabled || options.length === 0}
                           placeholder="Chọn vai trò…"
+                          searchPlaceholder="Tìm vai trò..."
                           aria-invalid={Boolean(rolesErrors.roleIds)}
                         />
                       );

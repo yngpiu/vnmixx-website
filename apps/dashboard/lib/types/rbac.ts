@@ -44,4 +44,5 @@ export type CreateRolePayload = {
 export type UpdateRolePayload = {
   name?: string;
   description?: string;
+  permissionIds?: number[];
 };

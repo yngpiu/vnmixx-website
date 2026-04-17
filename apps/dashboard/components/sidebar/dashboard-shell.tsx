@@ -1,7 +1,7 @@
 'use client';
 
 import { AppSidebar } from '@/components/sidebar/app-sidebar';
-import { dashboardBreadcrumbPageTitle, dashboardRoutes } from '@/lib/routes';
+import { dashboardBreadcrumbs } from '@/lib/routes';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,11 +13,11 @@ import {
 import { Separator } from '@repo/ui/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@repo/ui/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
+import { Fragment } from 'react';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const pageTitle = dashboardBreadcrumbPageTitle(pathname);
-  const isSubPage = pathname !== dashboardRoutes.root && pathname !== `${dashboardRoutes.root}`;
+  const breadcrumbs = dashboardBreadcrumbs(pathname);
 
   return (
     <SidebarProvider>
@@ -32,21 +32,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href={dashboardRoutes.root}>VNMIXX</BreadcrumbLink>
-                </BreadcrumbItem>
-                {isSubPage ? (
-                  <>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem className="hidden md:block">
-                      <BreadcrumbLink href={dashboardRoutes.root}>Quản trị</BreadcrumbLink>
-                    </BreadcrumbItem>
-                  </>
-                ) : null}
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
-                </BreadcrumbItem>
+                {breadcrumbs.map((breadcrumb, index) => {
+                  const isLastBreadcrumb = index === breadcrumbs.length - 1;
+                  return (
+                    <Fragment key={`${breadcrumb.label}-${index}`}>
+                      {index > 0 ? <BreadcrumbSeparator className="hidden md:block" /> : null}
+                      <BreadcrumbItem>
+                        {isLastBreadcrumb || !breadcrumb.href ? (
+                          <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink href={breadcrumb.href}>{breadcrumb.label}</BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                    </Fragment>
+                  );
+                })}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
