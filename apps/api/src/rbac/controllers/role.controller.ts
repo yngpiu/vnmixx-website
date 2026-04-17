@@ -7,7 +7,6 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
   Put,
   Query,
@@ -30,7 +29,6 @@ import {
   ListRolesQueryDto,
   RoleDetailResponseDto,
   RoleListResponseDto,
-  SyncPermissionsDto,
   UpdateRoleDto,
 } from '../dto';
 import { RoleService } from '../services/role.service';
@@ -79,12 +77,12 @@ export class RoleController {
     return this.roleService.create(dto);
   }
 
-  @ApiOperation({ summary: 'Cập nhật tên/mô tả vai trò' })
+  @ApiOperation({ summary: 'Cập nhật vai trò và quyền' })
   @ApiOkResponse({ type: RoleDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
   @ApiConflictResponse({ description: 'Tên vai trò đã được sử dụng.' })
   @RequirePermissions('rbac.update')
-  @Patch(':id')
+  @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRoleDto,
@@ -100,17 +98,5 @@ export class RoleController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.roleService.delete(id);
-  }
-
-  @ApiOperation({ summary: 'Đồng bộ quyền cho vai trò (thay thế toàn bộ)' })
-  @ApiOkResponse({ type: RoleDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
-  @RequirePermissions('rbac.update')
-  @Put(':id/permissions')
-  async syncPermissions(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: SyncPermissionsDto,
-  ): Promise<RoleDetailResponseDto> {
-    return this.roleService.syncPermissions(id, dto.permissionIds);
   }
 }

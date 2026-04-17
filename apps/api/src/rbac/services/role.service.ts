@@ -58,12 +58,22 @@ export class RoleService {
 
   async update(id: number, dto: UpdateRoleDto): Promise<RoleDetailView> {
     await this.findById(id);
+    if (dto.permissionIds !== undefined) {
+      await this.validatePermissionIds(dto.permissionIds);
+    }
 
     try {
-      return await this.roleRepo.update(id, {
+      const updatedRole = await this.roleRepo.update(id, {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.description !== undefined && { description: dto.description }),
       });
+      if (dto.permissionIds === undefined) {
+        return updatedRole;
+      }
+      const roleWithPermissions = await this.roleRepo.syncPermissions(id, dto.permissionIds);
+      const affectedEmployeeIds = await this.roleRepo.findEmployeeIdsByRoleId(id);
+      await this.revokeTokensForEmployees(affectedEmployeeIds);
+      return roleWithPermissions;
     } catch (err) {
       if (dto.name) this.handleUniqueViolation(err, dto.name);
       throw err;
@@ -76,18 +86,6 @@ export class RoleService {
     const affectedEmployeeIds = await this.roleRepo.findEmployeeIdsByRoleId(id);
     await this.roleRepo.delete(id);
     await this.revokeTokensForEmployees(affectedEmployeeIds);
-  }
-
-  async syncPermissions(roleId: number, permissionIds: number[]): Promise<RoleDetailView> {
-    await this.findById(roleId);
-    await this.validatePermissionIds(permissionIds);
-
-    const result = await this.roleRepo.syncPermissions(roleId, permissionIds);
-
-    const affectedEmployeeIds = await this.roleRepo.findEmployeeIdsByRoleId(roleId);
-    await this.revokeTokensForEmployees(affectedEmployeeIds);
-
-    return result;
   }
 
   private async validatePermissionIds(ids: number[]): Promise<void> {

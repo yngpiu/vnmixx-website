@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateRoleDto {
   @ApiPropertyOptional({ example: 'editor', description: 'Tên vai trò duy nhất', maxLength: 50 })
@@ -14,4 +14,14 @@ export class UpdateRoleDto {
   @IsOptional()
   @MaxLength(255)
   description?: string;
+
+  @ApiPropertyOptional({
+    example: [1, 3, 5],
+    description: 'Danh sách ID quyền gán cho vai trò (có thể rỗng để gỡ hết).',
+    type: [Number],
+  })
+  @IsArray()
+  @IsInt({ each: true })
+  @IsOptional()
+  permissionIds?: number[];
 }
