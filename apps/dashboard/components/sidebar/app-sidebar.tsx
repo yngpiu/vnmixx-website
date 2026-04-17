@@ -62,6 +62,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
                   height={32}
                   priority
                   unoptimized
+                  style={{ width: 'auto' }}
                   className="h-6 w-auto max-w-[min(100%,7.5rem)] shrink-0 object-contain object-left transition-[max-width] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:max-h-5 group-data-[collapsible=icon]:max-w-5 group-data-[collapsible=icon]:object-center"
                 />
               </Link>
