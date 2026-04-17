@@ -3,9 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 class WishlistProductVariantDto {
   @ApiProperty({ example: 299000 })
   price: number;
-
-  @ApiProperty({ example: 249000, nullable: true })
-  salePrice: number | null;
 }
 
 class WishlistProductDto {

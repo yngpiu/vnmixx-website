@@ -49,7 +49,6 @@ export class OrderService {
                 id: true,
                 sku: true,
                 price: true,
-                salePrice: true,
                 onHand: true,
                 reserved: true,
                 color: { select: { name: true } },
@@ -86,12 +85,12 @@ export class OrderService {
     let insuranceValue = 0;
 
     for (const item of cart.items) {
-      const { product: p, salePrice, price } = item.variant;
+      const { product: p, price } = item.variant;
       weight += p.weight * item.quantity;
       maxLength = Math.max(maxLength, p.length);
       maxWidth = Math.max(maxWidth, p.width);
       totalHeight += p.height * item.quantity;
-      insuranceValue += (salePrice ?? price) * item.quantity;
+      insuranceValue += price * item.quantity;
     }
 
     const pkgLength = maxLength;
@@ -135,10 +134,7 @@ export class OrderService {
     // 6. Transaction: create order, items, payment, deduct stock, clear cart
     const orderCode = await this.orderRepo.generateOrderCode();
 
-    const subtotal = cart.items.reduce((sum, item) => {
-      const effectivePrice = item.variant.salePrice ?? item.variant.price;
-      return sum + effectivePrice * item.quantity;
-    }, 0);
+    const subtotal = cart.items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
 
     const total = subtotal + feeData.total;
 
@@ -181,9 +177,9 @@ export class OrderService {
           colorName: item.variant.color.name,
           sizeLabel: item.variant.size.label,
           sku: item.variant.sku,
-          price: item.variant.salePrice ?? item.variant.price,
+          price: item.variant.price,
           quantity: item.quantity,
-          subtotal: (item.variant.salePrice ?? item.variant.price) * item.quantity,
+          subtotal: item.variant.price * item.quantity,
         })),
       });
 

@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateVariantDto {
   @ApiProperty({ example: 1 })
@@ -22,12 +22,6 @@ export class CreateVariantDto {
   @IsInt()
   @Min(0)
   price: number;
-
-  @ApiPropertyOptional({ example: 249000, nullable: true })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  salePrice?: number;
 
   @ApiProperty({ example: 50, description: 'Tồn kho thực tế ban đầu' })
   @IsInt()

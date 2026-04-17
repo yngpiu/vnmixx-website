@@ -338,7 +338,6 @@ model ProductVariant {
   sizeId    Int       @map("size_id") @db.UnsignedInt
   sku       String    @unique(map: "uk_variants_sku") @db.VarChar(50)
   price     Int       @db.UnsignedInt
-  salePrice Int?      @map("sale_price") @db.UnsignedInt
   onHand    Int       @default(0) @map("on_hand") @db.UnsignedInt
   reserved  Int       @default(0) @db.UnsignedInt
   version   Int       @default(0) @db.UnsignedInt

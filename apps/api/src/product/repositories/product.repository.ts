@@ -39,7 +39,6 @@ export interface ProductDetailView {
     sizeId: number;
     sku: string;
     price: number;
-    salePrice: number | null;
     onHand: number;
     reserved: number;
     color: { id: number; name: string; hexCode: string };
@@ -83,7 +82,6 @@ const VARIANT_PUBLIC_SELECT = {
   sizeId: true,
   sku: true,
   price: true,
-  salePrice: true,
   onHand: true,
   reserved: true,
   color: { select: { id: true, name: true, hexCode: true } },
@@ -174,14 +172,14 @@ export class ProductRepository {
           category: { select: CATEGORY_BRIEF_SELECT },
           variants: {
             where: { isActive: true, deletedAt: null },
-            select: { price: true, salePrice: true },
+            select: { price: true },
           },
         },
       }),
     ]);
 
     const data = products.map(({ variants, ...rest }) => {
-      const prices = variants.map((v) => v.salePrice ?? v.price);
+      const prices = variants.map((v) => v.price);
       const minP = prices.length ? Math.min(...prices) : null;
       const maxP = prices.length ? Math.max(...prices) : null;
       return { ...rest, minPrice: minP, maxPrice: maxP };
@@ -375,7 +373,6 @@ export class ProductRepository {
       sizeId: number;
       sku: string;
       price: number;
-      salePrice?: number | null;
       onHand: number;
     }[];
     images: {
@@ -405,7 +402,6 @@ export class ProductRepository {
             sizeId: v.sizeId,
             sku: v.sku,
             price: v.price,
-            salePrice: v.salePrice ?? null,
             onHand: v.onHand,
             reserved: 0,
             version: 0,
@@ -492,7 +488,6 @@ export class ProductRepository {
       sizeId: number;
       sku: string;
       price: number;
-      salePrice?: number | null;
       onHand: number;
     },
   ) {
@@ -503,7 +498,6 @@ export class ProductRepository {
         sizeId: data.sizeId,
         sku: data.sku,
         price: data.price,
-        salePrice: data.salePrice ?? null,
         onHand: data.onHand,
         reserved: 0,
         version: 0,
@@ -532,7 +526,7 @@ export class ProductRepository {
 
   async updateVariant(
     variantId: number,
-    data: { price?: number; salePrice?: number | null; onHand?: number; isActive?: boolean },
+    data: { price?: number; onHand?: number; isActive?: boolean },
   ) {
     return this.prisma.productVariant.update({
       where: { id: variantId },

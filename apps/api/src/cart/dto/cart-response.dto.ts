@@ -43,9 +43,6 @@ class CartItemVariantDto {
   @ApiProperty({ example: 299000 })
   price: number;
 
-  @ApiProperty({ example: 249000, nullable: true })
-  salePrice: number | null;
-
   @ApiProperty({ example: 50, description: 'Tồn kho thực tế tại cửa hàng' })
   onHand: number;
 

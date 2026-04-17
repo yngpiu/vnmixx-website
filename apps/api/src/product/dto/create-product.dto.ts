@@ -37,12 +37,6 @@ export class CreateProductVariantDto {
   @Min(0)
   price: number;
 
-  @ApiPropertyOptional({ example: 249000, nullable: true })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  salePrice?: number;
-
   @ApiProperty({ example: 50, description: 'Tồn kho thực tế ban đầu' })
   @IsInt()
   @Min(0)

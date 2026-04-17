@@ -104,7 +104,6 @@ export class ShippingService implements OnModuleInit {
             variant: {
               select: {
                 price: true,
-                salePrice: true,
                 product: {
                   select: { weight: true, length: true, width: true, height: true },
                 },
@@ -127,12 +126,12 @@ export class ShippingService implements OnModuleInit {
     let insuranceValue = 0;
 
     for (const item of cart.items) {
-      const { product: p, salePrice, price } = item.variant;
+      const { product: p, price } = item.variant;
       weight += p.weight * item.quantity;
       maxLength = Math.max(maxLength, p.length);
       maxWidth = Math.max(maxWidth, p.width);
       totalHeight += p.height * item.quantity;
-      insuranceValue += (salePrice ?? price) * item.quantity;
+      insuranceValue += price * item.quantity;
     }
 
     const length = maxLength;

@@ -68,9 +68,6 @@ class ProductVariantDto {
   @ApiProperty({ example: 299000 })
   price: number;
 
-  @ApiPropertyOptional({ example: 249000, nullable: true })
-  salePrice: number | null;
-
   @ApiProperty({ example: 50, description: 'Tồn kho thực tế' })
   onHand: number;
 

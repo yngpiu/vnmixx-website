@@ -262,7 +262,6 @@ export async function seedProducts(): Promise<void> {
       const category = leafCategories[i % leafCategories.length];
       const pairs = pickVariantPairs(colorIds, sizeIds, i);
       const basePrice = 159_000 + ((i * 17_389) % 890_000);
-      const withSale = i % 4 === 0;
       const isActive = i % 11 !== 0;
 
       const variants = pairs.map((p, vi) => {
@@ -272,14 +271,12 @@ export async function seedProducts(): Promise<void> {
             50,
           );
         const price = basePrice + vi * 10_000;
-        const salePrice = withSale && vi === 0 ? Math.floor(price * 0.85) : null;
         const onHand = 8 + (((i + vi) * 23) % 220);
         return {
           colorId: p.colorId,
           sizeId: p.sizeId,
           sku,
           price,
-          salePrice,
           onHand,
         };
       });
@@ -315,7 +312,6 @@ export async function seedProducts(): Promise<void> {
             sizeId: v.sizeId,
             sku: v.sku,
             price: v.price,
-            salePrice: v.salePrice,
             onHand: v.onHand,
             reserved: 0,
             version: 0,

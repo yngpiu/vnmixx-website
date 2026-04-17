@@ -8,12 +8,6 @@ export class UpdateVariantDto {
   @IsOptional()
   price?: number;
 
-  @ApiPropertyOptional({ example: 249000, nullable: true })
-  @IsInt()
-  @Min(0)
-  @IsOptional()
-  salePrice?: number | null;
-
   @ApiPropertyOptional({ example: 50, description: 'Cập nhật tồn kho thực tế (on hand)' })
   @IsInt()
   @Min(0)

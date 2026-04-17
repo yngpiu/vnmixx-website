@@ -127,7 +127,6 @@ export class ProductService {
 
     this.validateVariantCombos(dto.variants);
     this.validateSkuUniqueness(dto.variants);
-    this.validateSalePrices(dto.variants);
 
     for (const v of dto.variants) {
       if (await this.repository.skuExists(v.sku)) {
@@ -222,10 +221,6 @@ export class ProductService {
     if (!colorsValid) throw new BadRequestException(`Không tìm thấy màu sắc #${dto.colorId}`);
     if (!sizesValid) throw new BadRequestException(`Không tìm thấy kích thước #${dto.sizeId}`);
 
-    if (dto.salePrice !== undefined && dto.salePrice >= dto.price) {
-      throw new BadRequestException('Giá khuyến mãi phải nhỏ hơn giá gốc');
-    }
-
     if (await this.repository.skuExists(dto.sku)) {
       throw new ConflictException(`SKU "${dto.sku}" đã tồn tại`);
     }
@@ -256,7 +251,6 @@ export class ProductService {
 
     const result = await this.repository.updateVariant(variantId, {
       ...(dto.price !== undefined && { price: dto.price }),
-      ...(dto.salePrice !== undefined && { salePrice: dto.salePrice }),
       ...(dto.onHand !== undefined && { onHand: dto.onHand }),
       ...(dto.isActive !== undefined && { isActive: dto.isActive }),
     });
@@ -355,16 +349,6 @@ export class ProductService {
         throw new BadRequestException(`Duplicate SKU in request: "${v.sku}"`);
       }
       skus.add(v.sku);
-    }
-  }
-
-  private validateSalePrices(variants: { price: number; salePrice?: number }[]): void {
-    for (const v of variants) {
-      if (v.salePrice !== undefined && v.salePrice >= v.price) {
-        throw new BadRequestException(
-          `salePrice (${v.salePrice}) must be less than price (${v.price}) for SKU in request`,
-        );
-      }
     }
   }
 

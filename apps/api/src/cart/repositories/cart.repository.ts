@@ -11,7 +11,6 @@ const CART_ITEM_SELECT = {
       id: true,
       sku: true,
       price: true,
-      salePrice: true,
       onHand: true,
       reserved: true,
       color: { select: { id: true, name: true, hexCode: true } },
@@ -40,7 +39,6 @@ export interface CartItemView {
     id: number;
     sku: string;
     price: number;
-    salePrice: number | null;
     onHand: number;
     reserved: number;
     color: { id: number; name: string; hexCode: string };

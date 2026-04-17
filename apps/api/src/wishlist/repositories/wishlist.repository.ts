@@ -10,7 +10,7 @@ const WISHLIST_SELECT = {
       slug: true,
       thumbnail: true,
       variants: {
-        select: { price: true, salePrice: true },
+        select: { price: true },
         where: { isActive: true, deletedAt: null },
         orderBy: { price: 'asc' as const },
         take: 1,
@@ -26,7 +26,7 @@ export interface WishlistItemView {
     name: string;
     slug: string;
     thumbnail: string | null;
-    variants: { price: number; salePrice: number | null }[];
+    variants: { price: number }[];
   };
 }
 
