@@ -5,7 +5,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -92,11 +91,11 @@ export function CreateColorDialog({ open, onOpenChange }: CreateColorDialogProps
       <DialogContent
         className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
+        aria-describedby={undefined}
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>Thêm màu</DialogTitle>
-            <DialogDescription>Tên hiển thị và mã màu HEX (#RRGGBB).</DialogDescription>
           </DialogHeader>
         </div>
 

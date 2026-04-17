@@ -7,7 +7,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -99,14 +98,11 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
       <DialogContent
         className="flex max-h-[min(92dvh,48rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
         showCloseButton
+        aria-describedby={undefined}
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader className="gap-1 text-start">
-            <DialogTitle>Sửa vai trò</DialogTitle>
-            <DialogDescription>
-              Sửa thông tin vai trò, quyền truy cập theo từng tài nguyên dựa trên các hành động
-              CRUD.
-            </DialogDescription>
+            <DialogTitle>{`Sửa vai trò #${detail?.id ?? roleId ?? '—'}`}</DialogTitle>
           </DialogHeader>
         </div>
 

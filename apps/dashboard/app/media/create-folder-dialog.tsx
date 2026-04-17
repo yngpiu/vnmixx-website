@@ -5,7 +5,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -55,13 +54,10 @@ export function CreateFolderDialog({ isOpen, onClose, parentFolder }: CreateFold
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Tạo thư mục mới</DialogTitle>
-            <DialogDescription>
-              {parentFolder ? `Trong: ${parentFolder}` : 'Trong thư mục gốc'}
-            </DialogDescription>
           </DialogHeader>
           <div className="my-4 space-y-2">
             <Label htmlFor="folder-name">Tên thư mục</Label>

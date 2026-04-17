@@ -49,7 +49,7 @@ export function CategoryDetailDialog({ category, open, onOpenChange }: CategoryD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Chi tiết danh mục</DialogTitle>
         </DialogHeader>

@@ -32,7 +32,7 @@ function chunked<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-async function main() {
+export async function seedLocations() {
   const filePath = resolve(process.cwd(), 'prisma/data/locations.json');
   const raw = await readFile(filePath, 'utf-8');
   const provinces = JSON.parse(raw) as GhnProvince[];
@@ -105,12 +105,3 @@ async function main() {
     `Seed locations done: cities=${cityCount}, districts=${districtCount}, wards=${wardCount}`,
   );
 }
-
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });

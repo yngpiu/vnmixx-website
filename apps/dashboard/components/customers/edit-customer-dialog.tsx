@@ -6,7 +6,6 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/component
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -125,19 +124,6 @@ export function EditCustomerDialog({
           ? 'Khôi phục khách hàng'
           : '';
 
-  const description =
-    mode === 'active' && detail
-      ? detail.isActive
-        ? 'Tài khoản khách hàng sẽ bị vô hiệu cho đến khi được kích hoạt lại.'
-        : 'Kích hoạt lại tài khoản khách hàng này.'
-      : mode === 'delete' && detail && !detail.deletedAt
-        ? 'Khách hàng sẽ không còn trong danh sách thông thường. Bạn có thể khôi phục sau qua menu hành động (khi bật lọc bản ghi đã xóa).'
-        : mode === 'restore' && detail?.deletedAt
-          ? 'Khách hàng sẽ hiển thị lại trong danh sách và có thể chỉnh sửa như bình thường.'
-          : mode === 'restore' && detail && !detail.deletedAt
-            ? 'Bản ghi hiện không ở trạng thái đã xóa.'
-            : '';
-
   const loading = Boolean(detailQuery.isLoading && customerId != null);
   const error = detailQuery.isError;
   const deletedBlock = Boolean(isDeleted && detail && mode !== 'restore');
@@ -153,14 +139,13 @@ export function EditCustomerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        {...(!description ? { 'aria-describedby': undefined } : {})}
+        aria-describedby={undefined}
         className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            {description ? <DialogDescription>{description}</DialogDescription> : null}
           </DialogHeader>
         </div>
 

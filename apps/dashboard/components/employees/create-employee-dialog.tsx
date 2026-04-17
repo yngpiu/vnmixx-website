@@ -8,7 +8,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -29,6 +28,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 const CREATE_EMPLOYEE_FORM_ID = 'create-employee-dialog-form';
+const regexPhoneNumber = /(84|0[3|5|7|8|9])+([0-9]{8})\b/g;
 
 const createEmployeeSchema = z.object({
   fullName: z
@@ -41,6 +41,7 @@ const createEmployeeSchema = z.object({
     .string()
     .trim()
     .min(1, { message: 'Số điện thoại không được để trống.' })
+    .regex(regexPhoneNumber, { message: 'Số điện thoại không đúng định dạng hợp lệ.' })
     .max(20, { message: 'Số điện thoại tối đa 20 ký tự.' }),
   password: z.string().min(8, { message: 'Mật khẩu tối thiểu 8 ký tự.' }),
   roleIds: z.array(z.number().int().positive()),
@@ -149,13 +150,11 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
       <DialogContent
         className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
+        aria-describedby={undefined}
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>Thêm nhân viên</DialogTitle>
-            <DialogDescription>
-              Tạo tài khoản đăng nhập quản trị. Có thể gán một hoặc nhiều vai trò.
-            </DialogDescription>
           </DialogHeader>
         </div>
 

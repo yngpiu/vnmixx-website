@@ -78,7 +78,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               width={150}
               height={150}
               priority
-              style={{ height: 'auto' }}
+              style={{ width: 'auto', height: 'auto' }}
               className="mb-4"
             />
             Đăng nhập vào hệ thống quản lý

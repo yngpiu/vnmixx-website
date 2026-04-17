@@ -7,7 +7,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -129,26 +128,11 @@ export function CreateCategoryDialog({
       <DialogContent
         className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
+        aria-describedby={undefined}
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>{isRoot ? 'Tạo danh mục cấp 1' : 'Thêm danh mục con'}</DialogTitle>
-            <DialogDescription>
-              {isRoot ? (
-                <>
-                  Danh mục gốc (không thuộc nhánh nào). Slug gợi ý từ tên; có thể sửa (chữ thường,
-                  kebab-case).
-                </>
-              ) : (
-                <>
-                  Tạo một cấp dưới{' '}
-                  <span className="font-medium text-foreground">
-                    {parentCategory ? categoryDisplayName(parentCategory.name) : ''}
-                  </span>
-                  . Tối đa 3 cấp trong cây.
-                </>
-              )}
-            </DialogDescription>
           </DialogHeader>
         </div>
 

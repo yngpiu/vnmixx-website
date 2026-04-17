@@ -5,7 +5,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -86,13 +85,11 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
       <DialogContent
         className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
+        aria-describedby={undefined}
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>Thêm kích cỡ</DialogTitle>
-            <DialogDescription>
-              Nhãn hiển thị (VD: M, L) và thứ tự sắp xếp tùy chọn.
-            </DialogDescription>
           </DialogHeader>
         </div>
 

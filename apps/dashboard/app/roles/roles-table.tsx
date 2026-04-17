@@ -246,13 +246,12 @@ export function RolesTable() {
       />
 
       <AlertDialog open={deleteTarget != null} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="data-[size=default]:max-w-md data-[size=default]:sm:max-w-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Xóa vai trò?</AlertDialogTitle>
+            <AlertDialogTitle>Xác nhận xoá vai trò #{deleteTarget?.id}?</AlertDialogTitle>
             <AlertDialogDescription>
               Vai trò <strong className="text-foreground">{deleteTarget?.name}</strong> sẽ bị xóa
-              vĩnh viễn. Nhân viên đang dùng vai trò này sẽ mất quyền liên quan và cần đăng nhập
-              lại.
+              vĩnh viễn. Nhân viên đang có vai trò này sẽ mất quyền truy cập và cần đăng nhập lại.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 px-6 py-4 sm:flex-row sm:justify-end">

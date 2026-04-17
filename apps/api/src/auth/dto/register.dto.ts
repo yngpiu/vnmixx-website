@@ -16,6 +16,8 @@ enum GenderInput {
   OTHER = 'OTHER',
 }
 
+const regexPhoneNumber = /(84|0[3|5|7|8|9])+([0-9]{8})\b/g;
+
 /** DTO for customer registration. Employees are created by admins. */
 export class RegisterDto {
   @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ và tên', maxLength: 100 })
@@ -41,7 +43,7 @@ export class RegisterDto {
   })
   @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
   @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
-  @Matches(/^[0-9+\-\s()]+$/, { message: 'Số điện thoại không đúng định dạng hợp lệ' })
+  @Matches(regexPhoneNumber, { message: 'Số điện thoại không đúng định dạng hợp lệ' })
   @MaxLength(20, { message: 'Số điện thoại không được vượt quá 20 ký tự' })
   phoneNumber: string;
 

@@ -20,7 +20,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -77,7 +76,7 @@ export function MediaPickerDialog({
   open,
   onOpenChange,
   title,
-  description,
+  description: _description,
   multiple,
   selectedUrls,
   onConfirm,
@@ -256,11 +255,13 @@ export function MediaPickerDialog({
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[92dvh] w-[min(96vw,1280px)] max-w-[min(96vw,1280px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1280px)]">
+      <DialogContent
+        className="flex h-[92dvh] w-[min(96vw,1280px)] max-w-[min(96vw,1280px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1280px)]"
+        aria-describedby={undefined}
+      >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description ?? 'Chọn ảnh từ thư viện media.'}</DialogDescription>
           </DialogHeader>
         </div>
         <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -521,12 +522,12 @@ export function MediaPickerDialog({
         }}
       >
         {previewFile ? (
-          <DialogContent className="max-h-[92dvh] w-[min(96vw,1280px)] max-w-[min(96vw,1280px)] overflow-hidden p-0 sm:max-w-[min(96vw,1280px)]">
+          <DialogContent
+            className="max-h-[92dvh] w-[min(96vw,1280px)] max-w-[min(96vw,1280px)] overflow-hidden p-0 sm:max-w-[min(96vw,1280px)]"
+            aria-describedby={undefined}
+          >
             <DialogHeader className="sr-only">
               <DialogTitle>Xem trước ảnh media</DialogTitle>
-              <DialogDescription>
-                Hộp thoại xem trước ảnh đã chọn từ thư viện media.
-              </DialogDescription>
             </DialogHeader>
             <div className="flex max-h-[calc(92dvh-12rem)] items-center justify-center overflow-auto bg-muted/30 p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}

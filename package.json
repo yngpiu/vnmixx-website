@@ -13,6 +13,7 @@
     "docker:prod:down": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",
+    "seed": "pnpm --filter api exec tsx prisma/seed.ts",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "prepare": "husky"
   },

@@ -2,17 +2,16 @@
 
 import { PermissionCrudMatrix } from '@/components/roles/permission-crud-matrix';
 import { getRole, listPermissions } from '@/lib/api/rbac';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/components/ui/dialog';
+import { Separator } from '@repo/ui/components/ui/separator';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 const noopAssign = () => {};
+const dateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+});
 
 type RoleDetailDialogProps = {
   roleId: number | null;
@@ -48,10 +47,9 @@ export function RoleDetailDialog({ roleId, open, onOpenChange }: RoleDetailDialo
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader className="gap-1 text-start">
-            <DialogTitle className="text-base font-semibold">Chi tiết vai trò</DialogTitle>
-            <DialogDescription className="sr-only">
-              Thông tin vai trò và ma trận quyền (chỉ xem).
-            </DialogDescription>
+            <DialogTitle className="text-base font-semibold">
+              {`Chi tiết vai trò #${r?.id ?? roleId ?? '—'}`}
+            </DialogTitle>
           </DialogHeader>
         </div>
 
@@ -70,7 +68,7 @@ export function RoleDetailDialog({ roleId, open, onOpenChange }: RoleDetailDialo
 
           {r ? (
             <>
-              <div className="flex flex-col gap-6 px-6 py-4">
+              <div className="flex flex-col gap-5 px-5 py-3">
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
@@ -104,6 +102,21 @@ export function RoleDetailDialog({ roleId, open, onOpenChange }: RoleDetailDialo
                       disabled
                     />
                   )}
+                </div>
+                <Separator />
+                <div className="grid gap-x-4 gap-y-2 text-xs sm:grid-cols-2">
+                  <p className="text-muted-foreground">
+                    Tạo lúc:{' '}
+                    <span className="text-foreground tabular-nums">
+                      {dateTimeFormatter.format(new Date(r.createdAt))}
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    Cập nhật:{' '}
+                    <span className="text-foreground tabular-nums">
+                      {dateTimeFormatter.format(new Date(r.updatedAt))}
+                    </span>
+                  </p>
                 </div>
               </div>
             </>

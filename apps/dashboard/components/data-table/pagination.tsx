@@ -58,7 +58,7 @@ export function DataTablePagination<TData>({ table, className }: DataTablePagina
               ))}
             </SelectContent>
           </Select>
-          <p className="hidden text-sm font-medium sm:block">Số dòng / trang</p>
+          <p className="hidden text-sm font-medium sm:block">Số dòng/trang</p>
         </div>
       </div>
 

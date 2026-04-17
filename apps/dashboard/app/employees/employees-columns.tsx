@@ -8,7 +8,6 @@ import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/lib/avatar';
 import type { EmployeeListItem } from '@/lib/types/employee';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
-import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -22,32 +21,6 @@ function roleLabels(row: EmployeeListItem): string {
 }
 
 export const employeesColumns: ColumnDef<EmployeeListItem>[] = [
-  {
-    id: 'select',
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Chọn tất cả trên trang"
-        className="translate-y-0.5"
-      />
-    ),
-    meta: {
-      className: cn('max-md:sticky start-0 z-10 rounded-tl-[inherit]'),
-    } satisfies DataTableColumnMeta,
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Chọn dòng"
-        className="translate-y-0.5"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
   dataTableSttColumnDef<EmployeeListItem>(),
   {
     accessorKey: 'fullName',
@@ -76,7 +49,7 @@ export const employeesColumns: ColumnDef<EmployeeListItem>[] = [
     meta: {
       className: cn(
         'drop-shadow-[0_1px_2px_rgb(0_0_0_/_0.08)] dark:drop-shadow-[0_1px_2px_rgb(255_255_255_/_0.06)]',
-        'max-md:sticky start-8 md:drop-shadow-none',
+        'max-md:sticky start-0 md:drop-shadow-none',
       ),
       dataTableColumnLabel: 'Họ tên',
     } satisfies DataTableColumnMeta,

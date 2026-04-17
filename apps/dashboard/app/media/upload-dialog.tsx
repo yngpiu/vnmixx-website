@@ -5,7 +5,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -110,12 +109,9 @@ export function UploadDialog({ isOpen, onClose, folder }: UploadDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Tải tệp tin lên</DialogTitle>
-          <DialogDescription>
-            {folder ? `Thư mục: ${folder}` : 'Thư mục gốc (Media)'}
-          </DialogDescription>
         </DialogHeader>
         <div
           className={`flex min-h-44 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 transition-colors ${

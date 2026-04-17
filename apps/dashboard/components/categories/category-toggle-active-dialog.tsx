@@ -7,7 +7,6 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/component
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -43,22 +42,16 @@ export function CategoryToggleActiveDialog({
   const descendantCount = category ? countDescendants(category) : 0;
 
   const title = isActive ? 'Vô hiệu hóa danh mục' : 'Kích hoạt danh mục';
-  const description = isActive
-    ? descendantCount > 0
-      ? `Danh mục sẽ ẩn khỏi shop. Toàn bộ ${descendantCount} danh mục con (mọi cấp dưới) cũng bị vô hiệu hóa.`
-      : 'Danh mục sẽ ẩn khỏi shop cho đến khi được kích hoạt lại.'
-    : 'Danh mục có thể hiển thị lại trên shop khi đủ điều kiện (cha còn hoạt động, chưa xóa).';
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
+        aria-describedby={undefined}
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
         </div>
 

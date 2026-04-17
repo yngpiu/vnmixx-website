@@ -6,7 +6,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -116,11 +115,11 @@ export function EditColorDialog({ colorId, open, onOpenChange }: EditColorDialog
       <DialogContent
         className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
         showCloseButton
+        aria-describedby={undefined}
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>Sửa màu</DialogTitle>
-            <DialogDescription>Cập nhật tên và mã HEX.</DialogDescription>
           </DialogHeader>
         </div>
 

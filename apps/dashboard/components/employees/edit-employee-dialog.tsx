@@ -9,7 +9,6 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/component
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -198,31 +197,16 @@ export function EditEmployeeDialog({
 
   const title =
     mode === 'roles'
-      ? 'Sửa vai trò'
+      ? `Sửa vai trò nhân viên #${employeeId}`
       : mode === 'active'
         ? detail?.status === 'ACTIVE'
-          ? 'Vô hiệu hóa nhân viên'
-          : 'Kích hoạt nhân viên'
+          ? `Vô hiệu hóa nhân viên #${employeeId}?`
+          : `Kích hoạt nhân viên #${employeeId}?`
         : mode === 'delete'
-          ? 'Xóa nhân viên'
+          ? `Xác nhận xoá nhân viên #${employeeId}?`
           : mode === 'restore'
-            ? 'Khôi phục nhân viên'
+            ? `Khôi phục nhân viên #${employeeId}?`
             : '';
-
-  const description =
-    mode === 'roles'
-      ? 'Thay thế toàn bộ vai trò đang gán cho nhân viên này.'
-      : mode === 'active' && detail
-        ? detail.status === 'ACTIVE'
-          ? 'Nhân viên sẽ không thể đăng nhập cho đến khi được kích hoạt lại.'
-          : 'Khôi phục quyền đăng nhập cho nhân viên này.'
-        : mode === 'delete' && detail && !detail.deletedAt
-          ? 'Nhân viên sẽ không còn trong danh sách thông thường. Bạn có thể khôi phục sau qua menu hành động (khi bật lọc bản ghi đã xóa).'
-          : mode === 'restore' && detail?.deletedAt
-            ? 'Nhân viên sẽ hiển thị lại trong danh sách và có thể chỉnh sửa như bình thường.'
-            : mode === 'restore' && detail && !detail.deletedAt
-              ? 'Bản ghi hiện không ở trạng thái đã xóa.'
-              : '';
 
   const loading = Boolean(detailQuery.isLoading && employeeId != null);
   const error = detailQuery.isError;
@@ -238,18 +222,18 @@ export function EditEmployeeDialog({
   );
 
   const footerSingleDismiss = loading || error || deletedBlock || restoreNotDeletedBlock;
+  const dialogMaxWidthClassName = mode === 'delete' ? 'sm:max-w-xl' : 'sm:max-w-md';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        {...(!description ? { 'aria-describedby': undefined } : {})}
-        className="flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md"
+        aria-describedby={undefined}
+        className={`flex max-h-[min(90dvh,40rem)] flex-col gap-0 overflow-hidden p-0 ${dialogMaxWidthClassName}`}
         showCloseButton
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            {description ? <DialogDescription>{description}</DialogDescription> : null}
           </DialogHeader>
         </div>
 
@@ -332,21 +316,27 @@ export function EditEmployeeDialog({
           ) : null}
 
           {activeBlock && detail ? (
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{detail.fullName}</CardTitle>
-                <CardDescription>{detail.email}</CardDescription>
-              </CardHeader>
-            </Card>
+            <p className="text-sm text-muted-foreground">
+              {detail.status === 'ACTIVE' ? (
+                <>
+                  Nhân viên <strong className="text-foreground">{detail.fullName}</strong> sẽ bị vô
+                  hiệu hóa và tạm thời không thể đăng nhập vào hệ thống.
+                </>
+              ) : (
+                <>
+                  Nhân viên <strong className="text-foreground">{detail.fullName}</strong> sẽ được
+                  kích hoạt lại và có thể đăng nhập vào hệ thống.
+                </>
+              )}
+            </p>
           ) : null}
 
           {deleteBlock && detail ? (
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle>{detail.fullName}</CardTitle>
-                <CardDescription>{detail.email}</CardDescription>
-              </CardHeader>
-            </Card>
+            <p className="text-sm text-muted-foreground">
+              Nhân viên <strong className="text-foreground">{detail.fullName}</strong> sẽ được đánh
+              dấu đã xóa và tạm thời không thể truy cập vào hệ thống. Bạn có thể khôi phục lại sau
+              này.
+            </p>
           ) : null}
 
           {restoreDeletedBlock && detail ? (
