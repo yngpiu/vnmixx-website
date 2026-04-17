@@ -33,7 +33,6 @@ import {
   ListAdminProductsQueryDto,
   ProductAdminDetailResponseDto,
   ProductAdminListResponseDto,
-  SyncAttributesDto,
   UpdateImageDto,
   UpdateProductDto,
   UpdateVariantDto,
@@ -172,19 +171,5 @@ export class ProductAdminController {
     @Param('imageId', ParseIntPipe) imageId: number,
   ): Promise<void> {
     return this.productService.deleteImage(id, imageId);
-  }
-
-  // ─── Attributes ────────────────────────────────────────────────────────────
-
-  @ApiOperation({ summary: 'Đồng bộ thuộc tính sản phẩm (thay thế toàn bộ)' })
-  @ApiNoContentResponse({ description: 'Đồng bộ thuộc tính sản phẩm thành công.' })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
-  @Put(':id/attributes')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  syncAttributes(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: SyncAttributesDto,
-  ): Promise<void> {
-    return this.productService.syncAttributes(id, dto);
   }
 }

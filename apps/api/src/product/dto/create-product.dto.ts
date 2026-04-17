@@ -127,13 +127,6 @@ export class CreateProductDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ example: [1, 5, 12], type: [Number] })
-  @IsArray()
-  @IsInt({ each: true })
-  @Min(1, { each: true })
-  @IsOptional()
-  attributeValueIds?: number[];
-
   @ApiProperty({ type: [CreateProductVariantDto] })
   @IsArray()
   @ArrayMinSize(1)

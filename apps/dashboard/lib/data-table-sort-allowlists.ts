@@ -32,5 +32,3 @@ export const CATEGORY_TABLE_SORT_IDS = ['name', 'slug', 'isActive', 'updatedAt']
 export const SIZE_TABLE_SORT_IDS = ['label', 'sortOrder', 'updatedAt'] as const;
 
 export const COLOR_TABLE_SORT_IDS = ['name', 'hexCode', 'updatedAt'] as const;
-
-export const ATTRIBUTE_TABLE_SORT_IDS = ['name', 'valueCount', 'updatedAt'] as const;

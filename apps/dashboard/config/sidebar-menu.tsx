@@ -12,7 +12,6 @@ import {
   RulerIcon,
   ShieldIcon,
   ShoppingCartIcon,
-  TagsIcon,
   TruckIcon,
   UserCogIcon,
   UsersIcon,
@@ -75,11 +74,6 @@ const catalogItems: SidebarNavItem[] = [
     title: 'Kích cỡ',
     url: adminModulePath('sizes'),
     icon: <RulerIcon />,
-  },
-  {
-    title: 'Thuộc tính',
-    url: adminModulePath('attributes'),
-    icon: <TagsIcon />,
   },
 ];
 

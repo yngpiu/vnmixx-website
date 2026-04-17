@@ -14,7 +14,6 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   category: 'Danh mục',
   color: 'Màu sắc',
   size: 'Kích cỡ',
-  attribute: 'Thuộc tính',
 };
 
 /**

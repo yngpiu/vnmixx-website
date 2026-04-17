@@ -25,21 +25,6 @@ const COLORS: { name: string; hexCode: string }[] = [
 
 const SIZE_LABELS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
 
-const ATTR_SEED: { name: string; values: string[] }[] = [
-  {
-    name: 'Chất liệu',
-    values: ['100% Cotton', 'Cotton pha Polyester', 'Linen', 'Denim', 'Nỉ / French Terry'],
-  },
-  {
-    name: 'Form dáng',
-    values: ['Regular fit', 'Slim fit', 'Oversize', 'Ôm body'],
-  },
-  {
-    name: 'Độ dày vải',
-    values: ['Mỏng nhẹ', 'Trung bình', 'Dày dặn'],
-  },
-];
-
 /** Tên sản phẩm tiếng Việt — xoay bộ mẫu để ra ~100 tên khác nhau, giới hạn 255 ký tự. */
 const PRODUCT_TEMPLATES: string[] = [
   'Áo thun nam cổ tròn cotton',
@@ -184,32 +169,6 @@ async function ensureSizes(prisma: PrismaClient): Promise<Map<string, number>> {
   return byLabel;
 }
 
-async function ensureAttributeValues(prisma: PrismaClient): Promise<number[]> {
-  const valueIds: number[] = [];
-  for (const def of ATTR_SEED) {
-    const attr = await prisma.attribute.upsert({
-      where: { name: def.name },
-      create: { name: def.name },
-      update: {},
-      select: { id: true },
-    });
-    for (const val of def.values) {
-      const existing = await prisma.attributeValue.findFirst({
-        where: { attributeId: attr.id, value: val },
-      });
-      if (existing) {
-        valueIds.push(existing.id);
-      } else {
-        const created = await prisma.attributeValue.create({
-          data: { attributeId: attr.id, value: val },
-        });
-        valueIds.push(created.id);
-      }
-    }
-  }
-  return valueIds;
-}
-
 function isPrismaMissingTable(err: unknown): boolean {
   return (
     typeof err === 'object' &&
@@ -273,8 +232,6 @@ export async function seedProducts(): Promise<void> {
 
     const colorByName = await ensureColors(prisma);
     const sizeByLabel = await ensureSizes(prisma);
-    const attrValueIds = await ensureAttributeValues(prisma);
-
     const colorIds = COLORS.map((c) => colorByName.get(c.name)).filter(
       (id): id is number => id != null,
     );
@@ -307,10 +264,6 @@ export async function seedProducts(): Promise<void> {
       const basePrice = 159_000 + ((i * 17_389) % 890_000);
       const withSale = i % 4 === 0;
       const isActive = i % 11 !== 0;
-
-      const a = attrValueIds[i % attrValueIds.length];
-      const b = attrValueIds[(i + 7) % attrValueIds.length];
-      const attrPick = [...new Set([a, b])];
 
       const variants = pairs.map((p, vi) => {
         const sku =
@@ -354,12 +307,6 @@ export async function seedProducts(): Promise<void> {
         await tx.productCategory.create({
           data: { productId: product.id, categoryId: category.id },
         });
-
-        if (attrPick.length > 0) {
-          await tx.productAttribute.createMany({
-            data: attrPick.map((attributeValueId) => ({ productId: product.id, attributeValueId })),
-          });
-        }
 
         await tx.productVariant.createMany({
           data: variants.map((v) => ({

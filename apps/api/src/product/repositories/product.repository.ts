@@ -33,13 +33,6 @@ export interface ProductDetailView {
   description: string | null;
   thumbnail: string | null;
   category: { id: number; name: string; slug: string } | null;
-  productAttributes: {
-    attributeValue: {
-      id: number;
-      value: string;
-      attribute: { id: number; name: string };
-    };
-  }[];
   variants: {
     id: number;
     colorId: number;
@@ -103,16 +96,6 @@ const IMAGE_SELECT = {
   url: true,
   altText: true,
   sortOrder: true,
-} as const;
-
-const PRODUCT_ATTRIBUTE_SELECT = {
-  attributeValue: {
-    select: {
-      id: true,
-      value: true,
-      attribute: { select: { id: true, name: true } },
-    },
-  },
 } as const;
 
 /** Slug danh mục khớp chính nút, con hoặc cháu (tối đa 3 tầng — giữ đồng bộ với bộ lọc cũ). */
@@ -228,7 +211,6 @@ export class ProductRepository {
         description: true,
         thumbnail: true,
         category: { select: CATEGORY_BRIEF_SELECT },
-        productAttributes: { select: PRODUCT_ATTRIBUTE_SELECT },
         variants: {
           where: { isActive: true, deletedAt: null },
           select: VARIANT_PUBLIC_SELECT,
@@ -342,7 +324,6 @@ export class ProductRepository {
         deletedAt: true,
         category: { select: CATEGORY_BRIEF_SELECT },
         productCategories: { select: { categoryId: true } },
-        productAttributes: { select: PRODUCT_ATTRIBUTE_SELECT },
         variants: {
           select: {
             ...VARIANT_PUBLIC_SELECT,
@@ -389,7 +370,6 @@ export class ProductRepository {
     categoryId?: number | null;
     categoryIds: number[];
     isActive?: boolean;
-    attributeValueIds: number[];
     variants: {
       colorId: number;
       sizeId: number;
@@ -416,15 +396,6 @@ export class ProductRepository {
           isActive: data.isActive ?? true,
         },
       });
-
-      if (data.attributeValueIds.length > 0) {
-        await tx.productAttribute.createMany({
-          data: data.attributeValueIds.map((avId) => ({
-            productId: created.id,
-            attributeValueId: avId,
-          })),
-        });
-      }
 
       if (data.variants.length > 0) {
         await tx.productVariant.createMany({
@@ -623,24 +594,6 @@ export class ProductRepository {
     await this.prisma.productImage.delete({ where: { id: imageId } });
   }
 
-  // ─── Product Attributes ────────────────────────────────────────────────────
-
-  async syncAttributes(productId: number, attributeValueIds: number[]): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.productAttribute.deleteMany({ where: { productId } }),
-      ...(attributeValueIds.length > 0
-        ? [
-            this.prisma.productAttribute.createMany({
-              data: attributeValueIds.map((avId) => ({
-                productId,
-                attributeValueId: avId,
-              })),
-            }),
-          ]
-        : []),
-    ]);
-  }
-
   // ─── Validation helpers ────────────────────────────────────────────────────
 
   async skuExists(sku: string, excludeId?: number): Promise<boolean> {
@@ -648,12 +601,6 @@ export class ProductRepository {
       where: { sku, ...(excludeId && { id: { not: excludeId } }) },
     });
     return count > 0;
-  }
-
-  async attributeValuesExist(ids: number[]): Promise<boolean> {
-    if (ids.length === 0) return true;
-    const count = await this.prisma.attributeValue.count({ where: { id: { in: ids } } });
-    return count === ids.length;
   }
 
   async colorsExist(ids: number[]): Promise<boolean> {

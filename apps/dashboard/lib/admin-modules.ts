@@ -8,7 +8,6 @@ export const ADMIN_MODULE_SLUGS = [
   'categories',
   'colors',
   'sizes',
-  'attributes',
   'roles',
   'permissions',
   'shipping',
@@ -60,11 +59,6 @@ export const ADMIN_MODULES: Record<AdminModuleSlug, AdminModuleMeta> = {
     title: 'Kích cỡ',
     apiPath: 'admin/sizes',
     moduleName: 'SizeModule',
-  },
-  attributes: {
-    title: 'Thuộc tính',
-    apiPath: 'admin/attributes',
-    moduleName: 'AttributeModule',
   },
   roles: {
     title: 'Vai trò',

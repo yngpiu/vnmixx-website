@@ -35,14 +35,6 @@ class VariantSizeDto {
   sortOrder: number;
 }
 
-class ProductAttributeDto {
-  @ApiProperty({ example: 'Chất liệu' })
-  name: string;
-
-  @ApiProperty({ example: 'Cotton' })
-  value: string;
-}
-
 class ProductImageDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -172,9 +164,6 @@ export class ProductDetailResponseDto {
   @ApiPropertyOptional({ type: CategoryBriefDto, nullable: true })
   category: CategoryBriefDto | null;
 
-  @ApiProperty({ type: [ProductAttributeDto] })
-  attributes: ProductAttributeDto[];
-
   @ApiProperty({ type: [ProductVariantDto] })
   variants: ProductVariantDto[];
 
@@ -255,9 +244,6 @@ export class ProductAdminDetailResponseDto {
     description: 'Danh mục đã gán (bảng nối).',
   })
   categoryIds?: number[];
-
-  @ApiProperty({ type: [ProductAttributeDto] })
-  attributes: ProductAttributeDto[];
 
   @ApiProperty({ type: [ProductVariantAdminDto] })
   variants: ProductVariantAdminDto[];

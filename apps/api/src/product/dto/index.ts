@@ -16,7 +16,6 @@ export {
   ProductListItemResponseDto,
   ProductListResponseDto,
 } from './product-response.dto';
-export { SyncAttributesDto } from './sync-attributes.dto';
 export { UpdateImageDto } from './update-image.dto';
 export { UpdateProductDto } from './update-product.dto';
 export { UpdateVariantDto } from './update-variant.dto';

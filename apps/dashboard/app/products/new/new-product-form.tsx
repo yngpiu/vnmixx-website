@@ -1,10 +1,7 @@
 'use client';
 
 import { CategoryTreeMultiSelect } from '@/components/categories/category-tree-multi-select';
-import { MultiSelectPopover } from '@/components/multi-select-popover';
-import { ProductThumbnailUploadField } from '@/components/products/product-image-upload-field';
 import { ProductImagesColorColumns } from '@/components/products/product-images-color-columns';
-import { listAttributesWithValues } from '@/lib/api/attributes';
 import { listCategories } from '@/lib/api/categories';
 import { listPublicColors } from '@/lib/api/colors';
 import { createProduct } from '@/lib/api/products';
@@ -47,7 +44,6 @@ import {
   LayersIcon,
   PackageIcon,
   PlusIcon,
-  TagIcon,
   Trash2Icon,
   XIcon,
 } from 'lucide-react';
@@ -113,10 +109,8 @@ export function NewProductForm() {
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState('');
-  const [thumbnail, setThumbnail] = useState('');
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [isActive, setIsActive] = useState(true);
-  const [attributeValueIds, setAttributeValueIds] = useState<number[]>([]);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
   /** Ảnh gallery theo `ProductImage.colorId` — mỗi màu đang dùng trong biến thể có một danh sách URL */
   const [imagesByColorId, setImagesByColorId] = useState<Record<number, string[]>>({});
@@ -128,11 +122,6 @@ export function NewProductForm() {
     queryKey: ['categories', 'list', { isSoftDeleted: false }],
     queryFn: () => listCategories({ isSoftDeleted: false }),
   });
-  const attributesQuery = useQuery({
-    queryKey: ['attributes', 'full-list'],
-    queryFn: listAttributesWithValues,
-  });
-
   const colors = useMemo(() => colorsQuery.data ?? [], [colorsQuery.data]);
   const sizes = useMemo(() => sizesQuery.data ?? [], [sizesQuery.data]);
 
@@ -165,17 +154,6 @@ export function NewProductForm() {
       return next;
     });
   }, [colorIdsInVariantOrder]);
-
-  const attributeOptions = useMemo(() => {
-    const attrs = attributesQuery.data ?? [];
-    const opts: { value: number; label: string }[] = [];
-    for (const a of attrs) {
-      for (const v of a.values) {
-        opts.push({ value: v.id, label: `${a.name}: ${v.value}` });
-      }
-    }
-    return opts;
-  }, [attributesQuery.data]);
 
   useEffect(() => {
     if (slugTouched) return;
@@ -295,10 +273,8 @@ export function NewProductForm() {
       name: name.trim(),
       slug: slug.trim(),
       ...(description.trim() ? { description: description.trim() } : {}),
-      ...(thumbnail.trim() ? { thumbnail: thumbnail.trim() } : {}),
       ...(categoryIds.length ? { categoryIds } : {}),
       isActive,
-      ...(attributeValueIds.length ? { attributeValueIds } : {}),
       variants: parsedVariants,
       ...(imagesPayload.length ? { images: imagesPayload } : {}),
     };
@@ -354,7 +330,7 @@ export function NewProductForm() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Thêm sản phẩm</h1>
               <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
-                Danh mục lá (cây + đã chọn), biến thể màu × size, giá và tồn. Ảnh Cloudinary
+                Danh mục lá (cây + đã chọn), biến thể màu × size, giá và tồn. Ảnh sản phẩm
                 (thumbnail + gallery theo màu) nằm phía dưới form.
               </p>
             </div>
@@ -381,9 +357,6 @@ export function NewProductForm() {
             </div>
             <div>
               <h2 className="text-lg font-semibold leading-tight">Thông tin chung</h2>
-              <p className="text-muted-foreground text-sm">
-                Tên, slug, mô tả và trạng thái hiển thị.
-              </p>
             </div>
           </div>
           <div className="space-y-6 p-5 sm:p-6">
@@ -453,9 +426,6 @@ export function NewProductForm() {
             </div>
             <div>
               <h2 className="text-lg font-semibold leading-tight">Danh mục</h2>
-              <p className="text-muted-foreground text-sm">
-                Hai cột cùng một khung: cây bên trái, đường dẫn đã chọn bên phải.
-              </p>
             </div>
           </div>
           <div className="p-5 sm:p-6">
@@ -542,33 +512,6 @@ export function NewProductForm() {
         </section>
 
         <section className={sectionShell}>
-          <div className="bg-muted/40 flex flex-wrap items-center gap-3 border-b px-5 py-4 sm:px-6">
-            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
-              <TagIcon className="size-4" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold leading-tight">Thuộc tính</h2>
-              <p className="text-muted-foreground text-sm">
-                Chất liệu, kiểu dáng, v.v. (tuỳ chọn).
-              </p>
-            </div>
-          </div>
-          <div className="p-5 sm:p-6">
-            <Field>
-              <FieldLabel>Giá trị thuộc tính</FieldLabel>
-              <MultiSelectPopover
-                options={attributeOptions}
-                value={attributeValueIds}
-                onChange={setAttributeValueIds}
-                disabled={busy || attributeOptions.length === 0}
-                placeholder="Chọn một hoặc nhiều giá trị…"
-                modal={false}
-              />
-            </Field>
-          </div>
-        </section>
-
-        <section className={sectionShell}>
           <div className="bg-muted/40 flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 sm:px-6">
             <div className="flex flex-wrap items-center gap-3">
               <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
@@ -576,9 +519,6 @@ export function NewProductForm() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold leading-tight">Biến thể</h2>
-                <p className="text-muted-foreground text-sm">
-                  Màu × size, SKU, giá (đ), giá sale, tồn kho.
-                </p>
               </div>
             </div>
             <Button
@@ -716,27 +656,9 @@ export function NewProductForm() {
             </div>
             <div>
               <h2 className="text-lg font-semibold leading-tight">Ảnh sản phẩm</h2>
-              <p className="text-muted-foreground text-sm">
-                Thumbnail + gallery theo mỗi màu (cột dọc). Nhiều màu: cuộn ngang. Kéo cầm ⋮⋮ để sắp
-                xếp ảnh (sortOrder).
-              </p>
             </div>
           </div>
           <div className="space-y-4 px-4 py-4 sm:px-5 sm:py-5">
-            <div className="rounded-xl border bg-muted/10 p-3 sm:p-4">
-              <Field>
-                <FieldLabel>Ảnh đại diện (thumbnail)</FieldLabel>
-                <p className="text-muted-foreground mb-3 text-xs leading-relaxed">
-                  Tuỳ chọn — hiển thị trong danh sách / thẻ sản phẩm.
-                </p>
-                <ProductThumbnailUploadField
-                  url={thumbnail}
-                  onUrlChange={setThumbnail}
-                  disabled={busy}
-                />
-              </Field>
-            </div>
-            <Separator />
             <ProductImagesColorColumns
               colorIds={colorIdsInVariantOrder}
               colorLabel={(id) => colors.find((c) => c.id === id)?.name ?? `Màu #${id}`}

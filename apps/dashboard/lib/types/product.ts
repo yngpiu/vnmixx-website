@@ -56,7 +56,6 @@ export type CreateProductBody = {
   /** @deprecated Dùng `categoryIds`. */
   categoryId?: number;
   isActive?: boolean;
-  attributeValueIds?: number[];
   variants: CreateProductVariantInput[];
   images?: CreateProductImageInput[];
 };

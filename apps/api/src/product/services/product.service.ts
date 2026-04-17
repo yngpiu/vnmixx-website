@@ -14,7 +14,6 @@ import {
   CreateVariantDto,
   ListAdminProductsQueryDto,
   ListProductsQueryDto,
-  SyncAttributesDto,
   UpdateImageDto,
   UpdateProductDto,
   UpdateVariantDto,
@@ -116,13 +115,6 @@ export class ProductService {
       await this.assertCategoriesExistAndLeaf(categoryIds);
     }
 
-    const attrValueIds = dto.attributeValueIds ?? [];
-    if (attrValueIds.length > 0) {
-      const valid = await this.repository.attributeValuesExist(attrValueIds);
-      if (!valid)
-        throw new BadRequestException('Một hoặc nhiều ID giá trị thuộc tính không hợp lệ');
-    }
-
     const colorIds = dto.variants.map((v) => v.colorId);
     const sizeIds = dto.variants.map((v) => v.sizeId);
 
@@ -144,15 +136,19 @@ export class ProductService {
     }
 
     try {
+      const autoThumbnail = this.resolveCreateThumbnail({
+        requestedThumbnail: dto.thumbnail,
+        variants: dto.variants,
+        images: dto.images ?? [],
+      });
       const product = await this.repository.createFull({
         name: dto.name,
         slug: dto.slug,
         description: dto.description,
-        thumbnail: dto.thumbnail,
+        thumbnail: autoThumbnail,
         categoryId: categoryIds[0] ?? null,
         categoryIds,
         isActive: dto.isActive,
-        attributeValueIds: attrValueIds,
         variants: dto.variants,
         images: dto.images ?? [],
       });
@@ -331,21 +327,6 @@ export class ProductService {
     await this.invalidateProductCache(product.slug);
   }
 
-  // ─── Attributes ────────────────────────────────────────────────────────────
-
-  async syncAttributes(productId: number, dto: SyncAttributesDto): Promise<void> {
-    const product = await this.findAdminByIdOrFail(productId);
-
-    if (dto.attributeValueIds.length > 0) {
-      const valid = await this.repository.attributeValuesExist(dto.attributeValueIds);
-      if (!valid)
-        throw new BadRequestException('Một hoặc nhiều ID giá trị thuộc tính không hợp lệ');
-    }
-
-    await this.repository.syncAttributes(productId, dto.attributeValueIds);
-    await this.invalidateProductCache(product.slug);
-  }
-
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   private async findAdminByIdOrFail(id: number): Promise<ProductAdminDetailView> {
@@ -387,6 +368,31 @@ export class ProductService {
     }
   }
 
+  private resolveCreateThumbnail(params: {
+    requestedThumbnail?: string;
+    variants: { colorId: number }[];
+    images: { url: string; colorId?: number; sortOrder?: number }[];
+  }): string | undefined {
+    if (params.requestedThumbnail?.trim()) {
+      return params.requestedThumbnail.trim();
+    }
+    if (params.images.length === 0 || params.variants.length === 0) {
+      return undefined;
+    }
+    const firstColorId = params.variants[0]?.colorId;
+    if (!firstColorId) {
+      return undefined;
+    }
+    const firstImageOfFirstColor = params.images
+      .filter((image) => image.colorId === firstColorId)
+      .sort((left, right) => {
+        const leftSortOrder = left.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        const rightSortOrder = right.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        return leftSortOrder - rightSortOrder;
+      })[0];
+    return firstImageOfFirstColor?.url;
+  }
+
   private transformPublicDetail(product: ProductDetailView) {
     return {
       id: product.id,
@@ -395,10 +401,6 @@ export class ProductService {
       description: product.description,
       thumbnail: product.thumbnail,
       category: product.category,
-      attributes: product.productAttributes.map((pa) => ({
-        name: pa.attributeValue.attribute.name,
-        value: pa.attributeValue.value,
-      })),
       variants: product.variants,
       images: product.images,
     };
@@ -422,11 +424,6 @@ export class ProductService {
       isActive: product.isActive,
       category: product.category,
       categoryIds,
-      attributes: product.productAttributes.map((pa) => ({
-        name: pa.attributeValue.attribute.name,
-        value: pa.attributeValue.value,
-      })),
-      attributeValueIds: product.productAttributes.map((pa) => pa.attributeValue.id),
       variants: product.variants,
       images: product.images,
       createdAt: product.createdAt,
