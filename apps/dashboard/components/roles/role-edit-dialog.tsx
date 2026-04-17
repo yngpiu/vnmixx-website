@@ -85,9 +85,8 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['roles'] });
-      toast.success(
-        tab === 'meta' ? 'Đã cập nhật thông tin vai trò.' : 'Đã cập nhật quyền cho vai trò.',
-      );
+      toast.success('Đã cập nhật vai trò.');
+      onOpenChange(false);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -105,7 +104,8 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
           <DialogHeader className="gap-1 text-start">
             <DialogTitle>Sửa vai trò</DialogTitle>
             <DialogDescription>
-              Đổi tên, mô tả và gán quyền qua ma trận CRUD ở tab Quyền.
+              Sửa thông tin vai trò, quyền truy cập theo từng tài nguyên dựa trên các hành động
+              CRUD.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -162,10 +162,6 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
                     </p>
                   ) : (
                     <>
-                      <p className="text-muted-foreground text-xs leading-relaxed">
-                        Ma trận theo tài nguyên (Tạo · Xem · Sửa · Xóa). Tick từng ô hoặc dùng
-                        checkbox ở đầu cột / hàng để gán hàng loạt.
-                      </p>
                       <PermissionCrudMatrix
                         permissions={allPermissions}
                         assignedIds={assignedIds}
@@ -194,19 +190,13 @@ export function RoleEditDialog({ roleId, open, onOpenChange }: RoleEditDialogPro
               >
                 Đóng
               </Button>
-              {tab === 'meta' ? (
-                <Button
-                  type="button"
-                  disabled={busy || !canSaveMeta}
-                  onClick={() => saveMutation.mutate()}
-                >
-                  {saveMutation.isPending ? 'Đang lưu…' : 'Lưu thông tin'}
-                </Button>
-              ) : (
-                <Button type="button" disabled={busy} onClick={() => saveMutation.mutate()}>
-                  {saveMutation.isPending ? 'Đang lưu…' : 'Lưu quyền'}
-                </Button>
-              )}
+              <Button
+                type="button"
+                disabled={busy || (tab === 'meta' && !canSaveMeta)}
+                onClick={() => saveMutation.mutate()}
+              >
+                {saveMutation.isPending ? 'Đang lưu…' : 'Cập nhật'}
+              </Button>
             </DialogFooter>
           </>
         ) : null}

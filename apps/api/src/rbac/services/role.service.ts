@@ -59,7 +59,8 @@ export class RoleService {
   async update(id: number, dto: UpdateRoleDto): Promise<RoleDetailView> {
     await this.findById(id);
     if (dto.permissionIds !== undefined) {
-      await this.validatePermissionIds(dto.permissionIds);
+      const permissionIds = this.getPermissionIds(dto.permissionIds);
+      await this.validatePermissionIds(permissionIds);
     }
 
     try {
@@ -70,7 +71,8 @@ export class RoleService {
       if (dto.permissionIds === undefined) {
         return updatedRole;
       }
-      const roleWithPermissions = await this.roleRepo.syncPermissions(id, dto.permissionIds);
+      const permissionIds = this.getPermissionIds(dto.permissionIds);
+      const roleWithPermissions = await this.roleRepo.syncPermissions(id, permissionIds);
       const affectedEmployeeIds = await this.roleRepo.findEmployeeIdsByRoleId(id);
       await this.revokeTokensForEmployees(affectedEmployeeIds);
       return roleWithPermissions;
@@ -93,6 +95,20 @@ export class RoleService {
     if (!allExist) {
       throw new BadRequestException('Một hoặc nhiều ID quyền không tồn tại');
     }
+  }
+
+  private getPermissionIds(permissionIds: unknown): number[] {
+    if (this.isIntegerArray(permissionIds)) {
+      return permissionIds;
+    }
+    throw new BadRequestException('Danh sách quyền không hợp lệ');
+  }
+
+  private isIntegerArray(value: unknown): value is number[] {
+    return (
+      Array.isArray(value) &&
+      value.every((item: unknown) => typeof item === 'number' && Number.isInteger(item))
+    );
   }
 
   private async revokeTokensForEmployees(employeeIds: number[]): Promise<void> {

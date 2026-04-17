@@ -167,10 +167,6 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
             }
             permissionsContent={
               <>
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  Ma trận theo tài nguyên (Tạo · Xem · Sửa · Xóa). Tick từng ô hoặc dùng checkbox ở
-                  đầu cột / hàng để gán hàng loạt.
-                </p>
                 {permissionsQuery.isLoading ? (
                   <p className="text-muted-foreground text-sm">Đang tải danh sách quyền…</p>
                 ) : permissionsQuery.isError ? (

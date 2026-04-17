@@ -35,6 +35,7 @@ export function createRolesColumns(handlers: RolesColumnHandlers): ColumnDef<Rol
           {row.original.description ?? '—'}
         </span>
       ),
+      enableSorting: false,
       meta: {
         dataTableColumnLabel: 'Mô tả',
         className: 'hidden md:table-cell',
