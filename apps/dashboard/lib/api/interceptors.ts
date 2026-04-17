@@ -1,9 +1,37 @@
+import { refreshAction } from '@/actions/auth';
 import { apiClient } from '@/lib/axios';
 import { useAuthStore } from '@/stores/auth-store';
 import type { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 const authInterceptorFlag = '__vnmixx_dashboard_auth_interceptors_registered__';
 const globalContext = globalThis as typeof globalThis & Record<string, boolean | undefined>;
+let refreshInFlight: Promise<string | null> | null = null;
+
+interface RetryableAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _hasRetriedAfterRefresh?: boolean;
+}
+
+async function executeRefreshToken(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const result = await refreshAction();
+      if (!result.success) {
+        return null;
+      }
+      return result.data.accessToken;
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+function executeLogoutRedirect(): void {
+  useAuthStore.getState().clearSession();
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
 
 /**
  * Request interceptor: injects Bearer token from Zustand
@@ -24,16 +52,22 @@ function registerAuthInterceptors(): void {
    */
   apiClient.interceptors.response.use(
     (response: AxiosResponse) => response,
-    (error: AxiosError) => {
+    async (error: AxiosError) => {
+      const requestConfig = error.config as RetryableAxiosRequestConfig | undefined;
       const isUnauthorized = error.response?.status === 401;
-      if (!isUnauthorized) {
+      if (!isUnauthorized || !requestConfig || requestConfig._hasRetriedAfterRefresh) {
         return Promise.reject(error);
       }
-      useAuthStore.getState().clearSession();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      requestConfig._hasRetriedAfterRefresh = true;
+      const refreshedAccessToken = await executeRefreshToken();
+      if (!refreshedAccessToken) {
+        executeLogoutRedirect();
+        return Promise.reject(error);
       }
-      return Promise.reject(error);
+      useAuthStore.getState().setAccessToken(refreshedAccessToken);
+      requestConfig.headers = requestConfig.headers ?? {};
+      requestConfig.headers.Authorization = `Bearer ${refreshedAccessToken}`;
+      return apiClient(requestConfig);
     },
   );
 }

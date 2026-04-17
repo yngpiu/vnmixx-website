@@ -44,7 +44,7 @@ async function tryRefresh(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: `vnmixx_refresh=${refreshToken}`,
+        'x-refresh-token': refreshToken,
       },
     });
     if (!res.ok) return null;
@@ -76,7 +76,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         ? NextResponse.redirect(new URL('/', request.url))
         : NextResponse.next();
       destination.cookies.set(COOKIE_ACCESS_TOKEN, result.accessToken, {
-        httpOnly: true,
+        httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',

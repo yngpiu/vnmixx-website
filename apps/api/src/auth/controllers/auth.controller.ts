@@ -26,7 +26,7 @@ import {
   authBodyFromPair,
   clearRefreshTokenCookie,
   extractRequestMeta,
-  readRefreshTokenFromCookie,
+  readRefreshToken,
   setRefreshTokenCookie,
 } from '../utils';
 
@@ -37,7 +37,7 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Làm mới mã truy cập bằng cookie mã làm mới',
-    description: `Đọc refresh token từ cookie HttpOnly \`${REFRESH_TOKEN_COOKIE_NAME}\` (path /auth).`,
+    description: `Đọc refresh token từ cookie HttpOnly \`${REFRESH_TOKEN_COOKIE_NAME}\` (path /auth) hoặc header \`x-refresh-token\`.`,
   })
   @ApiOkResponse({
     type: AuthResponseDto,
@@ -53,9 +53,9 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponseDto> {
-    const raw = readRefreshTokenFromCookie(req);
+    const raw = readRefreshToken(req);
     if (!raw) {
-      throw new UnauthorizedException('Thiếu mã làm mới (cookie)');
+      throw new UnauthorizedException('Thiếu mã làm mới (cookie/header)');
     }
     const pair = await this.tokenService.refreshTokens(raw, extractRequestMeta(req));
     setRefreshTokenCookie(res, pair.refreshToken);
@@ -75,7 +75,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ message: string }> {
-    await this.tokenService.logout(readRefreshTokenFromCookie(req), user.jti, user.exp);
+    await this.tokenService.logout(readRefreshToken(req), user.jti, user.exp);
     clearRefreshTokenCookie(res);
     return { message: 'Đăng xuất thành công.' };
   }

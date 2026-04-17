@@ -74,6 +74,24 @@ export function readRefreshTokenFromCookie(req: Request): string | undefined {
   return typeof raw === 'string' && raw.length > 0 ? raw : undefined;
 }
 
+function readRefreshTokenFromHeader(req: Request): string | undefined {
+  const raw = req.headers['x-refresh-token'];
+  if (typeof raw === 'string' && raw.length > 0) {
+    return raw;
+  }
+  if (Array.isArray(raw) && raw.length > 0) {
+    const value = raw[0];
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+export function readRefreshToken(req: Request): string | undefined {
+  return readRefreshTokenFromCookie(req) ?? readRefreshTokenFromHeader(req);
+}
+
 export function authBodyFromPair(pair: TokenPair): AuthResponseDto {
   return {
     accessToken: pair.accessToken,

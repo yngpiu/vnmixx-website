@@ -15,9 +15,9 @@ import { cookies } from 'next/headers';
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 
 /** Cookie options shared between set operations. */
-function createCookieOptions(maxAge: number) {
+function createCookieOptions(maxAge: number, isHttpOnly: boolean) {
   return {
-    httpOnly: true,
+    httpOnly: isHttpOnly,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax' as const,
     path: '/',
@@ -61,12 +61,12 @@ export async function loginAction(
     cookieStore.set(
       COOKIE_ACCESS_TOKEN,
       authData.accessToken,
-      createCookieOptions(ACCESS_TOKEN_MAX_AGE),
+      createCookieOptions(ACCESS_TOKEN_MAX_AGE, false),
     );
     cookieStore.set(
       COOKIE_REFRESH_TOKEN,
       authData.refreshToken,
-      createCookieOptions(REFRESH_TOKEN_MAX_AGE),
+      createCookieOptions(REFRESH_TOKEN_MAX_AGE, true),
     );
     return { success: true, data: { accessToken: authData.accessToken, user } };
   } catch (err) {
@@ -87,17 +87,17 @@ export async function refreshAction(): Promise<ActionResult<{ accessToken: strin
       return { success: false, error: 'No refresh token found.' };
     }
     const { data: authData } = await apiClient.post<AuthResponse>('/auth/refresh', null, {
-      headers: { Cookie: `vnmixx_refresh=${refreshToken}` },
+      headers: { 'x-refresh-token': refreshToken },
     });
     cookieStore.set(
       COOKIE_ACCESS_TOKEN,
       authData.accessToken,
-      createCookieOptions(ACCESS_TOKEN_MAX_AGE),
+      createCookieOptions(ACCESS_TOKEN_MAX_AGE, false),
     );
     cookieStore.set(
       COOKIE_REFRESH_TOKEN,
       authData.refreshToken,
-      createCookieOptions(REFRESH_TOKEN_MAX_AGE),
+      createCookieOptions(REFRESH_TOKEN_MAX_AGE, true),
     );
     return { success: true, data: { accessToken: authData.accessToken } };
   } catch (err) {
@@ -121,7 +121,7 @@ export async function logoutAction(): Promise<ActionResult<null>> {
         .post('/auth/logout', null, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            Cookie: refreshToken ? `vnmixx_refresh=${refreshToken}` : '',
+            ...(refreshToken ? { 'x-refresh-token': refreshToken } : {}),
           },
         })
         .catch(() => {
