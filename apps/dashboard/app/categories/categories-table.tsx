@@ -378,7 +378,7 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
             filters={[
               {
                 columnId: 'isActive',
-                title: 'Trạng thái hoạt động',
+                title: 'Trạng thái',
                 selectionMode: 'single',
                 options: [
                   { label: 'Đang hoạt động', value: 'active' },

@@ -26,15 +26,18 @@ function roleLabels(roles: { role: { name: string } }[]): string {
   return roles.map((er) => er.role.name).join(', ') || '—';
 }
 
-function statusBadge(isActive: boolean) {
-  return isActive ? (
-    <Badge
-      variant="secondary"
-      className="border-transparent bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900/80"
-    >
-      Đang hoạt động
-    </Badge>
-  ) : (
+function statusBadge(status: 'ACTIVE' | 'INACTIVE') {
+  if (status === 'ACTIVE') {
+    return (
+      <Badge
+        variant="secondary"
+        className="border-transparent bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900/80"
+      >
+        Đang hoạt động
+      </Badge>
+    );
+  }
+  return (
     <Badge
       variant="secondary"
       className="border-transparent bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900/80"
@@ -132,7 +135,7 @@ export function EmployeeDetailDialog({
                 <dl className="flex flex-col gap-5">
                   <DetailRow label="Trạng thái">
                     <div className="flex flex-wrap items-center gap-2">
-                      {statusBadge(d.isActive)}
+                      {statusBadge(d.status)}
                       {d.deletedAt ? <Badge variant="destructive">Đã xóa</Badge> : null}
                     </div>
                   </DetailRow>

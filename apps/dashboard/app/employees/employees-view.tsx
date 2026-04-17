@@ -2,7 +2,6 @@
 
 import { EmployeesPrimaryButtons } from '@/app/employees/employees-primary-buttons';
 import { EmployeesTable } from '@/app/employees/employees-table';
-
 export function EmployeesView() {
   return (
     <>

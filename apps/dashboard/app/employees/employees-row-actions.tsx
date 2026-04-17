@@ -35,7 +35,7 @@ export function EmployeesRowActions({ row }: EmployeesRowActionsProps) {
     openRestoreEmployee,
   } = useEmployeesTableActions();
   const isDeleted = Boolean(row.original.deletedAt);
-  const isActive = row.original.isActive;
+  const isActive = row.original.status === 'ACTIVE';
 
   return (
     <DropdownMenu modal={false}>
@@ -91,6 +91,7 @@ export function EmployeesRowActions({ row }: EmployeesRowActionsProps) {
                 <UserCogIcon className="size-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
                 openToggleActive(row.original);

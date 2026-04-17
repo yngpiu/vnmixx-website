@@ -109,10 +109,10 @@ export const employeesColumns: ColumnDef<EmployeeListItem>[] = [
     enableSorting: false,
   },
   {
-    accessorKey: 'isActive',
+    accessorKey: 'status',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái hoạt động" />,
     cell: ({ row }) =>
-      row.original.isActive ? (
+      row.original.status === 'ACTIVE' ? (
         <Badge
           variant="secondary"
           className="border-transparent bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900/80"
@@ -133,10 +133,10 @@ export const employeesColumns: ColumnDef<EmployeeListItem>[] = [
         return true;
       }
       if (statuses.includes('active')) {
-        return row.original.isActive === true;
+        return row.original.status === 'ACTIVE';
       }
       if (statuses.includes('inactive')) {
-        return row.original.isActive === false;
+        return row.original.status === 'INACTIVE';
       }
       return true;
     },

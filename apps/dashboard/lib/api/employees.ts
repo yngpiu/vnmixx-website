@@ -10,7 +10,7 @@ export type ListEmployeesParams = {
   page?: number;
   limit?: number;
   search?: string;
-  isActive?: boolean;
+  status?: 'ACTIVE' | 'INACTIVE';
   isSoftDeleted?: boolean;
   roleId?: number;
   sortBy?: string;

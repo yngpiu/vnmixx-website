@@ -13,14 +13,14 @@ export function toListEmployeesParams(
   const qFilter = columnFilters.find((f) => f.id === 'fullName');
   const search = typeof qFilter?.value === 'string' ? qFilter.value.trim() || undefined : undefined;
 
-  const statusFilter = columnFilters.find((f) => f.id === 'isActive');
+  const statusFilter = columnFilters.find((f) => f.id === 'status');
   const statuses = Array.isArray(statusFilter?.value) ? (statusFilter.value as string[]) : [];
-  let isActive: boolean | undefined;
+  let status: 'ACTIVE' | 'INACTIVE' | undefined;
   if (statuses.length === 1) {
     if (statuses[0] === 'active') {
-      isActive = true;
+      status = 'ACTIVE';
     } else if (statuses[0] === 'inactive') {
-      isActive = false;
+      status = 'INACTIVE';
     }
   }
 
@@ -32,7 +32,7 @@ export function toListEmployeesParams(
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,
     search,
-    isActive,
+    status,
     ...(isSoftDeleted !== undefined ? { isSoftDeleted } : {}),
   };
 

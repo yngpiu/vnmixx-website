@@ -105,9 +105,7 @@ export function createCategoryColumns(opts: {
     {
       id: 'isActive',
       accessorFn: (r) => (r.node.isActive ? 'active' : 'inactive'),
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Trạng thái hoạt động" />
-      ),
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
       cell: ({ row }) =>
         row.original.node.isActive ? (
           <Badge
@@ -138,7 +136,7 @@ export function createCategoryColumns(opts: {
         return true;
       },
       meta: {
-        dataTableColumnLabel: 'Trạng thái hoạt động',
+        dataTableColumnLabel: 'Trạng thái',
         className: 'hidden md:table-cell',
         thClassName: 'hidden md:table-cell',
         tdClassName: 'hidden md:table-cell',

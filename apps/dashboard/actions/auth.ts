@@ -75,40 +75,6 @@ export async function loginAction(
 }
 
 /**
- * Refresh the session using the stored refresh token cookie.
- * Updates both dashboard-domain cookies.
- * Returns the new access token to the client.
- */
-export async function refreshAction(): Promise<ActionResult<{ accessToken: string }>> {
-  try {
-    const cookieStore = await cookies();
-    const refreshToken = cookieStore.get(COOKIE_REFRESH_TOKEN)?.value;
-    if (!refreshToken) {
-      return { success: false, error: 'No refresh token found.' };
-    }
-    const { data: authData } = await apiClient.post<AuthResponse>('/auth/refresh', null, {
-      headers: { 'x-refresh-token': refreshToken },
-    });
-    cookieStore.set(
-      COOKIE_ACCESS_TOKEN,
-      authData.accessToken,
-      createCookieOptions(ACCESS_TOKEN_MAX_AGE, false),
-    );
-    cookieStore.set(
-      COOKIE_REFRESH_TOKEN,
-      authData.refreshToken,
-      createCookieOptions(REFRESH_TOKEN_MAX_AGE, true),
-    );
-    return { success: true, data: { accessToken: authData.accessToken } };
-  } catch (err) {
-    const cookieStore = await cookies();
-    cookieStore.delete(COOKIE_ACCESS_TOKEN);
-    cookieStore.delete(COOKIE_REFRESH_TOKEN);
-    return { success: false, error: extractErrorMessage(err) };
-  }
-}
-
-/**
  * Logout: invalidate session on NestJS, clear dashboard cookies.
  */
 export async function logoutAction(): Promise<ActionResult<null>> {

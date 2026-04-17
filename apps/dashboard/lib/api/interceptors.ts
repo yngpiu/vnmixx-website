@@ -1,4 +1,3 @@
-import { refreshAction } from '@/actions/auth';
 import { apiClient } from '@/lib/axios';
 import { useAuthStore } from '@/stores/auth-store';
 import type { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
@@ -11,11 +10,32 @@ interface RetryableAxiosRequestConfig extends InternalAxiosRequestConfig {
   _hasRetriedAfterRefresh?: boolean;
 }
 
+interface RefreshApiSuccessResponse {
+  success: true;
+  data: {
+    accessToken: string;
+  };
+}
+
+interface RefreshApiErrorResponse {
+  success: false;
+  error: string;
+}
+
+type RefreshApiResponse = RefreshApiSuccessResponse | RefreshApiErrorResponse;
+
 async function executeRefreshToken(): Promise<string | null> {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
-      const result = await refreshAction();
-      if (!result.success) {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const result = (await response.json()) as RefreshApiResponse;
+      if (!response.ok || !result.success) {
         return null;
       }
       return result.data.accessToken;

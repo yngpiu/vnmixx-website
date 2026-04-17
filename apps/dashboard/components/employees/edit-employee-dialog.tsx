@@ -106,10 +106,14 @@ export function EditEmployeeDialog({
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['employees', 'list'] });
       void queryClient.invalidateQueries({ queryKey: ['employees', 'detail'] });
-      if ('isActive' in variables.payload && variables.payload.isActive !== undefined) {
-        toast.success(
-          variables.payload.isActive ? 'Đã kích hoạt nhân viên.' : 'Đã vô hiệu hóa nhân viên.',
-        );
+      if ('status' in variables.payload && variables.payload.status !== undefined) {
+        if (variables.payload.status === 'ACTIVE') {
+          toast.success('Đã kích hoạt nhân viên.');
+        } else if (variables.payload.status === 'INACTIVE') {
+          toast.success('Đã vô hiệu hóa nhân viên.');
+        } else {
+          toast.success('Đã khóa nhân viên.');
+        }
       } else {
         toast.success('Đã cập nhật vai trò.');
       }
@@ -176,7 +180,10 @@ export function EditEmployeeDialog({
 
   const submitToggleActive = () => {
     if (employeeId == null || !detail || mode !== 'active') return;
-    updateMutation.mutate({ id: employeeId, payload: { isActive: !detail.isActive } });
+    updateMutation.mutate({
+      id: employeeId,
+      payload: { status: detail.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' },
+    });
   };
 
   const submitDelete = () => {
@@ -193,7 +200,7 @@ export function EditEmployeeDialog({
     mode === 'roles'
       ? 'Sửa vai trò'
       : mode === 'active'
-        ? detail?.isActive
+        ? detail?.status === 'ACTIVE'
           ? 'Vô hiệu hóa nhân viên'
           : 'Kích hoạt nhân viên'
         : mode === 'delete'
@@ -206,7 +213,7 @@ export function EditEmployeeDialog({
     mode === 'roles'
       ? 'Thay thế toàn bộ vai trò đang gán cho nhân viên này.'
       : mode === 'active' && detail
-        ? detail.isActive
+        ? detail.status === 'ACTIVE'
           ? 'Nhân viên sẽ không thể đăng nhập cho đến khi được kích hoạt lại.'
           : 'Khôi phục quyền đăng nhập cho nhân viên này.'
         : mode === 'delete' && detail && !detail.deletedAt
@@ -392,11 +399,15 @@ export function EditEmployeeDialog({
               </Button>
               <Button
                 type="button"
-                variant={detail.isActive ? 'destructive' : 'default'}
+                variant={detail.status === 'ACTIVE' ? 'destructive' : 'default'}
                 disabled={activeFormDisabled}
                 onClick={submitToggleActive}
               >
-                {isPending ? 'Đang xử lý…' : detail.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                {isPending
+                  ? 'Đang xử lý…'
+                  : detail.status === 'ACTIVE'
+                    ? 'Vô hiệu hóa'
+                    : 'Kích hoạt'}
               </Button>
             </>
           ) : null}

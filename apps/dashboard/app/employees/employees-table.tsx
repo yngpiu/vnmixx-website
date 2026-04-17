@@ -164,7 +164,7 @@ export function EmployeesTable() {
           searchDebounceMs={350}
           filters={[
             {
-              columnId: 'isActive',
+              columnId: 'status',
               title: 'Trạng thái hoạt động',
               selectionMode: 'single',
               options: [

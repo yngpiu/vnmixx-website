@@ -3,7 +3,7 @@ export const EMPLOYEE_TABLE_SORT_IDS = [
   'fullName',
   'email',
   'phoneNumber',
-  'isActive',
+  'status',
   'createdAt',
 ] as const;
 

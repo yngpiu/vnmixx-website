@@ -13,7 +13,7 @@ export interface EmployeeListItem {
   email: string;
   phoneNumber: string;
   avatarUrl: string | null;
-  isActive: boolean;
+  status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   deletedAt: string | null;
   employeeRoles: EmployeeRoleBrief[];
@@ -45,6 +45,6 @@ export type CreateEmployeePayload = {
 };
 
 export type UpdateEmployeePayload = {
-  isActive?: boolean;
+  status?: 'ACTIVE' | 'INACTIVE';
   roleIds?: number[];
 };

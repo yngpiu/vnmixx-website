@@ -2,12 +2,7 @@
 
 import { EMPLOYEE_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
 import { appendSortingToSearchParams, sortingStateFromUrl } from '@/lib/data-table-sort-url';
-import {
-  parseDeletedColumnFilter,
-  parseIsActiveColumnFilter,
-  setIsActiveUrlParam,
-  setSoftDeletedUrlParam,
-} from '@/lib/list-admin-filters-url';
+import { parseDeletedColumnFilter, setSoftDeletedUrlParam } from '@/lib/list-admin-filters-url';
 import type {
   ColumnFiltersState,
   OnChangeFn,
@@ -34,10 +29,11 @@ function parseColumnFilters(searchParams: URLSearchParams): ColumnFiltersState {
   if (q) {
     filters.push({ id: 'fullName', value: q });
   }
-  const isActiveF = parseIsActiveColumnFilter(searchParams);
-  if (isActiveF) filters.push(isActiveF);
-  const deletedF = parseDeletedColumnFilter(searchParams);
-  if (deletedF) filters.push(deletedF);
+  const status = searchParams.get('status');
+  if (status === 'ACTIVE') filters.push({ id: 'status', value: ['active'] });
+  if (status === 'INACTIVE') filters.push({ id: 'status', value: ['inactive'] });
+  const deletedFilter = parseDeletedColumnFilter(searchParams);
+  if (deletedFilter) filters.push(deletedFilter);
   return filters;
 }
 
@@ -62,7 +58,12 @@ function buildSearchParamsFromState(
     params.set('q', q);
   }
 
-  setIsActiveUrlParam(params, columnFilters);
+  const statusFilter = columnFilters.find((f) => f.id === 'status');
+  const statuses = Array.isArray(statusFilter?.value) ? (statusFilter.value as string[]) : [];
+  if (statuses.length === 1) {
+    if (statuses[0] === 'active') params.set('status', 'ACTIVE');
+    else if (statuses[0] === 'inactive') params.set('status', 'INACTIVE');
+  }
   setSoftDeletedUrlParam(params, columnFilters);
 
   appendSortingToSearchParams(params, sorting, EMPLOYEE_TABLE_SORT_IDS);

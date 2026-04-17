@@ -113,7 +113,7 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
   },
   {
     accessorKey: 'isActive',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái hoạt động" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
     cell: ({ row }) =>
       row.original.isActive ? (
         <Badge
@@ -143,7 +143,7 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
       }
       return true;
     },
-    meta: { dataTableColumnLabel: 'Trạng thái hoạt động' } satisfies DataTableColumnMeta,
+    meta: { dataTableColumnLabel: 'Trạng thái' } satisfies DataTableColumnMeta,
   },
   {
     accessorKey: 'createdAt',
