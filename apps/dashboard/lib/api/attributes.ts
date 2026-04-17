@@ -1,8 +1,28 @@
 import { apiClient } from '@/lib/axios';
-import type { Attribute, AttributeValueAdmin } from '@/lib/types/attribute';
+import type { Attribute, AttributeListResponse, AttributeValueAdmin } from '@/lib/types/attribute';
 
-export async function listAttributes(): Promise<Attribute[]> {
-  const { data } = await apiClient.get<Attribute[]>('/admin/attributes');
+export type ListAttributesParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export async function listAttributes(
+  params: ListAttributesParams = {},
+): Promise<AttributeListResponse> {
+  const { data } = await apiClient.get<AttributeListResponse>('/admin/attributes', { params });
+  return data;
+}
+
+export async function getAttribute(id: number): Promise<Attribute> {
+  const { data } = await apiClient.get<Attribute>(`/admin/attributes/${id}`);
+  return data;
+}
+
+export async function listAttributesWithValues(): Promise<Attribute[]> {
+  const { data } = await apiClient.get<Attribute[]>('/admin/attributes/all');
   return data;
 }
 

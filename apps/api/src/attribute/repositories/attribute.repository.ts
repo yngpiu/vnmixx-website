@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface AttributeValueView {
@@ -12,6 +13,19 @@ export interface AttributeWithValuesView {
   createdAt: Date;
   updatedAt: Date;
   values: AttributeValueView[];
+}
+
+export interface AttributeListItemView {
+  id: number;
+  name: string;
+  valueCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PaginatedAttributeList {
+  data: AttributeListItemView[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
 export interface AttributeValueAdminView {
@@ -44,6 +58,65 @@ const ATTRIBUTE_VALUE_ADMIN_SELECT = {
 @Injectable()
 export class AttributeRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private buildListOrderBy(
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc',
+  ): Prisma.AttributeOrderByWithRelationInput {
+    const dir = sortOrder === 'asc' ? 'asc' : 'desc';
+    switch (sortBy) {
+      case 'name':
+        return { name: dir };
+      case 'updatedAt':
+        return { updatedAt: dir };
+      case 'valueCount':
+        return { values: { _count: dir } };
+      default:
+        return { name: 'asc' };
+    }
+  }
+
+  async findList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<PaginatedAttributeList> {
+    const { page, limit, search, sortBy, sortOrder } = params;
+    const where: Prisma.AttributeWhereInput = search
+      ? {
+          name: { contains: search },
+        }
+      : {};
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.attribute.count({ where }),
+      this.prisma.attribute.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: this.buildListOrderBy(sortBy, sortOrder),
+        select: {
+          id: true,
+          name: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: { select: { values: true } },
+        },
+      }),
+    ]);
+    const data: AttributeListItemView[] = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      valueCount: row._count.values,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
+    return {
+      data,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
+    };
+  }
 
   findAll(): Promise<AttributeWithValuesView[]> {
     return this.prisma.attribute.findMany({

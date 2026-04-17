@@ -1,7 +1,6 @@
 'use client';
 
-import { listAttributes, updateAttribute } from '@/lib/api/attributes';
-import type { Attribute } from '@/lib/types/attribute';
+import { getAttribute, updateAttribute } from '@/lib/api/attributes';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -48,12 +47,11 @@ export function EditAttributeNameDialog({
   const [nameError, setNameError] = useState<string | null>(null);
 
   const listQuery = useQuery({
-    queryKey: ['attributes', 'list'],
-    queryFn: listAttributes,
+    queryKey: ['attributes', 'detail', attributeId],
+    queryFn: () => getAttribute(attributeId!),
     enabled: open && attributeId != null,
   });
-
-  const attribute: Attribute | undefined = listQuery.data?.find((a) => a.id === attributeId);
+  const attribute = listQuery.data;
 
   useEffect(() => {
     if (!open) {

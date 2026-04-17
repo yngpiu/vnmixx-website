@@ -15,14 +15,29 @@ import {
   AttributeRepository,
   AttributeValueAdminView,
   AttributeWithValuesView,
+  PaginatedAttributeList,
 } from '../repositories/attribute.repository';
 
 @Injectable()
 export class AttributeService {
   constructor(private readonly repository: AttributeRepository) {}
 
+  findList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<PaginatedAttributeList> {
+    return this.repository.findList(params);
+  }
+
   findAll(): Promise<AttributeWithValuesView[]> {
     return this.repository.findAll();
+  }
+
+  async findById(id: number): Promise<AttributeWithValuesView> {
+    return this.findByIdOrFail(id);
   }
 
   async create(dto: CreateAttributeDto): Promise<AttributeWithValuesView> {

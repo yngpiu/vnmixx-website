@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -24,10 +25,12 @@ import {
 } from '@nestjs/swagger';
 import { RequireUserType } from '../../auth/decorators';
 import {
+  AttributeListResponseDto,
   AttributeResponseDto,
   AttributeValueAdminResponseDto,
   CreateAttributeDto,
   CreateAttributeValueDto,
+  ListAttributesQueryDto,
   UpdateAttributeDto,
   UpdateAttributeValueDto,
 } from '../dto';
@@ -42,11 +45,35 @@ import { AttributeService } from '../services/attribute.service';
 export class AttributeAdminController {
   constructor(private readonly attributeService: AttributeService) {}
 
-  @ApiOperation({ summary: 'Liệt kê tất cả thuộc tính kèm giá trị' })
-  @ApiOkResponse({ type: [AttributeResponseDto] })
+  @ApiOperation({
+    summary: 'Liệt kê thuộc tính (quản trị)',
+    description: 'Phân trang, tìm theo tên thuộc tính, sắp xếp.',
+  })
+  @ApiOkResponse({ type: AttributeListResponseDto })
   @Get()
+  findList(@Query() query: ListAttributesQueryDto): Promise<AttributeListResponseDto> {
+    return this.attributeService.findList({
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
+  }
+
+  @ApiOperation({ summary: 'Liệt kê tất cả thuộc tính kèm giá trị (không phân trang)' })
+  @ApiOkResponse({ type: [AttributeResponseDto] })
+  @Get('all')
   findAll(): Promise<AttributeResponseDto[]> {
     return this.attributeService.findAll();
+  }
+
+  @ApiOperation({ summary: 'Lấy chi tiết thuộc tính kèm giá trị' })
+  @ApiOkResponse({ type: AttributeResponseDto })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy thuộc tính.' })
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<AttributeResponseDto> {
+    return this.attributeService.findById(id);
   }
 
   @ApiOperation({ summary: 'Tạo thuộc tính mới' })
