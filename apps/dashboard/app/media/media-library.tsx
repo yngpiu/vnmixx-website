@@ -26,7 +26,6 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   CheckIcon,
   CopyIcon,
-  DownloadIcon,
   FolderIcon,
   FolderPlusIcon,
   GridIcon,
@@ -634,16 +633,6 @@ export function MediaLibrary() {
                   ) : (
                     <CopyIcon className="size-4" />
                   )}
-                </Button>
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0" asChild>
-                  <a
-                    href={previewFile.url}
-                    download={previewFile.fileName}
-                    aria-label="Download file"
-                    title="Download"
-                  >
-                    <DownloadIcon className="size-4" />
-                  </a>
                 </Button>
               </div>
             </div>

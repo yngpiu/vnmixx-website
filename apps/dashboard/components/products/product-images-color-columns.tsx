@@ -1,6 +1,6 @@
 'use client';
 
-import { uploadImageToCloudinary } from '@/lib/cloudinary-client-upload';
+import { MediaPickerDialog } from '@/components/products/media-picker-dialog';
 import {
   DndContext,
   type DragEndEvent,
@@ -19,10 +19,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@repo/ui/components/ui/button';
-import { GripVerticalIcon, ImagePlusIcon, Loader2Icon, Trash2Icon } from 'lucide-react';
+import { GripVerticalIcon, ImagesIcon, Trash2Icon } from 'lucide-react';
 import Image from 'next/image';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useCallback, useMemo, useState } from 'react';
 
 function sortableId(colorId: number, index: number): string {
   return `${colorId}::${index}`;
@@ -42,18 +41,10 @@ type SortableImageRowProps = {
   url: string;
   index: number;
   disabled: boolean;
-  uploading: boolean;
   onRemove: () => void;
 };
 
-function SortableImageRow({
-  id,
-  url,
-  index,
-  disabled,
-  uploading,
-  onRemove,
-}: SortableImageRowProps) {
+function SortableImageRow({ id, url, index, disabled, onRemove }: SortableImageRowProps) {
   const {
     attributes,
     listeners,
@@ -82,7 +73,7 @@ function SortableImageRow({
             type="button"
             ref={setActivatorNodeRef}
             className="text-muted-foreground hover:bg-muted/80 flex size-9 cursor-grab items-center justify-center rounded-md border border-transparent active:cursor-grabbing"
-            disabled={disabled || uploading}
+            disabled={disabled}
             aria-label="Kéo để đổi thứ tự"
             {...attributes}
             {...listeners}
@@ -94,7 +85,7 @@ function SortableImageRow({
             variant="ghost"
             size="icon-sm"
             className="text-destructive hover:text-destructive size-9"
-            disabled={disabled || uploading}
+            disabled={disabled}
             onClick={onRemove}
             aria-label="Xóa ảnh"
           >
@@ -129,35 +120,13 @@ function ColorImageColumn({
   disabled,
   maxFiles,
 }: ColorColumnProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const itemIds = useMemo(() => urls.map((_, i) => sortableId(colorId, i)), [urls, colorId]);
-
-  const addFromFiles = async (files: FileList | null) => {
-    if (!files?.length || disabled || uploading) return;
-    const remaining = maxFiles - urls.length;
-    if (remaining <= 0) return;
-    const picked = Array.from(files).slice(0, remaining);
-    setUploading(true);
-    try {
-      const next = [...urls];
-      for (const file of picked) {
-        const { secureUrl } = await uploadImageToCloudinary(file);
-        next.push(secureUrl);
-      }
-      onUrlsChange(next);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Upload thất bại');
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = '';
-    }
-  };
 
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -175,29 +144,16 @@ function ColorImageColumn({
   return (
     <div className="border-border/80 flex w-max min-w-0 shrink-0 flex-col gap-1.5 rounded-xl border bg-muted/10 px-2 py-2 shadow-sm">
       <p className="text-center text-sm font-semibold leading-tight tracking-tight">{colorName}</p>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple
-        className="sr-only"
-        disabled={disabled || uploading || urls.length >= maxFiles}
-        onChange={(e) => void addFromFiles(e.target.files)}
-      />
       <Button
         type="button"
         variant="outline"
         size="sm"
         className="w-full gap-1"
-        disabled={disabled || uploading || urls.length >= maxFiles}
-        onClick={() => inputRef.current?.click()}
+        disabled={disabled || urls.length >= maxFiles}
+        onClick={() => setPickerOpen(true)}
       >
-        {uploading ? (
-          <Loader2Icon className="size-4 animate-spin" />
-        ) : (
-          <ImagePlusIcon className="size-4" />
-        )}
-        {uploading ? 'Đang tải…' : 'Thêm ảnh'}
+        <ImagesIcon className="size-4" />
+        Chọn ảnh
       </Button>
       {urls.length >= maxFiles ? (
         <p className="text-muted-foreground text-center text-[10px]">Đã đủ {maxFiles} ảnh.</p>
@@ -223,7 +179,6 @@ function ColorImageColumn({
                   url={url}
                   index={index}
                   disabled={disabled}
-                  uploading={uploading}
                   onRemove={() => onUrlsChange(urls.filter((_, i) => i !== index))}
                 />
               ))}
@@ -231,6 +186,17 @@ function ColorImageColumn({
           </SortableContext>
         </DndContext>
       )}
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        title={`Chọn ảnh màu: ${colorName}`}
+        description={`Chọn tối đa ${maxFiles} ảnh cho màu này.`}
+        multiple
+        selectedUrls={urls}
+        onConfirm={(picked) => {
+          onUrlsChange(picked.slice(0, maxFiles));
+        }}
+      />
     </div>
   );
 }

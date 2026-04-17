@@ -55,10 +55,6 @@ const catalogItems: SidebarNavItem[] = [
     title: 'Sản phẩm',
     url: adminModulePath('products'),
     icon: <PackageIcon />,
-    items: [
-      { title: 'Danh sách', url: adminModulePath('products') },
-      { title: 'Thêm mới', url: adminModuleNewPath('products') },
-    ],
   },
   {
     title: 'Danh mục',

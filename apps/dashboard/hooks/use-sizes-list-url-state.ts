@@ -2,7 +2,12 @@
 
 import { SIZE_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
 import { appendSortingToSearchParams, sortingStateFromUrl } from '@/lib/data-table-sort-url';
-import type { OnChangeFn, PaginationState, SortingState } from '@tanstack/react-table';
+import type {
+  ColumnFiltersState,
+  OnChangeFn,
+  PaginationState,
+  SortingState,
+} from '@tanstack/react-table';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 
@@ -19,7 +24,7 @@ function clampPageSize(n: number): number {
 
 function buildSearchParamsFromState(
   pagination: PaginationState,
-  globalFilter: string,
+  columnFilters: ColumnFiltersState,
   sorting: SortingState,
 ): URLSearchParams {
   const params = new URLSearchParams();
@@ -31,7 +36,8 @@ function buildSearchParamsFromState(
   if (pageSize !== DEFAULT_PAGE_SIZE) {
     params.set('pageSize', String(pageSize));
   }
-  const q = globalFilter.trim();
+  const searchFilter = columnFilters.find((f) => f.id === 'label');
+  const q = typeof searchFilter?.value === 'string' ? searchFilter.value.trim() : '';
   if (q) {
     params.set('q', q);
   }
@@ -43,8 +49,11 @@ export function useSizesListUrlState() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  const globalFilter = useMemo(() => searchParams.get('q')?.trim() ?? '', [searchParams]);
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const q = searchParams.get('q')?.trim();
+    if (!q) return [];
+    return [{ id: 'label', value: q }];
+  }, [searchParams]);
 
   const sorting = useMemo(
     () => sortingStateFromUrl(searchParams, SIZE_TABLE_SORT_IDS),
@@ -70,22 +79,23 @@ export function useSizesListUrlState() {
   const onPaginationChange: OnChangeFn<PaginationState> = useCallback(
     (updater) => {
       const next = typeof updater === 'function' ? updater(pagination) : updater;
-      const params = buildSearchParamsFromState(next, globalFilter, sorting);
+      const params = buildSearchParamsFromState(next, columnFilters, sorting);
       replaceUrl(params);
     },
-    [pagination, globalFilter, sorting, replaceUrl],
+    [pagination, columnFilters, sorting, replaceUrl],
   );
 
-  const onGlobalFilterChange = useCallback(
-    (value: string) => {
+  const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = useCallback(
+    (updater) => {
+      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
       const params = buildSearchParamsFromState(
         { pageIndex: 0, pageSize: pagination.pageSize },
-        value,
+        next,
         sorting,
       );
       replaceUrl(params);
     },
-    [pagination.pageSize, sorting, replaceUrl],
+    [pagination.pageSize, columnFilters, sorting, replaceUrl],
   );
 
   const onSortingChange: OnChangeFn<SortingState> = useCallback(
@@ -93,12 +103,12 @@ export function useSizesListUrlState() {
       const next = typeof updater === 'function' ? updater(sorting) : updater;
       const params = buildSearchParamsFromState(
         { pageIndex: 0, pageSize: pagination.pageSize },
-        globalFilter,
+        columnFilters,
         next,
       );
       replaceUrl(params);
     },
-    [pagination.pageSize, globalFilter, sorting, replaceUrl],
+    [pagination.pageSize, columnFilters, sorting, replaceUrl],
   );
 
   const ensurePageInRange = useCallback(
@@ -108,20 +118,20 @@ export function useSizesListUrlState() {
       if (current > pageCount) {
         const params = buildSearchParamsFromState(
           { pageIndex: pageCount - 1, pageSize: pagination.pageSize },
-          globalFilter,
+          columnFilters,
           sorting,
         );
         replaceUrl(params);
       }
     },
-    [pagination, globalFilter, sorting, replaceUrl],
+    [pagination, columnFilters, sorting, replaceUrl],
   );
 
   return {
     pagination,
     onPaginationChange,
-    globalFilter,
-    onGlobalFilterChange,
+    columnFilters,
+    onColumnFiltersChange,
     sorting,
     onSortingChange,
     ensurePageInRange,

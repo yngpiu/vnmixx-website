@@ -28,7 +28,7 @@ import {
 } from '@repo/ui/components/ui/table';
 import { cn } from '@repo/ui/lib/utils';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { flexRender, getCoreRowModel, useReactTable, type OnChangeFn } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
 import { AlertCircleIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -59,8 +59,8 @@ export function SizesTable() {
   const {
     pagination,
     onPaginationChange,
-    globalFilter,
-    onGlobalFilterChange,
+    columnFilters,
+    onColumnFiltersChange,
     sorting,
     onSortingChange,
     ensurePageInRange,
@@ -82,8 +82,8 @@ export function SizesTable() {
   );
 
   const listParams = useMemo(
-    () => toListSizesParams(pagination, globalFilter, sorting),
-    [pagination, globalFilter, sorting],
+    () => toListSizesParams(pagination, columnFilters, sorting),
+    [pagination, columnFilters, sorting],
   );
 
   const { data, isLoading, isError, error } = useQuery({
@@ -105,24 +105,20 @@ export function SizesTable() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const onGlobalFilterChangeTable: OnChangeFn<string> = (updater) => {
-    const next = typeof updater === 'function' ? updater(globalFilter) : updater;
-    onGlobalFilterChange(next ?? '');
-  };
-
   const table = useReactTable({
     data: rows,
     columns,
     pageCount,
     state: {
       pagination,
-      globalFilter,
+      columnFilters,
       sorting,
     },
     manualPagination: true,
+    manualFiltering: true,
     manualSorting: true,
     onPaginationChange,
-    onGlobalFilterChange: onGlobalFilterChangeTable,
+    onColumnFiltersChange,
     onSortingChange,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => String(row.id),
@@ -145,9 +141,9 @@ export function SizesTable() {
     );
   }
 
-  const emptyMessage = globalFilter.trim()
-    ? 'Không có kích cỡ khớp bộ lọc.'
-    : 'Chưa có kích cỡ nào.';
+  const searchFilter = columnFilters.find((f) => f.id === 'label');
+  const searchText = typeof searchFilter?.value === 'string' ? searchFilter.value.trim() : '';
+  const emptyMessage = searchText ? 'Không có kích cỡ khớp bộ lọc.' : 'Chưa có kích cỡ nào.';
 
   return (
     <>
@@ -160,7 +156,8 @@ export function SizesTable() {
         <DataTableToolbar
           table={table}
           searchPlaceholder="Tìm theo nhãn…"
-          globalFilterDebounceMs={350}
+          searchKey="label"
+          searchDebounceMs={350}
         />
         <div className="overflow-hidden rounded-md border">
           <Table>

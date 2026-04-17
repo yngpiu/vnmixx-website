@@ -28,7 +28,7 @@ import {
 } from '@repo/ui/components/ui/table';
 import { cn } from '@repo/ui/lib/utils';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { flexRender, getCoreRowModel, useReactTable, type OnChangeFn } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
 import { AlertCircleIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -59,8 +59,8 @@ export function ColorsTable() {
   const {
     pagination,
     onPaginationChange,
-    globalFilter,
-    onGlobalFilterChange,
+    columnFilters,
+    onColumnFiltersChange,
     sorting,
     onSortingChange,
     ensurePageInRange,
@@ -82,8 +82,8 @@ export function ColorsTable() {
   );
 
   const listParams = useMemo(
-    () => toListColorsParams(pagination, globalFilter, sorting),
-    [pagination, globalFilter, sorting],
+    () => toListColorsParams(pagination, columnFilters, sorting),
+    [pagination, columnFilters, sorting],
   );
 
   const { data, isLoading, isError, error } = useQuery({
@@ -105,24 +105,20 @@ export function ColorsTable() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const onGlobalFilterChangeTable: OnChangeFn<string> = (updater) => {
-    const next = typeof updater === 'function' ? updater(globalFilter) : updater;
-    onGlobalFilterChange(next ?? '');
-  };
-
   const table = useReactTable({
     data: rows,
     columns,
     pageCount,
     state: {
       pagination,
-      globalFilter,
+      columnFilters,
       sorting,
     },
     manualPagination: true,
+    manualFiltering: true,
     manualSorting: true,
     onPaginationChange,
-    onGlobalFilterChange: onGlobalFilterChangeTable,
+    onColumnFiltersChange,
     onSortingChange,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => String(row.id),
@@ -145,7 +141,9 @@ export function ColorsTable() {
     );
   }
 
-  const emptyMessage = globalFilter.trim() ? 'Không có màu khớp bộ lọc.' : 'Chưa có màu nào.';
+  const searchFilter = columnFilters.find((f) => f.id === 'name');
+  const searchText = typeof searchFilter?.value === 'string' ? searchFilter.value.trim() : '';
+  const emptyMessage = searchText ? 'Không có màu khớp bộ lọc.' : 'Chưa có màu nào.';
 
   return (
     <>
@@ -158,7 +156,8 @@ export function ColorsTable() {
         <DataTableToolbar
           table={table}
           searchPlaceholder="Tìm theo tên hoặc mã HEX…"
-          globalFilterDebounceMs={350}
+          searchKey="name"
+          searchDebounceMs={350}
         />
         <div className="overflow-hidden rounded-md border">
           <Table>

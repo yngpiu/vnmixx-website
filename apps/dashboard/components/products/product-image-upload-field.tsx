@@ -1,11 +1,10 @@
 'use client';
 
-import { uploadImageToCloudinary } from '@/lib/cloudinary-client-upload';
+import { MediaPickerDialog } from '@/components/products/media-picker-dialog';
 import { Button } from '@repo/ui/components/ui/button';
-import { ImagePlusIcon, Loader2Icon, Trash2Icon } from 'lucide-react';
+import { ImagePlusIcon, ImagesIcon, Trash2Icon } from 'lucide-react';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { useState } from 'react';
 
 type ProductImageUploadFieldProps = {
   disabled?: boolean;
@@ -13,7 +12,6 @@ type ProductImageUploadFieldProps = {
   onUrlsChange: (urls: string[]) => void;
   /** Max files in this group (default 12) */
   maxFiles?: number;
-  accept?: string;
   emptyHint?: string;
   /** Pixel size class for each preview tile */
   previewSize?: 'sm' | 'md';
@@ -24,34 +22,10 @@ export function ProductImageUploadField({
   urls,
   onUrlsChange,
   maxFiles = 12,
-  accept = 'image/jpeg,image/png,image/webp,image/gif',
   emptyHint = 'Chưa có ảnh',
   previewSize = 'sm',
 }: ProductImageUploadFieldProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-
-  const addFromFiles = async (files: FileList | null) => {
-    if (!files?.length || disabled || uploading) return;
-    const remaining = maxFiles - urls.length;
-    if (remaining <= 0) return;
-
-    const picked = Array.from(files).slice(0, remaining);
-    setUploading(true);
-    try {
-      const next = [...urls];
-      for (const file of picked) {
-        const { secureUrl } = await uploadImageToCloudinary(file);
-        next.push(secureUrl);
-      }
-      onUrlsChange(next);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Upload thất bại');
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = '';
-    }
-  };
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const removeAt = (index: number) => {
     onUrlsChange(urls.filter((_, i) => i !== index));
@@ -71,30 +45,17 @@ export function ProductImageUploadField({
 
   return (
     <div className="space-y-3">
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        multiple
-        className="sr-only"
-        disabled={disabled || uploading || urls.length >= maxFiles}
-        onChange={(e) => void addFromFiles(e.target.files)}
-      />
       <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
           className="gap-1"
-          disabled={disabled || uploading || urls.length >= maxFiles}
-          onClick={() => inputRef.current?.click()}
+          disabled={disabled || urls.length >= maxFiles}
+          onClick={() => setPickerOpen(true)}
         >
-          {uploading ? (
-            <Loader2Icon className="size-4 animate-spin" />
-          ) : (
-            <ImagePlusIcon className="size-4" />
-          )}
-          {uploading ? 'Đang tải lên…' : 'Chọn ảnh'}
+          <ImagesIcon className="size-4" />
+          Chọn từ thư viện
         </Button>
         {urls.length >= maxFiles ? (
           <span className="text-muted-foreground text-xs">Đã đủ {maxFiles} ảnh.</span>
@@ -117,7 +78,7 @@ export function ProductImageUploadField({
                   size="icon-sm"
                   variant="secondary"
                   className="size-7 shadow-sm"
-                  disabled={disabled || uploading || i === 0}
+                  disabled={disabled || i === 0}
                   onClick={() => move(i, i - 1)}
                   aria-label="Lên trên"
                 >
@@ -128,7 +89,7 @@ export function ProductImageUploadField({
                   size="icon-sm"
                   variant="secondary"
                   className="size-7 shadow-sm"
-                  disabled={disabled || uploading || i === urls.length - 1}
+                  disabled={disabled || i === urls.length - 1}
                   onClick={() => move(i, i + 1)}
                   aria-label="Xuống dưới"
                 >
@@ -139,7 +100,7 @@ export function ProductImageUploadField({
                   size="icon-sm"
                   variant="destructive"
                   className="size-7 shadow-sm"
-                  disabled={disabled || uploading}
+                  disabled={disabled}
                   onClick={() => removeAt(i)}
                   aria-label="Xóa ảnh"
                 >
@@ -153,6 +114,17 @@ export function ProductImageUploadField({
           ))}
         </ul>
       )}
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        title="Chọn ảnh theo màu"
+        description={`Chọn tối đa ${maxFiles} ảnh cho nhóm này.`}
+        multiple
+        selectedUrls={urls}
+        onConfirm={(picked) => {
+          onUrlsChange(picked.slice(0, maxFiles));
+        }}
+      />
     </div>
   );
 }
@@ -167,49 +139,21 @@ export function ProductThumbnailUploadField({
   url: string;
   onUrlChange: (url: string) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-
-  const onPick = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file || disabled || uploading) return;
-    setUploading(true);
-    try {
-      const { secureUrl } = await uploadImageToCloudinary(file);
-      onUrlChange(secureUrl);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Upload thất bại');
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = '';
-    }
-  };
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <div className="space-y-2">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        className="sr-only"
-        disabled={disabled || uploading}
-        onChange={(e) => void onPick(e.target.files)}
-      />
       <div className="flex flex-wrap items-end gap-3">
         <Button
           type="button"
           variant="outline"
           size="sm"
           className="gap-1"
-          disabled={disabled || uploading}
-          onClick={() => inputRef.current?.click()}
+          disabled={disabled}
+          onClick={() => setPickerOpen(true)}
         >
-          {uploading ? (
-            <Loader2Icon className="size-4 animate-spin" />
-          ) : (
-            <ImagePlusIcon className="size-4" />
-          )}
-          {uploading ? 'Đang tải…' : url ? 'Đổi ảnh' : 'Chọn ảnh'}
+          <ImagePlusIcon className="size-4" />
+          {url ? 'Đổi ảnh' : 'Chọn ảnh'}
         </Button>
         {url ? (
           <div className="relative size-24 overflow-hidden rounded-lg border shadow-sm ring-1 ring-border/60">
@@ -226,12 +170,24 @@ export function ProductThumbnailUploadField({
           type="button"
           variant="ghost"
           size="sm"
-          disabled={disabled || uploading}
+          disabled={disabled}
           onClick={() => onUrlChange('')}
         >
           Xóa thumbnail
         </Button>
       ) : null}
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        title="Chọn thumbnail"
+        description="Thumbnail chỉ nhận một ảnh."
+        multiple={false}
+        selectedUrls={url ? [url] : []}
+        onConfirm={(picked) => {
+          const first = picked[0];
+          onUrlChange(first ?? '');
+        }}
+      />
     </div>
   );
 }

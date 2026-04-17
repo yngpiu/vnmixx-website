@@ -4,16 +4,12 @@ import { CategoryTreeMultiSelect } from '@/components/categories/category-tree-m
 import { MultiSelectPopover } from '@/components/multi-select-popover';
 import { ProductThumbnailUploadField } from '@/components/products/product-image-upload-field';
 import { ProductImagesColorColumns } from '@/components/products/product-images-color-columns';
-import { listAttributes } from '@/lib/api/attributes';
+import { listAttributesWithValues } from '@/lib/api/attributes';
 import { listCategories } from '@/lib/api/categories';
 import { listPublicColors } from '@/lib/api/colors';
 import { createProduct } from '@/lib/api/products';
 import { listPublicSizes } from '@/lib/api/sizes';
 import { categoryDisplayName } from '@/lib/category-display-name';
-import {
-  cloudinaryUploadConfigured,
-  cloudinaryUploadMissingMessage,
-} from '@/lib/cloudinary-client-upload';
 import type { CategoryAdmin } from '@/lib/types/category';
 import type {
   CreateProductBody,
@@ -132,7 +128,10 @@ export function NewProductForm() {
     queryKey: ['categories', 'list', { isSoftDeleted: false }],
     queryFn: () => listCategories({ isSoftDeleted: false }),
   });
-  const attributesQuery = useQuery({ queryKey: ['attributes', 'list'], queryFn: listAttributes });
+  const attributesQuery = useQuery({
+    queryKey: ['attributes', 'full-list'],
+    queryFn: listAttributesWithValues,
+  });
 
   const colors = useMemo(() => colorsQuery.data ?? [], [colorsQuery.data]);
   const sizes = useMemo(() => sizesQuery.data ?? [], [sizesQuery.data]);
@@ -360,35 +359,10 @@ export function NewProductForm() {
               </p>
             </div>
           </div>
-          <div className="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:justify-end lg:w-auto">
-            <Button type="button" variant="outline" className="sm:min-w-28" asChild disabled={busy}>
-              <Link href="/products">Hủy</Link>
-            </Button>
-            <Button type="button" className="sm:min-w-40" onClick={submit} disabled={busy}>
-              {busy ? 'Đang tạo…' : 'Tạo sản phẩm'}
-            </Button>
-          </div>
         </div>
       </header>
 
       <div className="mx-auto mb-8 w-full max-w-4xl space-y-3">
-        {!cloudinaryUploadConfigured() ? (
-          <div
-            className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-50"
-            role="status"
-          >
-            {cloudinaryUploadMissingMessage()} Cần preset unsigned —{' '}
-            <a
-              className="font-medium underline underline-offset-2"
-              href="https://cloudinary.com/documentation/react_image_and_video_upload"
-              target="_blank"
-              rel="noreferrer"
-            >
-              hướng dẫn Cloudinary (React)
-            </a>
-            .
-          </div>
-        ) : null}
         {formError ? (
           <p
             className="text-destructive bg-destructive/5 rounded-xl border border-destructive/20 px-4 py-3 text-sm"
@@ -758,7 +732,7 @@ export function NewProductForm() {
                 <ProductThumbnailUploadField
                   url={thumbnail}
                   onUrlChange={setThumbnail}
-                  disabled={busy || !cloudinaryUploadConfigured()}
+                  disabled={busy}
                 />
               </Field>
             </div>
@@ -773,7 +747,7 @@ export function NewProductForm() {
                   [colorId]: urls,
                 }))
               }
-              disabled={busy || !cloudinaryUploadConfigured()}
+              disabled={busy}
               maxFilesPerColor={16}
             />
           </div>

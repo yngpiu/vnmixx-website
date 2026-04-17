@@ -8,10 +8,10 @@ const sortIds = PRODUCT_TABLE_SORT_IDS as readonly string[];
 export function toListProductsParams(
   pagination: PaginationState,
   columnFilters: ColumnFiltersState,
-  globalFilter: string,
   sorting: SortingState,
 ): ListProductsParams {
-  const search = globalFilter.trim() || undefined;
+  const qFilter = columnFilters.find((f) => f.id === 'name');
+  const search = typeof qFilter?.value === 'string' ? qFilter.value.trim() || undefined : undefined;
 
   const statusFilter = columnFilters.find((f) => f.id === 'isActive');
   const statuses = Array.isArray(statusFilter?.value) ? (statusFilter.value as string[]) : [];

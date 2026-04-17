@@ -20,9 +20,11 @@ type MediaGridProps = {
   viewMode: 'grid' | 'list';
   onDelete: (file: MediaFile) => void;
   onPreview: (file: MediaFile) => void;
+  onItemClick?: (file: MediaFile) => void;
   isDeleting?: boolean;
   hasMore?: boolean;
   isLoadingMore?: boolean;
+  selectedUrls?: Set<string>;
 };
 
 function formatFileSize(bytes: number): string {
@@ -90,15 +92,20 @@ const MediaGridCard = memo(function MediaGridCard({
   file,
   onDelete,
   onPreview,
+  onItemClick,
   isDeleting,
+  selectedUrls,
 }: {
   file: MediaFile;
   onDelete: (file: MediaFile) => void;
   onPreview: (file: MediaFile) => void;
+  onItemClick?: (file: MediaFile) => void;
   isDeleting?: boolean;
+  selectedUrls?: Set<string>;
 }) {
   const isImage = isPreviewableImage(file.mimeType);
   const FallbackIcon = getMimeIcon(file.mimeType);
+  const isSelected = selectedUrls?.has(file.url) ?? false;
   const handleDelete = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -109,12 +116,18 @@ const MediaGridCard = memo(function MediaGridCard({
 
   return (
     <div
-      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md"
-      onClick={() => onPreview(file)}
+      className={cn(
+        'group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md',
+        isSelected && 'ring-primary ring-2',
+      )}
+      onClick={() => (onItemClick ? onItemClick(file) : onPreview(file))}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onPreview(file);
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (onItemClick) onItemClick(file);
+          else onPreview(file);
+        }
       }}
     >
       <div className="bg-muted/50 relative flex aspect-square items-center justify-center overflow-hidden rounded-t-xl">
@@ -172,15 +185,20 @@ const MediaListRow = memo(function MediaListRow({
   file,
   onDelete,
   onPreview,
+  onItemClick,
   isDeleting,
+  selectedUrls,
 }: {
   file: MediaFile;
   onDelete: (file: MediaFile) => void;
   onPreview: (file: MediaFile) => void;
+  onItemClick?: (file: MediaFile) => void;
   isDeleting?: boolean;
+  selectedUrls?: Set<string>;
 }) {
   const isImage = isPreviewableImage(file.mimeType);
   const FallbackIcon = getMimeIcon(file.mimeType);
+  const isSelected = selectedUrls?.has(file.url) ?? false;
   const handleDelete = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -191,12 +209,18 @@ const MediaListRow = memo(function MediaListRow({
 
   return (
     <div
-      className="group flex cursor-pointer items-center gap-3 rounded-xl border bg-card px-4 py-2.5 transition-all hover:shadow-sm"
-      onClick={() => onPreview(file)}
+      className={cn(
+        'group flex cursor-pointer items-center gap-3 rounded-xl border bg-card px-4 py-2.5 transition-all hover:shadow-sm',
+        isSelected && 'ring-primary ring-2',
+      )}
+      onClick={() => (onItemClick ? onItemClick(file) : onPreview(file))}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onPreview(file);
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (onItemClick) onItemClick(file);
+          else onPreview(file);
+        }
       }}
     >
       <div className="bg-muted/50 relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md">
@@ -254,8 +278,10 @@ export function MediaGrid({
   viewMode,
   onDelete,
   onPreview,
+  onItemClick,
   isDeleting,
   isLoadingMore,
+  selectedUrls,
 }: MediaGridProps) {
   if (items.length === 0 && !isLoadingMore) {
     return (
@@ -276,7 +302,9 @@ export function MediaGrid({
               file={file}
               onDelete={onDelete}
               onPreview={onPreview}
+              onItemClick={onItemClick}
               isDeleting={isDeleting}
+              selectedUrls={selectedUrls}
             />
           ))}
         </div>
@@ -293,7 +321,9 @@ export function MediaGrid({
               file={file}
               onDelete={onDelete}
               onPreview={onPreview}
+              onItemClick={onItemClick}
               isDeleting={isDeleting}
+              selectedUrls={selectedUrls}
             />
           ))}
         </div>

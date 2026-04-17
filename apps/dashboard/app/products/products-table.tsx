@@ -22,7 +22,6 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
-  type OnChangeFn,
   type VisibilityState,
 } from '@tanstack/react-table';
 import { AlertCircleIcon } from 'lucide-react';
@@ -42,8 +41,6 @@ export function ProductsTable() {
     onPaginationChange,
     columnFilters,
     onColumnFiltersChange,
-    globalFilter,
-    onGlobalFilterChange,
     sorting,
     onSortingChange,
     ensurePageInRange,
@@ -65,8 +62,8 @@ export function ProductsTable() {
   }, [categoriesData]);
 
   const listParams = useMemo(
-    () => toListProductsParams(pagination, columnFilters, globalFilter, sorting),
-    [pagination, columnFilters, globalFilter, sorting],
+    () => toListProductsParams(pagination, columnFilters, sorting),
+    [pagination, columnFilters, sorting],
   );
 
   const { data, isLoading, isError, error } = useQuery({
@@ -80,11 +77,6 @@ export function ProductsTable() {
   const rows = data?.data ?? [];
   const pageCount = Math.max(data?.meta.totalPages ?? 1, 1);
 
-  const onGlobalFilterChangeTable: OnChangeFn<string> = (updater) => {
-    const next = typeof updater === 'function' ? updater(globalFilter) : updater;
-    onGlobalFilterChange(next ?? '');
-  };
-
   const table = useReactTable({
     data: rows,
     columns,
@@ -93,7 +85,6 @@ export function ProductsTable() {
       pagination,
       columnFilters,
       columnVisibility,
-      globalFilter,
       sorting,
     },
     manualPagination: true,
@@ -102,7 +93,6 @@ export function ProductsTable() {
     onPaginationChange,
     onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
-    onGlobalFilterChange: onGlobalFilterChangeTable,
     onSortingChange,
     getCoreRowModel: getCoreRowModel(),
     getRowId: (row) => String(row.id),
@@ -135,7 +125,8 @@ export function ProductsTable() {
       <DataTableToolbar
         table={table}
         searchPlaceholder="Tìm theo tên sản phẩm…"
-        globalFilterDebounceMs={350}
+        searchKey="name"
+        searchDebounceMs={350}
         filters={[
           {
             columnId: 'isActive',
