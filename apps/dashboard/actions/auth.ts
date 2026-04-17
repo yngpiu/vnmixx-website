@@ -84,7 +84,7 @@ export async function logoutAction(): Promise<ActionResult<null>> {
     const refreshToken = cookieStore.get(COOKIE_REFRESH_TOKEN)?.value;
     if (accessToken) {
       await apiClient
-        .post('/auth/logout', null, {
+        .post('/auth/logout', undefined, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             ...(refreshToken ? { 'x-refresh-token': refreshToken } : {}),

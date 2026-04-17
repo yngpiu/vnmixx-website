@@ -2,6 +2,7 @@
 
 import { PermissionCrudMatrix } from '@/components/roles/permission-crud-matrix';
 import { createRole, listPermissions } from '@/lib/api/rbac';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -17,9 +18,24 @@ import { Textarea } from '@repo/ui/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 const CREATE_ROLE_FORM_ID = 'create-role-dialog-form';
+const createRoleSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Tên vai trò là bắt buộc.')
+    .max(50, 'Tên vai trò không vượt quá 50 ký tự.'),
+  description: z
+    .string()
+    .min(1, 'Mô tả là bắt buộc.')
+    .max(255, 'Mô tả không vượt quá 255 ký tự.')
+    .optional(),
+});
+type CreateRoleFormValues = z.infer<typeof createRoleSchema>;
 
 function apiErrorMessage(err: unknown): string {
   if (isAxiosError(err)) {
@@ -40,10 +56,14 @@ type CreateRoleDialogProps = {
 
 export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) {
   const queryClient = useQueryClient();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [assignedIds, setAssignedIds] = useState<Set<number>>(() => new Set());
-  const [nameError, setNameError] = useState<string | null>(null);
+  const form = useForm<CreateRoleFormValues>({
+    resolver: zodResolver(createRoleSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+    },
+  });
 
   const permissionsQuery = useQuery({
     queryKey: ['permissions', 'list'],
@@ -53,17 +73,18 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
 
   useEffect(() => {
     if (!open) return;
-    setName('');
-    setDescription('');
+    form.reset({
+      name: '',
+      description: '',
+    });
     setAssignedIds(new Set());
-    setNameError(null);
-  }, [open]);
+  }, [form, open]);
 
   const createMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (values: CreateRoleFormValues) =>
       createRole({
-        name: name.trim(),
-        description: description.trim() || undefined,
+        name: values.name.trim(),
+        description: values.description?.trim() || undefined,
         permissionIds: assignedIds.size ? [...assignedIds] : undefined,
       }),
     onSuccess: async () => {
@@ -74,16 +95,15 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const submit = () => {
-    setNameError(null);
-    if (!name.trim()) {
-      setNameError('Tên vai trò là bắt buộc.');
-      return;
-    }
-    createMutation.mutate();
-  };
+  const submit = form.handleSubmit((values: CreateRoleFormValues) => {
+    createMutation.mutate(values);
+  });
 
   const busy = createMutation.isPending;
+  const {
+    register,
+    formState: { errors },
+  } = form;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,8 +115,8 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
           <DialogHeader className="gap-1 text-start">
             <DialogTitle>Thêm vai trò</DialogTitle>
             <DialogDescription>
-              Đặt tên và mô tả, sau đó tick quyền theo ma trận CRUD (Tạo / Xem / Sửa / Xóa) theo tài
-              nguyên.
+              Nhập tên và mô tả vai trò, sau đó chọn quyền truy cập theo từng tài nguyên dựa trên
+              các hành động CRUD.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -106,47 +126,41 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
           className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4"
           onSubmit={(e) => {
             e.preventDefault();
-            submit();
+            void submit(e);
           }}
           noValidate
         >
           <FieldGroup>
-            <Field data-invalid={Boolean(nameError)}>
+            <Field data-invalid={Boolean(errors.name)}>
               <FieldLabel htmlFor="create-role-name">Tên vai trò</FieldLabel>
               <Input
                 id="create-role-name"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setNameError(null);
-                }}
+                {...register('name')}
+                aria-invalid={Boolean(errors.name)}
                 disabled={busy}
                 maxLength={50}
                 placeholder="VD: Kế toán"
               />
-              <FieldError errors={nameError ? [{ message: nameError }] : []} />
+              {errors.name ? <FieldError errors={[errors.name]} /> : null}
             </Field>
-            <Field>
+            <Field data-invalid={Boolean(errors.description)}>
               <FieldLabel htmlFor="create-role-desc">Mô tả</FieldLabel>
               <Textarea
                 id="create-role-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                {...register('description')}
+                aria-invalid={Boolean(errors.description)}
                 disabled={busy}
                 maxLength={255}
                 rows={3}
                 placeholder="Mô tả ngắn cho vai trò này"
               />
+              {errors.description ? <FieldError errors={[errors.description]} /> : null}
             </Field>
           </FieldGroup>
 
-          <div className="border-border/80 flex flex-col gap-3 border-t pt-5">
+          <div className=" flex flex-col gap-3">
             <div>
               <p className="text-sm font-semibold">Gán quyền</p>
-              <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                Ma trận theo tài nguyên: Tạo, Xem, Sửa, Xóa. Dùng ô tick cột hoặc hàng để chọn
-                nhanh.
-              </p>
             </div>
             {permissionsQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">Đang tải danh sách quyền…</p>

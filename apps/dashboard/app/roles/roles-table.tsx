@@ -163,7 +163,7 @@ export function RolesTable() {
       >
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo tên hoặc mô tả…"
+          searchPlaceholder="Tìm theo tên vai trò…"
           globalFilterDebounceMs={350}
         />
         <div className="overflow-hidden rounded-md border">

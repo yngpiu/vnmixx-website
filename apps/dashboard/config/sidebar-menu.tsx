@@ -5,7 +5,6 @@ import { dashboardRoutes } from '@/lib/routes';
 import {
   FolderTreeIcon,
   ImageIcon,
-  KeyRoundIcon,
   LayoutDashboardIcon,
   PackageIcon,
   PaletteIcon,
@@ -121,6 +120,11 @@ export const sidebarSections: SidebarSection[] = [
         url: adminModulePath('employees'),
         icon: <UserCogIcon />,
       },
+      {
+        title: 'Vai trò',
+        url: adminModulePath('roles'),
+        icon: <ShieldIcon />,
+      },
     ],
   },
   {
@@ -128,21 +132,5 @@ export const sidebarSections: SidebarSection[] = [
     groupLabel: 'Catalog',
     groupLabelClassName: 'text-sm font-semibold text-sidebar-foreground',
     items: catalogItems,
-  },
-  {
-    id: 'system',
-    groupLabel: 'Hệ thống',
-    items: [
-      {
-        title: 'Vai trò',
-        url: adminModulePath('roles'),
-        icon: <ShieldIcon />,
-      },
-      {
-        title: 'Quyền',
-        url: adminModulePath('permissions'),
-        icon: <KeyRoundIcon />,
-      },
-    ],
   },
 ];

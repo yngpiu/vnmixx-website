@@ -27,7 +27,7 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ success: false, error: 'No refresh token found.' }, { status: 401 });
   }
   try {
-    const { data: authData } = await apiClient.post<AuthResponse>('/auth/refresh', null, {
+    const { data: authData } = await apiClient.post<AuthResponse>('/auth/refresh', undefined, {
       headers: { 'x-refresh-token': refreshToken },
     });
     cookieStore.set(

@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { Separator } from '@repo/ui/components/ui/separator';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -93,13 +92,8 @@ export function RoleDetailDialog({ roleId, open, onOpenChange }: RoleDetailDialo
                 </div>
               </div>
 
-              <Separator />
-
-              <div className="flex flex-col gap-2 px-6 py-4">
+              <div className="flex flex-col gap-2 px-6 py-2">
                 <p className="text-sm font-medium">Quyền ({r.permissions.length})</p>
-                <p className="text-muted-foreground text-xs">
-                  Chỉ xem — không thể thay đổi từ đây.
-                </p>
                 {permissionsQuery.isLoading ? (
                   <p className="text-muted-foreground text-sm">Đang tải danh sách quyền…</p>
                 ) : permissionsQuery.isError ? (

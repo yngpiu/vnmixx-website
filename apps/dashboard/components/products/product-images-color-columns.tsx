@@ -46,7 +46,7 @@ type SortableImageRowProps = {
 
 function SortableImageRow({ id, url, index, disabled, onRemove }: SortableImageRowProps) {
   const {
-    attributes,
+    attributes: dragHandleProps,
     listeners,
     setNodeRef,
     setActivatorNodeRef,
@@ -75,7 +75,7 @@ function SortableImageRow({ id, url, index, disabled, onRemove }: SortableImageR
             className="text-muted-foreground hover:bg-muted/80 flex size-9 cursor-grab items-center justify-center rounded-md border border-transparent active:cursor-grabbing"
             disabled={disabled}
             aria-label="Kéo để đổi thứ tự"
-            {...attributes}
+            {...dragHandleProps}
             {...listeners}
           >
             <GripVerticalIcon className="size-4" />
