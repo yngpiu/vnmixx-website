@@ -34,7 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui/components/ui/table';
-import { Textarea } from '@repo/ui/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import {
@@ -47,6 +46,7 @@ import {
   Trash2Icon,
   XIcon,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -90,6 +90,15 @@ function suggestSlugFromName(name: string): string {
   return base || 'san-pham';
 }
 
+function buildDescriptionPayload(value: string): string | undefined {
+  const plainText = value
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+  if (!plainText) return undefined;
+  return value.trim();
+}
+
 type VariantDraft = {
   colorId: number;
   sizeId: number;
@@ -100,6 +109,16 @@ type VariantDraft = {
 };
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['blockquote'],
+    ['clean'],
+  ],
+} as const;
 
 export function NewProductForm() {
   const router = useRouter();
@@ -269,10 +288,11 @@ export function NewProductForm() {
       });
     }
 
+    const descriptionPayload = buildDescriptionPayload(description);
     const body: CreateProductBody = {
       name: name.trim(),
       slug: slug.trim(),
-      ...(description.trim() ? { description: description.trim() } : {}),
+      ...(descriptionPayload ? { description: descriptionPayload } : {}),
       ...(categoryIds.length ? { categoryIds } : {}),
       isActive,
       variants: parsedVariants,
@@ -329,10 +349,6 @@ export function NewProductForm() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Thêm sản phẩm</h1>
-              <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
-                Danh mục lá (cây + đã chọn), biến thể màu × size, giá và tồn. Ảnh sản phẩm
-                (thumbnail + gallery theo màu) nằm phía dưới form.
-              </p>
             </div>
           </div>
         </div>
@@ -390,15 +406,17 @@ export function NewProductForm() {
             </div>
             <Field>
               <FieldLabel htmlFor="np-desc">Mô tả</FieldLabel>
-              <Textarea
-                id="np-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={busy}
-                rows={5}
-                className="min-h-[120px] resize-y"
-                placeholder="Mô tả ngắn cho trang chi tiết…"
-              />
+              <div className="overflow-hidden rounded-md border">
+                <ReactQuill
+                  theme="snow"
+                  value={description}
+                  onChange={setDescription}
+                  readOnly={busy}
+                  modules={quillModules}
+                  placeholder="Mô tả ngắn cho trang chi tiết…"
+                  className="bg-background [&_.ql-container]:min-h-[180px] [&_.ql-editor]:min-h-[180px]"
+                />
+              </div>
             </Field>
             <div className="bg-muted/30 flex flex-col gap-3 rounded-xl border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-0.5">

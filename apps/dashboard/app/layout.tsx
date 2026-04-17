@@ -7,6 +7,7 @@ import '@repo/ui/globals.css';
 import { inter } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import 'react-quill-new/dist/quill.snow.css';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
