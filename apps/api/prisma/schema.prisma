@@ -48,6 +48,11 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum RequiredNote {
   CHOTHUHANG
   CHOXEMHANGKHONGTHU
@@ -98,7 +103,7 @@ model Employee {
   phoneNumber    String    @unique(map: "uk_employees_phone") @map("phone_number") @db.VarChar(20)
   hashedPassword String    @map("hashed_password") @db.VarChar(255)
   avatarUrl      String?   @map("avatar_url") @db.VarChar(500)
-  isActive       Boolean   @default(true) @map("is_active") @db.TinyInt
+  status         EmployeeStatus @default(ACTIVE)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
   deletedAt      DateTime? @map("deleted_at") @db.Timestamp(0)

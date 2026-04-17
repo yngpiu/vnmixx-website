@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { hash } from 'bcrypt';
+import { EmployeeStatus } from '../../../generated/prisma/client';
 import { EmployeeRoleService } from '../../rbac/services/employee-role.service';
 import type { CreateEmployeeDto } from '../dto/create-employee.dto';
 import type { UpdateEmployeeDto } from '../dto/update-employee.dto';
@@ -28,7 +29,7 @@ export class EmployeeService {
     page: number;
     limit: number;
     search?: string;
-    isActive?: boolean;
+    status?: EmployeeStatus;
     isSoftDeleted?: boolean;
     roleId?: number;
     sortBy?: string;
@@ -73,15 +74,18 @@ export class EmployeeService {
   }
 
   async update(id: number, dto: UpdateEmployeeDto): Promise<EmployeeDetailView> {
-    const hasIsActive = dto.isActive !== undefined;
+    const hasStatus = dto.status !== undefined;
     const hasRoleIds = dto.roleIds !== undefined;
 
-    if (!hasIsActive && !hasRoleIds) {
+    if (!hasStatus && !hasRoleIds) {
       throw new BadRequestException('Cần cung cấp trạng thái hoặc danh sách vai trò');
     }
 
-    if (hasIsActive) {
-      const updated = await this.employeeRepo.update(id, { isActive: dto.isActive });
+    if (hasStatus) {
+      const nextStatus = dto.status!;
+      const updated = await this.employeeRepo.update(id, {
+        status: nextStatus,
+      });
       if (!updated) throw new NotFoundException('Không tìm thấy nhân viên');
     } else {
       const existing = await this.employeeRepo.findById(id);

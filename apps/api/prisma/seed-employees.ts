@@ -1,7 +1,7 @@
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { hash } from 'bcrypt';
 import 'dotenv/config';
-import { PrismaClient } from '../generated/prisma/client';
+import { EmployeeStatus, PrismaClient } from '../generated/prisma/client';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -257,14 +257,14 @@ export async function seedEmployees(): Promise<void> {
           phoneNumber: emp.phoneNumber,
           hashedPassword,
           avatarUrl,
-          isActive: true,
+          status: EmployeeStatus.ACTIVE,
         },
         update: {
           fullName: emp.fullName,
           phoneNumber: emp.phoneNumber,
           hashedPassword,
           avatarUrl,
-          isActive: true,
+          status: EmployeeStatus.ACTIVE,
           deletedAt: null,
         },
       });

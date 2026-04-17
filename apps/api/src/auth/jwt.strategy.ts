@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { EmployeeStatus } from '../../generated/prisma/client';
 import { RedisService } from '../redis/redis.service';
 import { BLACKLIST_PREFIX, LOGOUT_ALL_PREFIX } from './constants';
 import type { AuthenticatedUser, JwtPayload } from './interfaces';
@@ -83,7 +84,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   private async validateEmployee(payload: JwtPayload): Promise<AuthenticatedUser> {
     const employee = await this.employeeRepo.findById(payload.sub);
-    if (!employee || !employee.isActive || employee.deletedAt) {
+    if (!employee || employee.status !== EmployeeStatus.ACTIVE || employee.deletedAt) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
     }
     return {

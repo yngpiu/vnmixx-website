@@ -46,7 +46,7 @@ export class EmployeeAdminController {
   @ApiOperation({
     summary: 'Liệt kê nhân viên',
     description:
-      'Phân trang, tìm kiếm, lọc vai trò. `isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc.',
+      'Phân trang, tìm kiếm, lọc vai trò. `status` / `isSoftDeleted`: không gửi = không lọc; gửi giá trị để lọc.',
   })
   @ApiOkResponse({ type: EmployeeListResponseDto })
   @Get()
@@ -55,7 +55,7 @@ export class EmployeeAdminController {
       page: query.page!,
       limit: query.limit!,
       search: query.search,
-      isActive: query.isActive,
+      status: query.status,
       isSoftDeleted: query.isSoftDeleted,
       roleId: query.roleId,
       sortBy: query.sortBy,
@@ -84,7 +84,7 @@ export class EmployeeAdminController {
 
   @ApiOperation({
     summary: 'Cập nhật nhân viên',
-    description: 'Chỉ cho phép đổi trạng thái hoạt động và/hoặc đồng bộ vai trò.',
+    description: 'Chỉ cho phép đổi trạng thái tài khoản và/hoặc đồng bộ vai trò.',
   })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
   @ApiBadRequestResponse({

@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+const EMPLOYEE_STATUS = ['ACTIVE', 'INACTIVE'] as const;
+
 class RoleBriefDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -29,8 +31,8 @@ export class EmployeeListItemResponseDto {
   @ApiPropertyOptional({ example: 'https://cdn.example.com/avatar.jpg', nullable: true })
   avatarUrl: string | null;
 
-  @ApiProperty({ example: true })
-  isActive: boolean;
+  @ApiProperty({ enum: EMPLOYEE_STATUS })
+  status: (typeof EMPLOYEE_STATUS)[number];
 
   @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
   createdAt: Date;

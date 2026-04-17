@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../../../generated/prisma/client';
+import { EmployeeStatus, Prisma } from '../../../generated/prisma/client';
 import { softDeletedWhere } from '../../common/prisma/soft-deleted-where';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -9,7 +9,7 @@ export interface EmployeeListItemView {
   email: string;
   phoneNumber: string;
   avatarUrl: string | null;
-  isActive: boolean;
+  status: EmployeeStatus;
   createdAt: Date;
   deletedAt: Date | null;
   employeeRoles: { role: { id: number; name: string } }[];
@@ -35,7 +35,7 @@ const LIST_SELECT = {
   email: true,
   phoneNumber: true,
   avatarUrl: true,
-  isActive: true,
+  status: true,
   createdAt: true,
   deletedAt: true,
   employeeRoles: { select: ROLE_SELECT },
@@ -63,8 +63,8 @@ export class EmployeeRepository {
         return { email: dir };
       case 'phoneNumber':
         return { phoneNumber: dir };
-      case 'isActive':
-        return { isActive: dir };
+      case 'status':
+        return { status: dir };
       case 'createdAt':
         return { createdAt: dir };
       default:
@@ -76,17 +76,17 @@ export class EmployeeRepository {
     page: number;
     limit: number;
     search?: string;
-    isActive?: boolean;
+    status?: EmployeeStatus;
     isSoftDeleted?: boolean;
     roleId?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResult<EmployeeListItemView>> {
-    const { page, limit, search, isActive, isSoftDeleted, roleId, sortBy, sortOrder } = params;
+    const { page, limit, search, status, isSoftDeleted, roleId, sortBy, sortOrder } = params;
 
     const where: Prisma.EmployeeWhereInput = {
       ...softDeletedWhere(isSoftDeleted),
-      ...(isActive !== undefined && { isActive }),
+      ...(status !== undefined && { status }),
       ...(roleId !== undefined && { employeeRoles: { some: { roleId } } }),
       ...(search && {
         OR: [
@@ -151,7 +151,10 @@ export class EmployeeRepository {
   async softDelete(id: number): Promise<boolean> {
     const { count } = await this.prisma.employee.updateMany({
       where: { id, deletedAt: null },
-      data: { deletedAt: new Date(), isActive: false },
+      data: {
+        deletedAt: new Date(),
+        status: EmployeeStatus.INACTIVE,
+      },
     });
     return count > 0;
   }
@@ -159,7 +162,10 @@ export class EmployeeRepository {
   async restore(id: number): Promise<EmployeeDetailView | null> {
     const { count } = await this.prisma.employee.updateMany({
       where: { id, NOT: { deletedAt: null } },
-      data: { deletedAt: null, isActive: true },
+      data: {
+        deletedAt: null,
+        status: EmployeeStatus.ACTIVE,
+      },
     });
     if (count === 0) return null;
     return this.findById(id);

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { EmployeeStatus } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface EmployeeAuthView {
@@ -6,7 +7,7 @@ interface EmployeeAuthView {
   email: string;
   fullName: string;
   hashedPassword: string;
-  isActive: boolean;
+  status: EmployeeStatus;
   deletedAt: Date | null;
 }
 
@@ -15,7 +16,7 @@ interface EmployeeValidationView {
   email: string;
   fullName: string;
   avatarUrl: string | null;
-  isActive: boolean;
+  status: EmployeeStatus;
   deletedAt: Date | null;
 }
 
@@ -36,7 +37,7 @@ export class EmployeeRepository {
         email: true,
         fullName: true,
         hashedPassword: true,
-        isActive: true,
+        status: true,
         deletedAt: true,
       },
     });
@@ -50,7 +51,7 @@ export class EmployeeRepository {
         email: true,
         fullName: true,
         avatarUrl: true,
-        isActive: true,
+        status: true,
         deletedAt: true,
       },
     });

@@ -4,7 +4,8 @@ import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-va
 
 import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
 
-const EMPLOYEE_SORT_BY = ['fullName', 'email', 'phoneNumber', 'isActive', 'createdAt'] as const;
+const EMPLOYEE_SORT_BY = ['fullName', 'email', 'phoneNumber', 'status', 'createdAt'] as const;
+const EMPLOYEE_STATUS = ['ACTIVE', 'INACTIVE'] as const;
 
 export class ListEmployeesQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
@@ -31,13 +32,12 @@ export class ListEmployeesQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
-    example: true,
-    description: 'Không gửi = không lọc; true/false = chỉ hoạt động / chỉ vô hiệu.',
+    enum: EMPLOYEE_STATUS,
+    description: 'Không gửi = không lọc; gửi một trạng thái để lọc.',
   })
-  @TransformQueryOptionalBoolean()
-  @IsBoolean()
+  @IsIn([...EMPLOYEE_STATUS])
   @IsOptional()
-  isActive?: boolean;
+  status?: (typeof EMPLOYEE_STATUS)[number];
 
   @ApiPropertyOptional({
     example: false,

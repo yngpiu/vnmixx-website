@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { compare } from 'bcrypt';
+import { EmployeeStatus } from '../../../generated/prisma/client';
 import type { LoginDto } from '../dto';
 import { EmployeeRepository } from '../repositories/employee.repository';
 
@@ -25,7 +26,7 @@ export class EmployeeAuthService {
     if (!employee || employee.deletedAt) {
       throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
     }
-    if (!employee.isActive) {
+    if (employee.status !== EmployeeStatus.ACTIVE) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
     const isPasswordValid = await compare(dto.password, employee.hashedPassword);

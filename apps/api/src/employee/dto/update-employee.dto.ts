@@ -1,11 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
+import { ArrayUnique, IsArray, IsIn, IsInt, IsOptional, Min } from 'class-validator';
+
+const EMPLOYEE_STATUS = ['ACTIVE', 'INACTIVE'] as const;
 
 export class UpdateEmployeeDto {
-  @ApiPropertyOptional({ example: true, description: 'Kích hoạt hoặc vô hiệu hóa nhân viên' })
+  @ApiPropertyOptional({
+    enum: EMPLOYEE_STATUS,
+    description: 'Trạng thái tài khoản nhân viên',
+  })
   @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
+  @IsIn([...EMPLOYEE_STATUS])
+  status?: (typeof EMPLOYEE_STATUS)[number];
 
   @ApiPropertyOptional({
     example: [1],
