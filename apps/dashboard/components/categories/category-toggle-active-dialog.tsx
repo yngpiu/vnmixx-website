@@ -39,7 +39,6 @@ export function CategoryToggleActiveDialog({
   onConfirm,
 }: CategoryToggleActiveDialogProps) {
   const isActive = category?.isActive ?? false;
-  const descendantCount = category ? countDescendants(category) : 0;
 
   const title = isActive ? 'Vô hiệu hóa danh mục' : 'Kích hoạt danh mục';
   return (

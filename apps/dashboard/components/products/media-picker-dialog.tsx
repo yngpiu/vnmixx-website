@@ -76,7 +76,7 @@ export function MediaPickerDialog({
   open,
   onOpenChange,
   title,
-  description: _description,
+  description,
   multiple,
   selectedUrls,
   onConfirm,

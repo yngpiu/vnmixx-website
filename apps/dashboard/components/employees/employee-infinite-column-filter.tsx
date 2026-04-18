@@ -93,7 +93,7 @@ export function EmployeeInfiniteColumnFilter<TData>({
     };
     element.addEventListener('scroll', onScroll, { passive: true });
     return () => element.removeEventListener('scroll', onScroll);
-  }, [open, query.hasNextPage, query.isFetchingNextPage, query.fetchNextPage]);
+  }, [open, query]);
 
   if (!column) {
     return null;
