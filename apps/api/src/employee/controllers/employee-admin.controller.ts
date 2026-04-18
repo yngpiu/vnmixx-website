@@ -27,7 +27,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
-import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   CreateEmployeeDto,
@@ -38,6 +38,7 @@ import {
 } from '../dto';
 import { EmployeeService } from '../services/employee.service';
 
+// Controller quản trị nhân viên hệ thống - Quản lý tài khoản, vai trò và trạng thái
 @ApiTags('Employees')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -47,17 +48,18 @@ import { EmployeeService } from '../services/employee.service';
 export class EmployeeAdminController {
   constructor(private readonly employeeService: EmployeeService) {}
 
+  // API lấy danh sách nhân viên có phân trang, tìm kiếm và lọc theo vai trò/trạng thái
   @ApiOperation({
     summary: 'Liệt kê nhân viên',
-    description:
-      'Phân trang, tìm kiếm, lọc vai trò. `status` / `isSoftDeleted`: không gửi = không lọc; gửi giá trị để lọc.',
+    description: 'Hỗ trợ phân trang, tìm kiếm theo tên/email/phone và lọc theo nhiều tiêu chí.',
   })
   @ApiOkResponse({ type: EmployeeListResponseDto })
+  @RequirePermissions('employee.read')
   @Get()
-  findAll(@Query() query: ListEmployeesQueryDto) {
+  async findAll(@Query() query: ListEmployeesQueryDto): Promise<EmployeeListResponseDto> {
     return this.employeeService.findList({
-      page: query.page!,
-      limit: query.limit!,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
       search: query.search,
       status: query.status,
       isSoftDeleted: query.isSoftDeleted,
@@ -67,71 +69,80 @@ export class EmployeeAdminController {
     });
   }
 
-  @ApiOperation({ summary: 'Lấy chi tiết nhân viên theo ID' })
+  // API lấy thông tin chi tiết một nhân viên cụ thể kèm theo các vai trò đang gán
+  @ApiOperation({ summary: 'Lấy chi tiết nhân viên' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
+  @RequirePermissions('employee.read')
   @Get(':id')
-  findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id', ParseIntPipe) id: number): Promise<EmployeeDetailResponseDto> {
     return this.employeeService.findById(id);
   }
 
+  // API tạo tài khoản nhân viên mới và gán danh sách vai trò ban đầu
   @ApiOperation({ summary: 'Tạo nhân viên mới' })
   @ApiCreatedResponse({ type: EmployeeDetailResponseDto })
-  @ApiBadRequestResponse({
-    description: 'Xác thực dữ liệu thất bại hoặc có ID vai trò không tồn tại.',
-  })
+  @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ hoặc ID vai trò không tồn tại.' })
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được sử dụng.' })
+  @RequirePermissions('employee.create')
   @Post()
-  create(
+  async create(
     @Body() dto: CreateEmployeeDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ) {
+  ): Promise<EmployeeDetailResponseDto> {
     return this.employeeService.create(dto, buildAuditRequestContext(request, user));
   }
 
-  @ApiOperation({
-    summary: 'Cập nhật nhân viên',
-    description: 'Chỉ cho phép đổi trạng thái tài khoản và/hoặc đồng bộ vai trò.',
-  })
+  // API cập nhật trạng thái hoạt động (ACTIVE/INACTIVE) hoặc thay đổi danh sách vai trò
+  @ApiOperation({ summary: 'Cập nhật nhân viên' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @ApiBadRequestResponse({
     description:
-      'Không có trường nào được gửi, xác thực dữ liệu thất bại, hoặc có ID vai trò không tồn tại.',
+      'Dữ liệu không hợp lệ, ID vai trò không tồn tại, hoặc cố gắng sửa tài khoản hệ thống.',
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
+  @ApiConflictResponse({ description: 'Email hoặc số điện thoại mới đã được sử dụng.' })
+  @RequirePermissions('employee.update')
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateEmployeeDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ) {
+  ): Promise<EmployeeDetailResponseDto> {
     return this.employeeService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
+  // API xóa mềm nhân viên - Nhân viên sẽ bị vô hiệu hóa và không thể đăng nhập
   @ApiOperation({ summary: 'Xóa mềm nhân viên' })
   @ApiNoContentResponse({ description: 'Xóa nhân viên thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
+  @ApiBadRequestResponse({
+    description: 'Không được phép xóa tài khoản quản trị tối cao hoặc chính mình.',
+  })
+  @RequirePermissions('employee.delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(
+  async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
   ): Promise<void> {
-    return this.employeeService.softDelete(id, buildAuditRequestContext(request, user));
+    return this.employeeService.softDelete(id, buildAuditRequestContext(request, user), user.id);
   }
 
-  @ApiOperation({ summary: 'Khôi phục nhân viên đã xóa mềm' })
+  // API khôi phục nhân viên từ trạng thái đã xóa mềm về trạng thái hoạt động bình thường
+  @ApiOperation({ summary: 'Khôi phục nhân viên' })
   @ApiOkResponse({ type: EmployeeDetailResponseDto })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên hoặc nhân viên chưa bị xóa.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy bản ghi nhân viên đang bị xóa mềm.' })
+  @RequirePermissions('employee.update')
   @Patch(':id/restore')
-  restore(
+  async restore(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ) {
+  ): Promise<EmployeeDetailResponseDto> {
     return this.employeeService.restore(id, buildAuditRequestContext(request, user));
   }
 }

@@ -45,7 +45,6 @@ const dashboardItem: SidebarNavItem = {
   items: [
     { title: 'Tổng quan', url: dashboardRoutes.root },
     { title: 'Phân tích', url: dashboardRoutes.analytics },
-    { title: 'Báo cáo', url: dashboardRoutes.reports },
   ],
 };
 
@@ -91,10 +90,6 @@ export const sidebarSections: SidebarSection[] = [
         title: 'Đơn hàng',
         url: adminModulePath('orders'),
         icon: <ShoppingCartIcon />,
-        items: [
-          { title: 'Danh sách', url: adminModulePath('orders') },
-          { title: 'Thêm mới', url: adminModuleNewPath('orders') },
-        ],
       },
       {
         title: 'Vận chuyển',

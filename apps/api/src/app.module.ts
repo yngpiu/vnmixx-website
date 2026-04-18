@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule, ThrottlerStorage } from '@nestjs/throttler';
 import { AddressModule } from './address/address.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuditLogModule } from './audit-log/audit-log.module';
@@ -64,6 +65,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     ShippingModule,
     WishlistModule,
     OrderModule,
+    AnalyticsModule,
     R2Module,
     MediaModule,
   ],

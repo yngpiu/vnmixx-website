@@ -14,7 +14,6 @@ export type DashboardBreadcrumbItem = {
 export const dashboardRoutes = {
   root: '/',
   analytics: '/analytics',
-  reports: '/reports',
 } as const;
 
 export function moduleListPath(slug: AdminModuleSlug): string {
@@ -40,8 +39,14 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
   if (path === dashboardRoutes.analytics) {
     return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Phân tích' }];
   }
-  if (path === dashboardRoutes.reports) {
-    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Báo cáo' }];
+  const orderDetailMatch = /^\/orders\/([^/]+)\/?$/.exec(path);
+  const orderCodeSeg = orderDetailMatch?.[1];
+  if (orderCodeSeg && orderCodeSeg !== 'new') {
+    return [
+      { label: 'Trang chủ', href: dashboardRoutes.root },
+      { label: 'Đơn hàng', href: '/orders' },
+      { label: orderCodeSeg },
+    ];
   }
   if (path === '/media') {
     return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Thư viện ảnh' }];
