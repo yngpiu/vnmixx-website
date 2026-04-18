@@ -161,6 +161,11 @@ export class RoleService {
       }
 
       const affectedEmployeeIds = await this.roleRepo.findEmployeeIdsByRoleId(id);
+      if (affectedEmployeeIds.length > 0) {
+        throw new BadRequestException(
+          'Không thể xóa vai trò đang được gán cho nhân viên. Hãy đổi vai trò cho các nhân viên trước.',
+        );
+      }
       await this.roleRepo.delete(id);
       await this.invalidateAuthzForEmployees(affectedEmployeeIds);
       await this.auditLogService.write({

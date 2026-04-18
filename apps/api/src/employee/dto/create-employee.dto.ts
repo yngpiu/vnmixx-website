@@ -1,11 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
-  ArrayUnique,
-  IsArray,
   IsEmail,
   IsInt,
   IsNotEmpty,
-  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -41,15 +38,11 @@ export class CreateEmployeeDto {
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   password: string;
 
-  @ApiPropertyOptional({
-    example: [1, 2],
-    description: 'ID các vai trò gán cho nhân viên sau khi tạo',
-    type: [Number],
+  @ApiProperty({
+    example: 1,
+    description: 'ID vai trò của nhân viên (hệ thống chỉ cho phép 1 vai trò/nhân viên).',
   })
-  @IsOptional()
-  @IsArray({ message: 'Danh sách vai trò phải là một mảng' })
-  @ArrayUnique({ message: 'Các vai trò không được trùng lặp' })
-  @IsInt({ each: true, message: 'Mỗi ID vai trò phải là số nguyên' })
-  @Min(1, { each: true, message: 'Mỗi ID vai trò phải lớn hơn hoặc bằng 1' })
-  roleIds?: number[];
+  @IsInt({ message: 'ID vai trò phải là số nguyên' })
+  @Min(1, { message: 'ID vai trò phải lớn hơn hoặc bằng 1' })
+  roleId: number;
 }

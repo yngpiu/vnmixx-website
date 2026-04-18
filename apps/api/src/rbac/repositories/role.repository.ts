@@ -226,10 +226,10 @@ export class RoleRepository {
 
   // Tìm danh sách ID nhân viên đang sở hữu một vai trò cụ thể
   async findEmployeeIdsByRoleId(roleId: number): Promise<number[]> {
-    const rows = await this.prisma.employeeRole.findMany({
+    const rows = await this.prisma.employee.findMany({
       where: { roleId },
-      select: { employeeId: true },
+      select: { id: true },
     });
-    return rows.map((r) => r.employeeId);
+    return rows.map((r) => r.id);
   }
 }

@@ -15,8 +15,8 @@ const dateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
   timeStyle: 'short',
 });
 
-function roleLabels(roles: { role: { name: string } }[]): string {
-  return roles.map((er) => er.role.name).join(', ') || '—';
+function roleLabel(role: { name: string } | null): string {
+  return role?.name ?? '—';
 }
 
 function statusBadge(status: 'ACTIVE' | 'INACTIVE') {
@@ -108,7 +108,7 @@ export function EmployeeDetailContent({ employeeId }: EmployeeDetailContentProps
               <span className="block tabular-nums">{d.phoneNumber}</span>
             </DetailRow>
             <DetailRow label="Vai trò">
-              <span className="block">{roleLabels(d.employeeRoles)}</span>
+              <span className="block">{roleLabel(d.role)}</span>
             </DetailRow>
           </dl>
           <Separator />

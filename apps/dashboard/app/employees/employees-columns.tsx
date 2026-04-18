@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avat
 import { Badge } from '@repo/ui/components/ui/badge';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
+import Link from 'next/link';
 
 const createdAtFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
@@ -17,7 +18,7 @@ const createdAtFormatter = new Intl.DateTimeFormat('vi-VN', {
 });
 
 function roleLabels(row: EmployeeListItem): string {
-  return row.employeeRoles.map((er) => er.role.name).join(', ') || '—';
+  return row.role?.name ?? '—';
 }
 
 export const employeesColumns: ColumnDef<EmployeeListItem>[] = [
@@ -37,7 +38,14 @@ export const employeesColumns: ColumnDef<EmployeeListItem>[] = [
           </AvatarFallback>
         </Avatar>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <LongText className="max-w-40 font-medium md:max-w-56">{row.original.fullName}</LongText>
+          <LongText className="max-w-40 md:max-w-56">
+            <Link
+              href={`/employees/${row.original.id}`}
+              className="font-medium hover:underline underline-offset-4"
+            >
+              {row.original.fullName}
+            </Link>
+          </LongText>
           {row.original.deletedAt ? (
             <Badge variant="destructive" className="w-fit text-[10px]">
               Đã xóa

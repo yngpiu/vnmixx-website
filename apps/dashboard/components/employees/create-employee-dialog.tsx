@@ -1,10 +1,17 @@
 'use client';
 
-import { SearchableMultiSelect } from '@/components/searchable-multi-select';
 import { createEmployee } from '@/lib/api/employees';
 import { listRoles } from '@/lib/api/roles';
 import type { CreateEmployeePayload } from '@/lib/types/employee';
 import { Button } from '@repo/ui/components/ui/button';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from '@repo/ui/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -44,7 +51,7 @@ const createEmployeeSchema = z.object({
     .regex(regexPhoneNumber, { message: 'Số điện thoại không đúng định dạng hợp lệ.' })
     .max(20, { message: 'Số điện thoại tối đa 20 ký tự.' }),
   password: z.string().min(8, { message: 'Mật khẩu tối thiểu 8 ký tự.' }),
-  roleIds: z.array(z.number().int().positive()),
+  roleId: z.number().int().positive({ message: 'Vui lòng chọn vai trò.' }),
 });
 
 type CreateEmployeeFormValues = z.infer<typeof createEmployeeSchema>;
@@ -54,7 +61,7 @@ const defaultFormValues: CreateEmployeeFormValues = {
   email: '',
   phoneNumber: '',
   password: '',
-  roleIds: [],
+  roleId: 0,
 };
 
 function apiErrorMessage(err: unknown): string {
@@ -127,7 +134,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
           key === 'email' ||
           key === 'phoneNumber' ||
           key === 'password' ||
-          key === 'roleIds'
+          key === 'roleId'
         ) {
           form.setError(key, { message: issue.message });
         }
@@ -140,7 +147,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
       email: v.email,
       phoneNumber: v.phoneNumber,
       password: v.password,
-      ...(v.roleIds.length > 0 ? { roleIds: v.roleIds } : {}),
+      roleId: v.roleId,
     };
     createMutation.mutate(payload);
   };
@@ -233,29 +240,39 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
                 />
               ) : null}
               <Controller
-                name="roleIds"
+                name="roleId"
                 control={control}
                 render={({ field }) => {
                   const roles = rolesQuery.data ?? [];
-                  const options = roles.map((role) => ({
-                    value: role.id,
-                    label: role.name,
-                  }));
                   return (
-                    <SearchableMultiSelect
-                      options={options}
-                      value={field.value}
-                      onChange={field.onChange}
-                      disabled={isPending || options.length === 0}
-                      placeholder="Chọn vai trò…"
-                      searchPlaceholder="Tìm vai trò..."
-                      aria-invalid={Boolean(errors.roleIds)}
-                    />
+                    <Combobox
+                      items={roles}
+                      value={roles.find((role) => role.id === field.value) ?? null}
+                      itemToStringLabel={(item) => item?.name ?? ''}
+                      onValueChange={(item) => field.onChange(item?.id ?? 0)}
+                    >
+                      <ComboboxInput
+                        aria-invalid={Boolean(errors.roleId)}
+                        disabled={isPending || roles.length === 0}
+                        placeholder="Chọn vai trò..."
+                        showClear={false}
+                      />
+                      <ComboboxContent>
+                        <ComboboxEmpty>Không có vai trò phù hợp.</ComboboxEmpty>
+                        <ComboboxList>
+                          {roles.map((role) => (
+                            <ComboboxItem key={role.id} value={role}>
+                              {role.name}
+                            </ComboboxItem>
+                          ))}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
                   );
                 }}
               />
-              <FieldDescription>Có thể chọn nhiều vai trò nếu cần thiết.</FieldDescription>
-              <FieldError errors={[errors.roleIds]} />
+              <FieldDescription>Mỗi nhân viên chỉ có một vai trò.</FieldDescription>
+              <FieldError errors={[errors.roleId]} />
             </Field>
           </FieldGroup>
         </form>

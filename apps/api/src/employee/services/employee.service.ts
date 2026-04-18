@@ -8,7 +8,8 @@ import { hash } from 'bcrypt';
 import { AuditLogStatus, EmployeeStatus, Prisma } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
-import { EmployeeRoleService } from '../../rbac/services/employee-role.service';
+import { EmployeeAuthzCacheService } from '../../auth/services/employee-authz-cache.service';
+import { RoleRepository } from '../../rbac/repositories/role.repository';
 import type { CreateEmployeeDto } from '../dto/create-employee.dto';
 import type { UpdateEmployeeDto } from '../dto/update-employee.dto';
 import {
@@ -25,7 +26,8 @@ const BCRYPT_ROUNDS = 10;
 export class EmployeeService {
   constructor(
     private readonly employeeRepo: EmployeeRepository,
-    private readonly employeeRoleService: EmployeeRoleService,
+    private readonly roleRepo: RoleRepository,
+    private readonly employeeAuthzCache: EmployeeAuthzCacheService,
     private readonly auditLogService: AuditLogService,
   ) {}
 
@@ -58,26 +60,17 @@ export class EmployeeService {
     try {
       // Mã hóa mật khẩu nhân viên
       const hashedPassword = await hash(dto.password, BCRYPT_ROUNDS);
-
-      // Kiểm tra các vai trò gửi lên có tồn tại trong hệ thống không
-      if (dto.roleIds?.length) {
-        await this.employeeRoleService.ensureRoleIdsExist(dto.roleIds);
-      }
+      const roleId = dto.roleId;
+      await this.ensureRoleIdExists(roleId);
 
       // Tạo bản ghi nhân viên cơ bản
-      const created = await this.employeeRepo.create({
+      const createdEmployee = await this.employeeRepo.create({
+        roleId,
         fullName: dto.fullName,
         email: dto.email,
         phoneNumber: dto.phoneNumber,
         hashedPassword,
       });
-
-      // Nếu có vai trò, thực hiện đồng bộ vai trò và lấy lại dữ liệu chi tiết
-      const createdEmployee = dto.roleIds?.length
-        ? await this.employeeRoleService
-            .syncRoles(created.id, dto.roleIds)
-            .then(() => this.findById(created.id))
-        : created;
 
       // Ghi nhật ký thao tác thành công
       await this.auditLogService.write({
@@ -114,29 +107,28 @@ export class EmployeeService {
     const beforeData = await this.findById(id);
     try {
       const hasStatus = dto.status !== undefined;
-      const hasRoleIds = dto.roleIds !== undefined;
+      const hasRoleId = dto.roleId !== undefined;
 
-      if (!hasStatus && !hasRoleIds) {
+      if (!hasStatus && !hasRoleId) {
         throw new BadRequestException(
           'Cần cung cấp ít nhất một thông tin để cập nhật (trạng thái hoặc vai trò)',
         );
       }
 
+      const updateData: Prisma.EmployeeUpdateInput = {};
+
       // Cập nhật trạng thái tài khoản (ACTIVE/INACTIVE)
       if (hasStatus) {
-        const nextStatus = dto.status!;
-        await this.employeeRepo.update(id, {
-          status: nextStatus,
-        });
-        // Khi thay đổi trạng thái, thu hồi cache phân quyền để áp dụng ngay lập tức
-        await this.employeeRoleService.invalidateEmployeeAuthzCache(id);
+        updateData.status = dto.status!;
       }
 
-      // Cập nhật/Đồng bộ lại danh sách vai trò của nhân viên
-      if (hasRoleIds) {
-        await this.employeeRoleService.syncRoles(id, dto.roleIds!);
+      if (hasRoleId) {
+        await this.ensureRoleIdExists(dto.roleId!);
+        updateData.role = { connect: { id: dto.roleId! } };
       }
 
+      await this.employeeRepo.update(id, updateData);
+      await this.employeeAuthzCache.invalidate(id);
       const afterData = await this.findById(id);
 
       // Ghi nhật ký thao tác thành công
@@ -190,8 +182,7 @@ export class EmployeeService {
       const deleted = await this.employeeRepo.softDelete(id);
       if (!deleted) throw new NotFoundException(`Không tìm thấy nhân viên #${id} để xóa`);
 
-      // Thu hồi cache phân quyền của nhân viên bị xóa
-      await this.employeeRoleService.invalidateEmployeeAuthzCache(id);
+      await this.employeeAuthzCache.invalidate(id);
       const afterData = await this.employeeRepo.findById(id);
 
       // Ghi nhật ký thao tác thành công
@@ -230,8 +221,7 @@ export class EmployeeService {
         );
       }
 
-      // Xóa cache phân quyền để nhân viên có thể đăng nhập lại
-      await this.employeeRoleService.invalidateEmployeeAuthzCache(id);
+      await this.employeeAuthzCache.invalidate(id);
 
       // Ghi nhật ký thao tác thành công
       await this.auditLogService.write({
@@ -270,6 +260,13 @@ export class EmployeeService {
         throw new ConflictException('Số điện thoại này đã được sử dụng');
       }
       throw new ConflictException('Thông tin nhân viên bị trùng lặp dữ liệu duy nhất');
+    }
+  }
+
+  private async ensureRoleIdExists(roleId: number): Promise<void> {
+    const role = await this.roleRepo.findById(roleId);
+    if (!role) {
+      throw new BadRequestException(`Vai trò #${roleId} không tồn tại`);
     }
   }
 }

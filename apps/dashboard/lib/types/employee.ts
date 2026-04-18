@@ -1,10 +1,8 @@
 /** Khớp `EmployeeListItemResponseDto` từ API. */
 
 export interface EmployeeRoleBrief {
-  role: {
-    id: number;
-    name: string;
-  };
+  id: number;
+  name: string;
 }
 
 export interface EmployeeListItem {
@@ -16,7 +14,7 @@ export interface EmployeeListItem {
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   deletedAt: string | null;
-  employeeRoles: EmployeeRoleBrief[];
+  role: EmployeeRoleBrief | null;
 }
 
 export interface ListPaginationMeta {
@@ -41,10 +39,10 @@ export type CreateEmployeePayload = {
   email: string;
   phoneNumber: string;
   password: string;
-  roleIds?: number[];
+  roleId: number;
 };
 
 export type UpdateEmployeePayload = {
   status?: 'ACTIVE' | 'INACTIVE';
-  roleIds?: number[];
+  roleId?: number;
 };

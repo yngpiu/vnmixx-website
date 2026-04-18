@@ -70,9 +70,10 @@ export async function seedEmployees(): Promise<void> {
         const existing = await prisma.employee.findUnique({ where: { email } });
         const avatarUrl = pravatarUrl(email);
 
-        const row = await prisma.employee.upsert({
+        await prisma.employee.upsert({
           where: { email },
           create: {
+            roleId,
             fullName,
             email,
             phoneNumber,
@@ -81,6 +82,7 @@ export async function seedEmployees(): Promise<void> {
             status: EmployeeStatus.ACTIVE,
           },
           update: {
+            roleId,
             fullName,
             phoneNumber,
             hashedPassword,
@@ -93,13 +95,6 @@ export async function seedEmployees(): Promise<void> {
         if (existing) updated += 1;
         else created += 1;
 
-        await prisma.employeeRole.upsert({
-          where: {
-            employeeId_roleId: { employeeId: row.id, roleId },
-          },
-          create: { employeeId: row.id, roleId },
-          update: {},
-        });
         employeeIndex++;
       }
     }

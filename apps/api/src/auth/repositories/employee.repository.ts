@@ -58,24 +58,23 @@ export class EmployeeRepository {
   }
 
   async loadPermissions(employeeId: number): Promise<EmployeePermissions> {
-    const employeeRoles = await this.prisma.employeeRole.findMany({
-      where: { employeeId },
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
       include: {
         role: {
-          include: {
-            rolePermissions: {
-              include: { permission: true },
-            },
-          },
+          include: { rolePermissions: { include: { permission: true } } },
         },
       },
     });
-    const roles = employeeRoles.map((er) => er.role.name);
+
+    if (!employee?.role) {
+      return { roles: [], permissions: [] };
+    }
+
+    const roles = [employee.role.name];
     const permissionSet = new Set<string>();
-    for (const er of employeeRoles) {
-      for (const rp of er.role.rolePermissions) {
-        permissionSet.add(rp.permission.name);
-      }
+    for (const rp of employee.role.rolePermissions) {
+      permissionSet.add(rp.permission.name);
     }
     return { roles, permissions: [...permissionSet] };
   }

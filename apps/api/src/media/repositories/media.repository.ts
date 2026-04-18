@@ -16,6 +16,7 @@ export type MediaFileCreateInput = {
   key: string;
   fileName: string;
   folder: string;
+  folderId?: number;
   mimeType: string;
   size: number;
   width?: number;
@@ -75,10 +76,10 @@ export class MediaRepository {
     return this.prisma.mediaFile.create({ data });
   }
 
-  async updateFolder(id: number, folder: string, key: string) {
+  async updateFolder(id: number, folder: string, key: string, folderId?: number) {
     return this.prisma.mediaFile.update({
       where: { id },
-      data: { folder, key },
+      data: { folder, key, folderId },
     });
   }
 
@@ -129,11 +130,64 @@ export class MediaRepository {
 
   /** Upsert an explicitly created folder (ignore duplicate). */
   async createFolder(path: string): Promise<void> {
-    await this.prisma.mediaFolder.upsert({
+    await this.ensureFolderHierarchy(path);
+  }
+
+  async getFolderIdByPath(path: string): Promise<number | undefined> {
+    if (!path) return undefined;
+    const folder = await this.prisma.mediaFolder.findUnique({
       where: { path },
-      create: { path },
-      update: {},
+      select: { id: true },
     });
+    return folder?.id;
+  }
+
+  async ensureFolderHierarchy(path: string): Promise<number | undefined> {
+    if (!path) return undefined;
+
+    const parts = path.split('/').filter(Boolean);
+    let currentPath = '';
+    let parentId: number | undefined;
+
+    for (const part of parts) {
+      currentPath = currentPath ? `${currentPath}/${part}` : part;
+      const row = await this.prisma.mediaFolder.upsert({
+        where: { path: currentPath },
+        create: {
+          path: currentPath,
+          name: part,
+          parentId,
+        },
+        update: {
+          name: part,
+          parentId,
+        },
+        select: { id: true },
+      });
+      parentId = row.id;
+    }
+
+    return parentId;
+  }
+
+  async backfillFolderLinks(): Promise<number> {
+    const files = await this.prisma.mediaFile.findMany({
+      where: {
+        folder: { not: '' },
+        folderId: null,
+      },
+      select: { id: true, folder: true },
+    });
+
+    for (const file of files) {
+      const folderId = await this.ensureFolderHierarchy(file.folder);
+      await this.prisma.mediaFile.update({
+        where: { id: file.id },
+        data: { folderId },
+      });
+    }
+
+    return files.length;
   }
 
   /** Find all media files whose folder matches a prefix (folder itself + subfolders). */

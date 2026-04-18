@@ -1,4 +1,0 @@
-ALTER TABLE `employees`
-MODIFY COLUMN `status` ENUM('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
-DROP COLUMN `locked_at`,
-DROP COLUMN `lock_reason`;

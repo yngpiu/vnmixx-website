@@ -10,11 +10,6 @@ class RoleBriefDto {
   name: string;
 }
 
-class EmployeeRoleDto {
-  @ApiProperty({ type: RoleBriefDto })
-  role: RoleBriefDto;
-}
-
 export class EmployeeListItemResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -40,8 +35,8 @@ export class EmployeeListItemResponseDto {
   @ApiPropertyOptional({ nullable: true })
   deletedAt: Date | null;
 
-  @ApiProperty({ type: [EmployeeRoleDto] })
-  employeeRoles: EmployeeRoleDto[];
+  @ApiProperty({ type: RoleBriefDto, nullable: true })
+  role: RoleBriefDto | null;
 }
 
 class PaginationMeta {

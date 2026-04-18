@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayUnique, IsArray, IsIn, IsInt, IsOptional, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Min } from 'class-validator';
 
 const EMPLOYEE_STATUS = ['ACTIVE', 'INACTIVE'] as const;
 
@@ -13,14 +13,11 @@ export class UpdateEmployeeDto {
   status?: (typeof EMPLOYEE_STATUS)[number];
 
   @ApiPropertyOptional({
-    example: [1],
-    description: 'Thay thế toàn bộ vai trò; gửi mảng rỗng để gỡ hết',
-    type: [Number],
+    example: 1,
+    description: 'Thay đổi vai trò của nhân viên (mỗi nhân viên chỉ có 1 vai trò).',
   })
   @IsOptional()
-  @IsArray({ message: 'Danh sách vai trò phải là một mảng' })
-  @ArrayUnique({ message: 'Các vai trò không được trùng lặp' })
-  @IsInt({ each: true, message: 'Mỗi ID vai trò phải là số nguyên' })
-  @Min(1, { each: true, message: 'Mỗi ID vai trò phải lớn hơn hoặc bằng 1' })
-  roleIds?: number[];
+  @IsInt({ message: 'ID vai trò phải là số nguyên' })
+  @Min(1, { message: 'ID vai trò phải lớn hơn hoặc bằng 1' })
+  roleId?: number;
 }

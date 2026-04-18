@@ -1,11 +1,18 @@
 'use client';
 
-import { SearchableMultiSelect } from '@/components/searchable-multi-select';
 import { deleteEmployee, getEmployee, restoreEmployee, updateEmployee } from '@/lib/api/employees';
 import { listRoles } from '@/lib/api/roles';
 import type { UpdateEmployeePayload } from '@/lib/types/employee';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from '@repo/ui/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +31,7 @@ import { z } from 'zod';
 const EDIT_EMPLOYEE_ROLES_FORM_ID = 'edit-employee-roles-form';
 
 const editRolesSchema = z.object({
-  roleIds: z.array(z.number().int().positive()),
+  roleId: z.number().int().positive(),
 });
 
 type EditRolesFormValues = z.infer<typeof editRolesSchema>;
@@ -59,7 +66,7 @@ export function EditEmployeeDialog({
   const queryClient = useQueryClient();
 
   const rolesForm = useForm<EditRolesFormValues>({
-    defaultValues: { roleIds: [] },
+    defaultValues: { roleId: 0 },
   });
 
   const {
@@ -81,7 +88,7 @@ export function EditEmployeeDialog({
 
   useEffect(() => {
     if (!open) {
-      resetRoles({ roleIds: [] });
+      resetRoles({ roleId: 0 });
       clearRolesErrors();
     }
   }, [open, resetRoles, clearRolesErrors]);
@@ -89,7 +96,7 @@ export function EditEmployeeDialog({
   useEffect(() => {
     if (!open || mode !== 'roles' || !detail || employeeId !== detail.id) return;
     resetRoles({
-      roleIds: detail.employeeRoles.map((er) => er.role.id),
+      roleId: detail.role?.id ?? 0,
     });
   }, [detail, employeeId, mode, open, resetRoles]);
 
@@ -168,13 +175,13 @@ export function EditEmployeeDialog({
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const key = issue.path[0];
-        if (key === 'roleIds') {
+        if (key === 'roleId') {
           rolesForm.setError(key, { message: issue.message });
         }
       }
       return;
     }
-    updateMutation.mutate({ id: employeeId, payload: { roleIds: parsed.data.roleIds } });
+    updateMutation.mutate({ id: employeeId, payload: { roleId: parsed.data.roleId } });
   };
 
   const submitToggleActive = () => {
@@ -291,25 +298,38 @@ export function EditEmployeeDialog({
                     />
                   ) : null}
                   <Controller
-                    name="roleIds"
+                    name="roleId"
                     control={rolesControl}
                     render={({ field }) => {
                       const roles = rolesQuery.data ?? [];
-                      const options = roles.map((role) => ({ value: role.id, label: role.name }));
                       return (
-                        <SearchableMultiSelect
-                          options={options}
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={rolesFormDisabled || options.length === 0}
-                          placeholder="Chọn vai trò…"
-                          searchPlaceholder="Tìm vai trò..."
-                          aria-invalid={Boolean(rolesErrors.roleIds)}
-                        />
+                        <Combobox
+                          items={roles}
+                          value={roles.find((role) => role.id === field.value) ?? null}
+                          itemToStringLabel={(item) => item?.name ?? ''}
+                          onValueChange={(item) => field.onChange(item?.id ?? 0)}
+                        >
+                          <ComboboxInput
+                            aria-invalid={Boolean(rolesErrors.roleId)}
+                            disabled={rolesFormDisabled || roles.length === 0}
+                            placeholder="Chọn vai trò..."
+                            showClear={false}
+                          />
+                          <ComboboxContent>
+                            <ComboboxEmpty>Không có vai trò phù hợp.</ComboboxEmpty>
+                            <ComboboxList>
+                              {roles.map((role) => (
+                                <ComboboxItem key={role.id} value={role}>
+                                  {role.name}
+                                </ComboboxItem>
+                              ))}
+                            </ComboboxList>
+                          </ComboboxContent>
+                        </Combobox>
                       );
                     }}
                   />
-                  <FieldError errors={[rolesErrors.roleIds]} />
+                  <FieldError errors={[rolesErrors.roleId]} />
                 </Field>
               </FieldGroup>
             </form>

@@ -98,12 +98,14 @@ export class MediaService {
         throw new BadRequestException('Video vượt quá giới hạn 50MB.');
       }
       const folder = normalizeFolder(dto.folder);
+      const folderId = await this.repo.ensureFolderHierarchy(folder);
       const key = generateObjectKey(folder, file.originalname);
       await this.r2.uploadFile(key, file.buffer, file.mimetype);
       const row = await this.repo.create({
         key,
         fileName: file.originalname,
         folder,
+        folderId,
         mimeType: file.mimetype,
         size: file.size,
         uploadedBy: employeeId,
@@ -253,8 +255,9 @@ export class MediaService {
     const beforeData = { id: media.id, folder: media.folder, key: media.key };
     try {
       const targetFolder = normalizeFolder(dto.targetFolder);
+      const targetFolderId = await this.repo.ensureFolderHierarchy(targetFolder);
       // DB-only move: logical `folder` changes; R2 object key unchanged (no copy/delete).
-      const updated = await this.repo.updateFolder(id, targetFolder, media.key);
+      const updated = await this.repo.updateFolder(id, targetFolder, media.key, targetFolderId);
       const result = this.withPublicUrl(updated);
       await this.auditLogService.write({
         ...auditContext,

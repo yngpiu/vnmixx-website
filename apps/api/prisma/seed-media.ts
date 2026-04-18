@@ -26,15 +26,29 @@ export async function seedMedia(): Promise<void> {
       'reviews',
     ];
 
+    const folderIdByPath = new Map<string, number>();
     for (const path of folders) {
-      await prisma.mediaFolder.upsert({
-        where: { path },
-        create: { path },
-        update: {},
-      });
+      const parts = path.split('/').filter(Boolean);
+      let parentId: number | null = null;
+      let currentPath = '';
+
+      for (const part of parts) {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        const row: { id: number } = await prisma.mediaFolder.upsert({
+          where: { path: currentPath },
+          create: { path: currentPath, name: part, parentId },
+          update: { name: part, parentId },
+          select: { id: true },
+        });
+        parentId = row.id;
+        folderIdByPath.set(currentPath, row.id);
+      }
     }
 
-    const employees = await prisma.employee.findMany({ take: 10, select: { id: true } });
+    const employees: { id: number }[] = await prisma.employee.findMany({
+      take: 10,
+      select: { id: true },
+    });
     const uploaderIds = employees.map((e) => e.id);
 
     faker.seed(444);
@@ -61,6 +75,7 @@ export async function seedMedia(): Promise<void> {
         key,
         fileName,
         folder,
+        folderId: folderIdByPath.get(folder) ?? null,
         mimeType: mimeType.replace('jpg', 'jpeg'),
         size: faker.number.int({ min: 1024 * 50, max: 1024 * 5000 }),
         width: isImage ? faker.helpers.arrayElement([800, 1024, 1200, 1920]) : null,

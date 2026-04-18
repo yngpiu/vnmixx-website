@@ -12,7 +12,7 @@ export interface EmployeeListItemView {
   status: EmployeeStatus;
   createdAt: Date;
   deletedAt: Date | null;
-  employeeRoles: { role: { id: number; name: string } }[];
+  role: { id: number; name: string } | null;
 }
 
 export interface EmployeeDetailView extends EmployeeListItemView {
@@ -25,10 +25,6 @@ export interface PaginatedResult<T> {
   meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
-const ROLE_SELECT = {
-  role: { select: { id: true, name: true } },
-} as const;
-
 const LIST_SELECT = {
   id: true,
   fullName: true,
@@ -38,7 +34,7 @@ const LIST_SELECT = {
   status: true,
   createdAt: true,
   deletedAt: true,
-  employeeRoles: { select: ROLE_SELECT },
+  role: { select: { id: true, name: true } },
 } as const;
 
 const DETAIL_SELECT = {
@@ -87,7 +83,7 @@ export class EmployeeRepository {
     const where: Prisma.EmployeeWhereInput = {
       ...softDeletedWhere(isSoftDeleted),
       ...(status !== undefined && { status }),
-      ...(roleId !== undefined && { employeeRoles: { some: { roleId } } }),
+      ...(roleId !== undefined && { roleId }),
       ...(search && {
         OR: [
           { fullName: { contains: search } },
@@ -109,7 +105,7 @@ export class EmployeeRepository {
     ]);
 
     return {
-      data: data as unknown as EmployeeListItemView[],
+      data: data as EmployeeListItemView[],
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -126,9 +122,11 @@ export class EmployeeRepository {
     email: string;
     phoneNumber: string;
     hashedPassword: string;
+    roleId: number;
   }): Promise<EmployeeDetailView> {
     const employee = await this.prisma.employee.create({
       data: {
+        roleId: data.roleId,
         fullName: data.fullName,
         email: data.email,
         phoneNumber: data.phoneNumber,
