@@ -1,38 +1,27 @@
+import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import 'dotenv/config';
-import { AuditLogStatus, PrismaClient } from '../generated/prisma/client';
+import { AuditLogStatus, Prisma, PrismaClient } from '../generated/prisma/client';
 
 const SEED_REQUEST_ID_PREFIX = 'seed-audit-';
+const AUDIT_LOG_COUNT = 5000;
 
-/**
- * Ghi vài dòng audit mẫu cho dev/demo. Idempotent: xóa theo requestId rồi tạo lại.
- * Chạy sau seed nhân viên (cần actor hợp lệ).
- */
 export async function seedAuditLogs(): Promise<void> {
   if (!process.env.DATABASE_URL) {
-    throw new Error('Thiếu DATABASE_URL (tạo apps/api/.env từ .env.example hoặc export biến).');
+    throw new Error('Thiếu DATABASE_URL');
   }
 
   const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
   const prisma = new PrismaClient({ adapter });
 
   try {
-    const admin = await prisma.employee.findFirst({
-      where: { email: 'vnmixx@gmail.com', deletedAt: null },
-      select: { id: true },
-    });
-    const manager = await prisma.employee.findFirst({
-      where: { email: 'phamthuha.qlch@gmail.com', deletedAt: null },
-      select: { id: true },
-    });
-    const itStaff = await prisma.employee.findFirst({
-      where: { email: 'buiducthinh.itns@gmail.com', deletedAt: null },
-      select: { id: true },
+    const employees = await prisma.employee.findMany({
+      where: { deletedAt: null },
+      select: { id: true, email: true },
     });
 
-    const primaryActorId = admin?.id ?? manager?.id ?? itStaff?.id;
-    if (primaryActorId === undefined) {
-      console.log('Seed audit logs: không tìm thấy nhân viên mẫu, bỏ qua.');
+    if (employees.length === 0) {
+      console.log('Seed audit logs: không tìm thấy nhân viên, bỏ qua.');
       return;
     }
 
@@ -40,134 +29,80 @@ export async function seedAuditLogs(): Promise<void> {
       where: { requestId: { startsWith: SEED_REQUEST_ID_PREFIX } },
     });
 
-    const firstOrder = await prisma.order.findFirst({
-      orderBy: { id: 'asc' },
-      select: { id: true },
-    });
-    const firstProduct = await prisma.product.findFirst({
-      where: { deletedAt: null },
-      orderBy: { id: 'asc' },
-      select: { id: true },
-    });
-    const firstCategory = await prisma.category.findFirst({
-      where: { deletedAt: null },
-      orderBy: { id: 'asc' },
-      select: { id: true },
-    });
+    faker.seed(777);
 
-    const now = Date.now();
-    const hoursAgo = (h: number): Date => new Date(now - h * 60 * 60 * 1000);
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-    await prisma.auditLog.createMany({
-      data: [
-        {
-          actorEmployeeId: primaryActorId,
-          action: 'role.create',
-          resourceType: 'role',
-          resourceId: '99',
-          requestId: `${SEED_REQUEST_ID_PREFIX}001`,
-          ipAddress: '127.0.0.1',
-          userAgent: 'Mozilla/5.0 (demo seed)',
-          beforeData: undefined,
-          afterData: { name: 'Demo role', description: 'Vai trò demo chỉ dùng dev' },
-          status: AuditLogStatus.SUCCESS,
-          errorMessage: null,
-          createdAt: hoursAgo(48),
-        },
-        {
-          actorEmployeeId: itStaff?.id ?? primaryActorId,
-          action: 'role.update',
-          resourceType: 'role',
-          resourceId: '2',
-          requestId: `${SEED_REQUEST_ID_PREFIX}002`,
-          ipAddress: '192.168.1.10',
-          userAgent: 'Mozilla/5.0 (demo seed)',
-          beforeData: { name: 'Quản lý cửa hàng' },
-          afterData: { name: 'Quản lý cửa hàng', description: 'Cập nhật mô tả (seed)' },
-          status: AuditLogStatus.SUCCESS,
-          errorMessage: null,
-          createdAt: hoursAgo(36),
-        },
-        {
-          actorEmployeeId: manager?.id ?? primaryActorId,
-          action: 'product.update',
-          resourceType: 'product',
-          resourceId: firstProduct ? String(firstProduct.id) : '1',
-          requestId: `${SEED_REQUEST_ID_PREFIX}003`,
-          ipAddress: '10.0.0.5',
-          userAgent: 'Mozilla/5.0 (demo seed)',
-          beforeData: { name: 'Before' },
-          afterData: { name: 'After', isActive: true },
-          status: AuditLogStatus.SUCCESS,
-          errorMessage: null,
-          createdAt: hoursAgo(24),
-        },
-        {
-          actorEmployeeId: primaryActorId,
-          action: 'category.create',
-          resourceType: 'category',
-          resourceId: firstCategory ? String(firstCategory.id) : '1',
-          requestId: `${SEED_REQUEST_ID_PREFIX}004`,
-          ipAddress: '127.0.0.1',
-          userAgent: 'Mozilla/5.0 (demo seed)',
-          beforeData: undefined,
-          afterData: { name: 'Danh mục seed', slug: 'danh-muc-seed' },
-          status: AuditLogStatus.SUCCESS,
-          errorMessage: null,
-          createdAt: hoursAgo(12),
-        },
-        {
-          actorEmployeeId: manager?.id ?? primaryActorId,
-          action: 'order.confirm',
-          resourceType: 'order',
-          resourceId: firstOrder ? String(firstOrder.id) : '1',
-          requestId: `${SEED_REQUEST_ID_PREFIX}005`,
-          ipAddress: '172.16.0.2',
-          userAgent: 'Mozilla/5.0 (demo seed)',
-          beforeData: { status: 'PENDING' },
-          afterData: { status: 'CONFIRMED' },
-          status: AuditLogStatus.SUCCESS,
-          errorMessage: null,
-          createdAt: hoursAgo(6),
-        },
-        {
-          actorEmployeeId: itStaff?.id ?? primaryActorId,
-          action: 'role.update',
-          resourceType: 'role',
-          resourceId: '999',
-          requestId: `${SEED_REQUEST_ID_PREFIX}006`,
-          ipAddress: '127.0.0.1',
-          userAgent: 'Mozilla/5.0 (demo seed)',
-          beforeData: undefined,
-          afterData: { name: 'Không tồn tại' },
-          status: AuditLogStatus.FAILED,
-          errorMessage: 'Không tìm thấy vai trò #999',
-          createdAt: hoursAgo(2),
-        },
-        {
-          actorEmployeeId: primaryActorId,
-          action: 'employee.create',
-          resourceType: 'employee',
-          resourceId: '42',
-          requestId: `${SEED_REQUEST_ID_PREFIX}007`,
-          ipAddress: '127.0.0.1',
-          userAgent: 'Mozilla/5.0 (demo seed)',
-          beforeData: undefined,
-          afterData: { email: 'new.user@example.com', fullName: 'User Seed' },
-          status: AuditLogStatus.SUCCESS,
-          errorMessage: null,
-          createdAt: hoursAgo(1),
-        },
-      ],
-    });
+    const actions = [
+      { action: 'product.update', type: 'product' },
+      { action: 'product.create', type: 'product' },
+      { action: 'order.update_status', type: 'order' },
+      { action: 'order.cancel', type: 'order' },
+      { action: 'customer.update', type: 'customer' },
+      { action: 'role.update', type: 'role' },
+      { action: 'employee.create', type: 'employee' },
+      { action: 'category.update', type: 'category' },
+    ];
 
-    const inserted = await prisma.auditLog.count({
-      where: { requestId: { startsWith: SEED_REQUEST_ID_PREFIX } },
-    });
-    console.log(
-      `Seed audit logs done: ${inserted} rows (requestId prefix ${SEED_REQUEST_ID_PREFIX}*)`,
-    );
+    const logsToCreate: Prisma.AuditLogCreateManyInput[] = [];
+
+    for (let i = 0; i < AUDIT_LOG_COUNT; i++) {
+      const emp = faker.helpers.arrayElement(employees);
+      const actionDef = faker.helpers.arrayElement(actions);
+
+      let createdAt: Date;
+      const r = faker.number.float({ min: 0, max: 1 });
+      if (r < 0.3) {
+        createdAt = faker.date.between({
+          from: twoYearsAgo,
+          to: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
+        });
+      } else {
+        createdAt = faker.date.between({
+          from: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
+          to: new Date(),
+        });
+      }
+
+      const isSuccess = faker.datatype.boolean({ probability: 0.95 });
+
+      logsToCreate.push({
+        actorEmployeeId: emp.id,
+        action: actionDef.action,
+        resourceType: actionDef.type,
+        resourceId: String(faker.number.int({ min: 1, max: 1000 })),
+        requestId: `${SEED_REQUEST_ID_PREFIX}${i.toString().padStart(5, '0')}`,
+        ipAddress: faker.internet.ipv4(),
+        userAgent: faker.internet.userAgent(),
+        beforeData:
+          isSuccess && actionDef.action.includes('update') ? { status: 'OLD' } : Prisma.JsonNull,
+        afterData: isSuccess ? { status: 'NEW' } : Prisma.JsonNull,
+        status: isSuccess ? AuditLogStatus.SUCCESS : AuditLogStatus.FAILED,
+        errorMessage: isSuccess ? null : 'Lỗi xác thực quyền hoặc dữ liệu không hợp lệ',
+        createdAt,
+      });
+    }
+
+    logsToCreate.sort((a, b) => (a.createdAt as Date).getTime() - (b.createdAt as Date).getTime());
+
+    let created = 0;
+    const BATCH_SIZE = 1000;
+    for (let i = 0; i < logsToCreate.length; i += BATCH_SIZE) {
+      const batch = logsToCreate.slice(i, i + BATCH_SIZE);
+      await prisma.auditLog.createMany({ data: batch });
+      created += batch.length;
+    }
+
+    console.log(`Seed audit logs done: ${created} rows.`);
   } finally {
     await prisma.$disconnect();
   }
+}
+
+if (require.main === module) {
+  seedAuditLogs().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }

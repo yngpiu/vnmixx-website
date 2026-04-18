@@ -14,6 +14,7 @@ export type DashboardBreadcrumbItem = {
 export const dashboardRoutes = {
   root: '/',
   analytics: '/analytics',
+  reviews: '/reviews',
   settings: '/settings',
 } as const;
 
@@ -39,6 +40,9 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
   }
   if (path === dashboardRoutes.analytics) {
     return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Phân tích' }];
+  }
+  if (path === dashboardRoutes.reviews) {
+    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Review' }];
   }
   if (path === dashboardRoutes.settings) {
     return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Cài đặt cá nhân' }];

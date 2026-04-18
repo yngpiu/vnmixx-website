@@ -1,212 +1,21 @@
+import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { hash } from 'bcrypt';
 import 'dotenv/config';
-import { Gender, PrismaClient } from '../generated/prisma/client';
+import { Gender, Prisma, PrismaClient } from '../generated/prisma/client';
 
 const BCRYPT_ROUNDS = 10;
-const CUSTOMER_COUNT = 100;
+const CUSTOMER_COUNT = 5000;
 
-/** Mật khẩu dùng chung cho tài khoản khách seed (dev). Có thể ghi đè bằng SEED_CUSTOMER_PASSWORD. */
 const seedPassword = () => process.env.SEED_CUSTOMER_PASSWORD ?? '123123';
 
 function pravatarUrl(seed: string): string {
   return `https://i.pravatar.cc/150?u=${encodeURIComponent(seed)}`;
 }
 
-function assertVnMobile10(phone: string, label: string): void {
-  if (!/^0[35789]\d{8}$/.test(phone)) {
-    throw new Error(
-      `${label}: số điện thoại phải đúng 10 số dạng di động VN (0[35789] + 8 chữ số): ${phone}`,
-    );
-  }
-}
-
-/** Họ phổ biến tại Việt Nam (dùng cho dữ liệu demo, không gắn cá nhân cụ thể). */
-const HO = [
-  'Nguyễn',
-  'Trần',
-  'Lê',
-  'Phạm',
-  'Hoàng',
-  'Huỳnh',
-  'Phan',
-  'Vũ',
-  'Võ',
-  'Đặng',
-  'Bùi',
-  'Đỗ',
-  'Hồ',
-  'Ngô',
-  'Dương',
-  'Lý',
-  'Đinh',
-  'Tạ',
-  'Chu',
-  'La',
-  'Mai',
-  'Vương',
-  'Quách',
-  'Thái',
-  'Cao',
-  'Đoàn',
-  'Phùng',
-  'Lưu',
-  'Tôn',
-  'Hà',
-];
-
-const TEN_DEM_NAM = [
-  'Văn',
-  'Đức',
-  'Minh',
-  'Quốc',
-  'Thanh',
-  'Đình',
-  'Gia',
-  'Hữu',
-  'Tuấn',
-  'Hoàng',
-  'Xuân',
-  'Thế',
-  'Công',
-  'Đăng',
-  'Trung',
-];
-
-const TEN_NAM = [
-  'Anh',
-  'Bình',
-  'Cường',
-  'Dũng',
-  'Phúc',
-  'Hải',
-  'Khang',
-  'Long',
-  'Nam',
-  'Phong',
-  'Quân',
-  'Sơn',
-  'Tài',
-  'Vinh',
-  'Kiệt',
-  'Hiếu',
-  'Huy',
-  'Đạt',
-  'Thịnh',
-  'Tuấn',
-  'Hùng',
-  'Duy',
-  'Khoa',
-  'Lộc',
-  'Tùng',
-];
-
-const TEN_DEM_NU = [
-  'Thị',
-  'Ngọc',
-  'Thanh',
-  'Thu',
-  'Bích',
-  'Phương',
-  'Hoài',
-  'Diệu',
-  'Hồng',
-  'Kim',
-  'Tú',
-  'Bảo',
-  'Gia',
-  'Minh',
-  'Ánh',
-];
-
-const TEN_NU = [
-  'An',
-  'Chi',
-  'Dung',
-  'Hà',
-  'Hương',
-  'Lan',
-  'Linh',
-  'Mai',
-  'Nga',
-  'Oanh',
-  'Phượng',
-  'Quyên',
-  'Thảo',
-  'Trang',
-  'Uyên',
-  'Vân',
-  'Yến',
-  'My',
-  'Hạnh',
-  'Loan',
-  'Nhi',
-  'Vy',
-  'Hằng',
-  'Tuyết',
-  'Xuân',
-];
-
-function fullNameForIndex(i: number, gender: Gender): string {
-  const ho = HO[i % HO.length];
-  if (gender === Gender.MALE) {
-    const dem = TEN_DEM_NAM[(i * 3) % TEN_DEM_NAM.length];
-    const ten = TEN_NAM[(i * 7) % TEN_NAM.length];
-    return `${ho} ${dem} ${ten}`;
-  }
-  if (gender === Gender.FEMALE) {
-    const dem = TEN_DEM_NU[(i * 5) % TEN_DEM_NU.length];
-    const ten = TEN_NU[(i * 11) % TEN_NU.length];
-    return `${ho} ${dem} ${ten}`;
-  }
-  const dem = TEN_DEM_NAM[(i * 13) % TEN_DEM_NAM.length];
-  const ten = TEN_NAM[(i * 17) % TEN_NAM.length];
-  return `${ho} ${dem} ${ten}`;
-}
-
-function genderForIndex(i: number): Gender {
-  const r = i % 5;
-  if (r === 4) return Gender.OTHER;
-  return r % 2 === 0 ? Gender.MALE : Gender.FEMALE;
-}
-
-/** Ngày sinh hợp lý (khoảng 18–55 tuổi tại năm 2026), chỉ dùng phần ngày. */
-function dobForIndex(i: number): Date {
-  const year = 1971 + (i % 35);
-  const month = 1 + ((i * 5) % 12);
-  const day = 1 + ((i * 11) % 28);
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
-function customerRow(i: number): {
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  gender: Gender;
-  dob: Date;
-  emailVerifiedAt: Date | null;
-} {
-  const gender = genderForIndex(i);
-  const fullName = fullNameForIndex(i, gender);
-  const n = String(i + 1).padStart(3, '0');
-  const email = `khachhang.vnmixx.seed${n}@gmail.com`;
-  const phoneNumber = `09050000${String(i).padStart(2, '0')}`;
-  const dob = dobForIndex(i);
-  const emailVerifiedAt = i % 4 === 0 ? null : new Date(Date.UTC(2025, i % 12, 1 + (i % 20)));
-  return { fullName, email, phoneNumber, gender, dob, emailVerifiedAt };
-}
-
 export async function seedCustomers(): Promise<void> {
   if (!process.env.DATABASE_URL) {
     throw new Error('Thiếu DATABASE_URL (tạo apps/api/.env từ .env.example hoặc export biến).');
-  }
-
-  for (let i = 0; i < CUSTOMER_COUNT; i += 1) {
-    const row = customerRow(i);
-    assertVnMobile10(row.phoneNumber, row.fullName);
-    if (!row.email.endsWith('@gmail.com')) {
-      throw new Error(`${row.fullName}: email phải kết thúc bằng @gmail.com`);
-    }
   }
 
   const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
@@ -215,47 +24,105 @@ export async function seedCustomers(): Promise<void> {
   try {
     const hashedPassword = await hash(seedPassword(), BCRYPT_ROUNDS);
     let created = 0;
-    let updated = 0;
+
+    faker.seed(456);
+
+    const customers: Prisma.CustomerCreateManyInput[] = [];
+    const emails = new Set();
+    const phones = new Set();
+
+    // Generate trend dates over last 2 years
+    // More customers in recent months, some peaks around Nov-Jan
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
     for (let i = 0; i < CUSTOMER_COUNT; i += 1) {
-      const row = customerRow(i);
-      const existing = await prisma.customer.findUnique({ where: { email: row.email } });
-      const avatarUrl = pravatarUrl(row.email);
+      const isMale = faker.datatype.boolean();
+      const gender = isMale ? Gender.MALE : Gender.FEMALE;
+      const fullName = faker.person.fullName({ sex: isMale ? 'male' : 'female' });
 
-      await prisma.customer.upsert({
-        where: { email: row.email },
-        create: {
-          fullName: row.fullName,
-          email: row.email,
-          phoneNumber: row.phoneNumber,
-          dob: row.dob,
-          gender: row.gender,
-          hashedPassword,
-          avatarUrl,
-          isActive: true,
-          emailVerifiedAt: row.emailVerifiedAt,
-        },
-        update: {
-          fullName: row.fullName,
-          phoneNumber: row.phoneNumber,
-          dob: row.dob,
-          gender: row.gender,
-          hashedPassword,
-          avatarUrl,
-          isActive: true,
-          emailVerifiedAt: row.emailVerifiedAt,
-          deletedAt: null,
-        },
+      let phonePrefix = faker.helpers.arrayElement(['03', '05', '07', '08', '09']);
+      let phoneNumber = `${phonePrefix}${faker.string.numeric(8)}`;
+      while (phones.has(phoneNumber)) {
+        phonePrefix = faker.helpers.arrayElement(['03', '05', '07', '08', '09']);
+        phoneNumber = `${phonePrefix}${faker.string.numeric(8)}`;
+      }
+      phones.add(phoneNumber);
+
+      const emailName = faker.internet
+        .username({ firstName: fullName.split(' ').pop(), lastName: fullName.split(' ')[0] })
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+      let email = `${emailName}.kh${i}@gmail.com`;
+      while (emails.has(email)) {
+        email = `${emailName}.kh${i}_${faker.string.numeric(2)}@gmail.com`;
+      }
+      emails.add(email);
+
+      const dob = faker.date.birthdate({ min: 18, max: 60, mode: 'age' });
+
+      // Timeline logic: more recent signups
+      let createdAt: Date;
+      const r = faker.number.float({ min: 0, max: 1 });
+      if (r < 0.2) {
+        // First year
+        createdAt = faker.date.between({
+          from: twoYearsAgo,
+          to: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
+        });
+      } else if (r < 0.5) {
+        // Second year H1
+        createdAt = faker.date.between({
+          from: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
+          to: new Date(twoYearsAgo.getTime() + 547 * 24 * 60 * 60 * 1000),
+        });
+      } else {
+        // Second year H2 (more users)
+        createdAt = faker.date.between({
+          from: new Date(twoYearsAgo.getTime() + 547 * 24 * 60 * 60 * 1000),
+          to: new Date(),
+        });
+      }
+
+      // Add seasonal peaks (e.g. November, December, January)
+      if (faker.datatype.boolean({ probability: 0.3 })) {
+        const peakMonth = faker.helpers.arrayElement([0, 10, 11]); // Jan, Nov, Dec
+        createdAt.setMonth(peakMonth);
+      }
+
+      const emailVerifiedAt = faker.datatype.boolean({ probability: 0.8 })
+        ? new Date(createdAt.getTime() + faker.number.int({ min: 1000, max: 86400000 }))
+        : null;
+      const avatarUrl = faker.datatype.boolean({ probability: 0.3 }) ? pravatarUrl(email) : null;
+
+      customers.push({
+        fullName,
+        email,
+        phoneNumber,
+        dob,
+        gender,
+        hashedPassword,
+        avatarUrl,
+        isActive: true,
+        emailVerifiedAt,
+        createdAt,
+        updatedAt: createdAt,
       });
+    }
 
-      if (existing) updated += 1;
-      else created += 1;
+    // Insert in batches
+    const BATCH_SIZE = 500;
+    for (let i = 0; i < customers.length; i += BATCH_SIZE) {
+      const batch = customers.slice(i, i + BATCH_SIZE);
+      await prisma.customer.createMany({
+        data: batch,
+        skipDuplicates: true,
+      });
+      created += batch.length;
     }
 
     const total = await prisma.customer.count({ where: { deletedAt: null } });
-    console.log(
-      `Seed customers done: created=${created}, updated=${updated}, active customers in DB=${total}`,
-    );
+    console.log(`Seed customers done: created=${created}, active customers in DB=${total}`);
   } finally {
     await prisma.$disconnect();
   }

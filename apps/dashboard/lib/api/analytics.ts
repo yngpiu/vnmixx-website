@@ -24,6 +24,7 @@ export type AdminReviewListParams = {
   pageSize?: number;
   visibility?: 'all' | 'visible' | 'hidden';
   keyword?: string;
+  customerId?: number;
 };
 
 export async function getAnalyticsKpisWithDelta(

@@ -1,14 +1,10 @@
+import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import 'dotenv/config';
-import { PrismaClient } from '../generated/prisma/client';
+import { Prisma, PrismaClient } from '../generated/prisma/client';
 
-const PRODUCT_COUNT = 100;
-
-/** SKU prefix — xóa lại seed an toàn hơn khi DB dev chưa có đơn hàng gắn biến thể này. */
-const SEED_SKU_PREFIX = 'SEED-';
-
-/** Slug prefix — khớp regex API: chữ thường, số, gạch nối. */
-const SEED_SLUG_PREFIX = 'seed-sp-';
+const PRODUCT_COUNT = 1500;
+const SEED_SKU_PREFIX = 'VNMIXX-';
 
 const COLORS: { name: string; hexCode: string }[] = [
   { name: 'Đen', hexCode: '#1A1A1A' },
@@ -21,123 +17,17 @@ const COLORS: { name: string; hexCode: string }[] = [
   { name: 'Xanh denim', hexCode: '#4A6FA5' },
   { name: 'Hồng pastel', hexCode: '#F4C2C2' },
   { name: 'Nâu đất', hexCode: '#6B4423' },
+  { name: 'Vàng mustard', hexCode: '#E1AD01' },
+  { name: 'Cam đất', hexCode: '#CC5500' },
+  { name: 'Xanh mint', hexCode: '#98FF98' },
+  { name: 'Tím nhạt', hexCode: '#E6E6FA' },
 ];
 
-const SIZE_LABELS = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
-
-/** Tên sản phẩm tiếng Việt — xoay bộ mẫu để ra ~100 tên khác nhau, giới hạn 255 ký tự. */
-const PRODUCT_TEMPLATES: string[] = [
-  'Áo thun nam cổ tròn cotton',
-  'Áo thun nam cổ bẻ polo pique',
-  'Áo thun nam tay dài layer mùa lạnh',
-  'Áo sơ mi nam công sở dài tay',
-  'Áo sơ mi nam kẻ caro slim',
-  'Áo sơ mi linen nam đi biển',
-  'Quần jean nam slim fit cạp vừa',
-  'Quần jean nam ống suông vintage',
-  'Quần tây nam công sở không ly',
-  'Quần kaki nam lửng summer',
-  'Áo thun nữ cổ tròn basic',
-  'Áo tank top nữ tập gym',
-  'Áo crop top nữ phối layer',
-  'Blouse nữ cổ bèo công sở',
-  'Sơ mi nữ oversize street',
-  'Quần jean nữ cạp cao tôn dáng',
-  'Quần short jean nữ lưng cao',
-  'Quần culottes nữ linen',
-  'Đầm maxi nữ dạo phố',
-  'Đầm body tiệc tối',
-  'Chân váy chữ A nữ công sở',
-  'Chân váy bút chì nữ midi',
-  'Áo khoác gió nam chống nước',
-  'Áo hoodie nữ unisex nỉ bông',
-  'Áo cardigan len mỏng',
-  'Áo phao ngắn ấm đông',
-  'Blazer nữ phối đồ công sở',
-  'Bộ đồ mặc nhà cotton',
-  'Pijama satin ngủ ngon',
-  'Boxer nam cotton co giãn',
-  'Áo bra thể thao nữ medium support',
-  'Sneaker nam trắng daily',
-  'Sneaker chunky nữ phối đồ',
-  'Giày lười nam da lộn',
-  'Sandals nữ quai mảnh',
-  'Túi tote canvas đi làm',
-  'Túi đeo chéo mini da PU',
-  'Balo laptop chống sốc',
-  'Mũ lưỡi trai cotton',
-  'Thắt lưng da nam khóa kim',
-  'Áo thun gym nam dry-fit',
-  'Legging tập nữ cạp cao',
-  'Quần jogger nỉ nam street',
-  'Vest nam ba mảnh tiệc',
-  'Áo flannel oversize caro',
-  'Quần cargo nam túi hộp',
-  'Áo khoác jean classic',
-  'Jean wide leg nữ retro',
-  'Set áo quần bé trai hè',
-  'Váy xòe bé gái đi học',
-  'Áo len cổ lọ nam giữ ấm',
-];
-
-const ADJECTIVES = [
-  'Premium',
-  'Essential',
-  'Signature',
-  'Urban',
-  'Classic',
-  'Athletic',
-  'Minimal',
-  'Heritage',
-];
-
-function buildProductName(index: number): string {
-  const base = PRODUCT_TEMPLATES[index % PRODUCT_TEMPLATES.length];
-  const adj = ADJECTIVES[Math.floor(index / PRODUCT_TEMPLATES.length) % ADJECTIVES.length];
-  const line = Math.floor(index / (PRODUCT_TEMPLATES.length * ADJECTIVES.length)) + 1;
-  const name = `${base} ${adj} — BST ${line}`;
-  return name.length > 255 ? name.slice(0, 252) + '…' : name;
-}
-
-function buildDescription(name: string): string {
-  return (
-    `${name}: hàng demo seed cho shop thời trang. Chất liệu và màu sắc đa dạng, ` +
-    'form chuẩn mặc hằng ngày. Giá và tồn kho chỉ phục vụ môi trường dev / staging.'
-  ).slice(0, 5000);
-}
+const SIZE_LABELS = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'] as const;
 
 function picsumUrl(seed: string, w: number, h: number): string {
   const s = encodeURIComponent(seed).slice(0, 80);
   return `https://picsum.photos/seed/${s}/${w}/${h}`;
-}
-
-function trunc(s: string, max: number): string {
-  if (s.length <= max) return s;
-  return `${s.slice(0, max - 1)}…`;
-}
-
-/** 3–5 biến thể, tổ hợp màu + size không trùng (unique theo schema). */
-function pickVariantPairs(
-  colorIds: number[],
-  sizeIds: number[],
-  index: number,
-): { colorId: number; sizeId: number }[] {
-  const target = 3 + (index % 3);
-  const out: { colorId: number; sizeId: number }[] = [];
-  let t = 0;
-  while (out.length < target && t < 80) {
-    const colorId = colorIds[(index + t) % colorIds.length];
-    const sizeId = sizeIds[(index + 2 * t) % sizeIds.length];
-    const key = `${colorId}-${sizeId}`;
-    if (!out.some((p) => `${p.colorId}-${p.sizeId}` === key)) {
-      out.push({ colorId, sizeId });
-    }
-    t += 1;
-  }
-  if (out.length === 0) {
-    out.push({ colorId: colorIds[0], sizeId: sizeIds[0] });
-  }
-  return out;
 }
 
 async function ensureColors(prisma: PrismaClient): Promise<Map<string, number>> {
@@ -169,54 +59,48 @@ async function ensureSizes(prisma: PrismaClient): Promise<Map<string, number>> {
   return byLabel;
 }
 
-function isPrismaMissingTable(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    (err as { code: string }).code === 'P2021'
-  );
+function buildDescription(name: string): string {
+  return `${name}: ${faker.commerce.productDescription()}\n\nĐặc điểm nổi bật:\n- ${faker.lorem.sentence()}\n- ${faker.lorem.sentence()}\n- ${faker.lorem.sentence()}\n\nChất liệu cao cấp mang lại sự thoải mái tối đa cho người mặc. Thiết kế hiện đại, phù hợp với phong cách thời trang trẻ trung và năng động của Việt Nam.`;
 }
 
-/** Bỏ qua P2021 (bảng chưa tồn tại) để seed chạy được trên DB dev chưa migrate hết. */
-async function deleteManyIgnoreMissingTable(
-  run: () => ReturnType<PrismaClient['stockMovement']['deleteMany']>,
-): Promise<void> {
-  try {
-    await run();
-  } catch (err) {
-    if (isPrismaMissingTable(err)) {
-      return;
-    }
-    throw err;
-  }
-}
+function generateProductName(categoryName: string): string {
+  const adjectives = [
+    'Cao cấp',
+    'Premium',
+    'Essential',
+    'Classic',
+    'Hiện đại',
+    'Basic',
+    'Dáng rộng',
+    'Slim Fit',
+    'Thể thao',
+    'Vintage',
+    'Hàn Quốc',
+    'Trẻ trung',
+    'Phong cách',
+    'Thanh lịch',
+    'Oversize',
+    'Unisex',
+  ];
+  const materials = [
+    'Cotton',
+    'Linen',
+    'Kaki',
+    'Denim',
+    'Lụa',
+    'Nỉ',
+    'Len',
+    'Da',
+    'Thun co giãn',
+    'Gấm',
+  ];
 
-async function wipeSeedProducts(prisma: PrismaClient): Promise<void> {
-  const variants = await prisma.productVariant.findMany({
-    where: { sku: { startsWith: SEED_SKU_PREFIX } },
-    select: { id: true, productId: true },
-  });
-  if (variants.length === 0) {
-    await prisma.product.deleteMany({ where: { slug: { startsWith: SEED_SLUG_PREFIX } } });
-    return;
-  }
-  const variantIds = variants.map((v) => v.id);
-  const productIds = [...new Set(variants.map((v) => v.productId))];
+  const adj = faker.helpers.arrayElement(adjectives);
+  const mat = faker.helpers.arrayElement(materials);
 
-  await deleteManyIgnoreMissingTable(() =>
-    prisma.stockMovement.deleteMany({ where: { variantId: { in: variantIds } } }),
-  );
-  await deleteManyIgnoreMissingTable(() =>
-    prisma.cartItem.deleteMany({ where: { variantId: { in: variantIds } } }),
-  );
-  await deleteManyIgnoreMissingTable(() =>
-    prisma.orderItem.deleteMany({ where: { variantId: { in: variantIds } } }),
-  );
-
-  await prisma.productVariant.deleteMany({ where: { id: { in: variantIds } } });
-  await prisma.product.deleteMany({ where: { id: { in: productIds } } });
-  await prisma.product.deleteMany({ where: { slug: { startsWith: SEED_SLUG_PREFIX } } });
+  // Category might be something like "Áo thun cổ bẻ polo"
+  // So we generate "Áo thun cổ bẻ polo Cao cấp chất liệu Cotton"
+  return `${categoryName} ${adj} ${mat} ${faker.string.alphanumeric({ length: 4, casing: 'upper' })}`;
 }
 
 export async function seedProducts(): Promise<void> {
@@ -228,7 +112,9 @@ export async function seedProducts(): Promise<void> {
   const prisma = new PrismaClient({ adapter });
 
   try {
-    await wipeSeedProducts(prisma);
+    // We do NOT wipe out existing seed products here to save time for a massive seed,
+    // unless you want to clean up. We will just use new slugs/SKUs or let Prisma throw if there are duplicates.
+    // For simplicity, we just generate new ones.
 
     const colorByName = await ensureColors(prisma);
     const sizeByLabel = await ensureSizes(prisma);
@@ -250,96 +136,108 @@ export async function seedProducts(): Promise<void> {
     });
 
     if (leafCategories.length === 0) {
-      throw new Error(
-        'Không có danh mục lá (isActive, không con). Chạy seed danh mục trước: seedCategories().',
-      );
+      throw new Error('Không có danh mục lá. Chạy seed danh mục trước: seedCategories().');
     }
+
+    faker.seed(789);
 
     let created = 0;
-    for (let i = 0; i < PRODUCT_COUNT; i += 1) {
-      const slug = `${SEED_SLUG_PREFIX}${String(i + 1).padStart(3, '0')}`;
-      const name = buildProductName(i);
-      const category = leafCategories[i % leafCategories.length];
-      const pairs = pickVariantPairs(colorIds, sizeIds, i);
-      const basePrice = 159_000 + ((i * 17_389) % 890_000);
-      const isActive = i % 11 !== 0;
+    const batchSize = 100;
 
-      const variants = pairs.map((p, vi) => {
-        const sku =
-          `${SEED_SKU_PREFIX}${String(i + 1).padStart(3, '0')}-C${p.colorId}S${p.sizeId}-V${vi + 1}`.slice(
-            0,
-            50,
-          );
-        const price = basePrice + vi * 10_000;
-        const onHand = 8 + (((i + vi) * 23) % 220);
-        return {
-          colorId: p.colorId,
-          sizeId: p.sizeId,
-          sku,
-          price,
-          onHand,
-        };
-      });
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-      const thumbSeed = `vnmixx-sp-${i}`;
-      const imgSeedA = `vnmixx-sp-${i}-a`;
-      const imgSeedB = `vnmixx-sp-${i}-b`;
+    for (let i = 0; i < PRODUCT_COUNT; i += batchSize) {
+      const batchEnd = Math.min(i + batchSize, PRODUCT_COUNT);
 
       await prisma.$transaction(async (tx) => {
-        const product = await tx.product.create({
-          data: {
-            name,
-            slug,
-            description: buildDescription(name),
-            thumbnail: picsumUrl(thumbSeed, 480, 600),
-            categoryId: category.id,
-            isActive,
-          },
-        });
+        for (let j = i; j < batchEnd; j++) {
+          const category = faker.helpers.arrayElement(leafCategories);
+          const name = generateProductName(category.name);
+          const slug =
+            faker.helpers.slugify(name).toLowerCase() + '-' + faker.string.uuid().split('-')[0];
+          const createdAt = faker.date.between({ from: twoYearsAgo, to: new Date() });
 
-        await tx.productCategory.create({
-          data: { productId: product.id, categoryId: category.id },
-        });
+          const product = await tx.product.create({
+            data: {
+              name,
+              slug,
+              description: buildDescription(name),
+              thumbnail: picsumUrl(`thumb-${slug}`, 480, 600),
+              categoryId: category.id,
+              isActive: faker.datatype.boolean({ probability: 0.9 }),
+              createdAt,
+              updatedAt: createdAt,
+            },
+          });
 
-        await tx.productVariant.createMany({
-          data: variants.map((v) => ({
+          await tx.productCategory.create({
+            data: { productId: product.id, categoryId: category.id },
+          });
+
+          // Generate variants
+          const numColors = faker.number.int({ min: 1, max: 4 });
+          const numSizes = faker.number.int({ min: 2, max: 6 });
+
+          const selectedColors = faker.helpers.arrayElements(colorIds, numColors);
+          const selectedSizes = faker.helpers.arrayElements(sizeIds, numSizes);
+
+          const basePrice = faker.helpers.arrayElement([
+            99000, 149000, 199000, 249000, 299000, 349000, 399000, 499000, 599000, 799000, 999000,
+            1290000, 1590000,
+          ]);
+
+          const variantsData: Prisma.ProductVariantCreateManyInput[] = [];
+          const imagesData: Prisma.ProductImageCreateManyInput[] = [];
+
+          imagesData.push({
             productId: product.id,
-            colorId: v.colorId,
-            sizeId: v.sizeId,
-            sku: v.sku,
-            price: v.price,
-            onHand: v.onHand,
-            reserved: 0,
-            version: 0,
-          })),
-        });
+            colorId: null,
+            url: picsumUrl(`prod-${product.id}-main`, 800, 1000),
+            altText: `${name} - Ảnh chính`,
+            sortOrder: 0,
+            createdAt,
+            updatedAt: createdAt,
+          });
 
-        await tx.productImage.createMany({
-          data: [
-            {
+          let imgOrder = 1;
+
+          for (const colorId of selectedColors) {
+            imagesData.push({
               productId: product.id,
-              colorId: null,
-              url: picsumUrl(imgSeedA, 800, 1000),
-              altText: trunc(`${name} — ảnh 1`, 255),
-              sortOrder: 0,
-            },
-            {
-              productId: product.id,
-              colorId: variants[0]?.colorId ?? null,
-              url: picsumUrl(imgSeedB, 800, 1000),
-              altText: trunc(`${name} — ảnh 2`, 255),
-              sortOrder: 1,
-            },
-          ],
-        });
+              colorId: colorId,
+              url: picsumUrl(`prod-${product.id}-col-${colorId}`, 800, 1000),
+              altText: `${name} - Màu ${COLORS.find((c) => c.name === [...colorByName].find(([, v]) => v === colorId)?.[0])?.name}`,
+              sortOrder: imgOrder++,
+              createdAt,
+              updatedAt: createdAt,
+            });
+
+            for (const sizeId of selectedSizes) {
+              variantsData.push({
+                productId: product.id,
+                colorId,
+                sizeId,
+                sku: `${SEED_SKU_PREFIX}${product.id}-C${colorId}-S${sizeId}-${faker.string.alphanumeric(4).toUpperCase()}`,
+                price: basePrice + sizeId * 5000, // larger sizes slightly more expensive just for variety
+                onHand: faker.number.int({ min: 0, max: 500 }), // highly realistic stock levels
+                reserved: faker.number.int({ min: 0, max: 20 }),
+                version: 0,
+                createdAt,
+                updatedAt: createdAt,
+              });
+            }
+          }
+
+          await tx.productVariant.createMany({ data: variantsData });
+          await tx.productImage.createMany({ data: imagesData });
+          created++;
+        }
       });
-
-      created += 1;
+      console.log(`Created ${created} products...`);
     }
 
-    console.log(
-      `Seed products done: ${created} sản phẩm (slug ${SEED_SLUG_PREFIX}001–${SEED_SLUG_PREFIX}${String(PRODUCT_COUNT).padStart(3, '0')}), biến thể SKU ${SEED_SKU_PREFIX}*.`,
-    );
+    console.log(`Seed products done: ${created} sản phẩm`);
   } finally {
     await prisma.$disconnect();
   }

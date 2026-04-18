@@ -73,6 +73,11 @@ enum AuditLogStatus {
   FAILED
 }
 
+enum ReviewVisibility {
+  VISIBLE
+  HIDDEN
+}
+
 // ─── Customers ───────────────────────────────────────────
 
 model Customer {
@@ -95,6 +100,8 @@ model Customer {
   cart          Cart?
   wishlists     Wishlist[]
   orders        Order[]
+  pageVisits    PageVisit[]
+  productReviews ProductReview[]
 
   @@map("customers")
 }
@@ -340,6 +347,7 @@ model Product {
   variants          ProductVariant[]
   images            ProductImage[]
   wishlists         Wishlist[]
+  reviews           ProductReview[]
 
   @@index([categoryId], map: "idx_products_category")
   @@index([isActive, deletedAt], map: "idx_products_active_deleted")
@@ -406,6 +414,27 @@ model ProductImage {
 
   @@index([productId, colorId], map: "idx_images_product_color")
   @@map("product_images")
+}
+
+model ProductReview {
+  id         Int              @id @default(autoincrement()) @db.UnsignedInt
+  productId  Int              @map("product_id") @db.UnsignedInt
+  customerId Int              @map("customer_id") @db.UnsignedInt
+  rating     Int              @db.UnsignedTinyInt
+  title      String?          @db.VarChar(120)
+  content    String?          @db.VarChar(1000)
+  status     ReviewVisibility @default(VISIBLE)
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt  DateTime         @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([productId, createdAt], map: "idx_product_reviews_product_created")
+  @@index([rating, createdAt], map: "idx_product_reviews_rating_created")
+  @@index([status, createdAt], map: "idx_product_reviews_status_created")
+  @@unique([productId, customerId], map: "uk_product_reviews_product_customer")
+  @@map("product_reviews")
 }
 
 // ─── Carts ──────────────────────────────────────────────
@@ -573,6 +602,28 @@ model StockMovement {
   @@index([orderId], map: "idx_stock_movements_order")
   @@index([employeeId], map: "idx_stock_movements_employee")
   @@map("stock_movements")
+}
+
+// ─── Page visits (shop storefront analytics) ────────────
+
+model PageVisit {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  path       String   @db.VarChar(500)
+  referrer   String?  @db.VarChar(500)
+  userAgent  String?  @map("user_agent") @db.Text
+  device     String?  @db.VarChar(32)
+  os         String?  @db.VarChar(64)
+  browser    String?  @db.VarChar(64)
+  customerId Int?     @map("customer_id") @db.UnsignedInt
+  sessionKey String?  @map("session_key") @db.VarChar(64)
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([createdAt], map: "idx_page_visits_created")
+  @@index([createdAt, device], map: "idx_page_visits_created_device")
+  @@map("page_visits")
 }
 
 // ─── Refresh Tokens ──────────────────────────────────────

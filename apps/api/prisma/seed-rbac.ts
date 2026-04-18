@@ -14,7 +14,6 @@ function crud(
   ];
 }
 
-/** Quyền theo domain — mỗi tài nguyên: create, read, update, delete. */
 const PERMISSIONS: { name: string; description: string }[] = [
   { name: 'audit.read', description: 'Audit log: xem lịch sử thao tác quản trị' },
   ...crud('rbac', {
@@ -65,6 +64,12 @@ const PERMISSIONS: { name: string; description: string }[] = [
     update: 'Cỡ: cập nhật',
     delete: 'Cỡ: xóa',
   }),
+  ...crud('review', {
+    create: 'Đánh giá: tạo',
+    read: 'Đánh giá: xem',
+    update: 'Đánh giá: cập nhật',
+    delete: 'Đánh giá: xóa',
+  }),
 ];
 
 type RoleSeed = {
@@ -92,16 +97,17 @@ const ROLES: RoleSeed[] = [
       'Lên đơn, chăm sóc khách, xử lý theo quy trình cửa hàng; được xem danh mục để tư vấn, không sửa master dữ liệu hàng.',
     permissionNames: PERMISSIONS.filter(
       (p) =>
-        /^(order|customer)\./.test(p.name) || /^(product|category|color|size)\.read$/.test(p.name),
+        /^(order|customer|review)\./.test(p.name) ||
+        /^(product|category|color|size)\.read$/.test(p.name),
     ).map((p) => p.name),
   },
   {
     name: 'Chuyên viên hàng hóa',
     description:
       'Merchandising: giá, ảnh, mô tả, SKU, nhóm màu–size và danh mục; không đụng đến phân quyền.',
-    permissionNames: PERMISSIONS.filter((p) => /^(product|category|color|size)\./.test(p.name)).map(
-      (p) => p.name,
-    ),
+    permissionNames: PERMISSIONS.filter((p) =>
+      /^(product|category|color|size|review)\./.test(p.name),
+    ).map((p) => p.name),
   },
   {
     name: 'Kế toán / kiểm soát',
@@ -129,7 +135,6 @@ export async function seedRbac(): Promise<void> {
   const prisma = new PrismaClient({ adapter });
 
   try {
-    // Remove deprecated attribute permissions from older seeds.
     await prisma.permission.deleteMany({
       where: { name: { startsWith: 'attribute.' } },
     });

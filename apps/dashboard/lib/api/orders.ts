@@ -12,6 +12,7 @@ export type ListAdminOrdersParams = {
   status?: OrderStatus;
   paymentStatus?: PaymentStatus;
   search?: string;
+  customerId?: number;
 };
 
 export type ConfirmOrderShipmentInput = {

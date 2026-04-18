@@ -1,18 +1,18 @@
 import type { ReactNode } from 'react';
 
-import { adminModuleNewPath, adminModulePath } from '@/lib/admin-modules';
+import { adminModulePath } from '@/lib/admin-modules';
 import { dashboardRoutes } from '@/lib/routes';
 import {
   FileClockIcon,
   FolderTreeIcon,
   ImageIcon,
   LayoutDashboardIcon,
+  MessageSquareTextIcon,
   PackageIcon,
   PaletteIcon,
   RulerIcon,
   ShieldIcon,
   ShoppingCartIcon,
-  TruckIcon,
   UserCogIcon,
   UsersIcon,
 } from 'lucide-react';
@@ -92,13 +92,9 @@ export const sidebarSections: SidebarSection[] = [
         icon: <ShoppingCartIcon />,
       },
       {
-        title: 'Vận chuyển',
-        url: adminModulePath('shipping'),
-        icon: <TruckIcon />,
-        items: [
-          { title: 'Danh sách', url: adminModulePath('shipping') },
-          { title: 'Thêm mới', url: adminModuleNewPath('shipping') },
-        ],
+        title: 'Review',
+        url: '/reviews',
+        icon: <MessageSquareTextIcon />,
       },
     ],
   },

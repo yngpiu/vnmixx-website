@@ -1,6 +1,9 @@
+import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import 'dotenv/config';
-import { PrismaClient } from '../generated/prisma/client';
+import { Prisma, PrismaClient } from '../generated/prisma/client';
+
+const MEDIA_COUNT = 500;
 
 export async function seedMedia(): Promise<void> {
   if (!process.env.DATABASE_URL) {
@@ -14,10 +17,13 @@ export async function seedMedia(): Promise<void> {
     const folders = [
       'products',
       'products/summer-2025',
+      'products/summer-2024',
+      'products/winter-2025',
       'products/winter-2024',
       'avatars',
       'banners',
       'blogs',
+      'reviews',
     ];
 
     for (const path of folders) {
@@ -28,43 +34,59 @@ export async function seedMedia(): Promise<void> {
       });
     }
 
-    const employees = await prisma.employee.findMany({ take: 5 });
-    const uploaderId = employees[0]?.id;
+    const employees = await prisma.employee.findMany({ take: 10, select: { id: true } });
+    const uploaderIds = employees.map((e) => e.id);
 
-    const files = [
-      {
-        key: 'products/banner-main.jpg',
-        fileName: 'banner-main.jpg',
-        folder: 'products',
-        mimeType: 'image/jpeg',
-        size: 1024 * 500,
-        width: 1920,
-        height: 1080,
-      },
-      {
-        key: 'banners/sale-off.png',
-        fileName: 'sale-off.png',
-        folder: 'banners',
-        mimeType: 'image/png',
-        size: 1024 * 200,
-        width: 1200,
-        height: 400,
-      },
-    ];
+    faker.seed(444);
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-    for (const file of files) {
-      await prisma.mediaFile.upsert({
-        where: { key: file.key },
-        create: {
-          ...file,
-          uploadedBy: uploaderId,
-        },
-        update: {},
+    const files: Prisma.MediaFileCreateManyInput[] = [];
+
+    for (let i = 0; i < MEDIA_COUNT; i++) {
+      const folder = faker.helpers.arrayElement(folders);
+      const isImage = faker.datatype.boolean({ probability: 0.9 });
+      const extension = isImage
+        ? faker.helpers.arrayElement(['.jpg', '.png', '.webp'])
+        : faker.helpers.arrayElement(['.mp4', '.pdf']);
+      const fileName = `${faker.string.alphanumeric(10)}${extension}`;
+      const key = folder ? `${folder}/${fileName}` : fileName;
+      const mimeType = isImage
+        ? `image/${extension.replace('.', '')}`
+        : extension === '.mp4'
+          ? 'video/mp4'
+          : 'application/pdf';
+
+      files.push({
+        key,
+        fileName,
+        folder,
+        mimeType: mimeType.replace('jpg', 'jpeg'),
+        size: faker.number.int({ min: 1024 * 50, max: 1024 * 5000 }),
+        width: isImage ? faker.helpers.arrayElement([800, 1024, 1200, 1920]) : null,
+        height: isImage ? faker.helpers.arrayElement([600, 800, 1080]) : null,
+        uploadedBy: uploaderIds.length > 0 ? faker.helpers.arrayElement(uploaderIds) : null,
+        createdAt: faker.date.between({ from: twoYearsAgo, to: new Date() }),
       });
     }
 
-    console.log(`Seed media done: ${folders.length} folders and ${files.length} files.`);
+    let created = 0;
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+      const batch = files.slice(i, i + BATCH_SIZE);
+      await prisma.mediaFile.createMany({ data: batch, skipDuplicates: true });
+      created += batch.length;
+    }
+
+    console.log(`Seed media done: ${folders.length} folders and ${created} files.`);
   } finally {
     await prisma.$disconnect();
   }
+}
+
+if (require.main === module) {
+  seedMedia().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }
