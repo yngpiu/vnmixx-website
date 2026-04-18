@@ -13,6 +13,7 @@ import {
 } from '@repo/ui/components/ui/dropdown-menu';
 import type { Row } from '@tanstack/react-table';
 import {
+  ExternalLinkIcon,
   MoreHorizontalIcon,
   RotateCcwIcon,
   ScanEyeIcon,
@@ -20,6 +21,7 @@ import {
   UserRoundCheckIcon,
   UserRoundXIcon,
 } from 'lucide-react';
+import Link from 'next/link';
 
 type CustomersRowActionsProps = {
   row: Row<CustomerListItem>;
@@ -42,12 +44,20 @@ export function CustomersRowActions({ row }: CustomersRowActionsProps) {
       <DropdownMenuContent align="end" className="w-52">
         {isDeleted ? (
           <>
+            <DropdownMenuItem asChild>
+              <Link href={`/customers/${row.original.id}`}>
+                Trang chi tiết
+                <DropdownMenuShortcut>
+                  <ExternalLinkIcon className="size-4" />
+                </DropdownMenuShortcut>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
                 openCustomerDetail(row.original);
               }}
             >
-              Chi tiết
+              Xem nhanh
               <DropdownMenuShortcut>
                 <ScanEyeIcon className="size-4" />
               </DropdownMenuShortcut>
@@ -65,12 +75,20 @@ export function CustomersRowActions({ row }: CustomersRowActionsProps) {
           </>
         ) : (
           <>
+            <DropdownMenuItem asChild>
+              <Link href={`/customers/${row.original.id}`}>
+                Trang chi tiết
+                <DropdownMenuShortcut>
+                  <ExternalLinkIcon className="size-4" />
+                </DropdownMenuShortcut>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
                 openCustomerDetail(row.original);
               }}
             >
-              Chi tiết
+              Xem nhanh
               <DropdownMenuShortcut>
                 <ScanEyeIcon className="size-4" />
               </DropdownMenuShortcut>

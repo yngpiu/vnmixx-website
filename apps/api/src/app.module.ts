@@ -26,6 +26,7 @@ import { R2Module } from './r2/r2.module';
 import { RbacModule } from './rbac/rbac.module';
 import { RedisModule } from './redis/redis.module';
 import { ThrottlerStorageRedis } from './redis/throttler-storage-redis';
+import { ReviewModule } from './review/review.module';
 import { ShippingModule } from './shipping/shipping.module';
 import { SizeModule } from './size/size.module';
 import { WishlistModule } from './wishlist/wishlist.module';
@@ -66,6 +67,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     WishlistModule,
     OrderModule,
     AnalyticsModule,
+    ReviewModule,
     R2Module,
     MediaModule,
   ],

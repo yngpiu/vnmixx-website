@@ -106,4 +106,15 @@ export class ListAdminOrdersQueryDto {
   @IsString({ message: 'Từ khóa tìm kiếm phải là chuỗi ký tự' })
   @IsOptional()
   search?: string;
+
+  @ApiPropertyOptional({
+    example: 15,
+    description: 'Lọc đơn hàng theo khách hàng.',
+    minimum: 1,
+  })
+  @Type(() => Number)
+  @IsInt({ message: 'customerId phải là số nguyên.' })
+  @Min(1, { message: 'customerId phải lớn hơn hoặc bằng 1.' })
+  @IsOptional()
+  customerId?: number;
 }

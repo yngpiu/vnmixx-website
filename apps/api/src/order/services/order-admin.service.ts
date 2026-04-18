@@ -46,6 +46,7 @@ export class OrderAdminService {
       status: query.status as OrderStatus | undefined,
       paymentStatus: query.paymentStatus as PaymentStatus | undefined,
       search: query.search,
+      customerId: query.customerId,
     });
 
     return {

@@ -11,6 +11,7 @@ import { Badge } from '@repo/ui/components/ui/badge';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
+import Link from 'next/link';
 
 const createdAtFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
@@ -67,7 +68,14 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
           </AvatarFallback>
         </Avatar>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <LongText className="max-w-40 font-medium md:max-w-56">{row.original.fullName}</LongText>
+          <LongText className="max-w-40 md:max-w-56">
+            <Link
+              href={`/customers/${row.original.id}`}
+              className="font-medium hover:underline underline-offset-4"
+            >
+              {row.original.fullName}
+            </Link>
+          </LongText>
           {row.original.deletedAt ? (
             <Badge variant="destructive" className="w-fit text-[10px]">
               Đã xóa

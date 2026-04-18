@@ -224,10 +224,12 @@ export class OrderRepository {
     status?: OrderStatus;
     paymentStatus?: PaymentStatus;
     search?: string;
+    customerId?: number;
   }): Promise<{ data: OrderAdminListItemView[]; total: number }> {
     const where: Prisma.OrderWhereInput = {};
     if (params.status) where.status = params.status;
     if (params.paymentStatus) where.paymentStatus = params.paymentStatus;
+    if (params.customerId) where.customerId = params.customerId;
     if (params.search) {
       where.OR = [
         { orderCode: { contains: params.search } },
