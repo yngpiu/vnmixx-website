@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import type { Request } from 'express';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -7,12 +8,33 @@ import {
   type AnalyticsTimeseriesQueryDto,
   type AnalyticsTopCitiesQueryDto,
 } from './dto';
+import { computeMetricDelta, computeNullableRatioDelta } from './kpi-delta.util';
+import { parseUserAgentString } from './user-agent-parse.util';
 
 type UtcRange = { readonly fromUtc: Date; readonly toUtc: Date };
+
+export type AnalyticsKpisRow = {
+  gmv: number;
+  completedRevenue: number;
+  ordersCreatedCount: number;
+  ordersCompletedCount: number;
+  ordersPendingCount: number;
+  ordersInTransitCount: number;
+  cancelledCount: number;
+  returnedCount: number;
+  aovCompleted: number | null;
+};
 
 @Injectable()
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private isMissingTableError(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) {
+      return false;
+    }
+    return 'code' in error && (error as { code?: string }).code === 'P2021';
+  }
 
   private parseUtcRange(dto: AnalyticsDateRangeQueryDto): UtcRange {
     const fromUtc = new Date(`${dto.from}T00:00:00.000Z`);
@@ -42,8 +64,19 @@ export class AnalyticsService {
     return keys;
   }
 
-  async getOverview(dto: AnalyticsDateRangeQueryDto) {
-    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+  private getComparisonPeriod(fromUtc: Date, toUtc: Date): UtcRange {
+    const numDays = this.eachUtcDay(fromUtc, toUtc).length;
+    const startOfFrom = new Date(
+      Date.UTC(fromUtc.getUTCFullYear(), fromUtc.getUTCMonth(), fromUtc.getUTCDate()),
+    );
+    const prevToUtc = new Date(startOfFrom.getTime() - 1);
+    const prevFromUtc = new Date(startOfFrom);
+    prevFromUtc.setUTCDate(prevFromUtc.getUTCDate() - numDays);
+    prevFromUtc.setUTCHours(0, 0, 0, 0);
+    return { fromUtc: prevFromUtc, toUtc: prevToUtc };
+  }
+
+  private async fetchKpisForRange(fromUtc: Date, toUtc: Date): Promise<AnalyticsKpisRow> {
     const createdInPeriod: Prisma.OrderWhereInput = {
       createdAt: { gte: fromUtc, lte: toUtc },
     };
@@ -59,10 +92,6 @@ export class AnalyticsService {
       ordersInTransitCount,
       cancelledCount,
       returnedCount,
-      statusGroups,
-      paymentMethodGroups,
-      paymentStatusGroups,
-      recentOrders,
     ] = await Promise.all([
       this.prisma.order.aggregate({
         where: {
@@ -94,62 +123,133 @@ export class AnalyticsService {
       this.prisma.order.count({
         where: { status: 'RETURNED', ...updatedInPeriod },
       }),
-      this.prisma.order.groupBy({
-        by: ['status'],
-        where: createdInPeriod,
-        _count: { id: true },
-        _sum: { total: true },
-      }),
-      this.prisma.payment.groupBy({
-        by: ['method'],
-        where: { order: createdInPeriod },
-        _count: { id: true },
-      }),
-      this.prisma.order.groupBy({
-        by: ['paymentStatus'],
-        where: createdInPeriod,
-        _count: { id: true },
-      }),
-      this.prisma.order.findMany({
-        where: {
-          ...createdInPeriod,
-          OR: [
-            { status: 'PENDING' },
-            {
-              payments: {
-                some: { method: 'BANK_TRANSFER', status: { not: 'SUCCESS' } },
-              },
-            },
-          ],
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 15,
-        select: {
-          orderCode: true,
-          status: true,
-          paymentStatus: true,
-          total: true,
-          createdAt: true,
-          customer: { select: { fullName: true } },
-        },
-      }),
     ]);
     const gmv = gmvAgg._sum.total ?? 0;
     const completedRevenue = completedAgg._sum.total ?? 0;
     const aovCompleted: number | null =
       ordersCompletedCount > 0 ? Math.round(completedRevenue / ordersCompletedCount) : null;
     return {
+      gmv,
+      completedRevenue,
+      ordersCreatedCount,
+      ordersCompletedCount,
+      ordersPendingCount,
+      ordersInTransitCount,
+      cancelledCount,
+      returnedCount,
+      aovCompleted,
+    };
+  }
+
+  private buildKpiDeltas(current: AnalyticsKpisRow, previous: AnalyticsKpisRow) {
+    const metric = (c: number, p: number, higherIsBetter: boolean) => {
+      const { deltaPercent, trendDirection } = computeMetricDelta(c, p);
+      return { current: c, previous: p, deltaPercent, trendDirection, higherIsBetter };
+    };
+    const aov = computeNullableRatioDelta(current.aovCompleted, previous.aovCompleted);
+    return {
+      gmv: metric(current.gmv, previous.gmv, true),
+      completedRevenue: metric(current.completedRevenue, previous.completedRevenue, true),
+      ordersCreatedCount: metric(current.ordersCreatedCount, previous.ordersCreatedCount, true),
+      ordersCompletedCount: metric(
+        current.ordersCompletedCount,
+        previous.ordersCompletedCount,
+        true,
+      ),
+      ordersPendingCount: metric(current.ordersPendingCount, previous.ordersPendingCount, false),
+      ordersInTransitCount: metric(
+        current.ordersInTransitCount,
+        previous.ordersInTransitCount,
+        true,
+      ),
+      cancelledCount: metric(current.cancelledCount, previous.cancelledCount, false),
+      returnedCount: metric(current.returnedCount, previous.returnedCount, false),
+      aovCompleted: {
+        current: current.aovCompleted,
+        previous: previous.aovCompleted,
+        deltaPercent: aov.deltaPercent,
+        trendDirection: aov.trendDirection,
+        higherIsBetter: true,
+      },
+    };
+  }
+
+  async getKpisWithDelta(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    const { fromUtc: prevFrom, toUtc: prevTo } = this.getComparisonPeriod(fromUtc, toUtc);
+    const [kpis, previousKpis] = await Promise.all([
+      this.fetchKpisForRange(fromUtc, toUtc),
+      this.fetchKpisForRange(prevFrom, prevTo),
+    ]);
+    return {
+      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
+      comparisonPeriod: { from: prevFrom.toISOString(), to: prevTo.toISOString() },
+      kpis,
+      previousKpis,
+      deltas: this.buildKpiDeltas(kpis, previousKpis),
+    };
+  }
+
+  async getOverview(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    const createdInPeriod: Prisma.OrderWhereInput = {
+      createdAt: { gte: fromUtc, lte: toUtc },
+    };
+    const [kpis, statusGroups, paymentMethodGroups, paymentStatusGroups, recentOrders] =
+      await Promise.all([
+        this.fetchKpisForRange(fromUtc, toUtc),
+        this.prisma.order.groupBy({
+          by: ['status'],
+          where: createdInPeriod,
+          _count: { id: true },
+          _sum: { total: true },
+        }),
+        this.prisma.payment.groupBy({
+          by: ['method'],
+          where: { order: createdInPeriod },
+          _count: { id: true },
+        }),
+        this.prisma.order.groupBy({
+          by: ['paymentStatus'],
+          where: createdInPeriod,
+          _count: { id: true },
+        }),
+        this.prisma.order.findMany({
+          where: {
+            ...createdInPeriod,
+            OR: [
+              { status: 'PENDING' },
+              {
+                payments: {
+                  some: { method: 'BANK_TRANSFER', status: { not: 'SUCCESS' } },
+                },
+              },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 15,
+          select: {
+            orderCode: true,
+            status: true,
+            paymentStatus: true,
+            total: true,
+            createdAt: true,
+            customer: { select: { fullName: true } },
+          },
+        }),
+      ]);
+    return {
       period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
       kpis: {
-        gmv,
-        completedRevenue,
-        ordersCreatedCount,
-        ordersCompletedCount,
-        ordersPendingCount,
-        ordersInTransitCount,
-        cancelledCount,
-        returnedCount,
-        aovCompleted,
+        gmv: kpis.gmv,
+        completedRevenue: kpis.completedRevenue,
+        ordersCreatedCount: kpis.ordersCreatedCount,
+        ordersCompletedCount: kpis.ordersCompletedCount,
+        ordersPendingCount: kpis.ordersPendingCount,
+        ordersInTransitCount: kpis.ordersInTransitCount,
+        cancelledCount: kpis.cancelledCount,
+        returnedCount: kpis.returnedCount,
+        aovCompleted: kpis.aovCompleted,
       },
       statusBreakdown: statusGroups.map((row) => ({
         status: row.status,
@@ -172,6 +272,240 @@ export class AnalyticsService {
         createdAt: o.createdAt,
         customerFullName: o.customer.fullName,
       })),
+    };
+  }
+
+  async getStatusBreakdownOnly(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    const createdInPeriod: Prisma.OrderWhereInput = {
+      createdAt: { gte: fromUtc, lte: toUtc },
+    };
+    const statusGroups = await this.prisma.order.groupBy({
+      by: ['status'],
+      where: createdInPeriod,
+      _count: { id: true },
+      _sum: { total: true },
+    });
+    return {
+      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
+      statusBreakdown: statusGroups.map((row) => ({
+        status: row.status,
+        count: row._count.id,
+        gmv: row._sum.total ?? 0,
+      })),
+    };
+  }
+
+  async getPaymentMethodMixOnly(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    const createdInPeriod: Prisma.OrderWhereInput = {
+      createdAt: { gte: fromUtc, lte: toUtc },
+    };
+    const paymentMethodGroups = await this.prisma.payment.groupBy({
+      by: ['method'],
+      where: { order: createdInPeriod },
+      _count: { id: true },
+    });
+    return {
+      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
+      paymentMethodMix: paymentMethodGroups.map((row) => ({
+        method: row.method,
+        orderCount: row._count.id,
+      })),
+    };
+  }
+
+  async getPaymentStatusMixOnly(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    const createdInPeriod: Prisma.OrderWhereInput = {
+      createdAt: { gte: fromUtc, lte: toUtc },
+    };
+    const paymentStatusGroups = await this.prisma.order.groupBy({
+      by: ['paymentStatus'],
+      where: createdInPeriod,
+      _count: { id: true },
+    });
+    return {
+      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
+      paymentStatusMix: paymentStatusGroups.map((row) => ({
+        paymentStatus: row.paymentStatus,
+        count: row._count.id,
+      })),
+    };
+  }
+
+  async getPendingOrdersOnly(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    const createdInPeriod: Prisma.OrderWhereInput = {
+      createdAt: { gte: fromUtc, lte: toUtc },
+    };
+    const recentOrders = await this.prisma.order.findMany({
+      where: {
+        ...createdInPeriod,
+        OR: [
+          { status: 'PENDING' },
+          {
+            payments: {
+              some: { method: 'BANK_TRANSFER', status: { not: 'SUCCESS' } },
+            },
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 15,
+      select: {
+        orderCode: true,
+        status: true,
+        paymentStatus: true,
+        total: true,
+        createdAt: true,
+        customer: { select: { fullName: true } },
+      },
+    });
+    return {
+      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
+      recentOrdersNeedingAction: recentOrders.map((o) => ({
+        orderCode: o.orderCode,
+        status: o.status,
+        paymentStatus: o.paymentStatus,
+        total: o.total,
+        createdAt: o.createdAt,
+        customerFullName: o.customer.fullName,
+      })),
+    };
+  }
+
+  async getTopProducts(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    const rows = await this.prisma.orderItem.groupBy({
+      by: ['productName'],
+      where: {
+        order: {
+          createdAt: { gte: fromUtc, lte: toUtc },
+          status: { notIn: ['CANCELLED', 'RETURNED'] },
+        },
+      },
+      _sum: { quantity: true, subtotal: true },
+      orderBy: { _sum: { subtotal: 'desc' } },
+      take: 10,
+    });
+    const products = rows.map((row) => ({
+      productName: row.productName,
+      unitsSold: row._sum.quantity ?? 0,
+      revenue: row._sum.subtotal ?? 0,
+    }));
+    return {
+      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
+      products,
+      empty: products.length === 0,
+    };
+  }
+
+  async getTrafficDevices(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    let buckets: { device: string | null; visitCount: bigint }[] = [];
+    try {
+      buckets = await this.prisma.$queryRaw<{ device: string | null; visitCount: bigint }[]>(
+        Prisma.sql`
+          SELECT pv.device AS device,
+                 COUNT(*) AS visitCount
+          FROM page_visits pv
+          WHERE pv.created_at >= ${fromUtc}
+            AND pv.created_at <= ${toUtc}
+          GROUP BY pv.device
+        `,
+      );
+    } catch (error) {
+      if (!this.isMissingTableError(error)) {
+        throw error;
+      }
+    }
+    const devices = buckets
+      .map((b) => ({
+        device: b.device ?? 'unknown',
+        visitCount: Number(b.visitCount),
+      }))
+      .sort((a, b) => b.visitCount - a.visitCount);
+    const totalVisits = devices.reduce((s, d) => s + d.visitCount, 0);
+    return {
+      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
+      devices,
+      totalVisits,
+    };
+  }
+
+  async getReviewsSummary(dto: AnalyticsDateRangeQueryDto) {
+    const { fromUtc, toUtc } = this.parseUtcRange(dto);
+    const where: Prisma.ProductReviewWhereInput = {
+      status: 'VISIBLE',
+      createdAt: { gte: fromUtc, lte: toUtc },
+    };
+    let aggregate: { _count: { id: number }; _avg: { rating: number | null } } = {
+      _count: { id: 0 },
+      _avg: { rating: null },
+    };
+    let ratingGroups: Array<{ rating: number; _count: { id: number } }> = [];
+    let latestReview: {
+      title: string | null;
+      content: string | null;
+      rating: number;
+      createdAt: Date;
+      customer: { fullName: string } | null;
+    } | null = null;
+    try {
+      [aggregate, ratingGroups, latestReview] = await Promise.all([
+        this.prisma.productReview.aggregate({
+          where,
+          _count: { id: true },
+          _avg: { rating: true },
+        }),
+        this.prisma.productReview.groupBy({
+          by: ['rating'],
+          where,
+          _count: { id: true },
+        }),
+        this.prisma.productReview.findFirst({
+          where,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            title: true,
+            content: true,
+            rating: true,
+            createdAt: true,
+            customer: { select: { fullName: true } },
+          },
+        }),
+      ]);
+    } catch (error) {
+      if (!this.isMissingTableError(error)) {
+        throw error;
+      }
+    }
+    const ratingMap = new Map<number, number>();
+    for (const row of ratingGroups) {
+      ratingMap.set(row.rating, row._count.id);
+    }
+    const ratingBreakdown = [5, 4, 3, 2, 1].map((rating) => ({
+      rating,
+      count: ratingMap.get(rating) ?? 0,
+    }));
+    const latestReviewDto =
+      latestReview === null
+        ? null
+        : {
+            averageRating: Number(latestReview.rating),
+            title: latestReview.title ?? 'Đánh giá mới nhất',
+            content: latestReview.content ?? 'Người dùng không để lại nhận xét chi tiết.',
+            customerDisplayName: latestReview.customer?.fullName ?? 'Khách ẩn danh',
+            isVerifiedPurchase: true,
+            createdAt: latestReview.createdAt,
+          };
+    return {
+      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
+      averageRating: Math.round((Number(aggregate._avg.rating ?? 0) + Number.EPSILON) * 10) / 10,
+      totalReviews: aggregate._count.id,
+      ratingBreakdown,
+      latestReview: latestReviewDto,
     };
   }
 
@@ -268,5 +602,44 @@ export class AnalyticsService {
         orderCount: row._count.id,
       })),
     };
+  }
+
+  async recordPageVisit(input: {
+    path: string;
+    referrer?: string;
+    sessionKey?: string;
+    userAgentHeader?: string;
+    ipAddress?: string;
+    customerId?: number;
+  }): Promise<void> {
+    const parsed = parseUserAgentString(input.userAgentHeader);
+    const uaStore =
+      input.userAgentHeader && input.userAgentHeader.length > 2000
+        ? `${input.userAgentHeader.slice(0, 1999)}…`
+        : (input.userAgentHeader ?? null);
+    await this.prisma.pageVisit.create({
+      data: {
+        path: input.path,
+        referrer: input.referrer ?? null,
+        userAgent: uaStore,
+        device: parsed.device,
+        os: parsed.os,
+        browser: parsed.browser,
+        sessionKey: input.sessionKey ?? null,
+        ipAddress: input.ipAddress ?? null,
+        customerId: input.customerId ?? null,
+      },
+    });
+  }
+
+  extractClientIp(request: Request): string | undefined {
+    const xForwardedFor = request.headers['x-forwarded-for'];
+    if (typeof xForwardedFor === 'string') {
+      return xForwardedFor.split(',')[0]?.trim();
+    }
+    if (Array.isArray(xForwardedFor) && xForwardedFor.length > 0) {
+      return xForwardedFor[0]?.trim();
+    }
+    return request.ip;
   }
 }

@@ -74,3 +74,140 @@ export interface AnalyticsTopShippingCitiesResponse {
   period: AnalyticsPeriod;
   cities: AnalyticsTopCityItem[];
 }
+
+export type TrendDirection = 'up' | 'down' | 'flat';
+
+export interface MetricDelta {
+  current: number;
+  previous: number;
+  deltaPercent: number | null;
+  trendDirection: TrendDirection;
+  higherIsBetter: boolean;
+}
+
+export interface NullableMetricDelta {
+  current: number | null;
+  previous: number | null;
+  deltaPercent: number | null;
+  trendDirection: TrendDirection;
+  higherIsBetter: boolean;
+}
+
+export interface AnalyticsKpiDeltas {
+  gmv: MetricDelta;
+  completedRevenue: MetricDelta;
+  ordersCreatedCount: MetricDelta;
+  ordersCompletedCount: MetricDelta;
+  ordersPendingCount: MetricDelta;
+  ordersInTransitCount: MetricDelta;
+  cancelledCount: MetricDelta;
+  returnedCount: MetricDelta;
+  aovCompleted: NullableMetricDelta;
+}
+
+export interface AnalyticsKpisWithDeltaResponse {
+  period: AnalyticsPeriod;
+  comparisonPeriod: AnalyticsPeriod;
+  kpis: AnalyticsKpis;
+  previousKpis: AnalyticsKpis;
+  deltas: AnalyticsKpiDeltas;
+}
+
+export interface AnalyticsStatusBreakdownOnlyResponse {
+  period: AnalyticsPeriod;
+  statusBreakdown: AnalyticsStatusBreakdownItem[];
+}
+
+export interface AnalyticsPaymentMethodMixOnlyResponse {
+  period: AnalyticsPeriod;
+  paymentMethodMix: AnalyticsPaymentMethodMixItem[];
+}
+
+export interface AnalyticsPaymentStatusMixOnlyResponse {
+  period: AnalyticsPeriod;
+  paymentStatusMix: AnalyticsPaymentStatusMixItem[];
+}
+
+export interface AnalyticsPendingOrdersOnlyResponse {
+  period: AnalyticsPeriod;
+  recentOrdersNeedingAction: AnalyticsRecentOrderNeedingAction[];
+}
+
+export interface AnalyticsTopProductItem {
+  productName: string;
+  unitsSold: number;
+  revenue: number;
+}
+
+export interface AnalyticsTopProductsResponse {
+  period: AnalyticsPeriod;
+  products: AnalyticsTopProductItem[];
+  empty: boolean;
+}
+
+export interface AnalyticsTrafficDeviceBucket {
+  device: string;
+  visitCount: number;
+}
+
+export interface AnalyticsTrafficDevicesResponse {
+  period: AnalyticsPeriod;
+  devices: AnalyticsTrafficDeviceBucket[];
+  totalVisits: number;
+}
+
+export interface AnalyticsReviewRatingBucket {
+  rating: number;
+  count: number;
+}
+
+export interface AnalyticsLatestReview {
+  averageRating: number;
+  title: string;
+  content: string;
+  customerDisplayName: string;
+  isVerifiedPurchase: boolean;
+  createdAt: string;
+}
+
+export interface AnalyticsReviewsSummaryResponse {
+  period: AnalyticsPeriod;
+  averageRating: number;
+  totalReviews: number;
+  ratingBreakdown: AnalyticsReviewRatingBucket[];
+  latestReview: AnalyticsLatestReview | null;
+}
+
+export interface AdminReviewListItem {
+  id: number;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  status: 'VISIBLE' | 'HIDDEN';
+  productName: string;
+  customerName: string | null;
+  createdAt: string;
+}
+
+export interface AdminReviewsListResponse {
+  items: AdminReviewListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface AdminReviewDetailResponse {
+  id: number;
+  productId: number;
+  customerId: number | null;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  status: 'VISIBLE' | 'HIDDEN';
+  productName: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

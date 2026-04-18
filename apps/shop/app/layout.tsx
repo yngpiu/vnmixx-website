@@ -1,6 +1,8 @@
+import { PageVisitTracker } from '@/components/page-visit-tracker';
 import '@repo/ui/globals.css';
 import { montserrat } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'VNMIXX - Shop',
@@ -13,10 +15,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={montserrat.className}>{children}</body>
+      <body className={montserrat.className}>
+        <Suspense fallback={null}>
+          <PageVisitTracker />
+        </Suspense>
+        {children}
+      </body>
     </html>
   );
 }
