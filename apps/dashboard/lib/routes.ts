@@ -14,6 +14,7 @@ export type DashboardBreadcrumbItem = {
 export const dashboardRoutes = {
   root: '/',
   analytics: '/analytics',
+  settings: '/settings',
 } as const;
 
 export function moduleListPath(slug: AdminModuleSlug): string {
@@ -38,6 +39,9 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
   }
   if (path === dashboardRoutes.analytics) {
     return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Phân tích' }];
+  }
+  if (path === dashboardRoutes.settings) {
+    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Cài đặt cá nhân' }];
   }
   const orderDetailMatch = /^\/orders\/([^/]+)\/?$/.exec(path);
   const orderCodeSeg = orderDetailMatch?.[1];

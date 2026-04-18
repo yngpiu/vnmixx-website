@@ -8,9 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { InputGroup, InputGroupAddon } from '@repo/ui/components/ui/input-group';
+import { InputGroup, InputGroupAddon, InputGroupButton } from '@repo/ui/components/ui/input-group';
 import { cn } from '@repo/ui/lib/utils';
-import { CheckIcon, SearchIcon } from 'lucide-react';
+import { CheckIcon, SearchIcon, XIcon } from 'lucide-react';
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
@@ -56,22 +56,44 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  trailingClose = false,
+  onTrailingClose,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  /** Close control on the trailing edge (e.g. command palette header). */
+  readonly trailingClose?: boolean;
+  readonly onTrailingClose?: () => void;
+}) {
+  const showTrailing = trailingClose && typeof onTrailingClose === 'function';
   return (
-    <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
+    <div data-slot="command-input-wrapper" className="border-b border-border px-2 py-2.5">
+      <InputGroup className="h-9! rounded-lg! border-input/30 bg-input/30 shadow-none!">
+        <InputGroupAddon align="inline-start">
+          <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden />
+        </InputGroupAddon>
         <CommandPrimitive.Input
           data-slot="command-input"
           className={cn(
-            'w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
+            'min-w-0 flex-1 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
             className,
           )}
           {...props}
         />
-        <InputGroupAddon>
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
-        </InputGroupAddon>
+        {showTrailing ? (
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              size="icon-xs"
+              type="button"
+              aria-label="Đóng"
+              onClick={(event) => {
+                event.stopPropagation();
+                onTrailingClose();
+              }}
+            >
+              <XIcon className="size-4 opacity-70" />
+            </InputGroupButton>
+          </InputGroupAddon>
+        ) : null}
       </InputGroup>
     </div>
   );
@@ -135,19 +157,25 @@ function CommandSeparator({
 function CommandItem({
   className,
   children,
+  showSelectionIndicator = true,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Item>) {
+}: React.ComponentProps<typeof CommandPrimitive.Item> & {
+  /** When false, hides the trailing check (navigation-style list items). */
+  readonly showSelectionIndicator?: boolean;
+}) {
   return (
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-selected:bg-muted data-selected:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-selected:*:[svg]:text-foreground",
+        "group/command-item relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none in-data-[slot=dialog-content]:rounded-lg! data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent/70 data-[selected=true]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[selected=true]:*:[svg]:text-accent-foreground",
         className,
       )}
       {...props}
     >
       {children}
-      <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+      {showSelectionIndicator ? (
+        <CheckIcon className="ml-auto opacity-0 group-has-data-[slot=command-shortcut]/command-item:hidden group-data-[checked=true]/command-item:opacity-100" />
+      ) : null}
     </CommandPrimitive.Item>
   );
 }

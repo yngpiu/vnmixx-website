@@ -2,6 +2,7 @@ import { AppChrome } from '@/components/app-chrome';
 import { COOKIE_ACCESS_TOKEN } from '@/lib/constants';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
+import { ThemeProvider } from '@/providers/theme-provider';
 import { DashboardTooltipProvider } from '@/providers/tooltip-provider';
 import '@repo/ui/globals.css';
 import { inter } from '@repo/ui/lib/fonts';
@@ -28,14 +29,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <DashboardTooltipProvider>
-          <QueryProvider>
-            <AuthProvider accessToken={accessToken}>
-              <AppChrome>{children}</AppChrome>
-              <Toaster richColors closeButton position="top-center" />
-            </AuthProvider>
-          </QueryProvider>
-        </DashboardTooltipProvider>
+        <ThemeProvider>
+          <DashboardTooltipProvider>
+            <QueryProvider>
+              <AuthProvider accessToken={accessToken}>
+                <AppChrome>{children}</AppChrome>
+                <Toaster richColors closeButton position="top-center" />
+              </AuthProvider>
+            </QueryProvider>
+          </DashboardTooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

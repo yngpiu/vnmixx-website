@@ -1,6 +1,7 @@
 'use client';
 
 import { useLogout } from '@/hooks/use-auth';
+import { dashboardRoutes } from '@/lib/routes';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import {
   DropdownMenu,
@@ -16,7 +17,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@repo/ui/components/ui/sidebar';
-import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react';
+import { ChevronsUpDownIcon, LogOutIcon, SettingsIcon } from 'lucide-react';
+import Link from 'next/link';
 
 export function NavUser({
   user,
@@ -84,6 +86,12 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href={dashboardRoutes.settings}>
+                <SettingsIcon />
+                Cài đặt cá nhân
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               disabled={logout.isPending}
               onSelect={() => {
