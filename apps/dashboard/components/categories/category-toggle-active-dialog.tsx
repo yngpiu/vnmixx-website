@@ -12,24 +12,13 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 
-function countDescendants(node: CategoryAdminTreeNode): number {
-  let total = 0;
-  const stack = [...node.children];
-  while (stack.length) {
-    const n = stack.pop()!;
-    total += 1;
-    stack.push(...n.children);
-  }
-  return total;
-}
-
-type CategoryToggleActiveDialogProps = {
+interface CategoryToggleActiveDialogProps {
   category: CategoryAdminTreeNode | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isPending: boolean;
   onConfirm: () => void;
-};
+}
 
 export function CategoryToggleActiveDialog({
   category,
