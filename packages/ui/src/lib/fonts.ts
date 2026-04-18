@@ -1,4 +1,10 @@
-import { Inter, Montserrat } from 'next/font/google';
+import { Be_Vietnam_Pro, Inter, Montserrat } from 'next/font/google';
+
+export const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+});
 
 export const inter = Inter({
   subsets: ['latin'],

@@ -190,10 +190,10 @@ export function DataTableToolbar<TData>({
               table.resetColumnFilters();
               table.setGlobalFilter('');
             }}
-            className="h-8 px-2 lg:px-3"
+            className="h-8 gap-1.5 px-2 lg:px-3"
           >
+            <XIcon className="size-4" />
             Đặt lại
-            <XIcon className="ms-2 size-4" />
           </Button>
         ) : null}
       </div>

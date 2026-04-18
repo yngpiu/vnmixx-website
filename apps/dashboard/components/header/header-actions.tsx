@@ -32,12 +32,6 @@ function getAvatarFallback(name: string): string {
   );
 }
 
-function getThemeLabel(theme: ThemeMode): string {
-  if (theme === 'light') return 'Sáng';
-  if (theme === 'dark') return 'Tối';
-  return 'Hệ thống';
-}
-
 export function HeaderActions() {
   const logout = useLogout();
   const user = useAuthStore((state) => state.user);
@@ -68,8 +62,6 @@ export function HeaderActions() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel>Giao diện: {getThemeLabel(theme)}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
           <DropdownMenuRadioGroup
             value={theme}
             onValueChange={(value) => setTheme(value as ThemeMode)}

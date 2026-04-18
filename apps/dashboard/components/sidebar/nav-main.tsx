@@ -38,7 +38,7 @@ export function NavMain({
   groupLabelClassName,
 }: {
   groupLabel?: string;
-  /** Gắn thêm class cho nhãn nhóm (vd. Catalog to hơn). */
+  /** Gắn thêm class cho nhãn nhóm (tuỳ chỉnh giao diện). */
   groupLabelClassName?: string;
   items: SidebarNavItem[];
 }) {

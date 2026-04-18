@@ -1,5 +1,6 @@
 'use client';
 
+import { DashboardLogo } from '@/components/brand/dashboard-logo';
 import { useLogin } from '@/hooks/use-auth';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
@@ -19,7 +20,6 @@ import {
 } from '@repo/ui/components/ui/input-group';
 import { cn } from '@repo/ui/lib/utils';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
-import Image from 'next/image';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -72,15 +72,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
       <Card>
         <CardHeader>
           <CardTitle>
-            <Image
-              src="/images/logo.png"
-              alt="Logo"
-              width={150}
-              height={150}
-              priority
-              style={{ width: 'auto', height: 'auto' }}
-              className="mb-4"
-            />
+            <DashboardLogo width={150} height={150} priority imageClassName="mb-4 max-h-36" />
             Đăng nhập vào hệ thống quản lý
           </CardTitle>
         </CardHeader>

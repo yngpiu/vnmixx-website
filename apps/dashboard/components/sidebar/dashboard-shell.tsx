@@ -11,15 +11,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/60 px-4">
-          <div className="flex shrink-0 items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
+        <header className="flex h-14 shrink-0 items-center gap-1.5 border-b border-border/60 px-2.5 sm:px-3">
+          <div className="flex shrink-0 items-center gap-1.5">
+            <SidebarTrigger className="-ml-0.5 sm:-ml-1" />
             <Separator
               orientation="vertical"
-              className="mr-2 data-vertical:h-4 data-vertical:self-auto"
+              className="mr-1.5 sm:mr-2 data-vertical:h-4 data-vertical:self-auto"
             />
           </div>
-          <div className="min-w-0 flex-1 px-2">
+          <div className="min-w-0 flex-1 px-1 sm:px-1.5">
             <DashboardSearchCommand className="mx-auto" />
           </div>
           <HeaderActions />

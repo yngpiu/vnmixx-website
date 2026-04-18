@@ -1,7 +1,7 @@
 import { ReviewsManagementView } from '@/components/reviews/reviews-management-view';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Review · Vnmixx' };
+export const metadata: Metadata = { title: 'Đánh giá · Vnmixx' };
 
 export default function ReviewsPage(): React.JSX.Element {
   return (

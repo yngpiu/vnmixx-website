@@ -276,7 +276,7 @@ export function OverviewDashboard(): React.JSX.Element {
         </Card>
         <Card className={shellCardClassName()}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Customer Reviews</CardTitle>
+            <CardTitle className="text-base">Đánh giá khách hàng</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-0">
             <div className="flex items-center gap-3">

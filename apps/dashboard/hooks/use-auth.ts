@@ -1,4 +1,5 @@
 import { loginAction, logoutAction } from '@/actions/auth';
+import { dashboardRoutes } from '@/lib/routes';
 import { useAuthStore } from '@/stores/auth-store';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -23,7 +24,7 @@ export function useLogin() {
       // Server Action đã set cookie; refresh để RootLayout đọc lại token trước khi chuyển trang
       // (tránh AuthProvider vẫn nhận accessToken=null và clearSession xoá phiên vừa tạo).
       router.refresh();
-      router.push('/');
+      router.push(dashboardRoutes.overview);
     },
   });
 }

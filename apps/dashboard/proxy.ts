@@ -64,7 +64,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   // ── Valid access token ─────────────────────────────────────
   if (hasValidAccess) {
     if (isPublicPath) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     return NextResponse.next();
   }
@@ -73,7 +73,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     const result = await tryRefresh(refreshToken);
     if (result) {
       const destination = isPublicPath
-        ? NextResponse.redirect(new URL('/', request.url))
+        ? NextResponse.redirect(new URL('/dashboard', request.url))
         : NextResponse.next();
       destination.cookies.set(COOKIE_ACCESS_TOKEN, result.accessToken, {
         httpOnly: false,

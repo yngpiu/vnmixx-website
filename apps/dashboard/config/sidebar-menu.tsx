@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { adminModulePath } from '@/lib/admin-modules';
 import { dashboardRoutes } from '@/lib/routes';
 import {
+  BarChart3Icon,
   FileClockIcon,
   FolderTreeIcon,
   ImageIcon,
@@ -38,31 +39,29 @@ export type SidebarSection = {
   items: SidebarNavItem[];
 };
 
-const dashboardItem: SidebarNavItem = {
-  title: 'Dashboard',
-  url: dashboardRoutes.root,
-  icon: <LayoutDashboardIcon />,
-  items: [
-    { title: 'Tổng quan', url: dashboardRoutes.root },
-    { title: 'Phân tích', url: dashboardRoutes.analytics },
-  ],
-};
+const dashboardItems: SidebarNavItem[] = [
+  {
+    title: 'Tổng quan',
+    url: dashboardRoutes.overview,
+    icon: <LayoutDashboardIcon />,
+  },
+  {
+    title: 'Phân tích',
+    url: dashboardRoutes.analytics,
+    icon: <BarChart3Icon />,
+  },
+];
 
 const catalogItems: SidebarNavItem[] = [
-  {
-    title: 'Sản phẩm',
-    url: adminModulePath('products'),
-    icon: <PackageIcon />,
-  },
   {
     title: 'Danh mục',
     url: adminModulePath('categories'),
     icon: <FolderTreeIcon />,
   },
   {
-    title: 'Thư viện ảnh',
-    url: '/media',
-    icon: <ImageIcon />,
+    title: 'Sản phẩm',
+    url: adminModulePath('products'),
+    icon: <PackageIcon />,
   },
   {
     title: 'Màu sắc',
@@ -74,13 +73,26 @@ const catalogItems: SidebarNavItem[] = [
     url: adminModulePath('sizes'),
     icon: <RulerIcon />,
   },
+  {
+    title: 'Thư viện ảnh',
+    url: '/media',
+    icon: <ImageIcon />,
+  },
+];
+
+const systemItems: SidebarNavItem[] = [
+  {
+    title: 'Nhật ký hệ thống',
+    url: '/audit-logs',
+    icon: <FileClockIcon />,
+  },
 ];
 
 export const sidebarSections: SidebarSection[] = [
   {
-    id: 'overview',
-    groupLabel: 'Tổng quan',
-    items: [dashboardItem],
+    id: 'stats',
+    groupLabel: 'Thống kê',
+    items: dashboardItems,
   },
   {
     id: 'commerce',
@@ -92,7 +104,7 @@ export const sidebarSections: SidebarSection[] = [
         icon: <ShoppingCartIcon />,
       },
       {
-        title: 'Review',
+        title: 'Đánh giá',
         url: '/reviews',
         icon: <MessageSquareTextIcon />,
       },
@@ -117,17 +129,16 @@ export const sidebarSections: SidebarSection[] = [
         url: adminModulePath('roles'),
         icon: <ShieldIcon />,
       },
-      {
-        title: 'Audit log',
-        url: '/audit-logs',
-        icon: <FileClockIcon />,
-      },
     ],
   },
   {
     id: 'catalog',
-    groupLabel: 'Catalog',
-    groupLabelClassName: 'text-sm font-semibold text-sidebar-foreground',
+    groupLabel: 'Sản phẩm',
     items: catalogItems,
+  },
+  {
+    id: 'system',
+    groupLabel: 'Hệ thống',
+    items: systemItems,
   },
 ];

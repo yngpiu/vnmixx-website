@@ -10,9 +10,9 @@ export function ColorsPrimaryButtons() {
 
   return (
     <>
-      <Button type="button" className="gap-1.5" onClick={() => setOpen(true)}>
-        <span>Thêm màu</span>
+      <Button type="button" size="lg" onClick={() => setOpen(true)}>
         <PaletteIcon className="size-4" />
+        <span>Thêm màu</span>
       </Button>
       <CreateColorDialog open={open} onOpenChange={setOpen} />
     </>

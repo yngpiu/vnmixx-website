@@ -1,13 +1,6 @@
-import { AnalyticsShell } from '@/components/analytics/analytics-shell';
-import { OverviewDashboard } from '@/components/dashboard/overview-dashboard';
-import type { Metadata } from 'next';
+import { dashboardRoutes } from '@/lib/routes';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Tổng quan · Vnmixx' };
-
-export default function OverviewPage(): React.JSX.Element {
-  return (
-    <AnalyticsShell title="Tổng quan" description="" showExport>
-      <OverviewDashboard />
-    </AnalyticsShell>
-  );
+export default function RootRedirectPage(): never {
+  redirect(dashboardRoutes.overview);
 }

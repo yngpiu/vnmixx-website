@@ -10,9 +10,9 @@ export function RolesPrimaryButtons() {
 
   return (
     <>
-      <Button type="button" className="gap-1.5" onClick={() => setCreateOpen(true)}>
-        <span>Thêm vai trò</span>
+      <Button type="button" size="lg" onClick={() => setCreateOpen(true)}>
         <ShieldPlusIcon className="size-4" />
+        <span>Thêm vai trò</span>
       </Button>
       <CreateRoleDialog open={createOpen} onOpenChange={setCreateOpen} />
     </>

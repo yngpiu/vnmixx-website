@@ -12,7 +12,7 @@ export function ProductsView() {
     <ListPage
       title="Sản phẩm"
       actions={
-        <Button type="button" className="gap-2" asChild>
+        <Button type="button" size="lg" asChild>
           <Link href={adminModuleNewPath('products')}>
             <PlusIcon className="size-4" />
             Thêm sản phẩm

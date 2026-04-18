@@ -11,9 +11,9 @@ export function EmployeesPrimaryButtons() {
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" className="gap-1.5" onClick={() => setCreateOpen(true)}>
-          <span>Thêm nhân viên</span>
+        <Button type="button" size="lg" onClick={() => setCreateOpen(true)}>
           <UserPlusIcon className="size-4" />
+          <span>Thêm nhân viên</span>
         </Button>
       </div>
       <CreateEmployeeDialog open={createOpen} onOpenChange={setCreateOpen} />

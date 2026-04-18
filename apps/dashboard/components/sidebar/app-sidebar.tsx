@@ -3,6 +3,7 @@
 import type { ComponentProps } from 'react';
 import { Fragment } from 'react';
 
+import { DashboardLogo } from '@/components/brand/dashboard-logo';
 import { NavMain } from '@/components/sidebar/nav-main';
 import { sidebarSections } from '@/config/sidebar-menu';
 import { dashboardRoutes } from '@/lib/routes';
@@ -15,7 +16,6 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '@repo/ui/components/ui/sidebar';
-import Image from 'next/image';
 import Link from 'next/link';
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
@@ -25,16 +25,12 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" className="min-h-10 py-1.5" asChild>
-              <Link href={dashboardRoutes.root} title="VNMIXX" className="overflow-hidden">
-                <Image
-                  src="/images/logo.png"
-                  alt="VNMIXX"
+              <Link href={dashboardRoutes.overview} title="VNMIXX" className="overflow-hidden">
+                <DashboardLogo
                   width={120}
                   height={32}
                   priority
-                  unoptimized
-                  style={{ width: 'auto' }}
-                  className="h-6 w-auto max-w-[min(100%,7.5rem)] shrink-0 object-contain object-left transition-[max-width] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:max-h-5 group-data-[collapsible=icon]:max-w-5 group-data-[collapsible=icon]:object-center"
+                  imageClassName="max-h-6 max-w-[min(100%,7.5rem)] shrink-0 object-left transition-[max-width] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:max-h-5 group-data-[collapsible=icon]:max-w-5 group-data-[collapsible=icon]:object-center"
                 />
               </Link>
             </SidebarMenuButton>

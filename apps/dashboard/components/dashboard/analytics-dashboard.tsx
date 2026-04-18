@@ -277,7 +277,7 @@ export function AnalyticsDashboard(): React.JSX.Element {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Customer Reviews</CardTitle>
+          <CardTitle className="text-base">Đánh giá khách hàng</CardTitle>
           <CardDescription>Đánh giá công khai theo kỳ đã chọn</CardDescription>
         </CardHeader>
         <CardContent>
@@ -286,9 +286,9 @@ export function AnalyticsDashboard(): React.JSX.Element {
               <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
             </div>
           ) : reviewsQuery.isError ? (
-            <p className="text-sm text-destructive">Không tải được review summary.</p>
+            <p className="text-sm text-destructive">Không tải được tóm tắt đánh giá.</p>
           ) : reviewsQuery.data!.totalReviews === 0 ? (
-            <p className="text-sm text-muted-foreground">Chưa có review công khai trong kỳ.</p>
+            <p className="text-sm text-muted-foreground">Chưa có đánh giá công khai trong kỳ.</p>
           ) : (
             <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
               <div className="rounded-lg border p-4">
@@ -297,7 +297,7 @@ export function AnalyticsDashboard(): React.JSX.Element {
                   {reviewsQuery.data!.averageRating}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {reviewsQuery.data!.totalReviews} reviews
+                  {reviewsQuery.data!.totalReviews} đánh giá
                 </p>
               </div>
               <div className="space-y-2">

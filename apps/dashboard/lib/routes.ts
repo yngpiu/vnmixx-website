@@ -12,7 +12,10 @@ export type DashboardBreadcrumbItem = {
 
 /** Đường dẫn dashboard (không dùng prefix `/home`). */
 export const dashboardRoutes = {
+  /** Lối vào `/`; redirect sang `overview`. */
   root: '/',
+  /** Tổng quan (thống kê). */
+  overview: '/dashboard',
   analytics: '/analytics',
   reviews: '/reviews',
   settings: '/settings',
@@ -35,39 +38,42 @@ export function dashboardBreadcrumbPageTitle(pathname: string): string {
 
 export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[] {
   const path = pathname === '' ? '/' : pathname;
+  if (path === dashboardRoutes.overview) {
+    return [{ label: 'Tổng quan' }];
+  }
   if (path === '/' || path === dashboardRoutes.root) {
-    return [{ label: 'Trang chủ' }];
+    return [{ label: 'Tổng quan', href: dashboardRoutes.overview }];
   }
   if (path === dashboardRoutes.analytics) {
-    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Phân tích' }];
+    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Phân tích' }];
   }
   if (path === dashboardRoutes.reviews) {
-    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Review' }];
+    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Đánh giá' }];
   }
   if (path === dashboardRoutes.settings) {
-    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Cài đặt cá nhân' }];
+    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Cài đặt cá nhân' }];
   }
   const orderDetailMatch = /^\/orders\/([^/]+)\/?$/.exec(path);
   const orderCodeSeg = orderDetailMatch?.[1];
   if (orderCodeSeg && orderCodeSeg !== 'new') {
     return [
-      { label: 'Trang chủ', href: dashboardRoutes.root },
+      { label: 'Trang chủ', href: dashboardRoutes.overview },
       { label: 'Đơn hàng', href: '/orders' },
       { label: orderCodeSeg },
     ];
   }
   if (path === '/media') {
-    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Thư viện ảnh' }];
+    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Thư viện ảnh' }];
   }
   if (path === '/audit-logs') {
-    return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Audit log' }];
+    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Nhật ký hệ thống' }];
   }
   const newMatch = /^\/([^/]+)\/new\/?$/.exec(path);
   const newSlug = newMatch?.[1];
   if (newSlug && isAdminModuleSlug(newSlug)) {
     const adminModule = ADMIN_MODULES[newSlug];
     return [
-      { label: 'Trang chủ', href: dashboardRoutes.root },
+      { label: 'Trang chủ', href: dashboardRoutes.overview },
       { label: adminModule.title, href: `/${newSlug}` },
       { label: 'Thêm mới' },
     ];
@@ -77,7 +83,7 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
   if (editSlug && isAdminModuleSlug(editSlug)) {
     const adminModule = ADMIN_MODULES[editSlug];
     return [
-      { label: 'Trang chủ', href: dashboardRoutes.root },
+      { label: 'Trang chủ', href: dashboardRoutes.overview },
       { label: adminModule.title, href: `/${editSlug}` },
       { label: 'Chỉnh sửa' },
     ];
@@ -88,7 +94,7 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
   if (detailSlug && detailId && isAdminModuleSlug(detailSlug) && detailId !== 'new') {
     const adminModule = ADMIN_MODULES[detailSlug];
     return [
-      { label: 'Trang chủ', href: dashboardRoutes.root },
+      { label: 'Trang chủ', href: dashboardRoutes.overview },
       { label: adminModule.title, href: `/${detailSlug}` },
       { label: 'Chi tiết' },
     ];
@@ -98,8 +104,8 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
   if (listSlug && isAdminModuleSlug(listSlug)) {
     const adminModule = getAdminModule(listSlug);
     if (adminModule) {
-      return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: adminModule.title }];
+      return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: adminModule.title }];
     }
   }
-  return [{ label: 'Trang chủ', href: dashboardRoutes.root }, { label: 'Trang' }];
+  return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Trang' }];
 }

@@ -32,7 +32,7 @@ export function CategoriesView() {
       <ListPage
         title="Danh mục"
         actions={
-          <Button type="button" className="shrink-0 gap-2 self-start" onClick={openCreateRoot}>
+          <Button type="button" size="lg" className="shrink-0 self-start" onClick={openCreateRoot}>
             <PlusIcon className="size-4" />
             Tạo danh mục
           </Button>

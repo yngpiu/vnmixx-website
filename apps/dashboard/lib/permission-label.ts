@@ -17,6 +17,7 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   color: 'Màu sắc',
   size: 'Kích cỡ',
   media: 'Thư viện ảnh',
+  review: 'Đánh giá',
 };
 
 /**

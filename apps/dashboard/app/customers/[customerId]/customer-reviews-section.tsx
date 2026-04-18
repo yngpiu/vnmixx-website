@@ -131,7 +131,7 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
     mutationFn: ({ reviewId, status }: { reviewId: number; status: 'VISIBLE' | 'HIDDEN' }) =>
       updateAdminReviewStatus(reviewId, status),
     onSuccess: async (_, variables) => {
-      toast.success(variables.status === 'VISIBLE' ? 'Đã hiện review.' : 'Đã ẩn review.');
+      toast.success(variables.status === 'VISIBLE' ? 'Đã hiện đánh giá.' : 'Đã ẩn đánh giá.');
       await refreshList();
     },
     onError: (error) => toast.error(apiErrorMessage(error)),
@@ -139,7 +139,7 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
   const deleteMutation = useMutation({
     mutationFn: (reviewId: number) => deleteAdminReview(reviewId),
     onSuccess: async () => {
-      toast.success('Đã xóa review.');
+      toast.success('Đã xóa đánh giá.');
       await refreshList();
     },
     onError: (error) => toast.error(apiErrorMessage(error)),
@@ -150,7 +150,12 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8" aria-label="Mở thao tác review">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              aria-label="Mở thao tác đánh giá"
+            >
               <MoreHorizontalIcon className="size-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -184,7 +189,7 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
               className="text-destructive focus:text-destructive"
               disabled={isMutating}
               onSelect={() => {
-                if (window.confirm('Bạn chắc chắn muốn xóa review này?')) {
+                if (window.confirm('Bạn chắc chắn muốn xóa đánh giá này?')) {
                   deleteMutation.mutate(review.id);
                 }
               }}
@@ -328,7 +333,7 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
                 <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                   <span className="inline-flex items-center gap-2">
                     <Loader2Icon className="size-4 animate-spin" />
-                    Đang tải review...
+                    Đang tải đánh giá...
                   </span>
                 </TableCell>
               </TableRow>
@@ -341,7 +346,7 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                  Không có review phù hợp.
+                  Không có đánh giá phù hợp.
                 </TableCell>
               </TableRow>
             ) : (
@@ -365,7 +370,7 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
       >
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Chi tiết review</DialogTitle>
+            <DialogTitle>Chi tiết đánh giá</DialogTitle>
             <DialogDescription>Thông tin đầy đủ của đánh giá khách hàng.</DialogDescription>
           </DialogHeader>
           {detailQuery.isLoading ? (
@@ -377,7 +382,7 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
           ) : detailQuery.data ? (
             <div className="space-y-3 text-sm">
               <p>
-                <strong>Review ID:</strong> #{detailQuery.data.id}
+                <strong>Mã đánh giá:</strong> #{detailQuery.data.id}
               </p>
               <p>
                 <strong>Sản phẩm:</strong> {detailQuery.data.productName} (#

@@ -10,9 +10,9 @@ export function SizesPrimaryButtons() {
 
   return (
     <>
-      <Button type="button" className="gap-1.5" onClick={() => setOpen(true)}>
-        <span>Thêm kích cỡ</span>
+      <Button type="button" size="lg" onClick={() => setOpen(true)}>
         <RulerIcon className="size-4" />
+        <span>Thêm kích cỡ</span>
       </Button>
       <CreateSizeDialog open={open} onOpenChange={setOpen} />
     </>
