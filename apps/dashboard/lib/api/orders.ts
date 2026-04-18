@@ -14,6 +14,13 @@ export type ListAdminOrdersParams = {
   search?: string;
 };
 
+export type ConfirmOrderShipmentInput = {
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
+};
+
 export async function listAdminOrders(
   params: ListAdminOrdersParams = {},
 ): Promise<OrderAdminListResponse> {
@@ -28,9 +35,13 @@ export async function getAdminOrder(orderCode: string): Promise<OrderAdminDetail
   return data;
 }
 
-export async function confirmAdminOrder(orderCode: string): Promise<OrderAdminDetail> {
+export async function confirmAdminOrder(
+  orderCode: string,
+  body: ConfirmOrderShipmentInput,
+): Promise<OrderAdminDetail> {
   const { data } = await apiClient.patch<OrderAdminDetail>(
     `/admin/orders/${encodeURIComponent(orderCode)}/confirm`,
+    body,
   );
   return data;
 }

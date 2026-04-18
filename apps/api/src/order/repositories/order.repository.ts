@@ -50,6 +50,10 @@ export interface OrderDetailView extends OrderListItemView {
   shippingDistrict: string;
   shippingWard: string;
   shippingAddressLine: string;
+  packageWeight: number;
+  packageLength: number;
+  packageWidth: number;
+  packageHeight: number;
   serviceTypeId: number | null;
   requiredNote: string;
   note: string | null;
@@ -119,6 +123,10 @@ const ORDER_DETAIL_SELECT = {
   shippingDistrict: true,
   shippingWard: true,
   shippingAddressLine: true,
+  packageWeight: true,
+  packageLength: true,
+  packageWidth: true,
+  packageHeight: true,
   serviceTypeId: true,
   requiredNote: true,
   note: true,

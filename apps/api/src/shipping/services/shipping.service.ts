@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type CalculateShippingFeeDto, type ShippingFeeResponseDto } from '../dto';
+import { estimateCartPackageFromLines } from '../estimate-cart-package';
 import { GhnService } from './ghn.service';
 
 @Injectable()
@@ -94,21 +95,13 @@ export class ShippingService implements OnModuleInit {
     const toDistrictId = Number(address.district.giaohangnhanhId);
     const toWardCode = address.ward.giaohangnhanhId;
 
-    // 2. Lấy giỏ hàng kèm kích thước sản phẩm
     const cart = await this.prisma.cart.findUnique({
       where: { customerId },
       select: {
         items: {
           select: {
             quantity: true,
-            variant: {
-              select: {
-                price: true,
-                product: {
-                  select: { weight: true, length: true, width: true, height: true },
-                },
-              },
-            },
+            variant: { select: { price: true } },
           },
         },
       },
@@ -118,25 +111,12 @@ export class ShippingService implements OnModuleInit {
       throw new BadRequestException('Giỏ hàng trống, không thể tính phí vận chuyển.');
     }
 
-    // Tính tổng trọng lượng, kích thước, và giá trị đơn hàng
-    let weight = 0;
-    let maxLength = 0;
-    let maxWidth = 0;
-    let totalHeight = 0;
-    let insuranceValue = 0;
-
-    for (const item of cart.items) {
-      const { product: p, price } = item.variant;
-      weight += p.weight * item.quantity;
-      maxLength = Math.max(maxLength, p.length);
-      maxWidth = Math.max(maxWidth, p.width);
-      totalHeight += p.height * item.quantity;
-      insuranceValue += price * item.quantity;
-    }
-
-    const length = maxLength;
-    const width = maxWidth;
-    const height = Math.min(totalHeight, 150); // GHN giới hạn 150cm
+    const { weight, length, width, height, insuranceValue } = estimateCartPackageFromLines(
+      cart.items.map((item) => ({
+        quantity: item.quantity,
+        unitPrice: item.variant.price,
+      })),
+    );
 
     // 3. Lấy danh sách dịch vụ khả dụng
     const fromDistrictId = this.shopGhnDistrictId!;

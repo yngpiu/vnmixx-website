@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { OrderStatus } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { estimateCartPackageFromLines } from '../../shipping/estimate-cart-package';
 import { GhnService } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
 import type { CreateOrderDto, ListMyOrdersQueryDto } from '../dto';
@@ -53,9 +54,7 @@ export class OrderService {
                 reserved: true,
                 color: { select: { name: true } },
                 size: { select: { label: true } },
-                product: {
-                  select: { name: true, weight: true, length: true, width: true, height: true },
-                },
+                product: { select: { name: true } },
               },
             },
           },
@@ -77,25 +76,18 @@ export class OrderService {
       }
     }
 
-    // 4. Aggregate package dimensions
-    let weight = 0;
-    let maxLength = 0;
-    let maxWidth = 0;
-    let totalHeight = 0;
-    let insuranceValue = 0;
-
-    for (const item of cart.items) {
-      const { product: p, price } = item.variant;
-      weight += p.weight * item.quantity;
-      maxLength = Math.max(maxLength, p.length);
-      maxWidth = Math.max(maxWidth, p.width);
-      totalHeight += p.height * item.quantity;
-      insuranceValue += price * item.quantity;
-    }
-
-    const pkgLength = maxLength;
-    const pkgWidth = maxWidth;
-    const pkgHeight = Math.min(totalHeight, 150);
+    const {
+      weight,
+      length: pkgLength,
+      width: pkgWidth,
+      height: pkgHeight,
+      insuranceValue,
+    } = estimateCartPackageFromLines(
+      cart.items.map((item) => ({
+        quantity: item.quantity,
+        unitPrice: item.variant.price,
+      })),
+    );
 
     // 5. Calculate shipping fee via GHN
     const shop = this.shipping.getShopGhnIds();

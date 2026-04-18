@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -14,6 +14,7 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
+  ConfirmOrderShipmentDto,
   ListAdminOrdersQueryDto,
   OrderAdminDetailResponseDto,
   OrderAdminListResponseDto,
@@ -51,10 +52,15 @@ export class OrderAdminController {
   @Patch(':orderCode/confirm')
   async confirmOrder(
     @Param('orderCode') orderCode: string,
+    @Body() body: ConfirmOrderShipmentDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
   ): Promise<OrderAdminDetailResponseDto> {
-    return this.orderAdminService.confirmOrder(orderCode, buildAuditRequestContext(request, user));
+    return this.orderAdminService.confirmOrder(
+      orderCode,
+      body,
+      buildAuditRequestContext(request, user),
+    );
   }
 
   @ApiOperation({ summary: 'Hủy đơn hàng (admin)' })

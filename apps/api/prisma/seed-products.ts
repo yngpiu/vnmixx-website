@@ -294,10 +294,6 @@ export async function seedProducts(): Promise<void> {
             thumbnail: picsumUrl(thumbSeed, 480, 600),
             categoryId: category.id,
             isActive,
-            weight: 220 + ((i * 37) % 400),
-            length: 28 + (i % 15),
-            width: 22 + (i % 12),
-            height: 3 + (i % 8),
           },
         });
 

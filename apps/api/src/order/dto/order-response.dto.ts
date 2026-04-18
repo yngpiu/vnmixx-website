@@ -144,6 +144,18 @@ export class OrderDetailResponseDto extends OrderListItemResponseDto {
   @ApiProperty({ example: '123 Nguyễn Huệ' })
   shippingAddressLine: string;
 
+  @ApiProperty({ example: 1200, description: 'Khối lượng kiện hàng (gram)' })
+  packageWeight: number;
+
+  @ApiProperty({ example: 40, description: 'Chiều dài kiện hàng (cm)' })
+  packageLength: number;
+
+  @ApiProperty({ example: 30, description: 'Chiều rộng kiện hàng (cm)' })
+  packageWidth: number;
+
+  @ApiProperty({ example: 20, description: 'Chiều cao kiện hàng (cm)' })
+  packageHeight: number;
+
   @ApiPropertyOptional({ example: 2, nullable: true })
   serviceTypeId: number | null;
 

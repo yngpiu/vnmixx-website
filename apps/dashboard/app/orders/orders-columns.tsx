@@ -5,7 +5,12 @@ import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { LongText } from '@/components/long-text';
 import { formatVnd } from '@/lib/format-vnd';
-import { getOrderStatusLabel, getPaymentStatusLabel } from '@/lib/order-status-labels';
+import {
+  getOrderStatusBadgeClassName,
+  getOrderStatusLabel,
+  getPaymentStatusBadgeClassName,
+  getPaymentStatusLabel,
+} from '@/lib/order-status-labels';
 import type { OrderAdminListItem } from '@/lib/types/order-admin';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { cn } from '@repo/ui/lib/utils';
@@ -15,23 +20,6 @@ const createdAtFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
   timeStyle: 'short',
 });
-
-function orderStatusVariant(
-  status: OrderAdminListItem['status'],
-): 'default' | 'secondary' | 'destructive' | 'outline' {
-  if (status === 'DELIVERED') return 'default';
-  if (status === 'CANCELLED' || status === 'RETURNED') return 'destructive';
-  if (status === 'PENDING') return 'secondary';
-  return 'outline';
-}
-
-function paymentStatusVariant(
-  status: OrderAdminListItem['paymentStatus'],
-): 'default' | 'secondary' | 'destructive' | 'outline' {
-  if (status === 'SUCCESS') return 'default';
-  if (status === 'FAILED' || status === 'REFUNDED') return 'destructive';
-  return 'secondary';
-}
 
 export const ordersColumns: ColumnDef<OrderAdminListItem>[] = [
   dataTableSttColumnDef<OrderAdminListItem>(),
@@ -80,7 +68,10 @@ export const ordersColumns: ColumnDef<OrderAdminListItem>[] = [
     accessorKey: 'status',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái đơn" />,
     cell: ({ row }) => (
-      <Badge variant={orderStatusVariant(row.original.status)} className="whitespace-nowrap">
+      <Badge
+        variant="secondary"
+        className={cn('whitespace-nowrap', getOrderStatusBadgeClassName(row.original.status))}
+      >
         {getOrderStatusLabel(row.original.status)}
       </Badge>
     ),
@@ -91,8 +82,11 @@ export const ordersColumns: ColumnDef<OrderAdminListItem>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Thanh toán" />,
     cell: ({ row }) => (
       <Badge
-        variant={paymentStatusVariant(row.original.paymentStatus)}
-        className="whitespace-nowrap"
+        variant="secondary"
+        className={cn(
+          'whitespace-nowrap',
+          getPaymentStatusBadgeClassName(row.original.paymentStatus),
+        )}
       >
         {getPaymentStatusLabel(row.original.paymentStatus)}
       </Badge>

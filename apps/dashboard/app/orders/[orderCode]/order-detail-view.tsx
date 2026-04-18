@@ -5,8 +5,13 @@ import { PageViewHeader } from '@/components/page-view-header';
 import { adminModulePath } from '@/lib/admin-modules';
 import { getAdminOrder } from '@/lib/api/orders';
 import { formatVnd } from '@/lib/format-vnd';
-import { getOrderStatusLabel, getPaymentStatusLabel } from '@/lib/order-status-labels';
-import type { OrderAdminDetail, OrderStatus } from '@/lib/types/order-admin';
+import {
+  getOrderStatusBadgeClassName,
+  getOrderStatusLabel,
+  getPaymentStatusBadgeClassName,
+  getPaymentStatusLabel,
+} from '@/lib/order-status-labels';
+import type { OrderAdminDetail } from '@/lib/types/order-admin';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -25,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui/components/ui/table';
+import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { ArrowLeftIcon, Loader2Icon } from 'lucide-react';
@@ -45,15 +51,6 @@ function parseOrderCodeParam(raw: string | string[] | undefined): string | null 
   } catch {
     return value;
   }
-}
-
-function orderStatusVariant(
-  status: OrderStatus,
-): 'default' | 'secondary' | 'destructive' | 'outline' {
-  if (status === 'DELIVERED') return 'default';
-  if (status === 'CANCELLED' || status === 'RETURNED') return 'destructive';
-  if (status === 'PENDING') return 'secondary';
-  return 'outline';
 }
 
 function paymentMethodLabel(method: string): string {
@@ -131,10 +128,16 @@ export function OrderDetailView() {
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Badge variant={orderStatusVariant(order.status)} className="text-sm">
+        <Badge
+          variant="secondary"
+          className={cn('text-sm', getOrderStatusBadgeClassName(order.status))}
+        >
           Đơn: {getOrderStatusLabel(order.status)}
         </Badge>
-        <Badge variant="outline" className="text-sm">
+        <Badge
+          variant="secondary"
+          className={cn('text-sm', getPaymentStatusBadgeClassName(order.paymentStatus))}
+        >
           Thanh toán: {getPaymentStatusLabel(order.paymentStatus)}
         </Badge>
       </div>
@@ -275,7 +278,12 @@ export function OrderDetailView() {
                   <TableRow key={p.id}>
                     <TableCell>{paymentMethodLabel(p.method)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{getPaymentStatusLabel(p.status)}</Badge>
+                      <Badge
+                        variant="secondary"
+                        className={getPaymentStatusBadgeClassName(p.status)}
+                      >
+                        {getPaymentStatusLabel(p.status)}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-end tabular-nums">{formatVnd(p.amount)}</TableCell>
                     <TableCell className="font-mono text-xs">{p.transactionId ?? '—'}</TableCell>

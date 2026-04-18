@@ -79,6 +79,10 @@ export interface OrderAdminDetail extends OrderAdminListItem {
   shippingDistrict: string;
   shippingWard: string;
   shippingAddressLine: string;
+  packageWeight: number;
+  packageLength: number;
+  packageWidth: number;
+  packageHeight: number;
   serviceTypeId: number | null;
   requiredNote: string;
   note: string | null;

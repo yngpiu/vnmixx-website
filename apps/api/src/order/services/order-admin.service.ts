@@ -64,6 +64,12 @@ export class OrderAdminService {
 
   async confirmOrder(
     orderCode: string,
+    shipment: {
+      weight: number;
+      length: number;
+      width: number;
+      height: number;
+    },
     auditContext: AuditRequestContext = {},
   ): Promise<OrderAdminDetailView> {
     let beforeData: Record<string, unknown> | undefined;
@@ -133,10 +139,10 @@ export class OrderAdminService {
           toWardName: order.shippingWard,
           toDistrictName: order.shippingDistrict,
           toProvinceName: order.shippingCity,
-          weight: order.packageWeight,
-          length: order.packageLength,
-          width: order.packageWidth,
-          height: order.packageHeight,
+          weight: shipment.weight,
+          length: shipment.length,
+          width: shipment.width,
+          height: shipment.height,
           serviceTypeId: order.serviceTypeId ?? 2,
           paymentTypeId: 1,
           requiredNote: order.requiredNote,
@@ -145,7 +151,7 @@ export class OrderAdminService {
           items: order.items.map((item) => ({
             name: item.productName,
             quantity: item.quantity,
-            weight: Math.round(order.packageWeight / order.items.length),
+            weight: Math.round(shipment.weight / order.items.length),
           })),
           note: order.note ?? undefined,
           clientOrderCode: orderCode,
@@ -162,6 +168,10 @@ export class OrderAdminService {
           where: { id: order.id },
           data: {
             status: 'AWAITING_SHIPMENT',
+            packageWeight: shipment.weight,
+            packageLength: shipment.length,
+            packageWidth: shipment.width,
+            packageHeight: shipment.height,
             ghnOrderCode: ghnResult.order_code,
             expectedDeliveryTime: new Date(ghnResult.expected_delivery_time),
           },
