@@ -13,6 +13,7 @@ export interface EmployeeProfileView {
 export interface UpdateEmployeeProfileData {
   fullName?: string;
   avatarUrl?: string;
+  phoneNumber?: string;
 }
 
 const EMPLOYEE_PROFILE_SELECT = {

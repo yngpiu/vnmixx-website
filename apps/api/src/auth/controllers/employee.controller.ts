@@ -1,12 +1,25 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
-import { Public } from '../decorators';
-import { AuthResponseDto, LoginDto } from '../dto';
+import { CurrentUser, Public, RequireUserType } from '../decorators';
+import { AuthResponseDto, ChangePasswordDto, LoginDto } from '../dto';
+import type { AuthenticatedUser } from '../interfaces';
 import { EmployeeAuthService } from '../services/employee-auth.service';
 import { TokenService } from '../services/token.service';
-import { authBodyFromPair, extractRequestMeta, setRefreshTokenCookie } from '../utils';
+import {
+  authBodyFromPair,
+  clearRefreshTokenCookie,
+  extractRequestMeta,
+  setRefreshTokenCookie,
+} from '../utils';
 
 @Throttle({ default: { ttl: 60_000, limit: 40 } })
 @ApiTags('Auth')
@@ -38,5 +51,24 @@ export class EmployeeAuthController {
     const pair = await this.tokenService.issueTokenPair(user, 'EMPLOYEE', extractRequestMeta(req));
     setRefreshTokenCookie(res, pair.refreshToken);
     return authBodyFromPair(pair);
+  }
+
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Đổi mật khẩu nhân viên và thu hồi toàn bộ phiên' })
+  @ApiOkResponse({ description: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' })
+  @ApiUnauthorizedResponse({ description: 'Mật khẩu hiện tại không chính xác.' })
+  @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ hoặc không tìm thấy nhân viên.' })
+  @RequireUserType('EMPLOYEE')
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ message: string }> {
+    await this.employeeAuth.changePassword(user.id, dto);
+    await this.tokenService.logoutAll(user.id, 'EMPLOYEE', user.jti, user.exp);
+    clearRefreshTokenCookie(res);
+    return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };
   }
 }

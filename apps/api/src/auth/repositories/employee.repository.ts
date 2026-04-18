@@ -79,4 +79,20 @@ export class EmployeeRepository {
     }
     return { roles, permissions: [...permissionSet] };
   }
+
+  async findHashedPasswordById(employeeId: number): Promise<string | null> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId, deletedAt: null },
+      select: { hashedPassword: true },
+    });
+    return employee?.hashedPassword ?? null;
+  }
+
+  async updatePassword(employeeId: number, hashedPassword: string): Promise<boolean> {
+    const { count } = await this.prisma.employee.updateMany({
+      where: { id: employeeId, deletedAt: null },
+      data: { hashedPassword },
+    });
+    return count > 0;
+  }
 }

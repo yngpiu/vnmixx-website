@@ -69,10 +69,11 @@ export class ProfileService {
         throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
       }
 
-      const data: { fullName?: string; avatarUrl?: string } = {};
+      const data: { fullName?: string; avatarUrl?: string; phoneNumber?: string } = {};
 
       if (dto.fullName !== undefined) data.fullName = dto.fullName;
       if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl;
+      if (dto.phoneNumber !== undefined) data.phoneNumber = dto.phoneNumber;
 
       const updated = await this.employeeRepo.update(employeeId, data);
       if (!updated) throw new NotFoundException('Không tìm thấy nhân viên');

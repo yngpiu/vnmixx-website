@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { compare } from 'bcrypt';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { compare, hash } from 'bcrypt';
 import { EmployeeStatus } from '../../../generated/prisma/client';
-import type { LoginDto } from '../dto';
+import { BCRYPT_SALT_ROUNDS } from '../constants';
+import type { ChangePasswordDto, LoginDto } from '../dto';
 import { EmployeeRepository } from '../repositories/employee.repository';
 
 interface EmployeeAuthIdentity {
@@ -34,5 +35,22 @@ export class EmployeeAuthService {
     return {
       user: { id: employee.id, email: employee.email, fullName: employee.fullName },
     };
+  }
+
+  async changePassword(employeeId: number, dto: ChangePasswordDto): Promise<void> {
+    const currentHash = await this.employeeRepo.findHashedPasswordById(employeeId);
+    if (!currentHash) {
+      throw new BadRequestException('Không tìm thấy nhân viên');
+    }
+    const isCurrentPasswordValid = await compare(dto.currentPassword, currentHash);
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Mật khẩu hiện tại không chính xác');
+    }
+    const normalizedSaltRounds = Math.min(Math.max(BCRYPT_SALT_ROUNDS, 4), 31);
+    const newHashedPassword = await hash(dto.newPassword, normalizedSaltRounds);
+    const isUpdated = await this.employeeRepo.updatePassword(employeeId, newHashedPassword);
+    if (!isUpdated) {
+      throw new BadRequestException('Không thể cập nhật mật khẩu');
+    }
   }
 }
