@@ -2,7 +2,7 @@ import { AuditLogsView } from '@/app/audit-logs/audit-logs-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Audit log · Vnmixx' };
+export const metadata: Metadata = { title: 'Nhật ký thao tác · Vnmixx' };
 
 function AuditLogsViewSkeleton() {
   return (

@@ -43,7 +43,7 @@ export function EmployeeDetailView() {
             Thông tin
           </TabsTrigger>
           <TabsTrigger value="audit" className="flex-none px-3">
-            Audit log
+            Nhật ký thao tác
           </TabsTrigger>
         </TabsList>
         <TabsContent value="info" className="mt-0 focus-visible:outline-none">

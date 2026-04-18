@@ -66,7 +66,7 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
     return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Thư viện ảnh' }];
   }
   if (path === '/audit-logs') {
-    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Nhật ký hệ thống' }];
+    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Nhật ký thao tác' }];
   }
   const newMatch = /^\/([^/]+)\/new\/?$/.exec(path);
   const newSlug = newMatch?.[1];

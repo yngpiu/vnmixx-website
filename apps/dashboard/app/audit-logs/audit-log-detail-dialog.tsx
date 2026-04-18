@@ -60,7 +60,7 @@ type AuditLogDetailDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-/** Chi tiết audit: metadata và snapshot trước/sau (để tra cứu). */
+/** Chi tiết nhật ký thao tác: metadata và snapshot trước/sau (để tra cứu). */
 export function AuditLogDetailDialog({ item, open, onOpenChange }: AuditLogDetailDialogProps) {
   const router = useRouter();
   const [tab, setTab] = useState<AuditLogDetailTab>('info');
@@ -81,7 +81,9 @@ export function AuditLogDetailDialog({ item, open, onOpenChange }: AuditLogDetai
       >
         <div className="shrink-0 border-b px-6 py-4">
           <DialogHeader className="gap-1 text-start">
-            <DialogTitle>{item ? `Audit log #${item.id}` : 'Chi tiết audit log'}</DialogTitle>
+            <DialogTitle>
+              {item ? `Nhật ký thao tác #${item.id}` : 'Chi tiết nhật ký thao tác'}
+            </DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
               Bản chụp tại thời điểm ghi log để đối soát. Hệ thống không tự ghi đè bản ghi gốc —
               chỉnh sửa thực tế thực hiện trên màn hình quản trị tương ứng.

@@ -82,7 +82,7 @@ const catalogItems: SidebarNavItem[] = [
 
 const systemItems: SidebarNavItem[] = [
   {
-    title: 'Nhật ký hệ thống',
+    title: 'Nhật ký thao tác',
     url: '/audit-logs',
     icon: <FileClockIcon />,
   },

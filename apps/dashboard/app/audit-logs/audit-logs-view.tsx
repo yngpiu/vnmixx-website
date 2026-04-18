@@ -5,7 +5,7 @@ import { ListPage } from '@/components/list-page';
 
 export function AuditLogsView() {
   return (
-    <ListPage title="Audit log">
+    <ListPage title="Nhật ký thao tác">
       <AuditLogsTable />
     </ListPage>
   );

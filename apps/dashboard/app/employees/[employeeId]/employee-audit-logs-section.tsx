@@ -47,7 +47,7 @@ type EmployeeAuditLogsSectionProps = {
 };
 
 /**
- * Bảng audit log cố định theo actor = `employeeId`; có tìm kiếm, bộ lọc và cột giống trang audit (không lọc nhân viên).
+ * Bảng nhật ký thao tác cố định theo actor = `employeeId`; có tìm kiếm, bộ lọc và cột giống trang nhật ký (không lọc nhân viên).
  */
 export function EmployeeAuditLogsSection({ employeeId }: EmployeeAuditLogsSectionProps) {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
@@ -100,7 +100,7 @@ export function EmployeeAuditLogsSection({ employeeId }: EmployeeAuditLogsSectio
             variant="ghost"
             size="icon"
             className="size-8"
-            aria-label={`Xem chi tiết audit log #${row.original.id}`}
+            aria-label={`Xem chi tiết nhật ký thao tác #${row.original.id}`}
             onClick={() => {
               setDetailItem(row.original);
               setDetailOpen(true);
@@ -150,7 +150,7 @@ export function EmployeeAuditLogsSection({ employeeId }: EmployeeAuditLogsSectio
     getRowId: (row) => String(row.id),
   });
   if (isError) {
-    const message = error instanceof Error ? error.message : 'Không tải được audit log.';
+    const message = error instanceof Error ? error.message : 'Không tải được nhật ký thao tác.';
     return (
       <div
         className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
@@ -261,7 +261,7 @@ export function EmployeeAuditLogsSection({ employeeId }: EmployeeAuditLogsSectio
                   colSpan={columns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  {isLoading ? 'Đang tải…' : 'Không có dữ liệu audit log.'}
+                  {isLoading ? 'Đang tải…' : 'Không có dữ liệu nhật ký thao tác.'}
                 </TableCell>
               </TableRow>
             )}

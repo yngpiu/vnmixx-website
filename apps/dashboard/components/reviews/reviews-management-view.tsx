@@ -1,6 +1,7 @@
 'use client';
 
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
+import { ListPage } from '@/components/list-page';
 import {
   deleteAdminReview,
   getAdminReviewDetail,
@@ -292,80 +293,76 @@ export function ReviewsManagementView(): React.JSX.Element {
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Danh sách đánh giá</h1>
-        <p className="text-sm text-muted-foreground">
-          Quản lý đánh giá sản phẩm: ẩn/hiện, xem chi tiết và xóa.
-        </p>
-      </div>
-      <DataTableToolbar
-        table={table}
-        searchPlaceholder="Tìm theo tiêu đề, nội dung, sản phẩm, khách hàng..."
-        globalFilterDebounceMs={350}
-        filters={[
-          {
-            columnId: 'visibility',
-            title: 'Trạng thái hiển thị',
-            selectionMode: 'single',
-            options: [
-              { label: 'Tất cả', value: 'all' },
-              { label: 'Đang hiện', value: 'visible' },
-              { label: 'Đang ẩn', value: 'hidden' },
-            ],
-          },
-        ]}
-      />
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Đánh giá</TableHead>
-              <TableHead>Sản phẩm</TableHead>
-              <TableHead>Khách hàng</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Thời gian</TableHead>
-              <TableHead className="w-12" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {reviewsQuery.isLoading ? (
+    <ListPage title="Danh sách đánh giá">
+      <div className="flex flex-col gap-4">
+        <DataTableToolbar
+          table={table}
+          searchPlaceholder="Tìm theo tiêu đề, nội dung, sản phẩm, khách hàng..."
+          globalFilterDebounceMs={350}
+          filters={[
+            {
+              columnId: 'visibility',
+              title: 'Trạng thái hiển thị',
+              selectionMode: 'single',
+              options: [
+                { label: 'Tất cả', value: 'all' },
+                { label: 'Đang hiện', value: 'visible' },
+                { label: 'Đang ẩn', value: 'hidden' },
+              ],
+            },
+          ]}
+        />
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2Icon className="size-4 animate-spin" />
-                    Đang tải đánh giá...
-                  </span>
-                </TableCell>
+                <TableHead>ID</TableHead>
+                <TableHead>Đánh giá</TableHead>
+                <TableHead>Sản phẩm</TableHead>
+                <TableHead>Khách hàng</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Thời gian</TableHead>
+                <TableHead className="w-12" />
               </TableRow>
-            ) : reviewsQuery.isError ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-destructive">
-                  {apiErrorMessage(reviewsQuery.error)}
-                </TableCell>
-              </TableRow>
-            ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
-                  Không có đánh giá phù hợp.
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+            </TableHeader>
+            <TableBody>
+              {reviewsQuery.isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2Icon className="size-4 animate-spin" />
+                      Đang tải đánh giá...
+                    </span>
+                  </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : reviewsQuery.isError ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-8 text-center text-destructive">
+                    {apiErrorMessage(reviewsQuery.error)}
+                  </TableCell>
+                </TableRow>
+              ) : rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    Không có đánh giá phù hợp.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <DataTablePagination table={table} className="mt-auto" />
       </div>
-      <DataTablePagination table={table} className="mt-auto" />
       <Dialog
         open={detailReviewId !== null}
         onOpenChange={(open) => !open && setDetailReviewId(null)}
@@ -422,6 +419,6 @@ export function ReviewsManagementView(): React.JSX.Element {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </ListPage>
   );
 }

@@ -47,8 +47,8 @@ function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): DataTabl
 }
 
 /**
- * Audit log table: filters and pagination live in React state only (browser location is not updated).
- * `listAuditLogs` builds the API request query string; that is not the dashboard route URL.
+ * Bảng nhật ký thao tác: bộ lọc và phân trang chỉ trong state (URL trình duyệt không đổi).
+ * `listAuditLogs` dựng query string gọi API; không phải URL route dashboard.
  */
 export function AuditLogsTable() {
   const router = useRouter();
@@ -115,7 +115,7 @@ export function AuditLogsTable() {
             variant="ghost"
             size="icon"
             className="size-8"
-            aria-label={`Xem chi tiết audit log #${row.original.id}`}
+            aria-label={`Xem chi tiết nhật ký thao tác #${row.original.id}`}
             onClick={() => {
               setDetailItem(row.original);
               setDetailOpen(true);
@@ -169,7 +169,7 @@ export function AuditLogsTable() {
   const actorColumn = table.getColumn('actorEmployee');
 
   if (isError) {
-    const message = error instanceof Error ? error.message : 'Không tải được audit log.';
+    const message = error instanceof Error ? error.message : 'Không tải được nhật ký thao tác.';
     return <InlineErrorAlert message={message} />;
   }
 
@@ -271,7 +271,7 @@ export function AuditLogsTable() {
                   colSpan={columns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
-                  {isLoading ? 'Đang tải…' : 'Không có dữ liệu audit log.'}
+                  {isLoading ? 'Đang tải…' : 'Không có dữ liệu nhật ký thao tác.'}
                 </TableCell>
               </TableRow>
             )}
