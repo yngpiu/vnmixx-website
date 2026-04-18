@@ -1,3 +1,5 @@
+import { permissionModuleDisplayName } from '@/lib/permission-label';
+
 /** Known audit action codes (aligned with API services + seed). */
 export const AUDIT_LOG_ACTION_VALUES = [
   'category.create',
@@ -101,4 +103,34 @@ export function getAuditLogActionFilterOptions(): { label: string; value: string
   return [...AUDIT_LOG_ACTION_VALUES]
     .map((value) => ({ value, label: auditLogActionDisplayName(value) }))
     .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+}
+
+/** Nhóm hành động audit theo tiền tố mã (vd. `product.update` → nhóm `product`). */
+export type AuditLogActionFilterGroup = {
+  groupKey: string;
+  groupLabel: string;
+  items: { value: string; label: string }[];
+};
+
+/** Cây lọc hành động: nhóm theo tài nguyên, trong nhóm là từng mã cụ thể. */
+export function getAuditLogActionFilterTree(): AuditLogActionFilterGroup[] {
+  const map = new Map<string, { value: string; label: string }[]>();
+  for (const value of AUDIT_LOG_ACTION_VALUES) {
+    const groupKey = value.split('.')[0] ?? value;
+    const label = auditLogActionDisplayName(value);
+    const list = map.get(groupKey) ?? [];
+    list.push({ value, label });
+    map.set(groupKey, list);
+  }
+  const groups: AuditLogActionFilterGroup[] = [];
+  for (const [groupKey, items] of map) {
+    items.sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+    groups.push({
+      groupKey,
+      groupLabel: permissionModuleDisplayName(groupKey),
+      items,
+    });
+  }
+  groups.sort((a, b) => a.groupLabel.localeCompare(b.groupLabel, 'vi'));
+  return groups;
 }

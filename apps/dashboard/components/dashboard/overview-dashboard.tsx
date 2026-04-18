@@ -9,7 +9,6 @@ import {
   getAnalyticsTimeseries,
   getAnalyticsTopProducts,
   getAnalyticsTopShippingCities,
-  getAnalyticsTrafficDevices,
 } from '@/lib/api/analytics';
 import { formatVnd } from '@/lib/format-vnd';
 import { getOrderStatusLabel } from '@/lib/order-status-labels';
@@ -18,8 +17,6 @@ import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
 import {
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -45,20 +42,13 @@ import {
   StarIcon,
 } from 'lucide-react';
 import { useMemo } from 'react';
-import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 const gmvChartConfig = {
   gmv: {
     label: 'GMV',
     color: 'var(--chart-1)',
   },
-} satisfies ChartConfig;
-
-const trafficChartConfig = {
-  desktop: { label: 'Desktop', color: '#111827' },
-  mobile: { label: 'Mobile', color: '#374151' },
-  tablet: { label: 'Tablet', color: '#6B7280' },
-  unknown: { label: 'Other', color: '#9CA3AF' },
 } satisfies ChartConfig;
 
 function compactMoney(value: number): string {
@@ -101,10 +91,6 @@ export function OverviewDashboard(): React.JSX.Element {
     queryKey: ['analytics', 'top-cities', range],
     queryFn: () => getAnalyticsTopShippingCities({ ...range, limit: 5 }),
   });
-  const trafficQuery = useQuery({
-    queryKey: ['analytics', 'traffic-devices', range],
-    queryFn: () => getAnalyticsTrafficDevices(range),
-  });
   const topProductsQuery = useQuery({
     queryKey: ['analytics', 'top-products', range],
     queryFn: () => getAnalyticsTopProducts(range),
@@ -113,19 +99,6 @@ export function OverviewDashboard(): React.JSX.Element {
     const rows = timeseriesQuery.data?.data ?? [];
     return rows.map((row) => ({ ...row, label: row.bucketDate.slice(5) }));
   }, [timeseriesQuery.data?.data]);
-  const trafficData = useMemo(() => {
-    return (trafficQuery.data?.devices ?? []).map((bucket) => {
-      const key = ['desktop', 'mobile', 'tablet'].includes(bucket.device)
-        ? bucket.device
-        : 'unknown';
-      return {
-        key,
-        label: bucket.device,
-        value: bucket.visitCount,
-        fill: `var(--color-${key})`,
-      };
-    });
-  }, [trafficQuery.data?.devices]);
   if (kpisQuery.isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16 text-muted-foreground">
@@ -222,7 +195,7 @@ export function OverviewDashboard(): React.JSX.Element {
           </ChartContainer>
         </CardContent>
       </Card>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card className={shellCardClassName()}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -252,26 +225,6 @@ export function OverviewDashboard(): React.JSX.Element {
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
-        <Card className={shellCardClassName()}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Store Visits by Source</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <ChartContainer
-              config={trafficChartConfig}
-              className="mx-auto aspect-square max-h-[220px] w-full"
-            >
-              <PieChart>
-                <ChartLegend content={<ChartLegendContent />} />
-                <Pie data={trafficData} dataKey="value" nameKey="label" innerRadius={46}>
-                  {trafficData.map((entry, index) => (
-                    <Cell key={`${entry.key}-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ChartContainer>
           </CardContent>
         </Card>
         <Card className={shellCardClassName()}>

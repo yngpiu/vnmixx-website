@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { Request } from 'express';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -9,7 +8,6 @@ import {
   type AnalyticsTopCitiesQueryDto,
 } from './dto';
 import { computeMetricDelta, computeNullableRatioDelta } from './kpi-delta.util';
-import { parseUserAgentString } from './user-agent-parse.util';
 
 type UtcRange = { readonly fromUtc: Date; readonly toUtc: Date };
 
@@ -401,39 +399,6 @@ export class AnalyticsService {
     };
   }
 
-  async getTrafficDevices(dto: AnalyticsDateRangeQueryDto) {
-    const { fromUtc, toUtc } = this.parseUtcRange(dto);
-    let buckets: { device: string | null; visitCount: bigint }[] = [];
-    try {
-      buckets = await this.prisma.$queryRaw<{ device: string | null; visitCount: bigint }[]>(
-        Prisma.sql`
-          SELECT pv.device AS device,
-                 COUNT(*) AS visitCount
-          FROM page_visits pv
-          WHERE pv.created_at >= ${fromUtc}
-            AND pv.created_at <= ${toUtc}
-          GROUP BY pv.device
-        `,
-      );
-    } catch (error) {
-      if (!this.isMissingTableError(error)) {
-        throw error;
-      }
-    }
-    const devices = buckets
-      .map((b) => ({
-        device: b.device ?? 'unknown',
-        visitCount: Number(b.visitCount),
-      }))
-      .sort((a, b) => b.visitCount - a.visitCount);
-    const totalVisits = devices.reduce((s, d) => s + d.visitCount, 0);
-    return {
-      period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
-      devices,
-      totalVisits,
-    };
-  }
-
   async getReviewsSummary(dto: AnalyticsDateRangeQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const where: Prisma.ProductReviewWhereInput = {
@@ -602,44 +567,5 @@ export class AnalyticsService {
         orderCount: row._count.id,
       })),
     };
-  }
-
-  async recordPageVisit(input: {
-    path: string;
-    referrer?: string;
-    sessionKey?: string;
-    userAgentHeader?: string;
-    ipAddress?: string;
-    customerId?: number;
-  }): Promise<void> {
-    const parsed = parseUserAgentString(input.userAgentHeader);
-    const uaStore =
-      input.userAgentHeader && input.userAgentHeader.length > 2000
-        ? `${input.userAgentHeader.slice(0, 1999)}…`
-        : (input.userAgentHeader ?? null);
-    await this.prisma.pageVisit.create({
-      data: {
-        path: input.path,
-        referrer: input.referrer ?? null,
-        userAgent: uaStore,
-        device: parsed.device,
-        os: parsed.os,
-        browser: parsed.browser,
-        sessionKey: input.sessionKey ?? null,
-        ipAddress: input.ipAddress ?? null,
-        customerId: input.customerId ?? null,
-      },
-    });
-  }
-
-  extractClientIp(request: Request): string | undefined {
-    const xForwardedFor = request.headers['x-forwarded-for'];
-    if (typeof xForwardedFor === 'string') {
-      return xForwardedFor.split(',')[0]?.trim();
-    }
-    if (Array.isArray(xForwardedFor) && xForwardedFor.length > 0) {
-      return xForwardedFor[0]?.trim();
-    }
-    return request.ip;
   }
 }

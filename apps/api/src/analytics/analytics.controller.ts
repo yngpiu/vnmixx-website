@@ -26,7 +26,6 @@ import {
   AnalyticsReviewsSummaryResponseDto,
   AnalyticsStatusBreakdownOnlyResponseDto,
   AnalyticsTopProductsResponseDto,
-  AnalyticsTrafficDevicesResponseDto,
 } from './dto/analytics-extended-response.dto';
 
 @ApiTags('Analytics (Admin)')
@@ -108,15 +107,6 @@ export class AnalyticsController {
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsTopProductsResponseDto> {
     return this.analyticsService.getTopProducts(query);
-  }
-
-  @ApiOperation({ summary: 'Thống kê lượt xem shop theo device (page_visits)' })
-  @ApiOkResponse({ type: AnalyticsTrafficDevicesResponseDto })
-  @Get('traffic/devices')
-  async getTrafficDevices(
-    @Query() query: AnalyticsDateRangeQueryDto,
-  ): Promise<AnalyticsTrafficDevicesResponseDto> {
-    return this.analyticsService.getTrafficDevices(query);
   }
 
   @ApiOperation({ summary: 'Tổng hợp đánh giá khách hàng (rating breakdown + review mới nhất)' })

@@ -187,25 +187,6 @@ export class AnalyticsTopProductsResponseDto {
   empty!: boolean;
 }
 
-export class TrafficDeviceBucketDto {
-  @ApiProperty({ example: 'desktop' })
-  device!: string;
-
-  @ApiProperty()
-  visitCount!: number;
-}
-
-export class AnalyticsTrafficDevicesResponseDto {
-  @ApiProperty({ type: PeriodDto })
-  period!: PeriodDto;
-
-  @ApiProperty({ type: [TrafficDeviceBucketDto] })
-  devices!: TrafficDeviceBucketDto[];
-
-  @ApiProperty({ description: 'Tổng lượt ghi nhận trong kỳ.' })
-  totalVisits!: number;
-}
-
 export class ReviewRatingBucketDto {
   @ApiProperty({ example: 5 })
   rating!: number;

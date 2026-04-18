@@ -145,17 +145,6 @@ export interface AnalyticsTopProductsResponse {
   empty: boolean;
 }
 
-export interface AnalyticsTrafficDeviceBucket {
-  device: string;
-  visitCount: number;
-}
-
-export interface AnalyticsTrafficDevicesResponse {
-  period: AnalyticsPeriod;
-  devices: AnalyticsTrafficDeviceBucket[];
-  totalVisits: number;
-}
-
 export interface AnalyticsReviewRatingBucket {
   rating: number;
   count: number;

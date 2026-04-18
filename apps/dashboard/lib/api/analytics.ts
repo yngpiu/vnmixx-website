@@ -11,7 +11,6 @@ import type {
   AnalyticsTimeseriesResponse,
   AnalyticsTopProductsResponse,
   AnalyticsTopShippingCitiesResponse,
-  AnalyticsTrafficDevicesResponse,
 } from '@/lib/types/analytics';
 
 export type AnalyticsDateRangeParams = {
@@ -104,16 +103,6 @@ export async function getAnalyticsTopProducts(
     {
       params,
     },
-  );
-  return data;
-}
-
-export async function getAnalyticsTrafficDevices(
-  params: AnalyticsDateRangeParams,
-): Promise<AnalyticsTrafficDevicesResponse> {
-  const { data } = await apiClient.get<AnalyticsTrafficDevicesResponse>(
-    '/admin/analytics/traffic/devices',
-    { params },
   );
   return data;
 }

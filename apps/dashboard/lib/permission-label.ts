@@ -18,6 +18,7 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   size: 'Kích cỡ',
   media: 'Thư viện ảnh',
   review: 'Đánh giá',
+  profile: 'Hồ sơ',
 };
 
 /**

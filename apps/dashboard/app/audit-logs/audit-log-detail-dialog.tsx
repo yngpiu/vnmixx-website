@@ -1,7 +1,9 @@
 'use client';
 
+import { JsonHighlightedBlock } from '@/components/json-highlighted-block';
 import { adminModuleDetailPath } from '@/lib/admin-modules';
 import { auditLogActionDisplayName } from '@/lib/audit-log-action-label';
+import { collectAuditJsonDiff } from '@/lib/audit-log-json-diff';
 import { permissionModuleDisplayName } from '@/lib/permission-label';
 import type { AuditLogItem } from '@/lib/types/audit-log';
 import { Badge } from '@repo/ui/components/ui/badge';
@@ -15,7 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/ui/tabs';
 import { cn } from '@repo/ui/lib/utils';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 type AuditLogDetailTab = 'info' | 'data';
 
@@ -34,6 +36,34 @@ function formatJsonBlock(value: unknown): string {
     return String(value);
   }
 }
+
+function formatDiffCell(value: unknown): string {
+  if (value === undefined) {
+    return '—';
+  }
+  try {
+    return typeof value === 'string' ? value : JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+type DataViewMode = 'diff' | 'full';
+
+const diffKindLabel: Record<'added' | 'removed' | 'changed', string> = {
+  added: 'Thêm',
+  removed: 'Xóa',
+  changed: 'Đổi',
+};
+
+const diffKindBadgeClass: Record<'added' | 'removed' | 'changed', string> = {
+  added:
+    'border-transparent bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-100 dark:hover:bg-emerald-900/80',
+  removed:
+    'border-transparent bg-red-50 text-red-900 hover:bg-red-100 dark:bg-red-950 dark:text-red-100 dark:hover:bg-red-900/80',
+  changed:
+    'border-transparent bg-amber-50 text-amber-950 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-100 dark:hover:bg-amber-900/80',
+};
 
 function MetaItem({
   label,
@@ -64,18 +94,28 @@ type AuditLogDetailDialogProps = {
 export function AuditLogDetailDialog({ item, open, onOpenChange }: AuditLogDetailDialogProps) {
   const router = useRouter();
   const [tab, setTab] = useState<AuditLogDetailTab>('info');
+  const [dataView, setDataView] = useState<DataViewMode>('diff');
+
+  const dataDiffEntries = useMemo(() => {
+    if (!item) {
+      return [];
+    }
+    return collectAuditJsonDiff(item.beforeData, item.afterData);
+  }, [item?.id, item?.beforeData, item?.afterData]);
+
   useEffect(() => {
     if (!open) {
       return;
     }
     setTab('info');
-  }, [open]);
+    setDataView('diff');
+  }, [open, item?.id]);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         aria-describedby={undefined}
         className={cn(
-          'flex max-h-[min(92dvh,48rem)] w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl',
+          'flex max-h-[min(92dvh,48rem)] w-full max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl',
         )}
         showCloseButton
       >
@@ -202,32 +242,135 @@ export function AuditLogDetailDialog({ item, open, onOpenChange }: AuditLogDetai
 
             <TabsContent
               value="data"
-              className="mt-0 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-4"
+              className="mt-0 flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 py-4"
             >
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="bg-card flex min-h-0 flex-col rounded-xl border shadow-sm">
-                  <div className="text-muted-foreground shrink-0 rounded-t-xl border-b bg-muted/50 px-4 py-2.5 text-xs font-semibold tracking-wide uppercase">
-                    Trước thay đổi
-                    <span className="text-muted-foreground/70 ms-1 font-normal normal-case">
-                      (beforeData)
-                    </span>
+              <Tabs
+                value={dataView}
+                onValueChange={(value) => setDataView(value as DataViewMode)}
+                className="flex min-h-0 flex-1 flex-col gap-3"
+              >
+                <TabsList className="h-9 w-fit shrink-0 self-start">
+                  <TabsTrigger value="diff" className="flex-none px-3">
+                    Khác biệt
+                  </TabsTrigger>
+                  <TabsTrigger value="full" className="flex-none px-3">
+                    Đầy đủ (JSON)
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent
+                  value="diff"
+                  forceMount
+                  className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden data-[state=inactive]:hidden"
+                >
+                  {dataDiffEntries.length === 0 ? (
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Không có khác biệt giữa hai bản chụp, hoặc dữ liệu trước/sau trống và giống
+                      nhau.
+                    </p>
+                  ) : (
+                    <div className="bg-card flex min-h-0 flex-1 flex-col rounded-xl border shadow-sm">
+                      <div className="text-muted-foreground shrink-0 rounded-t-xl border-b bg-muted/50 px-4 py-2.5 text-xs font-semibold tracking-wide">
+                        {dataDiffEntries.length} thay đổi theo đường dẫn field
+                      </div>
+                      <div className="max-h-[min(52vh,28rem)] min-h-40 flex-1 overflow-auto rounded-b-xl">
+                        <table className="w-full min-w-[36rem] border-collapse text-left text-xs">
+                          <thead className="bg-muted/40 sticky top-0 z-[1] backdrop-blur-sm">
+                            <tr className="border-b">
+                              <th className="text-muted-foreground w-[28%] px-3 py-2.5 font-semibold">
+                                Đường dẫn
+                              </th>
+                              <th className="text-muted-foreground w-[10%] px-3 py-2.5 font-semibold">
+                                Loại
+                              </th>
+                              <th className="text-muted-foreground w-[31%] px-3 py-2.5 font-semibold">
+                                Trước
+                              </th>
+                              <th className="text-muted-foreground w-[31%] px-3 py-2.5 font-semibold">
+                                Sau
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dataDiffEntries.map((row, rowIndex) => {
+                              const beforeText = formatDiffCell(row.before);
+                              const afterText = formatDiffCell(row.after);
+                              return (
+                                <tr
+                                  key={`${row.path}:${row.kind}:${rowIndex}`}
+                                  className="border-border/80 border-b last:border-b-0"
+                                >
+                                  <td className="text-foreground align-top px-3 py-2 font-mono break-all">
+                                    {row.path}
+                                  </td>
+                                  <td className="align-top px-3 py-2">
+                                    <Badge
+                                      variant="secondary"
+                                      className={cn(
+                                        'font-normal tabular-nums',
+                                        diffKindBadgeClass[row.kind],
+                                      )}
+                                    >
+                                      {diffKindLabel[row.kind]}
+                                    </Badge>
+                                  </td>
+                                  <td className="text-foreground align-top px-3 py-2">
+                                    <code
+                                      className="block max-h-32 overflow-y-auto break-all font-mono text-[0.7rem] leading-snug whitespace-pre-wrap"
+                                      title={beforeText}
+                                    >
+                                      {beforeText}
+                                    </code>
+                                  </td>
+                                  <td className="text-foreground align-top px-3 py-2">
+                                    <code
+                                      className="block max-h-32 overflow-y-auto break-all font-mono text-[0.7rem] leading-snug whitespace-pre-wrap"
+                                      title={afterText}
+                                    >
+                                      {afterText}
+                                    </code>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent
+                  value="full"
+                  forceMount
+                  className="mt-0 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto data-[state=inactive]:hidden"
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="bg-card flex min-h-0 flex-col rounded-xl border shadow-sm">
+                      <div className="text-muted-foreground shrink-0 rounded-t-xl border-b bg-muted/50 px-4 py-2.5 text-xs font-semibold tracking-wide uppercase">
+                        Trước thay đổi
+                        <span className="text-muted-foreground/70 ms-1 font-normal normal-case">
+                          (beforeData)
+                        </span>
+                      </div>
+                      <div className="text-foreground max-h-[min(48vh,24rem)] min-h-40 flex-1 overflow-auto rounded-b-xl p-4">
+                        <JsonHighlightedBlock code={formatJsonBlock(item.beforeData)} />
+                      </div>
+                    </div>
+                    <div className="bg-card flex min-h-0 flex-col rounded-xl border shadow-sm">
+                      <div className="text-muted-foreground shrink-0 rounded-t-xl border-b bg-muted/50 px-4 py-2.5 text-xs font-semibold tracking-wide uppercase">
+                        Sau thay đổi
+                        <span className="text-muted-foreground/70 ms-1 font-normal normal-case">
+                          (afterData)
+                        </span>
+                      </div>
+                      <div className="text-foreground max-h-[min(48vh,24rem)] min-h-40 flex-1 overflow-auto rounded-b-xl p-4">
+                        <JsonHighlightedBlock code={formatJsonBlock(item.afterData)} />
+                      </div>
+                    </div>
                   </div>
-                  <pre className="text-foreground max-h-[min(48vh,24rem)] min-h-40 flex-1 overflow-auto rounded-b-xl p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
-                    {formatJsonBlock(item.beforeData)}
-                  </pre>
-                </div>
-                <div className="bg-card flex min-h-0 flex-col rounded-xl border shadow-sm">
-                  <div className="text-muted-foreground shrink-0 rounded-t-xl border-b bg-muted/50 px-4 py-2.5 text-xs font-semibold tracking-wide uppercase">
-                    Sau thay đổi
-                    <span className="text-muted-foreground/70 ms-1 font-normal normal-case">
-                      (afterData)
-                    </span>
-                  </div>
-                  <pre className="text-foreground max-h-[min(48vh,24rem)] min-h-40 flex-1 overflow-auto rounded-b-xl p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
-                    {formatJsonBlock(item.afterData)}
-                  </pre>
-                </div>
-              </div>
+                </TabsContent>
+              </Tabs>
             </TabsContent>
           </Tabs>
         ) : null}

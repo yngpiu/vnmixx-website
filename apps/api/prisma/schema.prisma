@@ -100,7 +100,6 @@ model Customer {
   cart           Cart?
   wishlists      Wishlist[]
   orders         Order[]
-  pageVisits     PageVisit[]
   productReviews ProductReview[]
 
   @@map("customers")
@@ -592,28 +591,6 @@ model StockMovement {
   @@index([orderId], map: "idx_stock_movements_order")
   @@index([employeeId], map: "idx_stock_movements_employee")
   @@map("stock_movements")
-}
-
-// ─── Page visits (shop storefront analytics) ────────────
-
-model PageVisit {
-  id         Int      @id @default(autoincrement()) @db.UnsignedInt
-  path       String   @db.VarChar(500)
-  referrer   String?  @db.VarChar(500)
-  userAgent  String?  @map("user_agent") @db.Text
-  device     String?  @db.VarChar(32)
-  os         String?  @db.VarChar(64)
-  browser    String?  @db.VarChar(64)
-  customerId Int?     @map("customer_id") @db.UnsignedInt
-  sessionKey String?  @map("session_key") @db.VarChar(64)
-  ipAddress  String?  @map("ip_address") @db.VarChar(45)
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(0)
-
-  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-
-  @@index([createdAt], map: "idx_page_visits_created")
-  @@index([createdAt, device], map: "idx_page_visits_created_device")
-  @@map("page_visits")
 }
 
 // ─── Refresh Tokens ──────────────────────────────────────

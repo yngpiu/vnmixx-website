@@ -2,15 +2,13 @@
 
 import { AuditLogDetailDialog } from '@/app/audit-logs/audit-log-detail-dialog';
 import { createAuditLogsColumns } from '@/app/audit-logs/audit-logs-columns';
+import { AuditLogActionTreeFilter } from '@/components/audit-logs/audit-log-action-tree-filter';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { EmployeeInfiniteColumnFilter } from '@/components/employees/employee-infinite-column-filter';
 import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { adminModuleDetailPath } from '@/lib/admin-modules';
 import { listAuditLogs } from '@/lib/api/audit-logs';
-import { getAuditLogActionFilterOptions } from '@/lib/audit-log-action-label';
-import { AUDIT_LOG_RESOURCE_TYPE_FILTER_VALUES } from '@/lib/audit-log-resource-type-filters';
-import { permissionModuleDisplayName } from '@/lib/permission-label';
 import type { AuditLogItem } from '@/lib/types/audit-log';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -66,8 +64,6 @@ export function AuditLogsTable() {
   );
 
   const listParams = useMemo(() => {
-    const resourceFilterValues =
-      ((columnFilters.find((f) => f.id === 'resourceType')?.value ?? []) as string[]) ?? [];
     const statusFilterValues =
       ((columnFilters.find((f) => f.id === 'status')?.value ?? []) as string[]) ?? [];
     const actorFilterValues =
@@ -85,7 +81,6 @@ export function AuditLogsTable() {
       limit: pagination.pageSize,
       actions,
       action: actionSubstring,
-      resourceTypes: resourceFilterValues.length > 0 ? [...resourceFilterValues] : undefined,
       status:
         statusFilterValues.length === 1
           ? (statusFilterValues[0] as 'SUCCESS' | 'FAILED')
@@ -167,6 +162,7 @@ export function AuditLogsTable() {
   });
 
   const actorColumn = table.getColumn('actorEmployee');
+  const actionColumn = table.getColumn('action');
 
   if (isError) {
     const message = error instanceof Error ? error.message : 'Không tải được nhật ký thao tác.';
@@ -192,21 +188,13 @@ export function AuditLogsTable() {
         table={table}
         searchPlaceholder="Tìm theo mã hành động…"
         globalFilterDebounceMs={350}
-        filterExtras={<EmployeeInfiniteColumnFilter column={actorColumn} title="Nhân viên" />}
+        filterExtras={
+          <>
+            <AuditLogActionTreeFilter column={actionColumn} title="Hành động" />
+            <EmployeeInfiniteColumnFilter column={actorColumn} title="Nhân viên" />
+          </>
+        }
         filters={[
-          {
-            columnId: 'action',
-            title: 'Hành động',
-            options: getAuditLogActionFilterOptions(),
-          },
-          {
-            columnId: 'resourceType',
-            title: 'Tài nguyên',
-            options: AUDIT_LOG_RESOURCE_TYPE_FILTER_VALUES.map((value) => ({
-              label: permissionModuleDisplayName(value),
-              value,
-            })),
-          },
           {
             columnId: 'status',
             title: 'Trạng thái',

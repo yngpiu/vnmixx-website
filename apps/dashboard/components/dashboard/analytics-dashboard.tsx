@@ -11,7 +11,6 @@ import {
   getAnalyticsTimeseries,
   getAnalyticsTopProducts,
   getAnalyticsTopShippingCities,
-  getAnalyticsTrafficDevices,
 } from '@/lib/api/analytics';
 import { formatVnd } from '@/lib/format-vnd';
 import { getOrderStatusLabel, getPaymentStatusLabel } from '@/lib/order-status-labels';
@@ -118,10 +117,6 @@ export function AnalyticsDashboard(): React.JSX.Element {
   const topProductsQuery = useQuery({
     queryKey: ['analytics', 'top-products', range],
     queryFn: () => getAnalyticsTopProducts(range),
-  });
-  const trafficQuery = useQuery({
-    queryKey: ['analytics', 'traffic-devices', range],
-    queryFn: () => getAnalyticsTrafficDevices(range),
   });
   const reviewsQuery = useQuery({
     queryKey: ['analytics', 'reviews-summary', range],
@@ -453,44 +448,6 @@ export function AnalyticsDashboard(): React.JSX.Element {
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Lượt xem shop theo thiết bị</CardTitle>
-          <CardDescription>
-            Dữ liệu từ <code className="rounded bg-muted px-1 text-xs">page_visits</code> — cần tích
-            hợp beacon storefront
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {trafficQuery.isLoading ? (
-            <div className="flex h-[120px] items-center justify-center">
-              <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : trafficQuery.isError ? (
-            <p className="text-sm text-destructive">Không tải được traffic.</p>
-          ) : trafficQuery.data!.totalVisits === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Chưa có lượt truy cập ghi nhận trong kỳ. Gọi{' '}
-              <code className="rounded bg-muted px-1">POST /shop/page-visits</code> từ shop.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              {trafficQuery.data!.devices.map((bucket) => (
-                <div
-                  key={bucket.device}
-                  className="rounded-lg border bg-muted/30 px-3 py-2 text-sm tabular-nums"
-                >
-                  <span className="font-medium capitalize">{bucket.device}</span>{' '}
-                  <span className="text-muted-foreground">({bucket.visitCount})</span>
-                </div>
-              ))}
-              <p className="w-full text-xs text-muted-foreground">
-                Tổng {trafficQuery.data!.totalVisits} lượt.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Sản phẩm bán chạy (theo GMV)</CardTitle>
