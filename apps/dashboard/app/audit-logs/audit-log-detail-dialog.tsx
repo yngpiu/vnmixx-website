@@ -101,7 +101,7 @@ export function AuditLogDetailDialog({ item, open, onOpenChange }: AuditLogDetai
       return [];
     }
     return collectAuditJsonDiff(item.beforeData, item.afterData);
-  }, [item?.id, item?.beforeData, item?.afterData]);
+  }, [item]);
 
   useEffect(() => {
     if (!open) {
