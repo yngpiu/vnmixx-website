@@ -1,10 +1,17 @@
 'use client';
 
-import { getInclusiveUtcDateRange } from '@/lib/analytics-range';
+import { useAnalyticsDateRange } from '@/components/analytics/analytics-shell';
+import { AovDeltaBadge, KpiDeltaBadge } from '@/components/analytics/kpi-delta-badge';
 import {
-  getAnalyticsOverview,
+  getAnalyticsKpisWithDelta,
+  getAnalyticsPaymentMethodMix,
+  getAnalyticsPaymentStatusMix,
+  getAnalyticsReviewsSummary,
+  getAnalyticsStatusBreakdown,
   getAnalyticsTimeseries,
+  getAnalyticsTopProducts,
   getAnalyticsTopShippingCities,
+  getAnalyticsTrafficDevices,
 } from '@/lib/api/analytics';
 import { formatVnd } from '@/lib/format-vnd';
 import { getOrderStatusLabel, getPaymentStatusLabel } from '@/lib/order-status-labels';
@@ -36,7 +43,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { AlertCircleIcon, Loader2Icon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useMemo } from 'react';
 import {
   Area,
   AreaChart,
@@ -49,8 +57,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-
-const PRESETS = [7, 30, 90] as const;
 
 const gmvAreaConfig = {
   gmv: { label: 'GMV', color: 'var(--chart-1)' },
@@ -83,12 +89,11 @@ function kpiShort(n: number): string {
   return String(n);
 }
 
-export function AnalyticsDashboard() {
-  const [days, setDays] = useState<number>(30);
-  const range = useMemo(() => getInclusiveUtcDateRange(days), [days]);
-  const overviewQuery = useQuery({
-    queryKey: ['analytics', 'overview', range],
-    queryFn: () => getAnalyticsOverview(range),
+export function AnalyticsDashboard(): React.JSX.Element {
+  const { range } = useAnalyticsDateRange();
+  const kpisQuery = useQuery({
+    queryKey: ['analytics', 'kpis-with-delta', range],
+    queryFn: () => getAnalyticsKpisWithDelta(range),
   });
   const timeseriesQuery = useQuery({
     queryKey: ['analytics', 'timeseries', range],
@@ -98,18 +103,42 @@ export function AnalyticsDashboard() {
     queryKey: ['analytics', 'top-cities', range],
     queryFn: () => getAnalyticsTopShippingCities({ ...range, limit: 8 }),
   });
+  const statusQuery = useQuery({
+    queryKey: ['analytics', 'breakdown-status', range],
+    queryFn: () => getAnalyticsStatusBreakdown(range),
+  });
+  const paymentMethodQuery = useQuery({
+    queryKey: ['analytics', 'breakdown-payment-method', range],
+    queryFn: () => getAnalyticsPaymentMethodMix(range),
+  });
+  const paymentStatusQuery = useQuery({
+    queryKey: ['analytics', 'breakdown-payment-status', range],
+    queryFn: () => getAnalyticsPaymentStatusMix(range),
+  });
+  const topProductsQuery = useQuery({
+    queryKey: ['analytics', 'top-products', range],
+    queryFn: () => getAnalyticsTopProducts(range),
+  });
+  const trafficQuery = useQuery({
+    queryKey: ['analytics', 'traffic-devices', range],
+    queryFn: () => getAnalyticsTrafficDevices(range),
+  });
+  const reviewsQuery = useQuery({
+    queryKey: ['analytics', 'reviews-summary', range],
+    queryFn: () => getAnalyticsReviewsSummary(range),
+  });
   const tsData = useMemo(() => {
     const rows = timeseriesQuery.data?.data ?? [];
     return rows.map((row) => ({ ...row, label: row.bucketDate.slice(5) }));
   }, [timeseriesQuery.data?.data]);
   const methodPieData = useMemo(() => {
-    return (overviewQuery.data?.paymentMethodMix ?? []).map((row) => ({
+    return (paymentMethodQuery.data?.paymentMethodMix ?? []).map((row) => ({
       method: row.method,
       name: methodLabel(row.method),
       orderCount: row.orderCount,
       fill: `var(--color-${row.method === 'COD' ? 'COD' : 'BANK_TRANSFER'})`,
     }));
-  }, [overviewQuery.data?.paymentMethodMix]);
+  }, [paymentMethodQuery.data?.paymentMethodMix]);
   const cityBarData = useMemo(() => {
     return (citiesQuery.data?.cities ?? []).map((c) => ({
       city: c.city.length > 16 ? `${c.city.slice(0, 14)}…` : c.city,
@@ -117,10 +146,10 @@ export function AnalyticsDashboard() {
       orderCount: c.orderCount,
     }));
   }, [citiesQuery.data?.cities]);
-  const statusRows = overviewQuery.data?.statusBreakdown ?? [];
-  const paymentStatusRows = overviewQuery.data?.paymentStatusMix ?? [];
+  const statusRows = statusQuery.data?.statusBreakdown ?? [];
+  const paymentStatusRows = paymentStatusQuery.data?.paymentStatusMix ?? [];
   const totalForPaymentShare = paymentStatusRows.reduce((s, r) => s + r.count, 0) || 1;
-  if (overviewQuery.isLoading) {
+  if (kpisQuery.isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
         <Loader2Icon className="size-8 animate-spin" />
@@ -128,11 +157,11 @@ export function AnalyticsDashboard() {
       </div>
     );
   }
-  if (overviewQuery.isError) {
-    const msg = isAxiosError(overviewQuery.error)
-      ? String(overviewQuery.error.response?.data ?? overviewQuery.error.message)
-      : overviewQuery.error instanceof Error
-        ? overviewQuery.error.message
+  if (kpisQuery.isError) {
+    const msg = isAxiosError(kpisQuery.error)
+      ? String(kpisQuery.error.response?.data ?? kpisQuery.error.message)
+      : kpisQuery.error instanceof Error
+        ? kpisQuery.error.message
         : 'Lỗi tải dữ liệu.';
     return (
       <div
@@ -144,55 +173,54 @@ export function AnalyticsDashboard() {
       </div>
     );
   }
-  const k = overviewQuery.data!.kpis;
+  const k = kpisQuery.data!.kpis;
+  const d = kpisQuery.data!.deltas;
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">Khoảng thời gian:</span>
-        {PRESETS.map((d) => (
-          <Button
-            key={d}
-            type="button"
-            size="sm"
-            variant={days === d ? 'default' : 'outline'}
-            onClick={() => setDays(d)}
-          >
-            {d} ngày
-          </Button>
-        ))}
-      </div>
-      <p className="max-w-3xl text-sm text-muted-foreground">
-        <strong>GMV</strong> tính trên đơn <em>tạo</em> trong kỳ (trừ hủy/hoàn).{' '}
-        <strong>Hoàn thành</strong> dựa trên đơn{' '}
-        <code className="rounded bg-muted px-1 text-xs">DELIVERED</code> và thời điểm cập nhật trong
-        kỳ — gần với “giao xong trong kỳ” khi chưa có cột giao hàng riêng.
-      </p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>GMV</CardDescription>
+            <div className="flex items-start justify-between gap-2">
+              <CardDescription>GMV</CardDescription>
+              <KpiDeltaBadge delta={d.gmv} />
+            </div>
             <CardTitle className="text-xl tabular-nums">{kpiShort(k.gmv)}</CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground">{formatVnd(k.gmv)}</CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Đơn tạo</CardDescription>
+            <div className="flex items-start justify-between gap-2">
+              <CardDescription>Đơn tạo</CardDescription>
+              <KpiDeltaBadge delta={d.ordersCreatedCount} />
+            </div>
             <CardTitle className="text-xl tabular-nums">{k.ordersCreatedCount}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Hoàn thành</CardDescription>
+            <div className="flex items-start justify-between gap-2">
+              <CardDescription>Hoàn thành</CardDescription>
+              <KpiDeltaBadge delta={d.ordersCompletedCount} />
+            </div>
             <CardTitle className="text-xl tabular-nums">{k.ordersCompletedCount}</CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground">
             {formatVnd(k.completedRevenue)}
+            {k.aovCompleted != null ? (
+              <span className="ml-1 inline-flex items-center gap-1">
+                · AOV {formatVnd(k.aovCompleted)}
+                <AovDeltaBadge delta={d.aovCompleted} />
+              </span>
+            ) : null}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Chờ xử lý (tạo trong kỳ)</CardDescription>
+            <div className="flex items-start justify-between gap-2">
+              <CardDescription>Chờ xử lý (tạo trong kỳ)</CardDescription>
+              <KpiDeltaBadge delta={d.ordersPendingCount} />
+            </div>
             <CardTitle className="text-xl tabular-nums">{k.ordersPendingCount}</CardTitle>
           </CardHeader>
         </Card>
@@ -249,14 +277,83 @@ export function AnalyticsDashboard() {
       </Card>
       <Card>
         <CardHeader>
+          <CardTitle className="text-base">Customer Reviews</CardTitle>
+          <CardDescription>Đánh giá công khai theo kỳ đã chọn</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {reviewsQuery.isLoading ? (
+            <div className="flex h-[120px] items-center justify-center">
+              <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : reviewsQuery.isError ? (
+            <p className="text-sm text-destructive">Không tải được review summary.</p>
+          ) : reviewsQuery.data!.totalReviews === 0 ? (
+            <p className="text-sm text-muted-foreground">Chưa có review công khai trong kỳ.</p>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Điểm trung bình</p>
+                <p className="text-3xl font-semibold tabular-nums">
+                  {reviewsQuery.data!.averageRating}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {reviewsQuery.data!.totalReviews} reviews
+                </p>
+              </div>
+              <div className="space-y-2">
+                {reviewsQuery.data!.ratingBreakdown.map((row) => {
+                  const pct =
+                    reviewsQuery.data!.totalReviews > 0
+                      ? (row.count / reviewsQuery.data!.totalReviews) * 100
+                      : 0;
+                  return (
+                    <div key={row.rating} className="flex items-center gap-2 text-sm">
+                      <span className="w-4 text-muted-foreground">{row.rating}</span>
+                      <div className="h-2 flex-1 rounded-full bg-muted">
+                        <div
+                          className="h-2 rounded-full bg-primary"
+                          style={{ width: `${Math.max(pct, 3)}%` }}
+                        />
+                      </div>
+                      <span className="w-10 text-right tabular-nums text-muted-foreground">
+                        {row.count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              {reviewsQuery.data!.latestReview ? (
+                <div className="lg:col-span-2 rounded-lg border bg-muted/30 p-4">
+                  <p className="mb-1 text-sm font-medium">
+                    {reviewsQuery.data!.latestReview.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {reviewsQuery.data!.latestReview.content}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {reviewsQuery.data!.latestReview.customerDisplayName}
+                    {reviewsQuery.data!.latestReview.isVerifiedPurchase
+                      ? ' · Verified purchase'
+                      : ''}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Đơn tạo vs hoàn thành</CardTitle>
-          <CardDescription>Theo bucket ngày (tạo / cập nhật)</CardDescription>
+          <CardDescription>Theo bucket ngày (tạo / cập nhật hoàn thành)</CardDescription>
         </CardHeader>
         <CardContent>
           {timeseriesQuery.isLoading ? (
             <div className="flex h-[240px] items-center justify-center">
               <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
             </div>
+          ) : timeseriesQuery.isError ? (
+            <p className="text-sm text-destructive">Không tải được biểu đồ.</p>
           ) : (
             <ChartContainer config={ordersBarConfig} className="min-h-[240px] w-full">
               <BarChart accessibilityLayer data={tsData} margin={{ left: 4, right: 8 }}>
@@ -279,7 +376,13 @@ export function AnalyticsDashboard() {
             <CardDescription>Số đơn tạo trong kỳ</CardDescription>
           </CardHeader>
           <CardContent>
-            {methodPieData.length === 0 ? (
+            {paymentMethodQuery.isLoading ? (
+              <div className="flex h-[240px] items-center justify-center">
+                <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : paymentMethodQuery.isError ? (
+              <p className="text-sm text-destructive">Không tải được dữ liệu.</p>
+            ) : methodPieData.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted-foreground">
                 Chưa có đơn trong kỳ.
               </p>
@@ -350,6 +453,82 @@ export function AnalyticsDashboard() {
           </CardContent>
         </Card>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Lượt xem shop theo thiết bị</CardTitle>
+          <CardDescription>
+            Dữ liệu từ <code className="rounded bg-muted px-1 text-xs">page_visits</code> — cần tích
+            hợp beacon storefront
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {trafficQuery.isLoading ? (
+            <div className="flex h-[120px] items-center justify-center">
+              <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : trafficQuery.isError ? (
+            <p className="text-sm text-destructive">Không tải được traffic.</p>
+          ) : trafficQuery.data!.totalVisits === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Chưa có lượt truy cập ghi nhận trong kỳ. Gọi{' '}
+              <code className="rounded bg-muted px-1">POST /shop/page-visits</code> từ shop.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {trafficQuery.data!.devices.map((bucket) => (
+                <div
+                  key={bucket.device}
+                  className="rounded-lg border bg-muted/30 px-3 py-2 text-sm tabular-nums"
+                >
+                  <span className="font-medium capitalize">{bucket.device}</span>{' '}
+                  <span className="text-muted-foreground">({bucket.visitCount})</span>
+                </div>
+              ))}
+              <p className="w-full text-xs text-muted-foreground">
+                Tổng {trafficQuery.data!.totalVisits} lượt.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Sản phẩm bán chạy (theo GMV)</CardTitle>
+          <CardDescription>Đơn tạo trong kỳ, trừ hủy/hoàn</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0 sm:px-6">
+          {topProductsQuery.isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : topProductsQuery.isError ? (
+            <p className="px-6 py-4 text-sm text-destructive">Không tải được top sản phẩm.</p>
+          ) : topProductsQuery.data!.empty ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">Chưa có dữ liệu.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Sản phẩm</TableHead>
+                  <TableHead className="text-end">Số lượng</TableHead>
+                  <TableHead className="text-end">GMV nhóm</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {topProductsQuery.data!.products.map((row) => (
+                  <TableRow key={row.productName}>
+                    <TableCell className="max-w-[280px]">{row.productName}</TableCell>
+                    <TableCell className="text-end tabular-nums">{row.unitsSold}</TableCell>
+                    <TableCell className="text-end tabular-nums">
+                      {formatVnd(row.revenue)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -357,24 +536,32 @@ export function AnalyticsDashboard() {
             <CardDescription>Tạo trong kỳ</CardDescription>
           </CardHeader>
           <CardContent className="p-0 sm:px-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-end">Số đơn</TableHead>
-                  <TableHead className="text-end">GMV nhóm</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {statusRows.map((row) => (
-                  <TableRow key={row.status}>
-                    <TableCell>{getOrderStatusLabel(row.status as OrderStatus)}</TableCell>
-                    <TableCell className="text-end tabular-nums">{row.count}</TableCell>
-                    <TableCell className="text-end tabular-nums">{formatVnd(row.gmv)}</TableCell>
+            {statusQuery.isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : statusQuery.isError ? (
+              <p className="px-6 py-4 text-sm text-destructive">Không tải được breakdown.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead className="text-end">Số đơn</TableHead>
+                    <TableHead className="text-end">GMV nhóm</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {statusRows.map((row) => (
+                    <TableRow key={row.status}>
+                      <TableCell>{getOrderStatusLabel(row.status as OrderStatus)}</TableCell>
+                      <TableCell className="text-end tabular-nums">{row.count}</TableCell>
+                      <TableCell className="text-end tabular-nums">{formatVnd(row.gmv)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -383,31 +570,45 @@ export function AnalyticsDashboard() {
             <CardDescription>Theo paymentStatus trên đơn trong kỳ</CardDescription>
           </CardHeader>
           <CardContent className="p-0 sm:px-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-end">Số đơn</TableHead>
-                  <TableHead className="text-end">Tỷ lệ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paymentStatusRows.map((row) => (
-                  <TableRow key={row.paymentStatus}>
-                    <TableCell>
-                      {getPaymentStatusLabel(row.paymentStatus as PaymentStatus)}
-                    </TableCell>
-                    <TableCell className="text-end tabular-nums">{row.count}</TableCell>
-                    <TableCell className="text-end tabular-nums">
-                      {((100 * row.count) / totalForPaymentShare).toFixed(1)}%
-                    </TableCell>
+            {paymentStatusQuery.isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : paymentStatusQuery.isError ? (
+              <p className="px-6 py-4 text-sm text-destructive">Không tải được funnel.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead className="text-end">Số đơn</TableHead>
+                    <TableHead className="text-end">Tỷ lệ</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paymentStatusRows.map((row) => (
+                    <TableRow key={row.paymentStatus}>
+                      <TableCell>
+                        {getPaymentStatusLabel(row.paymentStatus as PaymentStatus)}
+                      </TableCell>
+                      <TableCell className="text-end tabular-nums">{row.count}</TableCell>
+                      <TableCell className="text-end tabular-nums">
+                        {((100 * row.count) / totalForPaymentShare).toFixed(1)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
+      <p className="text-center text-xs text-muted-foreground">
+        Cần quản lý đơn?{' '}
+        <Button variant="link" className="h-auto p-0 text-xs" asChild>
+          <Link href="/orders">Mở danh sách đơn</Link>
+        </Button>
+      </p>
     </div>
   );
 }

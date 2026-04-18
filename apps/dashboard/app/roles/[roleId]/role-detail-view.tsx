@@ -1,14 +1,13 @@
 'use client';
 
-import { CustomerOrdersSection } from '@/app/customers/[customerId]/customer-orders-section';
-import { CustomerReviewsSection } from '@/app/customers/[customerId]/customer-reviews-section';
+import { RoleEmployeesSection } from '@/app/roles/[roleId]/role-employees-section';
 import { BackButton } from '@/components/back-button';
-import { CustomerDetailContent } from '@/components/customers/customer-detail-content';
 import { PageViewHeader } from '@/components/page-view-header';
+import { RoleDetailContent } from '@/components/roles/role-detail-content';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/ui/tabs';
 import { notFound, useParams } from 'next/navigation';
 
-function parseCustomerIdParam(raw: string | string[] | undefined): number | null {
+function parseRoleIdParam(raw: string | string[] | undefined): number | null {
   if (raw == null) {
     return null;
   }
@@ -23,41 +22,38 @@ function parseCustomerIdParam(raw: string | string[] | undefined): number | null
   return numberValue;
 }
 
-export function CustomerDetailView() {
+export function RoleDetailView() {
   const params = useParams();
-  const customerId = parseCustomerIdParam(params.customerId);
-  if (customerId === null) {
+  const roleId = parseRoleIdParam(params.roleId);
+
+  if (roleId === null) {
     notFound();
   }
+
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="flex flex-col gap-3">
         <BackButton className="w-fit gap-2 px-0 text-muted-foreground" />
         <PageViewHeader
-          title={`Chi tiết khách hàng #${customerId}`}
-          description="Xem hồ sơ đầy đủ, toàn bộ đơn hàng và toàn bộ đánh giá của khách hàng."
+          title={`Chi tiết vai trò #${roleId}`}
+          description="Xem thông tin vai trò và danh sách nhân viên đang được gán vào vai trò này."
         />
       </div>
+
       <Tabs defaultValue="info" className="flex flex-1 flex-col gap-4">
         <TabsList className="self-start">
           <TabsTrigger value="info" className="flex-none px-3">
             Thông tin
           </TabsTrigger>
-          <TabsTrigger value="orders" className="flex-none px-3">
-            Đơn hàng
-          </TabsTrigger>
-          <TabsTrigger value="reviews" className="flex-none px-3">
-            Đánh giá
+          <TabsTrigger value="employees" className="flex-none px-3">
+            Nhân viên
           </TabsTrigger>
         </TabsList>
         <TabsContent value="info" className="mt-0 focus-visible:outline-none">
-          <CustomerDetailContent customerId={customerId} />
+          <RoleDetailContent roleId={roleId} />
         </TabsContent>
-        <TabsContent value="orders" className="mt-0 focus-visible:outline-none">
-          <CustomerOrdersSection customerId={customerId} />
-        </TabsContent>
-        <TabsContent value="reviews" className="mt-0 focus-visible:outline-none">
-          <CustomerReviewsSection customerId={customerId} />
+        <TabsContent value="employees" className="mt-0 focus-visible:outline-none">
+          <RoleEmployeesSection roleId={roleId} />
         </TabsContent>
       </Tabs>
     </div>

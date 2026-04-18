@@ -1,20 +1,19 @@
 'use client';
 
-import { CustomersBulkActions } from '@/app/customers/customers-bulk-actions';
-import { customersColumns } from '@/app/customers/customers-columns';
-import { CustomersTableActionsProvider } from '@/app/customers/customers-table-actions-context';
-import { CustomerDetailDialog } from '@/components/customers/customer-detail-dialog';
-import {
-  EditCustomerDialog,
-  type CustomerDialogMode,
-} from '@/components/customers/edit-customer-dialog';
+import { EmployeesBulkActions } from '@/app/employees/employees-bulk-actions';
+import { employeesColumns } from '@/app/employees/employees-columns';
+import { EmployeesTableActionsProvider } from '@/app/employees/employees-table-actions-context';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { useCustomersListTableState } from '@/hooks/use-customers-list-table-state';
-import { listCustomers } from '@/lib/api/customers';
-import { toListCustomersParams } from '@/lib/customers-list-params';
-import type { CustomerListItem } from '@/lib/types/customer';
+import {
+  EditEmployeeDialog,
+  type EmployeeDialogMode,
+} from '@/components/employees/edit-employee-dialog';
+import { useEmployeesListTableState } from '@/hooks/use-employees-list-table-state';
+import { adminModuleDetailPath } from '@/lib/admin-modules';
+import { listEmployees } from '@/lib/api/employees';
+import { toListEmployeesParams } from '@/lib/employees-list-params';
+import type { EmployeeListItem } from '@/lib/types/employee';
 import {
   Table,
   TableBody,
@@ -34,7 +33,13 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
+import { AlertCircleIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+
+type RoleEmployeesSectionProps = {
+  roleId: number;
+};
 
 function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
   return (header.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
@@ -44,9 +49,10 @@ function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): DataTabl
   return (cell.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
 }
 
-const columns = customersColumns;
+const columns = employeesColumns;
 
-export function CustomersTable() {
+export function RoleEmployeesSection({ roleId }: RoleEmployeesSectionProps) {
+  const router = useRouter();
   const {
     pagination,
     onPaginationChange,
@@ -55,41 +61,49 @@ export function CustomersTable() {
     sorting,
     onSortingChange,
     ensurePageInRange,
-  } = useCustomersListTableState();
+  } = useEmployeesListTableState();
 
   const listParams = useMemo(
-    () => toListCustomersParams(pagination, columnFilters, sorting),
-    [pagination, columnFilters, sorting],
+    () => ({
+      ...toListEmployeesParams(pagination, columnFilters, sorting),
+      roleId,
+    }),
+    [pagination, columnFilters, sorting, roleId],
   );
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['customers', 'list', listParams],
-    queryFn: () => listCustomers(listParams),
+    queryKey: ['employees', 'list', 'by-role', listParams],
+    queryFn: () => listEmployees(listParams),
     placeholderData: keepPreviousData,
   });
 
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [customerDialog, setCustomerDialog] = useState<{
+  const [employeeDialog, setEmployeeDialog] = useState<{
     id: number;
-    mode: CustomerDialogMode;
+    mode: EmployeeDialogMode;
   } | null>(null);
-  const [detailCustomerId, setDetailCustomerId] = useState<number | null>(null);
+  const openEmployeeDetail = useCallback(
+    (employee: EmployeeListItem) => {
+      router.push(adminModuleDetailPath('employees', employee.id));
+    },
+    [router],
+  );
 
-  const openCustomerDetail = useCallback((customer: CustomerListItem) => {
-    setDetailCustomerId(customer.id);
+  const openEditRoles = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'roles' });
   }, []);
 
-  const openToggleActive = useCallback((customer: CustomerListItem) => {
-    setCustomerDialog({ id: customer.id, mode: 'active' });
+  const openToggleActive = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'active' });
   }, []);
 
-  const openDeleteCustomer = useCallback((customer: CustomerListItem) => {
-    setCustomerDialog({ id: customer.id, mode: 'delete' });
+  const openDeleteEmployee = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'delete' });
   }, []);
 
-  const openRestoreCustomer = useCallback((customer: CustomerListItem) => {
-    setCustomerDialog({ id: customer.id, mode: 'restore' });
+  const openRestoreEmployee = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'restore' });
   }, []);
 
   const rows = data?.data ?? [];
@@ -127,16 +141,25 @@ export function CustomersTable() {
   }, [table, ensurePageInRange, pageCount]);
 
   if (isError) {
-    const message = error instanceof Error ? error.message : 'Không tải được danh sách khách hàng.';
-    return <InlineErrorAlert message={message} />;
+    const message = error instanceof Error ? error.message : 'Không tải được danh sách nhân viên.';
+    return (
+      <div
+        className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+        role="alert"
+      >
+        <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
+        <p>{message}</p>
+      </div>
+    );
   }
 
   return (
-    <CustomersTableActionsProvider
-      openCustomerDetail={openCustomerDetail}
+    <EmployeesTableActionsProvider
+      openEmployeeDetail={openEmployeeDetail}
+      openEditRoles={openEditRoles}
       openToggleActive={openToggleActive}
-      openDeleteCustomer={openDeleteCustomer}
-      openRestoreCustomer={openRestoreCustomer}
+      openDeleteEmployee={openDeleteEmployee}
+      openRestoreEmployee={openRestoreEmployee}
     >
       <div
         className={cn(
@@ -146,13 +169,13 @@ export function CustomersTable() {
       >
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo tên, email, SĐT…"
+          searchPlaceholder="Tìm theo tên, email, SĐT..."
           searchKey="fullName"
           searchDebounceMs={350}
           filters={[
             {
-              columnId: 'isActive',
-              title: 'Trạng thái',
+              columnId: 'status',
+              title: 'Trạng thái hoạt động',
               selectionMode: 'single',
               options: [
                 { label: 'Đang hoạt động', value: 'active' },
@@ -227,7 +250,7 @@ export function CustomersTable() {
                     colSpan={columns.length}
                     className="h-24 text-center text-muted-foreground"
                   >
-                    {isLoading ? 'Đang tải…' : 'Không có khách hàng phù hợp.'}
+                    {isLoading ? 'Đang tải...' : 'Không có nhân viên nào thuộc vai trò này.'}
                   </TableCell>
                 </TableRow>
               )}
@@ -235,23 +258,16 @@ export function CustomersTable() {
           </Table>
         </div>
         <DataTablePagination table={table} className="mt-auto" />
-        <CustomersBulkActions table={table} />
+        <EmployeesBulkActions table={table} />
       </div>
-      <CustomerDetailDialog
-        customerId={detailCustomerId}
-        open={detailCustomerId !== null}
+      <EditEmployeeDialog
+        employeeId={employeeDialog?.id ?? null}
+        mode={employeeDialog?.mode ?? null}
+        open={employeeDialog !== null}
         onOpenChange={(nextOpen) => {
-          if (!nextOpen) setDetailCustomerId(null);
+          if (!nextOpen) setEmployeeDialog(null);
         }}
       />
-      <EditCustomerDialog
-        customerId={customerDialog?.id ?? null}
-        mode={customerDialog?.mode ?? null}
-        open={customerDialog !== null}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) setCustomerDialog(null);
-        }}
-      />
-    </CustomersTableActionsProvider>
+    </EmployeesTableActionsProvider>
   );
 }

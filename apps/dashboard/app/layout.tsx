@@ -4,7 +4,7 @@ import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { DashboardTooltipProvider } from '@/providers/tooltip-provider';
-import '@repo/ui/globals.css';
+import '@repo/ui/index.css';
 import { inter } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';

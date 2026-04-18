@@ -3,6 +3,7 @@
 import { ordersColumns } from '@/app/orders/orders-columns';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { useOrdersListTableState } from '@/hooks/use-orders-list-table-state';
 import { listAdminOrders } from '@/lib/api/orders';
 import {
@@ -29,7 +30,6 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { AlertCircleIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
@@ -88,15 +88,7 @@ export function OrdersTable() {
   }, [table, ensurePageInRange, pageCount]);
   if (isError) {
     const message = error instanceof Error ? error.message : 'Không tải được danh sách đơn hàng.';
-    return (
-      <div
-        className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-        role="alert"
-      >
-        <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
-        <p>{message}</p>
-      </div>
-    );
+    return <InlineErrorAlert message={message} />;
   }
   return (
     <div className={cn('flex flex-1 flex-col gap-4', isLoading && 'opacity-70')}>

@@ -4,6 +4,7 @@ import { createColorsColumns } from '@/app/colors/colors-columns';
 import { EditColorDialog } from '@/components/colors/edit-color-dialog';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { useColorsListTableState } from '@/hooks/use-colors-list-table-state';
 import { deleteColor, listColors } from '@/lib/api/colors';
 import { toListColorsParams } from '@/lib/colors-list-params';
@@ -30,7 +31,6 @@ import { cn } from '@repo/ui/lib/utils';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
-import { AlertCircleIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -130,15 +130,7 @@ export function ColorsTable() {
 
   if (isError) {
     const message = error instanceof Error ? error.message : 'Không tải được danh sách màu.';
-    return (
-      <div
-        className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-        role="alert"
-      >
-        <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
-        <p>{message}</p>
-      </div>
-    );
+    return <InlineErrorAlert message={message} />;
   }
 
   const searchFilter = columnFilters.find((f) => f.id === 'name');

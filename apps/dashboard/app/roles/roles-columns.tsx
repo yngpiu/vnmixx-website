@@ -6,6 +6,7 @@ import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import type { RoleListItem } from '@/lib/types/rbac';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
+import Link from 'next/link';
 
 const updatedFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
@@ -24,7 +25,14 @@ export function createRolesColumns(handlers: RolesColumnHandlers): ColumnDef<Rol
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Tên" />,
-      cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+      cell: ({ row }) => (
+        <Link
+          href={`/roles/${row.original.id}`}
+          className="font-medium hover:underline underline-offset-4"
+        >
+          {row.original.name}
+        </Link>
+      ),
       meta: { dataTableColumnLabel: 'Tên' } satisfies DataTableColumnMeta,
     },
     {

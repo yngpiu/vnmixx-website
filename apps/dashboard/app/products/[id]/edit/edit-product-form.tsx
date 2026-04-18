@@ -1,5 +1,6 @@
 'use client';
 
+import { BackButton } from '@/components/back-button';
 import { CategoryTreeMultiSelect } from '@/components/categories/category-tree-multi-select';
 import { listCategories } from '@/lib/api/categories';
 import { getProductById, updateProduct } from '@/lib/api/products';
@@ -13,7 +14,7 @@ import { Separator } from '@repo/ui/components/ui/separator';
 import { Switch } from '@repo/ui/components/ui/switch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { ArrowLeftIcon, FolderTreeIcon, PackageIcon, PencilIcon, XIcon } from 'lucide-react';
+import { FolderTreeIcon, PackageIcon, PencilIcon, XIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -175,18 +176,10 @@ export function EditProductForm({ productId }: EditProductFormProps) {
       <header className="mb-8 border-b pb-8">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 space-y-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+            <BackButton
               className="text-muted-foreground -ml-2.5 h-8 gap-1.5 px-2"
-              asChild
-            >
-              <Link href="/products">
-                <ArrowLeftIcon className="size-4 shrink-0" />
-                Quay lại danh sách
-              </Link>
-            </Button>
+              iconClassName="size-4 shrink-0"
+            />
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Chỉnh sửa sản phẩm</h1>
             </div>

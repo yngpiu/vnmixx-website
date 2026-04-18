@@ -15,6 +15,7 @@ import type { OrderAdminListItem } from '@/lib/types/order-admin';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
+import Link from 'next/link';
 
 const createdAtFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
@@ -27,8 +28,13 @@ export const ordersColumns: ColumnDef<OrderAdminListItem>[] = [
     accessorKey: 'orderCode',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Mã đơn" />,
     cell: ({ row }) => (
-      <LongText className="max-w-32 font-mono text-xs font-medium md:max-w-40">
-        {row.original.orderCode}
+      <LongText className="max-w-32 font-mono text-xs md:max-w-40">
+        <Link
+          href={`/orders/${encodeURIComponent(row.original.orderCode)}`}
+          className="font-medium hover:underline underline-offset-4"
+        >
+          {row.original.orderCode}
+        </Link>
       </LongText>
     ),
     meta: {
@@ -46,8 +52,13 @@ export const ordersColumns: ColumnDef<OrderAdminListItem>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Khách hàng" />,
     cell: ({ row }) => (
       <div className="flex min-w-0 flex-col gap-0.5">
-        <LongText className="max-w-36 font-medium md:max-w-48">
-          {row.original.customer.fullName}
+        <LongText className="max-w-36 md:max-w-48">
+          <Link
+            href={`/customers/${row.original.customer.id}`}
+            className="font-medium hover:underline underline-offset-4"
+          >
+            {row.original.customer.fullName}
+          </Link>
         </LongText>
         <span className="text-xs text-muted-foreground tabular-nums">
           {row.original.customer.phoneNumber}

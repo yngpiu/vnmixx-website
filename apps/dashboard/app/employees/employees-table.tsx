@@ -9,6 +9,7 @@ import {
   EditEmployeeDialog,
   type EmployeeDialogMode,
 } from '@/components/employees/edit-employee-dialog';
+import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { useEmployeesListTableState } from '@/hooks/use-employees-list-table-state';
 import { adminModuleDetailPath } from '@/lib/admin-modules';
 import { listEmployees } from '@/lib/api/employees';
@@ -33,7 +34,6 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { AlertCircleIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -135,15 +135,7 @@ export function EmployeesTable() {
 
   if (isError) {
     const message = error instanceof Error ? error.message : 'Không tải được danh sách nhân viên.';
-    return (
-      <div
-        className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-        role="alert"
-      >
-        <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
-        <p>{message}</p>
-      </div>
-    );
+    return <InlineErrorAlert message={message} />;
   }
 
   return (

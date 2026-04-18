@@ -1,5 +1,6 @@
 'use client';
 
+import { BackButton } from '@/components/back-button';
 import { adminModuleEditPath } from '@/lib/admin-modules';
 import { listCategories } from '@/lib/api/categories';
 import { listPublicColors } from '@/lib/api/colors';
@@ -18,7 +19,7 @@ import {
   TableRow,
 } from '@repo/ui/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeftIcon, PencilIcon } from 'lucide-react';
+import { PencilIcon } from 'lucide-react';
 import Link from 'next/link';
 
 type ProductDetailViewProps = {
@@ -108,18 +109,10 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
       <header className="mb-8 border-b pb-8">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0 space-y-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+            <BackButton
               className="text-muted-foreground -ml-2.5 h-8 gap-1.5 px-2"
-              asChild
-            >
-              <Link href="/products">
-                <ArrowLeftIcon className="size-4 shrink-0" />
-                Quay lại danh sách
-              </Link>
-            </Button>
+              iconClassName="size-4 shrink-0"
+            />
             <div>
               <h1 className="text-3xl font-bold tracking-tight">{detail.name}</h1>
               <p className="mt-1 font-mono text-sm text-muted-foreground">{detail.slug}</p>

@@ -6,6 +6,7 @@ import { categoryDisplayName } from '@/lib/category-display-name';
 import type { ProductAdminListItem } from '@/lib/types/product';
 import { Badge } from '@repo/ui/components/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
+import Link from 'next/link';
 import { ProductsRowActions } from './products-row-actions';
 
 const updatedAtFormatter = new Intl.DateTimeFormat('vi-VN', {
@@ -45,7 +46,13 @@ export function createProductColumns(
               )}
             </div>
             <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="truncate font-medium">{title}</span>
+              <Link
+                href={`/products/${p.id}`}
+                className="truncate font-medium hover:underline underline-offset-4"
+                title={title}
+              >
+                {title}
+              </Link>
               {p.deletedAt ? (
                 <Badge variant="destructive" className="w-fit text-[10px]">
                   Đã xóa

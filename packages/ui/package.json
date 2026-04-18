@@ -9,7 +9,7 @@
     "dist"
   ],
   "exports": {
-    "./globals.css": "./src/styles/globals.css",
+    "./index.css": "./src/styles/index.css",
     "./postcss.config": "./postcss.config.mjs",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
@@ -20,10 +20,10 @@
   },
   "license": "MIT",
   "scripts": {
-    "build:styles": "tailwindcss -i ./src/index.css -o ./dist/index.css",
+    "build:styles": "tailwindcss -i ./src/styles/index.css -o ./dist/index.css",
     "build:components": "tsup",
     "check-types": "tsup --dts",
-    "dev:styles": "tailwindcss -i ./src/index.css -o ./dist/index.css --watch",
+    "dev:styles": "tailwindcss -i ./src/styles/index.css -o ./dist/index.css --watch",
     "dev:components": "tsup --watch",
     "lint": "eslint src --max-warnings 0"
   },

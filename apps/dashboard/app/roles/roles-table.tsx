@@ -3,9 +3,10 @@
 import { createRolesColumns } from '@/app/roles/roles-columns';
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { RoleDetailDialog } from '@/components/roles/role-detail-dialog';
+import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { RoleEditDialog } from '@/components/roles/role-edit-dialog';
 import { useRolesListTableState } from '@/hooks/use-roles-list-table-state';
+import { adminModuleDetailPath } from '@/lib/admin-modules';
 import { deleteRole, listRoles } from '@/lib/api/rbac';
 import { toListRolesParams } from '@/lib/roles-list-params';
 import type { RoleListItem } from '@/lib/types/rbac';
@@ -31,7 +32,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { flexRender, getCoreRowModel, useReactTable, type OnChangeFn } from '@tanstack/react-table';
 import { isAxiosError } from 'axios';
-import { AlertCircleIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -56,6 +57,7 @@ function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): DataTabl
 }
 
 export function RolesTable() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const {
     pagination,
@@ -67,11 +69,15 @@ export function RolesTable() {
     ensurePageInRange,
   } = useRolesListTableState();
 
-  const [detailId, setDetailId] = useState<number | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RoleListItem | null>(null);
 
-  const openDetail = useCallback((r: RoleListItem) => setDetailId(r.id), []);
+  const openDetail = useCallback(
+    (r: RoleListItem) => {
+      router.push(adminModuleDetailPath('roles', r.id));
+    },
+    [router],
+  );
   const openEdit = useCallback((r: RoleListItem) => setEditId(r.id), []);
   const openDelete = useCallback((r: RoleListItem) => setDeleteTarget(r), []);
 
@@ -138,15 +144,7 @@ export function RolesTable() {
 
   if (isError) {
     const message = error instanceof Error ? error.message : 'Không tải được danh sách vai trò.';
-    return (
-      <div
-        className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-        role="alert"
-      >
-        <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />
-        <p>{message}</p>
-      </div>
-    );
+    return <InlineErrorAlert message={message} />;
   }
 
   const emptyMessage = globalFilter.trim()
@@ -228,14 +226,6 @@ export function RolesTable() {
         </div>
         <DataTablePagination table={table} className="mt-auto" />
       </div>
-
-      <RoleDetailDialog
-        roleId={detailId}
-        open={detailId != null}
-        onOpenChange={(open) => {
-          if (!open) setDetailId(null);
-        }}
-      />
 
       <RoleEditDialog
         roleId={editId}

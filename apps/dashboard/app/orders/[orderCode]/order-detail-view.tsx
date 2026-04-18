@@ -1,8 +1,8 @@
 'use client';
 
+import { BackButton } from '@/components/back-button';
 import { OrderActionsDialog } from '@/components/orders/order-actions-dialog';
 import { PageViewHeader } from '@/components/page-view-header';
-import { adminModulePath } from '@/lib/admin-modules';
 import { getAdminOrder } from '@/lib/api/orders';
 import { formatVnd } from '@/lib/format-vnd';
 import {
@@ -33,8 +33,7 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { ArrowLeftIcon, Loader2Icon } from 'lucide-react';
-import Link from 'next/link';
+import { Loader2Icon } from 'lucide-react';
 import { notFound, useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
@@ -106,17 +105,7 @@ export function OrderDetailView() {
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-fit gap-2 px-0 text-muted-foreground"
-          asChild
-        >
-          <Link href={adminModulePath('orders')}>
-            <ArrowLeftIcon className="size-4" />
-            Danh sách đơn hàng
-          </Link>
-        </Button>
+        <BackButton className="w-fit gap-2 px-0 text-muted-foreground" />
         <div className="flex flex-wrap items-start justify-between gap-4">
           <PageViewHeader
             title={order.orderCode}

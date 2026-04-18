@@ -1,5 +1,5 @@
 import { PageVisitTracker } from '@/components/page-visit-tracker';
-import '@repo/ui/globals.css';
+import '@repo/ui/index.css';
 import { montserrat } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
