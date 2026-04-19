@@ -1,5 +1,5 @@
 import type { ListRolesParams } from '@/lib/api/rbac';
-import { ROLE_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
+import { ROLE_TABLE_SORT_IDS } from '@/utils/data-table-sort-allowlists';
 import type { PaginationState, SortingState } from '@tanstack/react-table';
 
 const sortIds = ROLE_TABLE_SORT_IDS as readonly string[];

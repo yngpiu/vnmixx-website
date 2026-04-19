@@ -9,7 +9,7 @@ import {
   updateAdminReviewStatus,
   type AdminReviewListParams,
 } from '@/lib/api/analytics';
-import type { AdminReviewListItem } from '@/lib/types/analytics';
+import type { AdminReviewListItem } from '@/types/analytics';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -297,7 +297,7 @@ export function ReviewsManagementView(): React.JSX.Element {
       <div className="flex flex-col gap-4">
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo tiêu đề, nội dung, sản phẩm, khách hàng..."
+          searchHelpTooltip="Tìm theo tiêu đề, nội dung đánh giá, tên sản phẩm hoặc tên khách hàng."
           globalFilterDebounceMs={350}
           filters={[
             {

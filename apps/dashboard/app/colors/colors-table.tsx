@@ -7,8 +7,8 @@ import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { useColorsListTableState } from '@/hooks/use-colors-list-table-state';
 import { deleteColor, listColors } from '@/lib/api/colors';
-import { toListColorsParams } from '@/lib/colors-list-params';
-import type { ColorAdmin } from '@/lib/types/color';
+import type { ColorAdmin } from '@/types/color';
+import { toListColorsParams } from '@/utils/colors-list-params';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -147,7 +147,7 @@ export function ColorsTable() {
       >
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo tên hoặc mã HEX…"
+          searchHelpTooltip="Tìm theo tên màu hoặc mã màu HEX."
           searchKey="name"
           searchDebounceMs={350}
         />

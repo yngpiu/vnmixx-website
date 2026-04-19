@@ -3,7 +3,7 @@
 import { ColorsRowActions } from '@/app/colors/colors-row-actions';
 import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import type { ColorAdmin } from '@/lib/types/color';
+import type { ColorAdmin } from '@/types/color';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
 

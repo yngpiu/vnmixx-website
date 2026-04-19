@@ -1,7 +1,11 @@
 'use client';
 
+import {
+  DATA_TABLE_SEARCH_PLACEHOLDER,
+  DataTableToolbarSearchInput,
+} from '@/components/data-table';
 import { deleteFolder, deleteMedia, listFolders, listMedia } from '@/lib/api/media';
-import type { ListMediaParams, MediaFile } from '@/lib/types/media';
+import type { ListMediaParams, MediaFile } from '@/types/media';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -237,7 +241,7 @@ export function MediaLibrary() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
-      <h1 className="shrink-0 text-2xl font-bold tracking-tight">Thư viện ảnh</h1>
+      <h1 className="shrink-0 text-2xl font-bold tracking-tight">Bộ sưu tập</h1>
 
       {/* Main layout: fixed height; only the file list panel scrolls */}
       <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border bg-card shadow-sm">
@@ -280,25 +284,26 @@ export function MediaLibrary() {
 
             <div className="flex-1" />
 
-            {/* Search */}
-            <div className="relative">
-              <SearchIcon className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
-              <Input
-                placeholder="Tìm kiếm…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-8 w-44 pl-8 text-sm"
-              />
-              {search ? (
-                <button
-                  type="button"
-                  className="text-muted-foreground absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setSearch('')}
-                >
-                  <XIcon className="size-3.5" />
-                </button>
-              ) : null}
-            </div>
+            <DataTableToolbarSearchInput
+              className="h-8 w-44 min-w-0 text-sm sm:w-52"
+              startAddon={<SearchIcon className="size-4 shrink-0" aria-hidden />}
+              endAddon={
+                search ? (
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground rounded-sm p-0.5 transition-colors"
+                    aria-label="Xóa tìm kiếm"
+                    onClick={() => setSearch('')}
+                  >
+                    <XIcon className="size-3.5" />
+                  </button>
+                ) : null
+              }
+              searchHelpTooltip="Tìm theo tên file trong thư mục đang mở (kết hợp với bộ lọc loại và thứ tự sắp xếp hiện tại)."
+              placeholder={DATA_TABLE_SEARCH_PLACEHOLDER}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
             {/* Mime filter */}
             <Select value={mimeFilter} onValueChange={(v) => setMimeFilter(v as MimeFilter)}>

@@ -7,8 +7,8 @@ import { listAdminOrders } from '@/lib/api/orders';
 import {
   ORDER_STATUS_FILTER_OPTIONS,
   PAYMENT_STATUS_FILTER_OPTIONS,
-} from '@/lib/order-status-labels';
-import { toListAdminOrdersParams } from '@/lib/orders-list-params';
+} from '@/utils/order-status-labels';
+import { toListAdminOrdersParams } from '@/utils/orders-list-params';
 import {
   Table,
   TableBody,
@@ -105,7 +105,7 @@ export function CustomerOrdersSection({ customerId }: CustomerOrdersSectionProps
     <div className={cn('flex flex-1 flex-col gap-4', ordersQuery.isLoading && 'opacity-70')}>
       <DataTableToolbar
         table={table}
-        searchPlaceholder="Mã đơn, tên, SĐT, mã GHN…"
+        searchHelpTooltip="Tìm theo mã đơn, tên khách, số điện thoại hoặc mã vận đơn GHN."
         searchKey="orderCode"
         searchDebounceMs={350}
         filters={[

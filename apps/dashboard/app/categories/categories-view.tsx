@@ -3,7 +3,7 @@
 import { CategoriesTable } from '@/app/categories/categories-table';
 import { CreateCategoryDialog } from '@/components/categories/create-category-dialog';
 import { ListPage } from '@/components/list-page';
-import type { CategoryAdminTreeNode } from '@/lib/types/category';
+import type { CategoryAdminTreeNode } from '@/types/category';
 import { Button } from '@repo/ui/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';

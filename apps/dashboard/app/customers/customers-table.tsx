@@ -13,8 +13,8 @@ import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { useCustomersListTableState } from '@/hooks/use-customers-list-table-state';
 import { listCustomers } from '@/lib/api/customers';
-import { toListCustomersParams } from '@/lib/customers-list-params';
-import type { CustomerListItem } from '@/lib/types/customer';
+import type { CustomerListItem } from '@/types/customer';
+import { toListCustomersParams } from '@/utils/customers-list-params';
 import {
   Table,
   TableBody,
@@ -146,7 +146,7 @@ export function CustomersTable() {
       >
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo tên, email, SĐT…"
+          searchHelpTooltip="Tìm theo tên, email hoặc số điện thoại."
           searchKey="fullName"
           searchDebounceMs={350}
           filters={[

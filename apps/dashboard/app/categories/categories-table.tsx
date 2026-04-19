@@ -14,11 +14,11 @@ import {
   updateCategory,
   type UpdateCategoryBody,
 } from '@/lib/api/categories';
-import { toListCategoriesParams } from '@/lib/categories-list-params';
-import { categoryDisplayName } from '@/lib/category-display-name';
-import { buildCategoryAdminTree, flattenVisibleCategoryRows } from '@/lib/category-tree';
-import { CATEGORY_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
-import type { CategoryAdmin, CategoryAdminTreeNode, CategoryTableRow } from '@/lib/types/category';
+import type { CategoryAdmin, CategoryAdminTreeNode, CategoryTableRow } from '@/types/category';
+import { toListCategoriesParams } from '@/utils/categories-list-params';
+import { categoryDisplayName } from '@/utils/category-display-name';
+import { buildCategoryAdminTree, flattenVisibleCategoryRows } from '@/utils/category-tree';
+import { CATEGORY_TABLE_SORT_IDS } from '@/utils/data-table-sort-allowlists';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -365,7 +365,7 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
         >
           <DataTableToolbar
             table={table}
-            searchPlaceholder="Tìm theo tên hiển thị, tên đầy đủ hoặc slug…"
+            searchHelpTooltip="Tìm theo tên hiển thị, tên đầy đủ hoặc slug."
             globalFilterDebounceMs={350}
             filters={[
               {

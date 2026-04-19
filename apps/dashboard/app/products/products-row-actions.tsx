@@ -1,6 +1,6 @@
 'use client';
 
-import type { ProductAdminListItem } from '@/lib/types/product';
+import type { ProductAdminListItem } from '@/types/product';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,

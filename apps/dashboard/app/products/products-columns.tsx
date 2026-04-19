@@ -2,8 +2,8 @@
 
 import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { categoryDisplayName } from '@/lib/category-display-name';
-import type { ProductAdminListItem } from '@/lib/types/product';
+import type { ProductAdminListItem } from '@/types/product';
+import { categoryDisplayName } from '@/utils/category-display-name';
 import { Badge } from '@repo/ui/components/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';

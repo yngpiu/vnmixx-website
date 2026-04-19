@@ -7,9 +7,9 @@ import {
   getAdminOrder,
   type ConfirmOrderShipmentInput,
 } from '@/lib/api/orders';
-import { formatVnd } from '@/lib/format-vnd';
-import { getOrderStatusLabel, getPaymentStatusLabel } from '@/lib/order-status-labels';
-import type { OrderAdminDetail, PaymentMethod } from '@/lib/types/order-admin';
+import type { OrderAdminDetail, PaymentMethod } from '@/types/order-admin';
+import { formatVnd } from '@/utils/format-vnd';
+import { getOrderStatusLabel, getPaymentStatusLabel } from '@/utils/order-status-labels';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,

@@ -3,8 +3,8 @@
 import { CategoriesRowActions } from '@/app/categories/categories-row-actions';
 import { DataTableColumnHeader } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { categoryDisplayName } from '@/lib/category-display-name';
-import type { CategoryTableRow } from '@/lib/types/category';
+import type { CategoryTableRow } from '@/types/category';
+import { categoryDisplayName } from '@/utils/category-display-name';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { cn } from '@repo/ui/lib/utils';

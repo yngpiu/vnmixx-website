@@ -1,4 +1,4 @@
-import type { CategoryAdmin, CategoryAdminTreeNode, CategoryTableRow } from '@/lib/types/category';
+import type { CategoryAdmin, CategoryAdminTreeNode, CategoryTableRow } from '@/types/category';
 
 function sortByOrderThenId(a: CategoryAdminTreeNode, b: CategoryAdminTreeNode): number {
   if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;

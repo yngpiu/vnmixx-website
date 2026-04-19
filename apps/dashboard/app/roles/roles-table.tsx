@@ -8,8 +8,8 @@ import { RoleEditDialog } from '@/components/roles/role-edit-dialog';
 import { useRolesListTableState } from '@/hooks/use-roles-list-table-state';
 import { adminModuleDetailPath } from '@/lib/admin-modules';
 import { deleteRole, listRoles } from '@/lib/api/rbac';
-import { toListRolesParams } from '@/lib/roles-list-params';
-import type { RoleListItem } from '@/lib/types/rbac';
+import type { RoleListItem } from '@/types/rbac';
+import { toListRolesParams } from '@/utils/roles-list-params';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -161,7 +161,7 @@ export function RolesTable() {
       >
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo tên vai trò…"
+          searchHelpTooltip="Tìm theo tên vai trò."
           globalFilterDebounceMs={350}
         />
         <div className="overflow-hidden rounded-md border">

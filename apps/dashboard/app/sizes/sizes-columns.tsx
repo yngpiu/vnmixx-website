@@ -3,7 +3,7 @@
 import { SizesRowActions } from '@/app/sizes/sizes-row-actions';
 import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import type { SizeAdmin } from '@/lib/types/size';
+import type { SizeAdmin } from '@/types/size';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
 

@@ -2,7 +2,7 @@ import { ReviewsManagementView } from '@/components/reviews/reviews-management-v
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Đánh giá · Vnmixx' };
+export const metadata: Metadata = { title: 'Đánh giá' };
 
 function ReviewsViewSkeleton() {
   return (

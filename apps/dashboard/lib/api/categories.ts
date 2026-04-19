@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/axios';
-import type { CategoryAdmin } from '@/lib/types/category';
+import type { CategoryAdmin } from '@/types/category';
 
 export type ListCategoriesParams = {
   isActive?: boolean;

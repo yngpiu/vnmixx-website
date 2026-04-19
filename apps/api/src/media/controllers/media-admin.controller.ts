@@ -32,13 +32,7 @@ import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
-import {
-  BatchDeleteMediaDto,
-  CreateFolderDto,
-  ListMediaQueryDto,
-  MoveMediaDto,
-  UploadMediaDto,
-} from '../dto';
+import { CreateFolderDto, ListMediaQueryDto, MoveMediaDto, UploadMediaDto } from '../dto';
 import { MediaService, type UploadedFileInput } from '../services/media.service';
 
 /** Max file size transport limit: 50 MB */
@@ -139,18 +133,6 @@ export class MediaAdminController {
     @Req() request: Request,
   ) {
     return this.mediaService.deleteFolder(path, buildAuditRequestContext(request, user));
-  }
-
-  @ApiOperation({ summary: 'Xóa nhiều files cùng lúc' })
-  @ApiOkResponse({ description: 'Số files đã xóa.' })
-  @Post('batch-delete')
-  @HttpCode(HttpStatus.OK)
-  async batchDelete(
-    @Body() dto: BatchDeleteMediaDto,
-    @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
-  ) {
-    return this.mediaService.batchDeleteMedia(dto, buildAuditRequestContext(request, user));
   }
 
   @ApiOperation({ summary: 'Di chuyển file sang thư mục khác' })

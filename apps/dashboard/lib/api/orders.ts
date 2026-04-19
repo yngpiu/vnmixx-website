@@ -4,7 +4,7 @@ import type {
   OrderAdminListResponse,
   OrderStatus,
   PaymentStatus,
-} from '@/lib/types/order-admin';
+} from '@/types/order-admin';
 
 export type ListAdminOrdersParams = {
   page?: number;

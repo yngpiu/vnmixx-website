@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/axios';
-import type { SizeAdmin, SizeListResponse, SizePublic } from '@/lib/types/size';
+import type { SizeAdmin, SizeListResponse, SizePublic } from '@/types/size';
 
 export type ListSizesParams = {
   page?: number;

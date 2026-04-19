@@ -4,7 +4,7 @@ import type {
   EmployeeDetail,
   EmployeeListResponse,
   UpdateEmployeePayload,
-} from '@/lib/types/employee';
+} from '@/types/employee';
 
 export type ListEmployeesParams = {
   page?: number;

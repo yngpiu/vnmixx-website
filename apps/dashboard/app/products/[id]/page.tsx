@@ -2,7 +2,7 @@ import { ProductDetailView } from '@/app/products/[id]/product-detail-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Chi tiết · Sản phẩm · Vnmixx' };
+export const metadata: Metadata = { title: 'Chi tiết sản phẩm' };
 
 type ProductDetailPageProps = {
   params: Promise<{ id: string }>;

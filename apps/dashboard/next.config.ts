@@ -17,11 +17,6 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@repo/ui'],
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        pathname: '/**',
-      },
       ...(r2Hostname
         ? [{ protocol: 'https' as const, hostname: r2Hostname, pathname: '/**' }]
         : []),

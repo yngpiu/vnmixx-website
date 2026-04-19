@@ -4,14 +4,14 @@ import { BackButton } from '@/components/back-button';
 import { OrderActionsDialog } from '@/components/orders/order-actions-dialog';
 import { PageViewHeader } from '@/components/page-view-header';
 import { getAdminOrder } from '@/lib/api/orders';
-import { formatVnd } from '@/lib/format-vnd';
+import type { OrderAdminDetail } from '@/types/order-admin';
+import { formatVnd } from '@/utils/format-vnd';
 import {
   getOrderStatusBadgeClassName,
   getOrderStatusLabel,
   getPaymentStatusBadgeClassName,
   getPaymentStatusLabel,
-} from '@/lib/order-status-labels';
-import type { OrderAdminDetail } from '@/lib/types/order-admin';
+} from '@/utils/order-status-labels';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {

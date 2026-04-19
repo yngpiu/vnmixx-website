@@ -2,7 +2,7 @@
 
 import { createEmployee } from '@/lib/api/employees';
 import { listRoles } from '@/lib/api/roles';
-import type { CreateEmployeePayload } from '@/lib/types/employee';
+import type { CreateEmployeePayload } from '@/types/employee';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Combobox,

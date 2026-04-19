@@ -9,7 +9,7 @@ import { EmployeeInfiniteColumnFilter } from '@/components/employees/employee-in
 import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { adminModuleDetailPath } from '@/lib/admin-modules';
 import { listAuditLogs } from '@/lib/api/audit-logs';
-import type { AuditLogItem } from '@/lib/types/audit-log';
+import type { AuditLogItem } from '@/types/audit-log';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Table,
@@ -74,13 +74,13 @@ export function AuditLogsTable() {
       .map((s) => Number.parseInt(s, 10))
       .filter((n) => Number.isFinite(n) && n >= 1);
     const actions = actionFilterValues.length > 0 ? [...actionFilterValues] : undefined;
-    const actionSubstring =
+    const search =
       actions === undefined && globalFilter.trim().length > 0 ? globalFilter.trim() : undefined;
     return {
       page: pagination.pageIndex + 1,
       limit: pagination.pageSize,
       actions,
-      action: actionSubstring,
+      search,
       status:
         statusFilterValues.length === 1
           ? (statusFilterValues[0] as 'SUCCESS' | 'FAILED')
@@ -186,7 +186,7 @@ export function AuditLogsTable() {
       />
       <DataTableToolbar
         table={table}
-        searchPlaceholder="Tìm theo mã hành động…"
+        searchHelpTooltip="Tìm theo họ tên hoặc email nhân viên thực hiện, hoặc theo tên hành động hiển thị bằng tiếng Việt."
         globalFilterDebounceMs={350}
         filterExtras={
           <>

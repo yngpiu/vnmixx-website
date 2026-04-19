@@ -1,6 +1,6 @@
 'use client';
 
-import { getPageNumbers } from '@/lib/pagination';
+import { getPageNumbers } from '@/utils/pagination';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Select,

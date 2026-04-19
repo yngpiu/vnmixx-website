@@ -2,7 +2,7 @@ import { OrderDetailView } from '@/app/orders/[orderCode]/order-detail-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Chi tiết đơn hàng · Vnmixx' };
+export const metadata: Metadata = { title: 'Chi tiết đơn hàng' };
 
 function OrderDetailSkeleton() {
   return (

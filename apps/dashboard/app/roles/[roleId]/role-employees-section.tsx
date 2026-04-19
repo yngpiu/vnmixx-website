@@ -12,8 +12,8 @@ import {
 import { useEmployeesListTableState } from '@/hooks/use-employees-list-table-state';
 import { adminModuleDetailPath } from '@/lib/admin-modules';
 import { listEmployees } from '@/lib/api/employees';
-import { toListEmployeesParams } from '@/lib/employees-list-params';
-import type { EmployeeListItem } from '@/lib/types/employee';
+import type { EmployeeListItem } from '@/types/employee';
+import { toListEmployeesParams } from '@/utils/employees-list-params';
 import {
   Table,
   TableBody,
@@ -169,7 +169,7 @@ export function RoleEmployeesSection({ roleId }: RoleEmployeesSectionProps) {
       >
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo tên, email, SĐT..."
+          searchHelpTooltip="Tìm theo tên, email hoặc số điện thoại."
           searchKey="fullName"
           searchDebounceMs={350}
           filters={[

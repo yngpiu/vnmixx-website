@@ -1,4 +1,4 @@
-import type { OrderStatus, PaymentStatus } from '@/lib/types/order-admin';
+import type { OrderStatus, PaymentStatus } from '@/types/order-admin';
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING: 'Chờ xử lý',

@@ -74,7 +74,7 @@ const catalogItems: SidebarNavItem[] = [
     icon: <RulerIcon />,
   },
   {
-    title: 'Thư viện ảnh',
+    title: 'Bộ sưu tập',
     url: '/media',
     icon: <ImageIcon />,
   },

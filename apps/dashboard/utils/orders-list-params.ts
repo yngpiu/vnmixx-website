@@ -1,5 +1,5 @@
 import type { ListAdminOrdersParams } from '@/lib/api/orders';
-import type { OrderStatus, PaymentStatus } from '@/lib/types/order-admin';
+import type { OrderStatus, PaymentStatus } from '@/types/order-admin';
 import type { ColumnFiltersState, PaginationState } from '@tanstack/react-table';
 
 function singleFacetedValue(

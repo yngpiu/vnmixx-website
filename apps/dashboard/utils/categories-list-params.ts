@@ -1,5 +1,5 @@
 import type { ListCategoriesParams } from '@/lib/api/categories';
-import { isSoftDeletedFromDeletedColumnFilter } from '@/lib/list-soft-deleted-from-column-filter';
+import { isSoftDeletedFromDeletedColumnFilter } from '@/utils/list-soft-deleted-from-column-filter';
 import type { ColumnFiltersState } from '@tanstack/react-table';
 
 /** Map bộ lọc cột sang query API. `isSoftDeleted` mặc định false (ẩn đã xóa mềm) trừ khi chọn «cả hai». */

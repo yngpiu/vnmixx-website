@@ -1,8 +1,8 @@
 'use client';
 
-import { categoryDisplayName } from '@/lib/category-display-name';
-import { buildCategoryAdminTree } from '@/lib/category-tree';
-import type { CategoryAdmin, CategoryAdminTreeNode } from '@/lib/types/category';
+import type { CategoryAdmin, CategoryAdminTreeNode } from '@/types/category';
+import { categoryDisplayName } from '@/utils/category-display-name';
+import { buildCategoryAdminTree } from '@/utils/category-tree';
 import { Button } from '@repo/ui/components/ui/button';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Input } from '@repo/ui/components/ui/input';
@@ -13,11 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 const SEARCH_DEBOUNCE_MS = 300;
 
 function norm(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
+  return s.toLowerCase().trim();
 }
 
 /** Giữ nhánh nếu tên nút hoặc tên ở cây con khớp tìm kiếm. */

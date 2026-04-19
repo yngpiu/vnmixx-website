@@ -3,7 +3,7 @@
 import {
   getAuditLogActionFilterTree,
   type AuditLogActionFilterGroup,
-} from '@/lib/audit-log-action-label';
+} from '@/utils/audit-log-action-label';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {

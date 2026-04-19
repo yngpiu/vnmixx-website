@@ -1,17 +1,20 @@
 'use client';
 
 import { Button } from '@repo/ui/components/ui/button';
-import { Input } from '@repo/ui/components/ui/input';
 import type { Column, Table } from '@tanstack/react-table';
 import { XIcon } from 'lucide-react';
 import type { ComponentType, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { DataTableFacetedFilter } from './faceted-filter';
+import { DATA_TABLE_SEARCH_PLACEHOLDER, DataTableToolbarSearchInput } from './toolbar-search-input';
 import { DataTableViewOptions } from './view-options';
 
 type DataTableToolbarProps<TData> = {
   table: Table<TData>;
+  /** Mặc định {@link DATA_TABLE_SEARCH_PLACEHOLDER}. */
   searchPlaceholder?: string;
+  /** Mô tả chi tiết kiểu tìm kiếm; khi có, ô tìm dùng input-group + icon info + tooltip. */
+  searchHelpTooltip?: ReactNode;
   searchKey?: string;
   /** When set with `searchKey`, URL/API updates wait until typing pauses (smoother search). */
   searchDebounceMs?: number;
@@ -38,10 +41,12 @@ function DataTableToolbarDebouncedSearch<TData>({
   column,
   placeholder,
   debounceMs,
+  searchHelpTooltip,
 }: {
   column: Column<TData, unknown>;
   placeholder: string;
   debounceMs: number;
+  searchHelpTooltip?: ReactNode;
 }) {
   const committed = (column.getFilterValue() as string) ?? '';
   const [draft, setDraft] = useState(committed);
@@ -66,11 +71,11 @@ function DataTableToolbarDebouncedSearch<TData>({
   }, [column, committed, debounceMs, draft]);
 
   return (
-    <Input
+    <DataTableToolbarSearchInput
+      searchHelpTooltip={searchHelpTooltip}
       placeholder={placeholder}
       value={draft}
       onChange={(event) => setDraft(event.target.value)}
-      className="h-8 w-[150px] lg:w-[260px]"
     />
   );
 }
@@ -79,10 +84,12 @@ function DataTableToolbarDebouncedGlobalSearch<TData>({
   table,
   placeholder,
   debounceMs,
+  searchHelpTooltip,
 }: {
   table: Table<TData>;
   placeholder: string;
   debounceMs: number;
+  searchHelpTooltip?: ReactNode;
 }) {
   const committed = table.getState().globalFilter ?? '';
   const [draft, setDraft] = useState(committed);
@@ -107,18 +114,19 @@ function DataTableToolbarDebouncedGlobalSearch<TData>({
   }, [table, committed, debounceMs, draft]);
 
   return (
-    <Input
+    <DataTableToolbarSearchInput
+      searchHelpTooltip={searchHelpTooltip}
       placeholder={placeholder}
       value={draft}
       onChange={(event) => setDraft(event.target.value)}
-      className="h-8 w-[150px] lg:w-[260px]"
     />
   );
 }
 
 export function DataTableToolbar<TData>({
   table,
-  searchPlaceholder = 'Lọc…',
+  searchPlaceholder = DATA_TABLE_SEARCH_PLACEHOLDER,
+  searchHelpTooltip,
   searchKey,
   searchDebounceMs = 0,
   globalFilterDebounceMs = 0,
@@ -140,13 +148,14 @@ export function DataTableToolbar<TData>({
                 column={searchColumn}
                 placeholder={searchPlaceholder}
                 debounceMs={searchDebounceMs}
+                searchHelpTooltip={searchHelpTooltip}
               />
             ) : (
-              <Input
+              <DataTableToolbarSearchInput
+                searchHelpTooltip={searchHelpTooltip}
                 placeholder={searchPlaceholder}
                 value={(searchColumn.getFilterValue() as string) ?? ''}
                 onChange={(event) => searchColumn.setFilterValue(event.target.value)}
-                className="h-8 w-[150px] lg:w-[260px]"
               />
             )
           ) : null
@@ -155,13 +164,14 @@ export function DataTableToolbar<TData>({
             table={table}
             placeholder={searchPlaceholder}
             debounceMs={globalFilterDebounceMs}
+            searchHelpTooltip={searchHelpTooltip}
           />
         ) : (
-          <Input
+          <DataTableToolbarSearchInput
+            searchHelpTooltip={searchHelpTooltip}
             placeholder={searchPlaceholder}
             value={table.getState().globalFilter ?? ''}
             onChange={(event) => table.setGlobalFilter(event.target.value)}
-            className="h-8 w-[150px] lg:w-[260px]"
           />
         )}
         <div className="flex flex-wrap gap-2">

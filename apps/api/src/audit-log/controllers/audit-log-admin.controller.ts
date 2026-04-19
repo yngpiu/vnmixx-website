@@ -36,12 +36,14 @@ export class AuditLogAdminController {
     }
     const resourceTypes = [...new Set(rTypes)];
     const actionCodes = [...new Set([...(query.actions ?? [])])];
+    const search = query.search?.trim();
     return this.auditLogService.findList({
       page: query.page ?? 1,
       limit: query.limit ?? 20,
       actorEmployeeIds: actorEmployeeIds.length > 0 ? actorEmployeeIds : undefined,
       actions: actionCodes.length > 0 ? actionCodes : undefined,
-      action: query.action,
+      action: search ? undefined : query.action,
+      search: search && search.length > 0 ? search : undefined,
       resourceTypes: resourceTypes.length > 0 ? resourceTypes : undefined,
       resourceId: query.resourceId,
       status: query.status,

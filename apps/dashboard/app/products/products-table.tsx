@@ -8,9 +8,9 @@ import { useProductsListTableState } from '@/hooks/use-products-list-table-state
 import { adminModuleEditPath } from '@/lib/admin-modules';
 import { listCategories } from '@/lib/api/categories';
 import { deleteProduct, listProducts, restoreProduct, updateProduct } from '@/lib/api/products';
-import { categoryDisplayName } from '@/lib/category-display-name';
-import { toListProductsParams } from '@/lib/products-list-params';
-import type { ProductAdminListItem } from '@/lib/types/product';
+import type { ProductAdminListItem } from '@/types/product';
+import { categoryDisplayName } from '@/utils/category-display-name';
+import { toListProductsParams } from '@/utils/products-list-params';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -201,7 +201,7 @@ export function ProductsTable() {
       >
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo tên sản phẩm…"
+          searchHelpTooltip="Tìm theo tên sản phẩm."
           searchKey="name"
           searchDebounceMs={350}
           filters={[

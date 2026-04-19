@@ -68,10 +68,6 @@ export class MediaRepository {
     return this.prisma.mediaFile.findUnique({ where: { id } });
   }
 
-  async findByIds(ids: number[]) {
-    return this.prisma.mediaFile.findMany({ where: { id: { in: ids } } });
-  }
-
   async create(data: MediaFileCreateInput) {
     return this.prisma.mediaFile.create({ data });
   }
@@ -85,10 +81,6 @@ export class MediaRepository {
 
   async deleteById(id: number) {
     return this.prisma.mediaFile.delete({ where: { id } });
-  }
-
-  async deleteByIds(ids: number[]) {
-    return this.prisma.mediaFile.deleteMany({ where: { id: { in: ids } } });
   }
 
   /** Get all folders: merged from file paths + explicitly created folders. */

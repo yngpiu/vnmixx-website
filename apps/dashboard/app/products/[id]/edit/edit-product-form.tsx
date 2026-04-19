@@ -4,8 +4,8 @@ import { BackButton } from '@/components/back-button';
 import { CategoryTreeMultiSelect } from '@/components/categories/category-tree-multi-select';
 import { listCategories } from '@/lib/api/categories';
 import { getProductById, updateProduct } from '@/lib/api/products';
-import { categoryDisplayName } from '@/lib/category-display-name';
-import type { CategoryAdmin } from '@/lib/types/category';
+import type { CategoryAdmin } from '@/types/category';
+import { categoryDisplayName } from '@/utils/category-display-name';
 import { Button } from '@repo/ui/components/ui/button';
 import { Field, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
@@ -39,8 +39,6 @@ function apiErrorMessage(err: unknown): string {
 
 function suggestSlugFromName(name: string): string {
   const base = name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')

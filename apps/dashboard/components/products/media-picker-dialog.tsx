@@ -4,8 +4,12 @@ import { CreateFolderDialog } from '@/app/media/create-folder-dialog';
 import { FolderTree } from '@/app/media/folder-tree';
 import { MediaGrid } from '@/app/media/media-grid';
 import { UploadDialog } from '@/app/media/upload-dialog';
+import {
+  DATA_TABLE_SEARCH_PLACEHOLDER,
+  DataTableToolbarSearchInput,
+} from '@/components/data-table';
 import { deleteFolder, deleteMedia, listFolders, listMedia } from '@/lib/api/media';
-import type { MediaFile } from '@/lib/types/media';
+import type { MediaFile } from '@/types/media';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -291,15 +295,14 @@ export function MediaPickerDialog({
                   </span>
                 ))}
               </nav>
-              <div className="relative">
-                <SearchIcon className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Tìm kiếm…"
-                  className="h-8 w-52 pl-8 text-sm"
-                />
-              </div>
+              <DataTableToolbarSearchInput
+                className="h-8 w-52 min-w-0 text-sm"
+                startAddon={<SearchIcon className="size-4 shrink-0" aria-hidden />}
+                searchHelpTooltip="Tìm theo tên file trong thư mục đang mở (kết hợp với bộ lọc loại và thứ tự sắp xếp hiện tại)."
+                placeholder={DATA_TABLE_SEARCH_PLACEHOLDER}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
               <Select value={mimeFilter} onValueChange={(v) => setMimeFilter(v as MimeFilter)}>
                 <SelectTrigger className="h-8 w-28 text-sm">
                   <SelectValue />

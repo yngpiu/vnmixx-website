@@ -289,10 +289,8 @@ const FASHION_TREE: CatL1[] = [
 const SLUG_MAX = 120;
 
 function slugifyVn(input: string): string {
-  let s = input.normalize('NFD').replace(/\p{M}/gu, '');
-  s = s.replace(/\u0111/g, 'd').replace(/\u0110/g, 'd');
-  s = s.toLowerCase();
-  return s
+  return input
+    .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-');

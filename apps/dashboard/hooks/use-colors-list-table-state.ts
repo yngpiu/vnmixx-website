@@ -1,7 +1,7 @@
 'use client';
 
-import { COLOR_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
-import { normalizeSortingState } from '@/lib/data-table-sort-state';
+import { COLOR_TABLE_SORT_IDS } from '@/utils/data-table-sort-allowlists';
+import { normalizeSortingState } from '@/utils/data-table-sort-state';
 import type {
   ColumnFiltersState,
   OnChangeFn,

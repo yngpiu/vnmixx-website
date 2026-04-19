@@ -3,17 +3,33 @@
 import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { LongText } from '@/components/long-text';
-import { auditLogActionDisplayName } from '@/lib/audit-log-action-label';
-import { permissionModuleDisplayName } from '@/lib/permission-label';
-import type { AuditLogItem } from '@/lib/types/audit-log';
+import type { AuditLogItem } from '@/types/audit-log';
+import {
+  auditLogActionDisplayName,
+  getAuditLogActionBadgeStyles,
+} from '@/utils/audit-log-action-label';
+import { permissionModuleDisplayName } from '@/utils/permission-label';
 import { Badge } from '@repo/ui/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
 
-const dateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+/** Hai dòng: dòng 1 đậm, dòng 2 muted — dùng chung cột thời gian & người thao tác. */
+const auditLogTwoLineStack = 'tabular-nums leading-tight min-w-0';
+const auditLogTwoLinePrimary = 'truncate  text-foreground';
+const auditLogTwoLineSecondary = 'mt-0.5 truncate text-muted-foreground';
+
+/** dd.mm.yyyy và hh:mm:ss (giờ địa phương). */
+function auditLogCreatedAtParts(iso: string): { date: string; time: string } {
+  const d = new Date(iso);
+  const date = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
+  const time = `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  return { date, time };
+}
 
 function buildActorLabel(item: AuditLogItem): string {
   if (!item.actorEmployee) {
@@ -35,11 +51,15 @@ export function createAuditLogsColumns(
     {
       accessorKey: 'createdAt',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Thời gian" />,
-      cell: ({ row }) => (
-        <span className="tabular-nums text-muted-foreground">
-          {dateTimeFormatter.format(new Date(row.original.createdAt))}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const { date, time } = auditLogCreatedAtParts(row.original.createdAt);
+        return (
+          <div className={auditLogTwoLineStack}>
+            <div className={auditLogTwoLinePrimary}>{date}</div>
+            <div className={auditLogTwoLineSecondary}>{time}</div>
+          </div>
+        );
+      },
       meta: { dataTableColumnLabel: 'Thời gian' } satisfies DataTableColumnMeta,
     },
     {
@@ -47,9 +67,14 @@ export function createAuditLogsColumns(
       header: ({ column }) => <DataTableColumnHeader column={column} title="Hành động" />,
       cell: ({ row }) => {
         const code = row.original.action;
+        const { variant, className: actionBadgeClass } = getAuditLogActionBadgeStyles(code);
         return (
-          <LongText className="max-w-52 font-medium md:max-w-64">
-            <span title={code}>{auditLogActionDisplayName(code)}</span>
+          <LongText className="max-w-52 md:max-w-64">
+            <Badge variant={variant} title={code} className={actionBadgeClass}>
+              <span className="min-w-0 truncate font-medium">
+                {auditLogActionDisplayName(code)}
+              </span>
+            </Badge>
           </LongText>
         );
       },
@@ -66,15 +91,16 @@ export function createAuditLogsColumns(
       cell: ({ row }) => {
         const key = row.original.resourceType;
         const labelVi = permissionModuleDisplayName(key);
+        const idPart = row.original.resourceId != null ? `#${row.original.resourceId}` : '—';
         return (
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" title={key}>
-              {labelVi}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {row.original.resourceId != null ? `#${row.original.resourceId}` : '—'}
-            </span>
-          </div>
+          <Badge
+            variant="outline"
+            title={key}
+            className="inline-flex h-auto max-w-full min-w-0 items-center gap-1.5 py-1 font-normal"
+          >
+            <span className="min-w-0 truncate font-medium">{labelVi}</span>
+            <span className="shrink-0 text-muted-foreground tabular-nums">{idPart}</span>
+          </Badge>
         );
       },
       filterFn: (row, _id, value) => {
@@ -92,34 +118,45 @@ export function createAuditLogsColumns(
         const actor = row.original.actorEmployee;
         if (!actor) {
           return (
-            <LongText className="max-w-44 text-muted-foreground md:max-w-56">Hệ thống</LongText>
-          );
-        }
-        if (!onOpenActorEmployeeDetail) {
-          return (
-            <LongText className="max-w-44 text-muted-foreground md:max-w-56">
-              {buildActorLabel(row.original)}
+            <LongText className="max-w-44 md:max-w-56">
+              <div className={auditLogTwoLineStack}>
+                <div className={auditLogTwoLinePrimary}>Hệ thống</div>
+              </div>
             </LongText>
           );
         }
+        const nameBlock = onOpenActorEmployeeDetail ? (
+          <button
+            type="button"
+            className={cn(
+              auditLogTwoLinePrimary,
+              'block w-full cursor-pointer border-0 bg-transparent p-0 text-left no-underline transition-colors hover:!text-primary',
+            )}
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenActorEmployeeDetail(actor.id);
+            }}
+          >
+            {actor.fullName}
+          </button>
+        ) : (
+          <div className={auditLogTwoLinePrimary}>{actor.fullName}</div>
+        );
         return (
           <LongText className="max-w-44 md:max-w-56">
-            <span className="inline-flex min-w-0 max-w-full flex-wrap items-baseline gap-x-1">
-              <button
-                type="button"
-                className={cn(
-                  'text-primary hover:text-primary/90 max-w-[min(100%,14rem)] min-w-0 shrink truncate text-left font-medium underline-offset-4 hover:underline',
-                )}
-                title={actor.email}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onOpenActorEmployeeDetail(actor.id);
-                }}
-              >
-                {actor.fullName}
-              </button>
-              <span className="shrink-0 text-muted-foreground">(#{actor.id})</span>
-            </span>
+            <div className={auditLogTwoLineStack}>
+              {nameBlock}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn(auditLogTwoLineSecondary, 'cursor-default no-underline')}>
+                    {actor.email}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="break-all">{actor.email}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </LongText>
         );
       },

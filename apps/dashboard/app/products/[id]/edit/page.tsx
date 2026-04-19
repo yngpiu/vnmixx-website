@@ -2,7 +2,7 @@ import { EditProductForm } from '@/app/products/[id]/edit/edit-product-form';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Chỉnh sửa · Sản phẩm · Vnmixx' };
+export const metadata: Metadata = { title: 'Chỉnh sửa sản phẩm' };
 
 type ProductsEditPageProps = {
   params: Promise<{ id: string }>;

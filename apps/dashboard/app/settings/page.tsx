@@ -1,7 +1,7 @@
 import { SettingsView } from '@/app/settings/settings-view';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Cài đặt cá nhân · Vnmixx' };
+export const metadata: Metadata = { title: 'Cài đặt cá nhân' };
 
 export default function SettingsPage() {
   return (

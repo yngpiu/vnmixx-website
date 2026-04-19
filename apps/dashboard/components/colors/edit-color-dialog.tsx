@@ -1,7 +1,7 @@
 'use client';
 
 import { listPublicColors, updateColor } from '@/lib/api/colors';
-import type { ColorPublic } from '@/lib/types/color';
+import type { ColorPublic } from '@/types/color';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,

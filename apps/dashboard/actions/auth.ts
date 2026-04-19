@@ -7,7 +7,7 @@ import {
   COOKIE_REFRESH_TOKEN,
   REFRESH_TOKEN_MAX_AGE,
 } from '@/lib/constants';
-import type { AuthResponse, UserProfile } from '@/lib/types/auth';
+import type { AuthResponse, UserProfile } from '@/types/auth';
 import { isAxiosError } from 'axios';
 import { cookies } from 'next/headers';
 

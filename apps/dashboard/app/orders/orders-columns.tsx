@@ -4,14 +4,14 @@ import { OrdersRowActions } from '@/app/orders/orders-row-actions';
 import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { LongText } from '@/components/long-text';
-import { formatVnd } from '@/lib/format-vnd';
+import type { OrderAdminListItem } from '@/types/order-admin';
+import { formatVnd } from '@/utils/format-vnd';
 import {
   getOrderStatusBadgeClassName,
   getOrderStatusLabel,
   getPaymentStatusBadgeClassName,
   getPaymentStatusLabel,
-} from '@/lib/order-status-labels';
-import type { OrderAdminListItem } from '@/lib/types/order-admin';
+} from '@/utils/order-status-labels';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';

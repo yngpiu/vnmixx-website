@@ -1,8 +1,8 @@
 'use client';
 
 import { DataTableBulkActions } from '@/components/data-table';
-import { sleep } from '@/lib/sleep';
-import type { EmployeeListItem } from '@/lib/types/employee';
+import type { EmployeeListItem } from '@/types/employee';
+import { sleep } from '@/utils/sleep';
 import { Button } from '@repo/ui/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/ui/tooltip';
 import type { Table } from '@tanstack/react-table';

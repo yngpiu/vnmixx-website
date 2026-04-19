@@ -2,7 +2,7 @@ import { ColorsView } from '@/app/colors/colors-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Màu sắc · Vnmixx' };
+export const metadata: Metadata = { title: 'Màu sắc' };
 
 function ColorsViewSkeleton() {
   return (

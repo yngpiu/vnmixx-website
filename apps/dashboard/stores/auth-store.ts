@@ -1,4 +1,4 @@
-import type { UserProfile } from '@/lib/types/auth';
+import type { UserProfile } from '@/types/auth';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 

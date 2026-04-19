@@ -11,7 +11,7 @@ import type {
   AnalyticsTimeseriesResponse,
   AnalyticsTopProductsResponse,
   AnalyticsTopShippingCitiesResponse,
-} from '@/lib/types/analytics';
+} from '@/types/analytics';
 
 export type AnalyticsDateRangeParams = {
   from: string;

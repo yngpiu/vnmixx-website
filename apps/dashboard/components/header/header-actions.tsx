@@ -1,10 +1,10 @@
 'use client';
 
 import { useLogout } from '@/hooks/use-auth';
-import { pravatarFromEmail } from '@/lib/avatar';
 import { dashboardRoutes } from '@/lib/routes';
 import { useTheme, type ThemeMode } from '@/providers/theme-provider';
 import { useAuthStore } from '@/stores/auth-store';
+import { pravatarFromEmail } from '@/utils/avatar';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import {

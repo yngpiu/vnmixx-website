@@ -2,7 +2,7 @@ import { SizesView } from '@/app/sizes/sizes-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Kích cỡ · Vnmixx' };
+export const metadata: Metadata = { title: 'Kích cỡ' };
 
 function SizesViewSkeleton() {
   return (

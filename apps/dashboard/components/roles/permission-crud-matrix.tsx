@@ -9,7 +9,7 @@ import {
   permissionIdsForColumn,
   permissionIdsForRow,
 } from '@/lib/rbac-matrix';
-import type { Permission } from '@/lib/types/rbac';
+import type { Permission } from '@/types/rbac';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Label } from '@repo/ui/components/ui/label';
 import {

@@ -2,7 +2,7 @@
 
 import { deleteEmployee, getEmployee, restoreEmployee, updateEmployee } from '@/lib/api/employees';
 import { listRoles } from '@/lib/api/roles';
-import type { UpdateEmployeePayload } from '@/lib/types/employee';
+import type { UpdateEmployeePayload } from '@/types/employee';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
 import {

@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/axios';
-import type { ColorAdmin, ColorListResponse, ColorPublic } from '@/lib/types/color';
+import type { ColorAdmin, ColorListResponse, ColorPublic } from '@/types/color';
 
 export type ListColorsParams = {
   page?: number;

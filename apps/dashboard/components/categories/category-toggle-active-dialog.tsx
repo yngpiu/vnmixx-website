@@ -1,7 +1,7 @@
 'use client';
 
-import { categoryDisplayName } from '@/lib/category-display-name';
-import type { CategoryAdminTreeNode } from '@/lib/types/category';
+import type { CategoryAdminTreeNode } from '@/types/category';
+import { categoryDisplayName } from '@/utils/category-display-name';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
 import {

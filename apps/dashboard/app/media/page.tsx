@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { MediaLibrary } from './media-library';
+
+export const metadata: Metadata = { title: 'Bộ sưu tập' };
 
 function MediaLibrarySkeleton() {
   return (

@@ -2,7 +2,7 @@ import { NewProductForm } from '@/app/products/new/new-product-form';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Thêm mới · Sản phẩm · Vnmixx' };
+export const metadata: Metadata = { title: 'Thêm mới sản phẩm' };
 
 function NewProductSkeleton() {
   return (

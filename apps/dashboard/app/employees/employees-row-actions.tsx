@@ -1,7 +1,7 @@
 'use client';
 
 import { useEmployeesTableActions } from '@/app/employees/employees-table-actions-context';
-import type { EmployeeListItem } from '@/lib/types/employee';
+import type { EmployeeListItem } from '@/types/employee';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,

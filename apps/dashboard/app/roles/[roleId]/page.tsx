@@ -2,7 +2,7 @@ import { RoleDetailView } from '@/app/roles/[roleId]/role-detail-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Vai trò · Chi tiết · Vnmixx' };
+export const metadata: Metadata = { title: 'Chi tiết vai trò' };
 
 function RoleDetailSkeleton() {
   return (

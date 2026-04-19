@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { collectAuditLogActionCodesMatchingLabelSearch } from '../audit-log-action-label-search.util';
 
 export interface CreateAuditLogInput {
   actorEmployeeId?: number;
@@ -22,8 +23,13 @@ export interface ListAuditLogsInput {
   actorEmployeeIds?: number[];
   /** Exact match (multi). Takes precedence over {@link action} substring. */
   actions?: string[];
-  /** Substring match when {@link actions} is empty. */
+  /** Substring match on action code when {@link actions} and {@link search} are empty. */
   action?: string;
+  /**
+   * Tìm theo tên nhân viên (họ tên/email) hoặc nhãn tiếng Việt của hành động.
+   * Chỉ áp dụng khi {@link actions} rỗng; ưu tiên hơn {@link action}.
+   */
+  search?: string;
   resourceTypes?: string[];
   resourceId?: string;
   status?: AuditLogStatus;
@@ -77,31 +83,54 @@ export class AuditLogRepository {
   async findList(
     input: ListAuditLogsInput,
   ): Promise<PaginatedAuditLogsResult<AuditLogListItemView>> {
-    const actionWhere: Prisma.StringFilter | undefined =
-      input.actions !== undefined && input.actions.length > 0
-        ? { in: input.actions }
-        : input.action
-          ? { contains: input.action }
-          : undefined;
-    const where: Prisma.AuditLogWhereInput = {
-      ...(input.actorEmployeeIds !== undefined &&
-        input.actorEmployeeIds.length > 0 && {
-          actorEmployeeId: { in: input.actorEmployeeIds },
-        }),
-      ...(actionWhere && { action: actionWhere }),
-      ...(input.resourceTypes !== undefined &&
-        input.resourceTypes.length > 0 && {
-          resourceType: { in: input.resourceTypes },
-        }),
-      ...(input.resourceId && { resourceId: { equals: input.resourceId } }),
-      ...(input.status && { status: input.status }),
-      ...((input.from || input.to) && {
+    const ands: Prisma.AuditLogWhereInput[] = [];
+
+    if (input.actorEmployeeIds !== undefined && input.actorEmployeeIds.length > 0) {
+      ands.push({ actorEmployeeId: { in: input.actorEmployeeIds } });
+    }
+
+    const hasExactActions = input.actions !== undefined && input.actions.length > 0;
+    const searchTrimmed = input.search?.trim() ?? '';
+    if (hasExactActions) {
+      ands.push({ action: { in: input.actions } });
+    } else if (searchTrimmed.length > 0) {
+      const labelCodes = collectAuditLogActionCodesMatchingLabelSearch(searchTrimmed);
+      ands.push({
+        OR: [
+          {
+            actorEmployee: {
+              OR: [
+                { fullName: { contains: searchTrimmed } },
+                { email: { contains: searchTrimmed } },
+              ],
+            },
+          },
+          ...(labelCodes.length > 0 ? [{ action: { in: labelCodes } }] : []),
+        ],
+      });
+    } else if (input.action) {
+      ands.push({ action: { contains: input.action } });
+    }
+
+    if (input.resourceTypes !== undefined && input.resourceTypes.length > 0) {
+      ands.push({ resourceType: { in: input.resourceTypes } });
+    }
+    if (input.resourceId) {
+      ands.push({ resourceId: { equals: input.resourceId } });
+    }
+    if (input.status) {
+      ands.push({ status: input.status });
+    }
+    if (input.from || input.to) {
+      ands.push({
         createdAt: {
           ...(input.from && { gte: input.from }),
           ...(input.to && { lte: input.to }),
         },
-      }),
-    };
+      });
+    }
+
+    const where: Prisma.AuditLogWhereInput = ands.length > 0 ? { AND: ands } : {};
 
     const [total, rows] = await this.prisma.$transaction([
       this.prisma.auditLog.count({ where }),

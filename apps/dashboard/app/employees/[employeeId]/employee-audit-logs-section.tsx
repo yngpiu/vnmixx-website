@@ -6,7 +6,7 @@ import { AuditLogActionTreeFilter } from '@/components/audit-logs/audit-log-acti
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
 import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
 import { listAuditLogs } from '@/lib/api/audit-logs';
-import type { AuditLogItem } from '@/lib/types/audit-log';
+import type { AuditLogItem } from '@/types/audit-log';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Table,
@@ -177,7 +177,7 @@ export function EmployeeAuditLogsSection({ employeeId }: EmployeeAuditLogsSectio
       />
       <DataTableToolbar
         table={table}
-        searchPlaceholder="Tìm theo mã hành động…"
+        searchHelpTooltip="Tìm theo mã hành động (áp dụng khi không chọn bộ lọc hành động)."
         globalFilterDebounceMs={350}
         filterExtras={<AuditLogActionTreeFilter column={actionColumn} title="Hành động" />}
         filters={[

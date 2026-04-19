@@ -2,10 +2,10 @@
 
 import { JsonHighlightedBlock } from '@/components/json-highlighted-block';
 import { adminModuleDetailPath } from '@/lib/admin-modules';
-import { auditLogActionDisplayName } from '@/lib/audit-log-action-label';
-import { collectAuditJsonDiff } from '@/lib/audit-log-json-diff';
-import { permissionModuleDisplayName } from '@/lib/permission-label';
-import type { AuditLogItem } from '@/lib/types/audit-log';
+import type { AuditLogItem } from '@/types/audit-log';
+import { auditLogActionDisplayName } from '@/utils/audit-log-action-label';
+import { collectAuditJsonDiff } from '@/utils/audit-log-json-diff';
+import { permissionModuleDisplayName } from '@/utils/permission-label';
 import { Badge } from '@repo/ui/components/ui/badge';
 import {
   Dialog,

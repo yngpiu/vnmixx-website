@@ -1,7 +1,7 @@
 'use client';
 
 import { listEmployees } from '@/lib/api/employees';
-import type { EmployeeListItem } from '@/lib/types/employee';
+import type { EmployeeListItem } from '@/types/employee';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {

@@ -16,7 +16,7 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   category: 'Danh mục',
   color: 'Màu sắc',
   size: 'Kích cỡ',
-  media: 'Thư viện ảnh',
+  media: 'Bộ sưu tập',
   review: 'Đánh giá',
   profile: 'Hồ sơ',
 };

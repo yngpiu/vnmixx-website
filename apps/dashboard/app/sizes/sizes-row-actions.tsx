@@ -1,6 +1,6 @@
 'use client';
 
-import type { SizeAdmin } from '@/lib/types/size';
+import type { SizeAdmin } from '@/types/size';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,

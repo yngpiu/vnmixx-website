@@ -3,13 +3,7 @@ import { AuditLogStatus, type MediaFile as MediaFileRow } from '../../../generat
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { R2Service } from '../../r2/r2.service';
-import type {
-  BatchDeleteMediaDto,
-  CreateFolderDto,
-  ListMediaQueryDto,
-  MoveMediaDto,
-  UploadMediaDto,
-} from '../dto';
+import type { CreateFolderDto, ListMediaQueryDto, MoveMediaDto, UploadMediaDto } from '../dto';
 import { MediaRepository } from '../repositories/media.repository';
 
 /** Normalize folder path — strip leading/trailing slashes. */
@@ -173,40 +167,6 @@ export class MediaService {
         resourceId: String(id),
         status: AuditLogStatus.FAILED,
         beforeData: { id: media.id, key: media.key },
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw error;
-    }
-  }
-
-  async batchDeleteMedia(
-    dto: BatchDeleteMediaDto,
-    auditContext: AuditRequestContext = {},
-  ): Promise<{ deletedCount: number }> {
-    const files = await this.repo.findByIds(dto.ids);
-    if (files.length === 0) return { deletedCount: 0 };
-    try {
-      const keys = files.map((f) => f.key);
-      await this.r2.deleteFiles(keys);
-      await this.repo.deleteByIds(files.map((f) => f.id));
-      await this.auditLogService.write({
-        ...auditContext,
-        action: 'media.batch-delete',
-        resourceType: 'media',
-        resourceId: dto.ids.length === 1 ? String(dto.ids[0]) : `batch:${dto.ids.length}`,
-        status: AuditLogStatus.SUCCESS,
-        beforeData: { ids: dto.ids },
-        afterData: { deletedCount: files.length },
-      });
-      return { deletedCount: files.length };
-    } catch (error) {
-      await this.auditLogService.write({
-        ...auditContext,
-        action: 'media.batch-delete',
-        resourceType: 'media',
-        resourceId: dto.ids.length === 1 ? String(dto.ids[0]) : `batch:${dto.ids.length}`,
-        status: AuditLogStatus.FAILED,
-        beforeData: { ids: dto.ids },
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;

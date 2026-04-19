@@ -1,6 +1,6 @@
 import type { ListEmployeesParams } from '@/lib/api/employees';
-import { EMPLOYEE_TABLE_SORT_IDS } from '@/lib/data-table-sort-allowlists';
-import { isSoftDeletedFromDeletedColumnFilter } from '@/lib/list-soft-deleted-from-column-filter';
+import { EMPLOYEE_TABLE_SORT_IDS } from '@/utils/data-table-sort-allowlists';
+import { isSoftDeletedFromDeletedColumnFilter } from '@/utils/list-soft-deleted-from-column-filter';
 import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
 
 const sortIds = EMPLOYEE_TABLE_SORT_IDS as readonly string[];

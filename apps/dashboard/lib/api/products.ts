@@ -4,7 +4,7 @@ import type {
   ProductAdminDetail,
   ProductAdminListResponse,
   UpdateProductBody,
-} from '@/lib/types/product';
+} from '@/types/product';
 
 export type ListProductsParams = {
   page?: number;

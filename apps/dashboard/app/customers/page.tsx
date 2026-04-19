@@ -2,7 +2,7 @@ import { CustomersView } from '@/app/customers/customers-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Khách hàng · Vnmixx' };
+export const metadata: Metadata = { title: 'Khách hàng' };
 
 function CustomersViewSkeleton() {
   return (

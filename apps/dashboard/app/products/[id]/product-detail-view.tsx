@@ -6,7 +6,7 @@ import { listCategories } from '@/lib/api/categories';
 import { listPublicColors } from '@/lib/api/colors';
 import { getProductById } from '@/lib/api/products';
 import { listPublicSizes } from '@/lib/api/sizes';
-import { categoryDisplayName } from '@/lib/category-display-name';
+import { categoryDisplayName } from '@/utils/category-display-name';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Separator } from '@repo/ui/components/ui/separator';

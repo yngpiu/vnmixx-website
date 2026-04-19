@@ -1,8 +1,8 @@
 'use client';
 
 import { getCustomer } from '@/lib/api/customers';
-import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/lib/avatar';
-import type { CustomerGender } from '@/lib/types/customer';
+import type { CustomerGender } from '@/types/customer';
+import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/utils/avatar';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';

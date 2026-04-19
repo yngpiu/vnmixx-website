@@ -1,13 +1,15 @@
 import { apiClient } from '@/lib/axios';
-import type { AuditLogListResponse, AuditLogStatus } from '@/lib/types/audit-log';
+import type { AuditLogListResponse, AuditLogStatus } from '@/types/audit-log';
 
 export type ListAuditLogsParams = {
   page?: number;
   limit?: number;
   /** Lọc theo nhiều nhân viên (query lặp `actorEmployeeIds`). */
   actorEmployeeIds?: number[];
-  /** Substring match on action code when `actions` is not set. */
+  /** Substring match on action code when `actions` and `search` are not set. */
   action?: string;
+  /** Tìm theo tên nhân viên, email hoặc tên hành động (tiếng Việt). */
+  search?: string;
   /** Exact match on one or more action codes (repeated `actions` query keys). */
   actions?: string[];
   /** Lọc theo nhiều loại tài nguyên (query lặp `resourceTypes`). */
@@ -30,6 +32,9 @@ export async function listAuditLogs(
   }
   if (params.action) {
     sp.set('action', params.action);
+  }
+  if (params.search) {
+    sp.set('search', params.search);
   }
   for (const code of params.actions ?? []) {
     sp.append('actions', code);

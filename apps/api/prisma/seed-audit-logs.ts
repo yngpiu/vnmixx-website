@@ -37,7 +37,7 @@ export async function seedAuditLogs(): Promise<void> {
     const actions = [
       { action: 'product.update', type: 'product' },
       { action: 'product.create', type: 'product' },
-      { action: 'order.update_status', type: 'order' },
+      { action: 'order.confirm', type: 'order' },
       { action: 'order.cancel', type: 'order' },
       { action: 'customer.update', type: 'customer' },
       { action: 'role.update', type: 'role' },

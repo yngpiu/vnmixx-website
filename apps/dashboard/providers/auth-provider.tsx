@@ -2,8 +2,8 @@
 
 import '@/lib/api/interceptors';
 import { apiClient } from '@/lib/axios';
-import type { UserProfile } from '@/lib/types/auth';
 import { useAuthStore } from '@/stores/auth-store';
+import type { UserProfile } from '@/types/auth';
 import { useEffect, useLayoutEffect, type ReactNode } from 'react';
 
 interface AuthProviderProps {

@@ -2,7 +2,7 @@ import { ProductsView } from '@/app/products/products-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Sản phẩm · Vnmixx' };
+export const metadata: Metadata = { title: 'Sản phẩm' };
 
 function ProductsViewSkeleton() {
   return (

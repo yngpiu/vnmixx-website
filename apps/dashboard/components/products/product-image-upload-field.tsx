@@ -55,7 +55,7 @@ export function ProductImageUploadField({
           onClick={() => setPickerOpen(true)}
         >
           <ImagesIcon className="size-4" />
-          Chọn từ thư viện
+          Chọn từ bộ sưu tập
         </Button>
         {urls.length >= maxFiles ? (
           <span className="text-muted-foreground text-xs">Đã đủ {maxFiles} ảnh.</span>

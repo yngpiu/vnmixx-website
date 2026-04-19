@@ -2,7 +2,7 @@ import { EmployeeDetailView } from '@/app/employees/[employeeId]/employee-detail
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-export const metadata: Metadata = { title: 'Nhân viên · Chi tiết · Vnmixx' };
+export const metadata: Metadata = { title: 'Chi tiết nhân viên' };
 
 function EmployeeDetailSkeleton() {
   return (

@@ -1,5 +1,5 @@
-import { permissionModuleDisplayName } from '@/lib/permission-label';
-import type { Permission } from '@/lib/types/rbac';
+import type { Permission } from '@/types/rbac';
+import { permissionModuleDisplayName } from '@/utils/permission-label';
 
 export const CRUD_ACTIONS = ['create', 'read', 'update', 'delete'] as const;
 export type CrudAction = (typeof CRUD_ACTIONS)[number];

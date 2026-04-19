@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { AuditLogStatus } from '../../../generated/prisma/client';
@@ -75,6 +76,16 @@ export class ListAuditLogsQueryDto {
   @IsString()
   @IsOptional()
   action?: string;
+
+  @ApiPropertyOptional({
+    example: 'Nguyễn',
+    description:
+      'Tìm theo tên nhân viên, email hoặc tên hành động (tiếng Việt). Khi có giá trị, tham số `action` bị bỏ qua.',
+  })
+  @IsString()
+  @MaxLength(200)
+  @IsOptional()
+  search?: string;
 
   @ApiPropertyOptional({
     type: [String],

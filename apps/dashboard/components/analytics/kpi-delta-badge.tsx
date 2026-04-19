@@ -1,6 +1,6 @@
 'use client';
 
-import type { MetricDelta, NullableMetricDelta } from '@/lib/types/analytics';
+import type { MetricDelta, NullableMetricDelta } from '@/types/analytics';
 import { cn } from '@repo/ui/lib/utils';
 
 function isPositiveOutcome(delta: MetricDelta): boolean {

@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/axios';
-import type { CustomerDetail, CustomerListResponse } from '@/lib/types/customer';
+import type { CustomerDetail, CustomerListResponse } from '@/types/customer';
 
 export type ListCustomersParams = {
   page?: number;

@@ -1,7 +1,7 @@
 'use client';
 
 import { PageViewHeader } from '@/components/page-view-header';
-import { getInclusiveUtcDateRange } from '@/lib/analytics-range';
+import { getInclusiveUtcDateRange } from '@/utils/analytics-range';
 import { Button } from '@repo/ui/components/ui/button';
 import { Calendar } from '@repo/ui/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/ui/popover';

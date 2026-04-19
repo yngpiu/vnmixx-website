@@ -1,8 +1,8 @@
 'use client';
 
 import { createCategory } from '@/lib/api/categories';
-import { categoryDisplayName } from '@/lib/category-display-name';
-import type { CategoryAdminTreeNode } from '@/lib/types/category';
+import type { CategoryAdminTreeNode } from '@/types/category';
+import { categoryDisplayName } from '@/utils/category-display-name';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -36,8 +36,6 @@ function apiErrorMessage(err: unknown): string {
 
 function suggestSlugFromName(name: string): string {
   const base = name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')

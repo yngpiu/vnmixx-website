@@ -1,8 +1,8 @@
 'use client';
 
 import { getEmployee } from '@/lib/api/employees';
-import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/lib/avatar';
-import type { EmployeeDetail } from '@/lib/types/employee';
+import type { EmployeeDetail } from '@/types/employee';
+import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/utils/avatar';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Separator } from '@repo/ui/components/ui/separator';

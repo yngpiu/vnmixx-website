@@ -12,9 +12,9 @@ import {
   getAnalyticsTopProducts,
   getAnalyticsTopShippingCities,
 } from '@/lib/api/analytics';
-import { formatVnd } from '@/lib/format-vnd';
-import { getOrderStatusLabel, getPaymentStatusLabel } from '@/lib/order-status-labels';
-import type { OrderStatus, PaymentStatus } from '@/lib/types/order-admin';
+import type { OrderStatus, PaymentStatus } from '@/types/order-admin';
+import { formatVnd } from '@/utils/format-vnd';
+import { getOrderStatusLabel, getPaymentStatusLabel } from '@/utils/order-status-labels';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Card,

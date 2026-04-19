@@ -7,13 +7,13 @@ import { listCategories } from '@/lib/api/categories';
 import { listPublicColors } from '@/lib/api/colors';
 import { createProduct } from '@/lib/api/products';
 import { listPublicSizes } from '@/lib/api/sizes';
-import { categoryDisplayName } from '@/lib/category-display-name';
-import type { CategoryAdmin } from '@/lib/types/category';
+import type { CategoryAdmin } from '@/types/category';
 import type {
   CreateProductBody,
   CreateProductImageInput,
   CreateProductVariantInput,
-} from '@/lib/types/product';
+} from '@/types/product';
+import { categoryDisplayName } from '@/utils/category-display-name';
 import { Button } from '@repo/ui/components/ui/button';
 import { Field, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
@@ -81,8 +81,6 @@ function formatCategoryPath(leafId: number, byId: Map<number, CategoryAdmin>): s
 
 function suggestSlugFromName(name: string): string {
   const base = name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')

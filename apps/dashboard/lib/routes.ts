@@ -63,7 +63,7 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
     ];
   }
   if (path === '/media') {
-    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Thư viện ảnh' }];
+    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Bộ sưu tập' }];
   }
   if (path === '/audit-logs') {
     return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Nhật ký thao tác' }];

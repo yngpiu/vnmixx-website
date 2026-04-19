@@ -1,7 +1,7 @@
 'use client';
 
 import { listPublicSizes, updateSize } from '@/lib/api/sizes';
-import type { SizePublic } from '@/lib/types/size';
+import type { SizePublic } from '@/types/size';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,

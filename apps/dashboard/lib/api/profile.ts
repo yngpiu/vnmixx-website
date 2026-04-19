@@ -3,7 +3,7 @@ import type {
   ChangeEmployeePasswordPayload,
   EmployeeProfile,
   UpdateEmployeeProfilePayload,
-} from '@/lib/types/profile';
+} from '@/types/profile';
 
 export async function getMyEmployeeProfile(): Promise<EmployeeProfile> {
   const { data } = await apiClient.get<EmployeeProfile>('/admin/profile');

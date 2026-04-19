@@ -7,8 +7,8 @@ import { InlineErrorAlert } from '@/components/inline-error-alert';
 import { EditSizeDialog } from '@/components/sizes/edit-size-dialog';
 import { useSizesListTableState } from '@/hooks/use-sizes-list-table-state';
 import { deleteSize, listSizes } from '@/lib/api/sizes';
-import { toListSizesParams } from '@/lib/sizes-list-params';
-import type { SizeAdmin } from '@/lib/types/size';
+import type { SizeAdmin } from '@/types/size';
+import { toListSizesParams } from '@/utils/sizes-list-params';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -147,7 +147,7 @@ export function SizesTable() {
       >
         <DataTableToolbar
           table={table}
-          searchPlaceholder="Tìm theo nhãn…"
+          searchHelpTooltip="Tìm theo nhãn kích cỡ."
           searchKey="label"
           searchDebounceMs={350}
         />

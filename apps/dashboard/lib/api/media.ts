@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/axios';
-import type { ListMediaParams, ListMediaResponse, MediaFile } from '@/lib/types/media';
+import type { ListMediaParams, ListMediaResponse, MediaFile } from '@/types/media';
 
 /** Fetch paginated media files. */
 export async function listMedia(params: ListMediaParams): Promise<ListMediaResponse> {
@@ -25,14 +25,6 @@ export async function uploadMedia(files: File[], folder?: string): Promise<Media
 /** Delete a single media file. */
 export async function deleteMedia(id: number): Promise<void> {
   await apiClient.delete(`/admin/media/${id}`);
-}
-
-/** Delete multiple media files at once. */
-export async function batchDeleteMedia(ids: number[]): Promise<{ deletedCount: number }> {
-  const { data } = await apiClient.post<{ deletedCount: number }>('/admin/media/batch-delete', {
-    ids,
-  });
-  return data;
 }
 
 /** Fetch all folder paths. */

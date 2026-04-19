@@ -1,6 +1,6 @@
 'use client';
 
-import type { EmployeeListItem } from '@/lib/types/employee';
+import type { EmployeeListItem } from '@/types/employee';
 import { createContext, useContext, type ReactNode } from 'react';
 
 type EmployeesTableActionsContextValue = {
