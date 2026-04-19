@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis, { RedisOptions } from 'ioredis';
 
 @Injectable()
@@ -6,15 +7,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private readonly client: Redis;
 
-  constructor() {
-    const redisUrl = process.env.REDIS_URL;
+  constructor(private readonly config: ConfigService) {
+    const redisUrl = this.config.get<string>('REDIS_URL');
     const options = this.buildOptions();
     this.client = redisUrl ? new Redis(redisUrl, options) : new Redis(options);
-
     this.client.on('error', (error) => {
       this.logger.error(`Redis connection error: ${error.message}`);
     });
-
     this.client.on('connect', () => {
       this.logger.log('Connected to Redis');
     });
@@ -30,12 +29,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     if (this.client.status === 'end') {
       return;
     }
-
     if (this.client.status === 'wait') {
       this.client.disconnect();
       return;
     }
-
     await this.client.quit();
   }
 
@@ -51,7 +48,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async getOrSet<T>(key: string, ttlSeconds: number, factory: () => Promise<T>): Promise<T> {
     const cached = await this.client.get(key);
     if (cached !== null) return JSON.parse(cached) as T;
-
     const data = await factory();
     await this.client.setex(key, ttlSeconds, JSON.stringify(data));
     return data;
@@ -76,11 +72,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
   private buildOptions(): RedisOptions {
     return {
-      host: process.env.REDIS_HOST || '127.0.0.1',
-      port: Number(process.env.REDIS_PORT) || 6379,
-      username: process.env.REDIS_USERNAME || undefined,
-      password: process.env.REDIS_PASSWORD || undefined,
-      db: Number(process.env.REDIS_DB) || 0,
+      host: this.config.get<string>('REDIS_HOST', '127.0.0.1'),
+      port: this.config.get<number>('REDIS_PORT', 6379),
+      username: this.config.get<string>('REDIS_USERNAME') || undefined,
+      password: this.config.get<string>('REDIS_PASSWORD') || undefined,
+      db: this.config.get<number>('REDIS_DB', 0),
       lazyConnect: true,
       maxRetriesPerRequest: null,
     };

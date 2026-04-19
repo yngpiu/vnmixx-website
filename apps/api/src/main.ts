@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
 import { randomUUID } from 'node:crypto';
 import { AppModule } from './app.module';
 
@@ -31,6 +32,7 @@ async function bootstrap() {
     next();
   });
 
+  app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cookieParser());
 
   const corsOriginEnv = process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS;

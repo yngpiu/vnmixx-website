@@ -316,9 +316,11 @@ export class CustomerAuthService {
   ): Promise<void> {
     const expiresInMinutes = Math.ceil(otpExpiresInSeconds / 60);
     if (!this.mail.isConfigured()) {
-      this.logger.log(
-        `[OTP DEV] password-reset email=${email} otp=${otp} expiresIn=${otpExpiresInSeconds}s`,
-      );
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.log(
+          `[OTP DEV] password-reset email=${email} otp=${otp} expiresIn=${otpExpiresInSeconds}s`,
+        );
+      }
       return;
     }
     await this.mail.sendMail({
@@ -404,7 +406,9 @@ export class CustomerAuthService {
   ): Promise<void> {
     const expiresInMinutes = Math.ceil(otpExpiresInSeconds / 60);
     if (!this.mail.isConfigured()) {
-      this.logger.log(`[OTP DEV] email=${email} otp=${otp} expiresIn=${otpExpiresInSeconds}s`);
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.log(`[OTP DEV] email=${email} otp=${otp} expiresIn=${otpExpiresInSeconds}s`);
+      }
       return;
     }
     await this.mail.sendMail({

@@ -1,6 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule, ThrottlerStorage } from '@nestjs/throttler';
 import { AddressModule } from './address/address.module';
@@ -13,6 +13,7 @@ import { CartModule } from './cart/cart.module';
 import { CategoryModule } from './category/category.module';
 import { ColorModule } from './color/color.module';
 import { CommonModule } from './common/common.module';
+import { validateEnv } from './config/env.validation';
 import { CoreModule } from './core/core.module';
 import { CustomerModule } from './customer/customer.module';
 import { EmployeeModule } from './employee/employee.module';
@@ -33,15 +34,18 @@ import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || '127.0.0.1',
-        port: Number(process.env.REDIS_PORT) || 6379,
-        username: process.env.REDIS_USERNAME || undefined,
-        password: process.env.REDIS_PASSWORD || undefined,
-        db: Number(process.env.REDIS_DB) || 0,
-      },
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          host: config.get<string>('REDIS_HOST'),
+          port: config.get<number>('REDIS_PORT'),
+          username: config.get<string>('REDIS_USERNAME') || undefined,
+          password: config.get<string>('REDIS_PASSWORD') || undefined,
+          db: config.get<number>('REDIS_DB'),
+        },
+      }),
     }),
     ThrottlerModule.forRoot({
       throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
