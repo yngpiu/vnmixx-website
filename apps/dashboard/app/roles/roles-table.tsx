@@ -1,15 +1,15 @@
 'use client';
 
 import { createRolesColumns } from '@/app/roles/roles-columns';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { RoleEditDialog } from '@/components/roles/role-edit-dialog';
-import { useRolesListTableState } from '@/hooks/use-roles-list-table-state';
-import { adminModuleDetailPath } from '@/lib/admin-modules';
-import { deleteRole, listRoles } from '@/lib/api/rbac';
-import type { RoleListItem } from '@/types/rbac';
-import { toListRolesParams } from '@/utils/roles-list-params';
+import { adminModuleDetailPath } from '@/config/admin-modules';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { deleteRole, listRoles } from '@/modules/rbac/api/rbac';
+import { RoleEditDialog } from '@/modules/rbac/components/roles/role-edit-dialog';
+import { useRolesListTableState } from '@/modules/rbac/hooks/use-roles-list-table-state';
+import type { RoleListItem } from '@/modules/rbac/types/rbac';
+import { toListRolesParams } from '@/modules/rbac/utils/roles-list-params';
 import {
   AlertDialog,
   AlertDialogAction,

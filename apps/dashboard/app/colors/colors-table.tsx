@@ -1,14 +1,14 @@
 'use client';
 
 import { createColorsColumns } from '@/app/colors/colors-columns';
-import { EditColorDialog } from '@/components/colors/edit-color-dialog';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { useColorsListTableState } from '@/hooks/use-colors-list-table-state';
-import { deleteColor, listColors } from '@/lib/api/colors';
-import type { ColorAdmin } from '@/types/color';
-import { toListColorsParams } from '@/utils/colors-list-params';
+import { deleteColor, listColors } from '@/modules/colors/api/colors';
+import { EditColorDialog } from '@/modules/colors/components/colors/edit-color-dialog';
+import { useColorsListTableState } from '@/modules/colors/hooks/use-colors-list-table-state';
+import type { ColorAdmin } from '@/modules/colors/types/color';
+import { toListColorsParams } from '@/modules/colors/utils/colors-list-params';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
 import {
   AlertDialog,
   AlertDialogAction,

@@ -1,9 +1,9 @@
 'use client';
 
 import { EmployeeAuditLogsSection } from '@/app/employees/[employeeId]/employee-audit-logs-section';
-import { BackButton } from '@/components/back-button';
-import { EmployeeDetailContent } from '@/components/employees/employee-detail-content';
-import { PageViewHeader } from '@/components/page-view-header';
+import { BackButton } from '@/modules/common/components/back-button';
+import { PageViewHeader } from '@/modules/common/components/page-view-header';
+import { EmployeeDetailContent } from '@/modules/employees/components/employees/employee-detail-content';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/ui/tabs';
 import { notFound, useParams } from 'next/navigation';
 

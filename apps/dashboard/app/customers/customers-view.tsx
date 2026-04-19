@@ -1,7 +1,7 @@
 'use client';
 
 import { CustomersTable } from '@/app/customers/customers-table';
-import { ListPage } from '@/components/list-page';
+import { ListPage } from '@/modules/common/components/list-page';
 
 export function CustomersView() {
   return (

@@ -1,14 +1,14 @@
 'use client';
 
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
 import {
   deleteAdminReview,
   getAdminReviewDetail,
   getAdminReviews,
   updateAdminReviewStatus,
   type AdminReviewListParams,
-} from '@/lib/api/analytics';
-import type { AdminReviewListItem } from '@/types/analytics';
+} from '@/modules/reviews/api/reviews';
+import type { AdminReviewListItem } from '@/modules/reviews/types/review-admin';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,

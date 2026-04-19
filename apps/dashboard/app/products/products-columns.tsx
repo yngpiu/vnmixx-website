@@ -1,9 +1,12 @@
 'use client';
 
-import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import type { ProductAdminListItem } from '@/types/product';
-import { categoryDisplayName } from '@/utils/category-display-name';
+import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import {
+  DataTableColumnHeader,
+  dataTableSttColumnDef,
+} from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import type { ProductAdminListItem } from '@/modules/products/types/product';
 import { Badge } from '@repo/ui/components/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';

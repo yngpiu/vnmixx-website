@@ -1,17 +1,20 @@
 'use client';
 
 import { OrdersRowActions } from '@/app/orders/orders-row-actions';
-import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { LongText } from '@/components/long-text';
-import type { OrderAdminListItem } from '@/types/order-admin';
-import { formatVnd } from '@/utils/format-vnd';
+import {
+  DataTableColumnHeader,
+  dataTableSttColumnDef,
+} from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { LongText } from '@/modules/common/components/long-text';
+import { formatVnd } from '@/modules/common/utils/format-vnd';
+import type { OrderAdminListItem } from '@/modules/orders/types/order-admin';
 import {
   getOrderStatusBadgeClassName,
   getOrderStatusLabel,
   getPaymentStatusBadgeClassName,
   getPaymentStatusLabel,
-} from '@/utils/order-status-labels';
+} from '@/modules/orders/utils/order-status-labels';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';

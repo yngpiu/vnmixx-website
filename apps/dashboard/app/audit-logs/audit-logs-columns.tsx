@@ -1,14 +1,17 @@
 'use client';
 
-import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { LongText } from '@/components/long-text';
-import type { AuditLogItem } from '@/types/audit-log';
+import type { AuditLogItem } from '@/modules/audit-logs/types/audit-log';
 import {
   auditLogActionDisplayName,
   getAuditLogActionBadgeStyles,
-} from '@/utils/audit-log-action-label';
-import { permissionModuleDisplayName } from '@/utils/permission-label';
+} from '@/modules/audit-logs/utils/audit-log-action-label';
+import {
+  DataTableColumnHeader,
+  dataTableSttColumnDef,
+} from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { LongText } from '@/modules/common/components/long-text';
+import { permissionModuleDisplayName } from '@/modules/rbac/utils/permission-label';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';

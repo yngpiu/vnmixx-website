@@ -2,23 +2,30 @@
 
 import { createCategoryColumns } from '@/app/categories/categories-columns';
 import { CategoriesTableActionsProvider } from '@/app/categories/categories-table-actions-context';
-import { CategoryDetailDialog } from '@/components/categories/category-detail-dialog';
-import { CategoryToggleActiveDialog } from '@/components/categories/category-toggle-active-dialog';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
 import {
   deleteCategory,
   listCategories,
   restoreCategory,
   updateCategory,
   type UpdateCategoryBody,
-} from '@/lib/api/categories';
-import type { CategoryAdmin, CategoryAdminTreeNode, CategoryTableRow } from '@/types/category';
-import { toListCategoriesParams } from '@/utils/categories-list-params';
-import { categoryDisplayName } from '@/utils/category-display-name';
-import { buildCategoryAdminTree, flattenVisibleCategoryRows } from '@/utils/category-tree';
-import { CATEGORY_TABLE_SORT_IDS } from '@/utils/data-table-sort-allowlists';
+} from '@/modules/categories/api/categories';
+import { CategoryDetailDialog } from '@/modules/categories/components/categories/category-detail-dialog';
+import { CategoryToggleActiveDialog } from '@/modules/categories/components/categories/category-toggle-active-dialog';
+import type {
+  CategoryAdmin,
+  CategoryAdminTreeNode,
+  CategoryTableRow,
+} from '@/modules/categories/types/category';
+import { toListCategoriesParams } from '@/modules/categories/utils/categories-list-params';
+import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import {
+  buildCategoryAdminTree,
+  flattenVisibleCategoryRows,
+} from '@/modules/categories/utils/category-tree';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { CATEGORY_TABLE_SORT_IDS } from '@/modules/common/utils/data-table-sort-allowlists';
 import {
   AlertDialog,
   AlertDialogAction,

@@ -1,7 +1,7 @@
 'use client';
 
-import { OrderActionsDialog } from '@/components/orders/order-actions-dialog';
-import type { OrderAdminListItem } from '@/types/order-admin';
+import { OrderActionsDialog } from '@/modules/orders/components/orders/order-actions-dialog';
+import type { OrderAdminListItem } from '@/modules/orders/types/order-admin';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,

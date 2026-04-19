@@ -1,6 +1,6 @@
 'use client';
 
-import type { ColorAdmin } from '@/types/color';
+import type { ColorAdmin } from '@/modules/colors/types/color';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,

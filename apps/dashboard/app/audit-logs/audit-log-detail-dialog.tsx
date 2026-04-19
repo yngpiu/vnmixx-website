@@ -1,11 +1,11 @@
 'use client';
 
-import { JsonHighlightedBlock } from '@/components/json-highlighted-block';
-import { adminModuleDetailPath } from '@/lib/admin-modules';
-import type { AuditLogItem } from '@/types/audit-log';
-import { auditLogActionDisplayName } from '@/utils/audit-log-action-label';
-import { collectAuditJsonDiff } from '@/utils/audit-log-json-diff';
-import { permissionModuleDisplayName } from '@/utils/permission-label';
+import { adminModuleDetailPath } from '@/config/admin-modules';
+import type { AuditLogItem } from '@/modules/audit-logs/types/audit-log';
+import { auditLogActionDisplayName } from '@/modules/audit-logs/utils/audit-log-action-label';
+import { collectAuditJsonDiff } from '@/modules/audit-logs/utils/audit-log-json-diff';
+import { JsonHighlightedBlock } from '@/modules/common/components/json-highlighted-block';
+import { permissionModuleDisplayName } from '@/modules/rbac/utils/permission-label';
 import { Badge } from '@repo/ui/components/ui/badge';
 import {
   Dialog,

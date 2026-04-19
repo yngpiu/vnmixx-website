@@ -1,11 +1,14 @@
 'use client';
 
 import { EmployeesRowActions } from '@/app/employees/employees-row-actions';
-import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { LongText } from '@/components/long-text';
-import type { EmployeeListItem } from '@/types/employee';
-import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/utils/avatar';
+import {
+  DataTableColumnHeader,
+  dataTableSttColumnDef,
+} from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { LongText } from '@/modules/common/components/long-text';
+import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/modules/common/utils/avatar';
+import type { EmployeeListItem } from '@/modules/employees/types/employee';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { cn } from '@repo/ui/lib/utils';

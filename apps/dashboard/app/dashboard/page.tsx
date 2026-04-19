@@ -1,5 +1,5 @@
-import { AnalyticsShell } from '@/components/analytics/analytics-shell';
-import { OverviewDashboard } from '@/components/dashboard/overview-dashboard';
+import { AnalyticsShell } from '@/modules/analytics/components/analytics/analytics-shell';
+import { OverviewDashboard } from '@/modules/common/components/dashboard/overview-dashboard';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Tổng quan' };

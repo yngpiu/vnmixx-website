@@ -1,7 +1,7 @@
 'use client';
 
 import { useCategoriesTableActions } from '@/app/categories/categories-table-actions-context';
-import type { CategoryTableRow } from '@/types/category';
+import type { CategoryTableRow } from '@/modules/categories/types/category';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,

@@ -1,11 +1,11 @@
 'use client';
 
-import { BackButton } from '@/components/back-button';
-import { CategoryTreeMultiSelect } from '@/components/categories/category-tree-multi-select';
-import { listCategories } from '@/lib/api/categories';
-import { getProductById, updateProduct } from '@/lib/api/products';
-import type { CategoryAdmin } from '@/types/category';
-import { categoryDisplayName } from '@/utils/category-display-name';
+import { listCategories } from '@/modules/categories/api/categories';
+import { CategoryTreeMultiSelect } from '@/modules/categories/components/categories/category-tree-multi-select';
+import type { CategoryAdmin } from '@/modules/categories/types/category';
+import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import { BackButton } from '@/modules/common/components/back-button';
+import { getProductById, updateProduct } from '@/modules/products/api/products';
 import { Button } from '@repo/ui/components/ui/button';
 import { Field, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';

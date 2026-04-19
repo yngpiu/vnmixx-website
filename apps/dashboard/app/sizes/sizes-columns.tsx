@@ -1,9 +1,12 @@
 'use client';
 
 import { SizesRowActions } from '@/app/sizes/sizes-row-actions';
-import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import type { SizeAdmin } from '@/types/size';
+import {
+  DataTableColumnHeader,
+  dataTableSttColumnDef,
+} from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import type { SizeAdmin } from '@/modules/sizes/types/size';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
 

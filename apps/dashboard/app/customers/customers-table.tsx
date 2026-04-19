@@ -3,18 +3,18 @@
 import { CustomersBulkActions } from '@/app/customers/customers-bulk-actions';
 import { customersColumns } from '@/app/customers/customers-columns';
 import { CustomersTableActionsProvider } from '@/app/customers/customers-table-actions-context';
-import { CustomerDetailDialog } from '@/components/customers/customer-detail-dialog';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { listCustomers } from '@/modules/customers/api/customers';
+import { CustomerDetailDialog } from '@/modules/customers/components/customers/customer-detail-dialog';
 import {
   EditCustomerDialog,
   type CustomerDialogMode,
-} from '@/components/customers/edit-customer-dialog';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { useCustomersListTableState } from '@/hooks/use-customers-list-table-state';
-import { listCustomers } from '@/lib/api/customers';
-import type { CustomerListItem } from '@/types/customer';
-import { toListCustomersParams } from '@/utils/customers-list-params';
+} from '@/modules/customers/components/customers/edit-customer-dialog';
+import { useCustomersListTableState } from '@/modules/customers/hooks/use-customers-list-table-state';
+import type { CustomerListItem } from '@/modules/customers/types/customer';
+import { toListCustomersParams } from '@/modules/customers/utils/customers-list-params';
 import {
   Table,
   TableBody,

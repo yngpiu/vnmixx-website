@@ -1,7 +1,7 @@
 'use client';
 
 import { OrdersTable } from '@/app/orders/orders-table';
-import { ListPage } from '@/components/list-page';
+import { ListPage } from '@/modules/common/components/list-page';
 
 export function OrdersView() {
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { AuditLogsTable } from '@/app/audit-logs/audit-logs-table';
-import { ListPage } from '@/components/list-page';
+import { ListPage } from '@/modules/common/components/list-page';
 
 export function AuditLogsView() {
   return (

@@ -1,9 +1,9 @@
 'use client';
 
 import { RoleEmployeesSection } from '@/app/roles/[roleId]/role-employees-section';
-import { BackButton } from '@/components/back-button';
-import { PageViewHeader } from '@/components/page-view-header';
-import { RoleDetailContent } from '@/components/roles/role-detail-content';
+import { BackButton } from '@/modules/common/components/back-button';
+import { PageViewHeader } from '@/modules/common/components/page-view-header';
+import { RoleDetailContent } from '@/modules/rbac/components/roles/role-detail-content';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/ui/tabs';
 import { notFound, useParams } from 'next/navigation';
 

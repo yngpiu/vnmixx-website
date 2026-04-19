@@ -1,6 +1,6 @@
 'use client';
 
-import { uploadMedia } from '@/lib/api/media';
+import { uploadMedia } from '@/modules/media/api/media';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,

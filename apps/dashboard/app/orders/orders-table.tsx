@@ -1,16 +1,16 @@
 'use client';
 
 import { ordersColumns } from '@/app/orders/orders-columns';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { useOrdersListTableState } from '@/hooks/use-orders-list-table-state';
-import { listAdminOrders } from '@/lib/api/orders';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { listAdminOrders } from '@/modules/orders/api/orders';
+import { useOrdersListTableState } from '@/modules/orders/hooks/use-orders-list-table-state';
 import {
   ORDER_STATUS_FILTER_OPTIONS,
   PAYMENT_STATUS_FILTER_OPTIONS,
-} from '@/utils/order-status-labels';
-import { toListAdminOrdersParams } from '@/utils/orders-list-params';
+} from '@/modules/orders/utils/order-status-labels';
+import { toListAdminOrdersParams } from '@/modules/orders/utils/orders-list-params';
 import {
   Table,
   TableBody,

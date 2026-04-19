@@ -2,9 +2,9 @@
 
 import { CustomerOrdersSection } from '@/app/customers/[customerId]/customer-orders-section';
 import { CustomerReviewsSection } from '@/app/customers/[customerId]/customer-reviews-section';
-import { BackButton } from '@/components/back-button';
-import { CustomerDetailContent } from '@/components/customers/customer-detail-content';
-import { PageViewHeader } from '@/components/page-view-header';
+import { BackButton } from '@/modules/common/components/back-button';
+import { PageViewHeader } from '@/modules/common/components/page-view-header';
+import { CustomerDetailContent } from '@/modules/customers/components/customers/customer-detail-content';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/ui/tabs';
 import { notFound, useParams } from 'next/navigation';
 

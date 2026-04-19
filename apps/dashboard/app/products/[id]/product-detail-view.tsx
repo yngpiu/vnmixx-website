@@ -1,12 +1,12 @@
 'use client';
 
-import { BackButton } from '@/components/back-button';
-import { adminModuleEditPath } from '@/lib/admin-modules';
-import { listCategories } from '@/lib/api/categories';
-import { listPublicColors } from '@/lib/api/colors';
-import { getProductById } from '@/lib/api/products';
-import { listPublicSizes } from '@/lib/api/sizes';
-import { categoryDisplayName } from '@/utils/category-display-name';
+import { adminModuleEditPath } from '@/config/admin-modules';
+import { listCategories } from '@/modules/categories/api/categories';
+import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import { listPublicColors } from '@/modules/colors/api/colors';
+import { BackButton } from '@/modules/common/components/back-button';
+import { getProductById } from '@/modules/products/api/products';
+import { listPublicSizes } from '@/modules/sizes/api/sizes';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Separator } from '@repo/ui/components/ui/separator';

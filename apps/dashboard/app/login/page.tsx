@@ -1,4 +1,4 @@
-import { LoginForm } from '@/components/forms/login-form';
+import { LoginForm } from '@/modules/auth/components/login-form';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Đăng nhập' };

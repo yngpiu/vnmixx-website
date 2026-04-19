@@ -1,17 +1,17 @@
 'use client';
 
-import { BackButton } from '@/components/back-button';
-import { OrderActionsDialog } from '@/components/orders/order-actions-dialog';
-import { PageViewHeader } from '@/components/page-view-header';
-import { getAdminOrder } from '@/lib/api/orders';
-import type { OrderAdminDetail } from '@/types/order-admin';
-import { formatVnd } from '@/utils/format-vnd';
+import { BackButton } from '@/modules/common/components/back-button';
+import { PageViewHeader } from '@/modules/common/components/page-view-header';
+import { formatVnd } from '@/modules/common/utils/format-vnd';
+import { getAdminOrder } from '@/modules/orders/api/orders';
+import { OrderActionsDialog } from '@/modules/orders/components/orders/order-actions-dialog';
+import type { OrderAdminDetail } from '@/modules/orders/types/order-admin';
 import {
   getOrderStatusBadgeClassName,
   getOrderStatusLabel,
   getPaymentStatusBadgeClassName,
   getPaymentStatusLabel,
-} from '@/utils/order-status-labels';
+} from '@/modules/orders/utils/order-status-labels';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import {

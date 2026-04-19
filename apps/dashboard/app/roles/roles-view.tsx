@@ -2,7 +2,7 @@
 
 import { RolesPrimaryButtons } from '@/app/roles/roles-primary-buttons';
 import { RolesTable } from '@/app/roles/roles-table';
-import { ListPage } from '@/components/list-page';
+import { ListPage } from '@/modules/common/components/list-page';
 
 export function RolesView() {
   return (

@@ -1,9 +1,9 @@
 'use client';
 
 import { CategoriesTable } from '@/app/categories/categories-table';
-import { CreateCategoryDialog } from '@/components/categories/create-category-dialog';
-import { ListPage } from '@/components/list-page';
-import type { CategoryAdminTreeNode } from '@/types/category';
+import { CreateCategoryDialog } from '@/modules/categories/components/categories/create-category-dialog';
+import type { CategoryAdminTreeNode } from '@/modules/categories/types/category';
+import { ListPage } from '@/modules/common/components/list-page';
 import { Button } from '@repo/ui/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';

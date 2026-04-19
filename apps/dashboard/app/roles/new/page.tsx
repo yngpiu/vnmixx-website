@@ -1,4 +1,4 @@
-import { adminModulePath } from '@/lib/admin-modules';
+import { adminModulePath } from '@/config/admin-modules';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 

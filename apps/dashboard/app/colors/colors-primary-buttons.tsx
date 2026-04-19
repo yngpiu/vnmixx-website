@@ -1,6 +1,6 @@
 'use client';
 
-import { CreateColorDialog } from '@/components/colors/create-color-dialog';
+import { CreateColorDialog } from '@/modules/colors/components/colors/create-color-dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import { PaletteIcon } from 'lucide-react';
 import { useState } from 'react';

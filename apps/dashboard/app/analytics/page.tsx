@@ -1,5 +1,5 @@
-import { AnalyticsShell } from '@/components/analytics/analytics-shell';
-import { AnalyticsDashboard } from '@/components/dashboard/analytics-dashboard';
+import { AnalyticsDashboard } from '@/modules/analytics/components/analytics-dashboard';
+import { AnalyticsShell } from '@/modules/analytics/components/analytics/analytics-shell';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = { title: 'Phân tích' };

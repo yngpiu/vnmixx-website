@@ -1,6 +1,6 @@
 'use client';
 
-import { createFolder } from '@/lib/api/media';
+import { createFolder } from '@/modules/media/api/media';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,

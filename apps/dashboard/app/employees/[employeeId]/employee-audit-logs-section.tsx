@@ -2,11 +2,11 @@
 
 import { AuditLogDetailDialog } from '@/app/audit-logs/audit-log-detail-dialog';
 import { createAuditLogsColumns } from '@/app/audit-logs/audit-logs-columns';
-import { AuditLogActionTreeFilter } from '@/components/audit-logs/audit-log-action-tree-filter';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { listAuditLogs } from '@/lib/api/audit-logs';
-import type { AuditLogItem } from '@/types/audit-log';
+import { listAuditLogs } from '@/modules/audit-logs/api/audit-logs';
+import { AuditLogActionTreeFilter } from '@/modules/audit-logs/components/audit-logs/audit-log-action-tree-filter';
+import type { AuditLogItem } from '@/modules/audit-logs/types/audit-log';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Table,

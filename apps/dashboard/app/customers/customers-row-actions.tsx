@@ -1,7 +1,7 @@
 'use client';
 
 import { useCustomersTableActions } from '@/app/customers/customers-table-actions-context';
-import type { CustomerListItem } from '@/types/customer';
+import type { CustomerListItem } from '@/modules/customers/types/customer';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,

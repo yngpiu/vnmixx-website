@@ -1,6 +1,6 @@
 'use client';
 
-import { CreateEmployeeDialog } from '@/components/employees/create-employee-dialog';
+import { CreateEmployeeDialog } from '@/modules/employees/components/employees/create-employee-dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import { UserPlusIcon } from 'lucide-react';
 import { useState } from 'react';

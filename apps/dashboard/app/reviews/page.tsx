@@ -1,4 +1,4 @@
-import { ReviewsManagementView } from '@/components/reviews/reviews-management-view';
+import { ReviewsManagementView } from '@/modules/reviews/components/reviews/reviews-management-view';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 

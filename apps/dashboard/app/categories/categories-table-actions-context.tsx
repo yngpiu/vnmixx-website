@@ -1,6 +1,6 @@
 'use client';
 
-import type { CategoryAdminTreeNode } from '@/types/category';
+import type { CategoryAdminTreeNode } from '@/modules/categories/types/category';
 import { createContext, useContext, type ReactNode } from 'react';
 
 export type CategoriesTableActionsContextValue = {

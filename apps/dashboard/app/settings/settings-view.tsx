@@ -1,10 +1,14 @@
 'use client';
 
-import { PageViewHeader } from '@/components/page-view-header';
-import { useLogout } from '@/hooks/use-auth';
-import { uploadMedia } from '@/lib/api/media';
-import { changeMyPassword, getMyEmployeeProfile, updateMyEmployeeProfile } from '@/lib/api/profile';
-import { useAuthStore } from '@/stores/auth-store';
+import { useLogout } from '@/modules/auth/hooks/use-auth';
+import { useAuthStore } from '@/modules/auth/stores/auth-store';
+import { PageViewHeader } from '@/modules/common/components/page-view-header';
+import { uploadMedia } from '@/modules/media/api/media';
+import {
+  changeMyPassword,
+  getMyEmployeeProfile,
+  updateMyEmployeeProfile,
+} from '@/modules/settings/api/profile';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';

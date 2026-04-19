@@ -2,7 +2,7 @@
 
 import { SizesPrimaryButtons } from '@/app/sizes/sizes-primary-buttons';
 import { SizesTable } from '@/app/sizes/sizes-table';
-import { ListPage } from '@/components/list-page';
+import { ListPage } from '@/modules/common/components/list-page';
 
 export function SizesView() {
   return (

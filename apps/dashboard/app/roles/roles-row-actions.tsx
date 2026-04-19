@@ -1,6 +1,6 @@
 'use client';
 
-import type { RoleListItem } from '@/types/rbac';
+import type { RoleListItem } from '@/modules/rbac/types/rbac';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   DropdownMenu,

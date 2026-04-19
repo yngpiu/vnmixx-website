@@ -1,6 +1,6 @@
 'use client';
 
-import { CreateSizeDialog } from '@/components/sizes/create-size-dialog';
+import { CreateSizeDialog } from '@/modules/sizes/components/sizes/create-size-dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import { RulerIcon } from 'lucide-react';
 import { useState } from 'react';

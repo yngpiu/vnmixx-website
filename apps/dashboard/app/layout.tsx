@@ -1,7 +1,7 @@
-import { AppChrome } from '@/components/app-chrome';
-import { ThemeFavicon } from '@/components/brand/theme-favicon';
-import { COOKIE_ACCESS_TOKEN } from '@/lib/constants';
-import { AuthProvider } from '@/providers/auth-provider';
+import { COOKIE_ACCESS_TOKEN } from '@/config/constants';
+import { AuthProvider } from '@/modules/auth/providers/auth-provider';
+import { AppChrome } from '@/modules/common/components/app-chrome';
+import { ThemeFavicon } from '@/modules/common/components/brand/theme-favicon';
 import { QueryProvider } from '@/providers/query-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { DashboardTooltipProvider } from '@/providers/tooltip-provider';

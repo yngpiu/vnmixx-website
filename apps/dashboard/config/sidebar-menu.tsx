@@ -1,35 +1,33 @@
-import type { ReactNode } from 'react';
+'use client';
 
-import { adminModulePath } from '@/lib/admin-modules';
-import { dashboardRoutes } from '@/lib/routes';
+import { ADMIN_MODULES, adminModulePath, type AdminModuleSlug } from '@/config/admin-modules';
+import { dashboardRoutes } from '@/config/routes';
 import {
   BarChart3Icon,
-  FileClockIcon,
-  FolderTreeIcon,
+  ClipboardListIcon,
+  FolderOpenIcon,
   ImageIcon,
   LayoutDashboardIcon,
-  MessageSquareTextIcon,
   PackageIcon,
   PaletteIcon,
   RulerIcon,
   ShieldIcon,
   ShoppingCartIcon,
-  UserCogIcon,
+  StarIcon,
+  TagsIcon,
   UsersIcon,
+  UsersRoundIcon,
 } from 'lucide-react';
-
-export type SidebarNavLeaf = { title: string; url: string };
-
-export type SidebarNavGroup = { title: string; items: SidebarNavLeaf[] };
+import type { ReactNode } from 'react';
 
 export type SidebarNavItem = {
   title: string;
   url: string;
-  icon: ReactNode;
-  isActive?: boolean;
+  icon?: ReactNode;
   subtitle?: string;
-  groups?: SidebarNavGroup[];
-  items?: SidebarNavLeaf[];
+  isActive?: boolean;
+  items?: { title: string; url: string }[];
+  groups?: { title: string; items: { title: string; url: string }[] }[];
 };
 
 export type SidebarSection = {
@@ -39,106 +37,121 @@ export type SidebarSection = {
   items: SidebarNavItem[];
 };
 
-const dashboardItems: SidebarNavItem[] = [
-  {
-    title: 'Tổng quan',
-    url: dashboardRoutes.overview,
-    icon: <LayoutDashboardIcon />,
-  },
-  {
-    title: 'Phân tích',
-    url: dashboardRoutes.analytics,
-    icon: <BarChart3Icon />,
-  },
-];
+export type DashboardSearchEntry = {
+  readonly label: string;
+  readonly href: string;
+  readonly group: string;
+};
 
-const catalogItems: SidebarNavItem[] = [
-  {
-    title: 'Danh mục',
-    url: adminModulePath('categories'),
-    icon: <FolderTreeIcon />,
-  },
-  {
-    title: 'Sản phẩm',
-    url: adminModulePath('products'),
-    icon: <PackageIcon />,
-  },
-  {
-    title: 'Màu sắc',
-    url: adminModulePath('colors'),
-    icon: <PaletteIcon />,
-  },
-  {
-    title: 'Kích cỡ',
-    url: adminModulePath('sizes'),
-    icon: <RulerIcon />,
-  },
-  {
-    title: 'Bộ sưu tập',
-    url: '/media',
-    icon: <ImageIcon />,
-  },
-];
-
-const systemItems: SidebarNavItem[] = [
-  {
-    title: 'Nhật ký thao tác',
-    url: '/audit-logs',
-    icon: <FileClockIcon />,
-  },
-];
+function moduleNav(slug: AdminModuleSlug, Icon: typeof PackageIcon): SidebarNavItem {
+  return {
+    title: ADMIN_MODULES[slug].title,
+    url: adminModulePath(slug),
+    icon: <Icon className="size-4 shrink-0" />,
+  };
+}
 
 export const sidebarSections: SidebarSection[] = [
   {
-    id: 'stats',
-    groupLabel: 'Thống kê',
-    items: dashboardItems,
+    id: 'overview',
+    groupLabel: 'Tổng quan',
+    items: [
+      {
+        title: 'Tổng quan',
+        url: dashboardRoutes.overview,
+        icon: <LayoutDashboardIcon className="size-4 shrink-0" />,
+      },
+      {
+        title: 'Phân tích',
+        url: dashboardRoutes.analytics,
+        icon: <BarChart3Icon className="size-4 shrink-0" />,
+      },
+      {
+        title: 'Đánh giá',
+        url: dashboardRoutes.reviews,
+        icon: <StarIcon className="size-4 shrink-0" />,
+      },
+    ],
   },
   {
     id: 'commerce',
     groupLabel: 'Bán hàng',
-    items: [
-      {
-        title: 'Đơn hàng',
-        url: adminModulePath('orders'),
-        icon: <ShoppingCartIcon />,
-      },
-      {
-        title: 'Đánh giá',
-        url: '/reviews',
-        icon: <MessageSquareTextIcon />,
-      },
-    ],
-  },
-  {
-    id: 'accounts',
-    groupLabel: 'Người dùng',
-    items: [
-      {
-        title: 'Khách hàng',
-        url: adminModulePath('customers'),
-        icon: <UsersIcon />,
-      },
-      {
-        title: 'Nhân viên',
-        url: adminModulePath('employees'),
-        icon: <UserCogIcon />,
-      },
-      {
-        title: 'Vai trò',
-        url: adminModulePath('roles'),
-        icon: <ShieldIcon />,
-      },
-    ],
+    items: [moduleNav('orders', ShoppingCartIcon), moduleNav('customers', UsersIcon)],
   },
   {
     id: 'catalog',
-    groupLabel: 'Sản phẩm',
-    items: catalogItems,
+    groupLabel: 'Sản phẩm & danh mục',
+    items: [
+      moduleNav('products', PackageIcon),
+      moduleNav('categories', TagsIcon),
+      moduleNav('colors', PaletteIcon),
+      moduleNav('sizes', RulerIcon),
+    ],
+  },
+  {
+    id: 'org',
+    groupLabel: 'Tổ chức',
+    items: [moduleNav('employees', UsersRoundIcon), moduleNav('roles', ShieldIcon)],
   },
   {
     id: 'system',
     groupLabel: 'Hệ thống',
-    items: systemItems,
+    items: [
+      {
+        title: 'Bộ sưu tập',
+        url: '/media',
+        icon: <ImageIcon className="size-4 shrink-0" />,
+      },
+      {
+        title: 'Nhật ký thao tác',
+        url: '/audit-logs',
+        icon: <ClipboardListIcon className="size-4 shrink-0" />,
+      },
+      {
+        title: 'Báo cáo',
+        url: '/reports',
+        icon: <FolderOpenIcon className="size-4 shrink-0" />,
+      },
+    ],
   },
 ];
+
+export function getDashboardSearchEntries(): DashboardSearchEntry[] {
+  const entries: DashboardSearchEntry[] = [];
+  for (const section of sidebarSections) {
+    for (const item of section.items) {
+      entries.push({
+        label: item.title,
+        href: item.url,
+        group: section.groupLabel,
+      });
+      if (item.items) {
+        for (const sub of item.items) {
+          if (sub.url === item.url) continue;
+          entries.push({
+            label: `${item.title} — ${sub.title}`,
+            href: sub.url,
+            group: section.groupLabel,
+          });
+        }
+      }
+      if (item.groups) {
+        for (const g of item.groups) {
+          for (const sub of g.items) {
+            entries.push({
+              label: `${item.title} — ${g.title} — ${sub.title}`,
+              href: sub.url,
+              group: section.groupLabel,
+            });
+          }
+        }
+      }
+    }
+  }
+  entries.push({
+    label: 'Cài đặt cá nhân',
+    href: dashboardRoutes.settings,
+    group: 'Tài khoản',
+  });
+  return entries;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import type { FolderNode } from '@/types/media';
+import type { FolderNode } from '@/modules/media/types/media';
 import {
   ContextMenu,
   ContextMenuContent,

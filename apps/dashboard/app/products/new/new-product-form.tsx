@@ -1,19 +1,19 @@
 'use client';
 
-import { BackButton } from '@/components/back-button';
-import { CategoryTreeMultiSelect } from '@/components/categories/category-tree-multi-select';
-import { ProductImagesColorColumns } from '@/components/products/product-images-color-columns';
-import { listCategories } from '@/lib/api/categories';
-import { listPublicColors } from '@/lib/api/colors';
-import { createProduct } from '@/lib/api/products';
-import { listPublicSizes } from '@/lib/api/sizes';
-import type { CategoryAdmin } from '@/types/category';
+import { listCategories } from '@/modules/categories/api/categories';
+import { CategoryTreeMultiSelect } from '@/modules/categories/components/categories/category-tree-multi-select';
+import type { CategoryAdmin } from '@/modules/categories/types/category';
+import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import { listPublicColors } from '@/modules/colors/api/colors';
+import { BackButton } from '@/modules/common/components/back-button';
+import { createProduct } from '@/modules/products/api/products';
+import { ProductImagesColorColumns } from '@/modules/products/components/products/product-images-color-columns';
 import type {
   CreateProductBody,
   CreateProductImageInput,
   CreateProductVariantInput,
-} from '@/types/product';
-import { categoryDisplayName } from '@/utils/category-display-name';
+} from '@/modules/products/types/product';
+import { listPublicSizes } from '@/modules/sizes/api/sizes';
 import { Button } from '@repo/ui/components/ui/button';
 import { Field, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';

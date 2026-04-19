@@ -1,6 +1,6 @@
 'use client';
 
-import type { MediaFile } from '@/types/media';
+import type { MediaFile } from '@/modules/media/types/media';
 import { Button } from '@repo/ui/components/ui/button';
 import { cn } from '@repo/ui/lib/utils';
 import {

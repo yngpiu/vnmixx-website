@@ -1,10 +1,10 @@
 'use client';
 
 import { CategoriesRowActions } from '@/app/categories/categories-row-actions';
-import { DataTableColumnHeader } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import type { CategoryTableRow } from '@/types/category';
-import { categoryDisplayName } from '@/utils/category-display-name';
+import type { CategoryTableRow } from '@/modules/categories/types/category';
+import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import { DataTableColumnHeader } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
 import { cn } from '@repo/ui/lib/utils';

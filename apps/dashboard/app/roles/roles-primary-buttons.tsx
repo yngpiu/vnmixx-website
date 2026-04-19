@@ -1,6 +1,6 @@
 'use client';
 
-import { CreateRoleDialog } from '@/components/roles/create-role-dialog';
+import { CreateRoleDialog } from '@/modules/rbac/components/roles/create-role-dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import { ShieldPlusIcon } from 'lucide-react';
 import { useState } from 'react';

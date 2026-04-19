@@ -1,6 +1,6 @@
 'use client';
 
-import type { CustomerListItem } from '@/types/customer';
+import type { CustomerListItem } from '@/modules/customers/types/customer';
 import { createContext, useContext, type ReactNode } from 'react';
 
 type CustomersTableActionsContextValue = {

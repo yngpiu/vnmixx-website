@@ -1,14 +1,14 @@
 'use client';
 
 import { createSizesColumns } from '@/app/sizes/sizes-columns';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { EditSizeDialog } from '@/components/sizes/edit-size-dialog';
-import { useSizesListTableState } from '@/hooks/use-sizes-list-table-state';
-import { deleteSize, listSizes } from '@/lib/api/sizes';
-import type { SizeAdmin } from '@/types/size';
-import { toListSizesParams } from '@/utils/sizes-list-params';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { deleteSize, listSizes } from '@/modules/sizes/api/sizes';
+import { EditSizeDialog } from '@/modules/sizes/components/sizes/edit-size-dialog';
+import { useSizesListTableState } from '@/modules/sizes/hooks/use-sizes-list-table-state';
+import type { SizeAdmin } from '@/modules/sizes/types/size';
+import { toListSizesParams } from '@/modules/sizes/utils/sizes-list-params';
 import {
   AlertDialog,
   AlertDialogAction,

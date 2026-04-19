@@ -1,8 +1,8 @@
 'use client';
 
 import { ProductsTable } from '@/app/products/products-table';
-import { ListPage } from '@/components/list-page';
-import { adminModuleNewPath } from '@/lib/admin-modules';
+import { adminModuleNewPath } from '@/config/admin-modules';
+import { ListPage } from '@/modules/common/components/list-page';
 import { Button } from '@repo/ui/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';

@@ -1,6 +1,10 @@
-import axios from 'axios';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+/**
+ * HTTP client (Axios) — `lib/` chỉ giữ tích hợp thư viện / instance dùng chung.
+ * Biến môi trường nằm ở `@/config/constants`; Bearer + xử lý 401 đăng ký ngay dưới đây.
+ */
+import { API_BASE_URL } from '@/config/constants';
+import { useAuthStore } from '@/modules/auth/stores/auth-store';
+import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 
 /**
  * Axios instance configured for the API.
@@ -12,3 +16,99 @@ export const apiClient = axios.create({
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
+
+const authInterceptorFlag = '__vnmixx_dashboard_auth_interceptors_registered__';
+const globalContext = globalThis as typeof globalThis & Record<string, boolean | undefined>;
+let refreshInFlight: Promise<string | null> | null = null;
+
+interface RetryableAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _hasRetriedAfterRefresh?: boolean;
+}
+
+interface RefreshApiSuccessResponse {
+  success: true;
+  data: {
+    accessToken: string;
+  };
+}
+
+interface RefreshApiErrorResponse {
+  success: false;
+  error: string;
+}
+
+type RefreshApiResponse = RefreshApiSuccessResponse | RefreshApiErrorResponse;
+
+async function executeRefreshToken(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const result = (await response.json()) as RefreshApiResponse;
+      if (!response.ok || !result.success) {
+        return null;
+      }
+      return result.data.accessToken;
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
+function executeLogoutRedirect(): void {
+  useAuthStore.getState().clearSession();
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+
+/**
+ * Request interceptor: injects Bearer token from Zustand
+ * into every outgoing request.
+ */
+function registerAuthInterceptors(): void {
+  apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    const { accessToken } = useAuthStore.getState();
+    if (accessToken && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+  });
+
+  /**
+   * Response interceptor: use proxy.ts as single refresh source of truth.
+   * On 401 this interceptor only clears local auth state and redirects.
+   */
+  apiClient.interceptors.response.use(
+    (response: AxiosResponse) => response,
+    async (error: AxiosError) => {
+      const requestConfig = error.config as RetryableAxiosRequestConfig | undefined;
+      const isUnauthorized = error.response?.status === 401;
+      if (!isUnauthorized || !requestConfig || requestConfig._hasRetriedAfterRefresh) {
+        return Promise.reject(error);
+      }
+      requestConfig._hasRetriedAfterRefresh = true;
+      const refreshedAccessToken = await executeRefreshToken();
+      if (!refreshedAccessToken) {
+        executeLogoutRedirect();
+        return Promise.reject(error);
+      }
+      useAuthStore.getState().setAccessToken(refreshedAccessToken);
+      requestConfig.headers = requestConfig.headers ?? {};
+      requestConfig.headers.Authorization = `Bearer ${refreshedAccessToken}`;
+      return apiClient(requestConfig);
+    },
+  );
+}
+
+/** Chỉ trên browser — tránh gắn interceptor vào instance dùng trong Server Actions. */
+if (typeof window !== 'undefined' && !globalContext[authInterceptorFlag]) {
+  registerAuthInterceptors();
+  globalContext[authInterceptorFlag] = true;
+}

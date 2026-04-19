@@ -3,9 +3,9 @@
 import {
   DATA_TABLE_SEARCH_PLACEHOLDER,
   DataTableToolbarSearchInput,
-} from '@/components/data-table';
-import { deleteFolder, deleteMedia, listFolders, listMedia } from '@/lib/api/media';
-import type { ListMediaParams, MediaFile } from '@/types/media';
+} from '@/modules/common/components/data-table';
+import { deleteFolder, deleteMedia, listFolders, listMedia } from '@/modules/media/api/media';
+import type { ListMediaParams, MediaFile } from '@/modules/media/types/media';
 import {
   AlertDialog,
   AlertDialogAction,

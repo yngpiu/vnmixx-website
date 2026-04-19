@@ -2,14 +2,14 @@
 
 import { AuditLogDetailDialog } from '@/app/audit-logs/audit-log-detail-dialog';
 import { createAuditLogsColumns } from '@/app/audit-logs/audit-logs-columns';
-import { AuditLogActionTreeFilter } from '@/components/audit-logs/audit-log-action-tree-filter';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { EmployeeInfiniteColumnFilter } from '@/components/employees/employee-infinite-column-filter';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { adminModuleDetailPath } from '@/lib/admin-modules';
-import { listAuditLogs } from '@/lib/api/audit-logs';
-import type { AuditLogItem } from '@/types/audit-log';
+import { adminModuleDetailPath } from '@/config/admin-modules';
+import { listAuditLogs } from '@/modules/audit-logs/api/audit-logs';
+import { AuditLogActionTreeFilter } from '@/modules/audit-logs/components/audit-logs/audit-log-action-tree-filter';
+import type { AuditLogItem } from '@/modules/audit-logs/types/audit-log';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { EmployeeInfiniteColumnFilter } from '@/modules/employees/components/employees/employee-infinite-column-filter';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Table,

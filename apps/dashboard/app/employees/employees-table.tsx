@@ -3,18 +3,18 @@
 import { EmployeesBulkActions } from '@/app/employees/employees-bulk-actions';
 import { employeesColumns } from '@/app/employees/employees-columns';
 import { EmployeesTableActionsProvider } from '@/app/employees/employees-table-actions-context';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
+import { adminModuleDetailPath } from '@/config/admin-modules';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { listEmployees } from '@/modules/employees/api/employees';
 import {
   EditEmployeeDialog,
   type EmployeeDialogMode,
-} from '@/components/employees/edit-employee-dialog';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { useEmployeesListTableState } from '@/hooks/use-employees-list-table-state';
-import { adminModuleDetailPath } from '@/lib/admin-modules';
-import { listEmployees } from '@/lib/api/employees';
-import type { EmployeeListItem } from '@/types/employee';
-import { toListEmployeesParams } from '@/utils/employees-list-params';
+} from '@/modules/employees/components/employees/edit-employee-dialog';
+import { useEmployeesListTableState } from '@/modules/employees/hooks/use-employees-list-table-state';
+import type { EmployeeListItem } from '@/modules/employees/types/employee';
+import { toListEmployeesParams } from '@/modules/employees/utils/employees-list-params';
 import {
   Table,
   TableBody,

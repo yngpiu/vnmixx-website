@@ -1,11 +1,14 @@
 'use client';
 
 import { CustomersRowActions } from '@/app/customers/customers-row-actions';
-import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { LongText } from '@/components/long-text';
-import type { CustomerGender, CustomerListItem } from '@/types/customer';
-import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/utils/avatar';
+import {
+  DataTableColumnHeader,
+  dataTableSttColumnDef,
+} from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { LongText } from '@/modules/common/components/long-text';
+import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/modules/common/utils/avatar';
+import type { CustomerGender, CustomerListItem } from '@/modules/customers/types/customer';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';

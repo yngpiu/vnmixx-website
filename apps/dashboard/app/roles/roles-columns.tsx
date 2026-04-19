@@ -1,9 +1,12 @@
 'use client';
 
 import { RolesRowActions } from '@/app/roles/roles-row-actions';
-import { DataTableColumnHeader, dataTableSttColumnDef } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import type { RoleListItem } from '@/types/rbac';
+import {
+  DataTableColumnHeader,
+  dataTableSttColumnDef,
+} from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import type { RoleListItem } from '@/modules/rbac/types/rbac';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';

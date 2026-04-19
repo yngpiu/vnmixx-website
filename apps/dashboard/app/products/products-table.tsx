@@ -1,16 +1,21 @@
 'use client';
 
 import { createProductColumns } from '@/app/products/products-columns';
-import { DataTablePagination, DataTableToolbar } from '@/components/data-table';
-import type { DataTableColumnMeta } from '@/components/data-table/column-meta';
-import { InlineErrorAlert } from '@/components/inline-error-alert';
-import { useProductsListTableState } from '@/hooks/use-products-list-table-state';
-import { adminModuleEditPath } from '@/lib/admin-modules';
-import { listCategories } from '@/lib/api/categories';
-import { deleteProduct, listProducts, restoreProduct, updateProduct } from '@/lib/api/products';
-import type { ProductAdminListItem } from '@/types/product';
-import { categoryDisplayName } from '@/utils/category-display-name';
-import { toListProductsParams } from '@/utils/products-list-params';
+import { adminModuleEditPath } from '@/config/admin-modules';
+import { listCategories } from '@/modules/categories/api/categories';
+import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import {
+  deleteProduct,
+  listProducts,
+  restoreProduct,
+  updateProduct,
+} from '@/modules/products/api/products';
+import { useProductsListTableState } from '@/modules/products/hooks/use-products-list-table-state';
+import type { ProductAdminListItem } from '@/modules/products/types/product';
+import { toListProductsParams } from '@/modules/products/utils/products-list-params';
 import {
   AlertDialog,
   AlertDialogAction,
