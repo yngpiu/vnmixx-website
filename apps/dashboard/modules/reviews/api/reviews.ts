@@ -1,16 +1,9 @@
 import { apiClient } from '@/lib/axios';
 import type {
   AdminReviewDetailResponse,
+  AdminReviewListParams,
   AdminReviewsListResponse,
 } from '@/modules/reviews/types/review-admin';
-
-export type AdminReviewListParams = {
-  page?: number;
-  pageSize?: number;
-  visibility?: 'all' | 'visible' | 'hidden';
-  keyword?: string;
-  customerId?: number;
-};
 
 export async function getAdminReviews(
   params: AdminReviewListParams,

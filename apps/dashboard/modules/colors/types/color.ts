@@ -20,3 +20,16 @@ export type ColorListResponse = {
   data: ColorAdmin[];
   meta: ColorListMeta;
 };
+
+export type ListColorsParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type ColorsColumnHandlers = {
+  onEdit: (color: ColorAdmin) => void;
+  onDelete: (color: ColorAdmin) => void;
+};

@@ -23,3 +23,13 @@ export interface CustomerListResponse {
   data: CustomerListItem[];
   meta: { page: number; limit: number; total: number; totalPages: number };
 }
+
+export type ListCustomersParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  isSoftDeleted?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};

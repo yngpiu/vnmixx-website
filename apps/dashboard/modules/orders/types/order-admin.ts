@@ -94,3 +94,19 @@ export interface OrderAdminDetail extends OrderAdminListItem {
   statusHistories: StatusHistoryAdmin[];
   customerId: number;
 }
+
+export type ListAdminOrdersParams = {
+  page?: number;
+  limit?: number;
+  status?: OrderStatus;
+  paymentStatus?: PaymentStatus;
+  search?: string;
+  customerId?: number;
+};
+
+export type ConfirmOrderShipmentInput = {
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
+};

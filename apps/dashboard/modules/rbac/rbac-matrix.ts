@@ -1,8 +1,6 @@
-import type { Permission } from '@/modules/rbac/types/rbac';
+import type { CrudAction, CrudMatrixRow, Permission } from '@/modules/rbac/types/rbac';
+import { CRUD_ACTIONS } from '@/modules/rbac/types/rbac';
 import { permissionModuleDisplayName } from '@/modules/rbac/utils/permission-label';
-
-export const CRUD_ACTIONS = ['create', 'read', 'update', 'delete'] as const;
-export type CrudAction = (typeof CRUD_ACTIONS)[number];
 
 export const CRUD_LABELS: Record<CrudAction, string> = {
   create: 'Tạo',
@@ -14,12 +12,6 @@ export const CRUD_LABELS: Record<CrudAction, string> = {
 export function resourceDisplayLabel(resource: string): string {
   return permissionModuleDisplayName(resource);
 }
-
-export type CrudMatrixRow = {
-  resource: string;
-  label: string;
-  byAction: Record<CrudAction, Permission | null>;
-};
 
 export function buildCrudMatrix(permissions: Permission[]): {
   rows: CrudMatrixRow[];

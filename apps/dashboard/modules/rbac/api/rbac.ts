@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/axios';
 import type {
   CreateRolePayload,
+  ListRolesParams,
   Permission,
   RoleDetail,
   RoleListResponse,
@@ -11,14 +12,6 @@ export async function listPermissions(): Promise<Permission[]> {
   const { data } = await apiClient.get<Permission[]>('/admin/permissions');
   return data;
 }
-
-export type ListRolesParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-};
 
 export async function listRoles(params: ListRolesParams = {}): Promise<RoleListResponse> {
   const { data } = await apiClient.get<RoleListResponse>('/admin/roles', { params });

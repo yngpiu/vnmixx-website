@@ -1,26 +1,10 @@
 import { apiClient } from '@/lib/axios';
 import type {
+  ConfirmOrderShipmentInput,
+  ListAdminOrdersParams,
   OrderAdminDetail,
   OrderAdminListResponse,
-  OrderStatus,
-  PaymentStatus,
 } from '@/modules/orders/types/order-admin';
-
-export type ListAdminOrdersParams = {
-  page?: number;
-  limit?: number;
-  status?: OrderStatus;
-  paymentStatus?: PaymentStatus;
-  search?: string;
-  customerId?: number;
-};
-
-export type ConfirmOrderShipmentInput = {
-  weight: number;
-  length: number;
-  width: number;
-  height: number;
-};
 
 export async function listAdminOrders(
   params: ListAdminOrdersParams = {},

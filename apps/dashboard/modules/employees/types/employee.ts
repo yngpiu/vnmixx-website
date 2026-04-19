@@ -46,3 +46,14 @@ export type UpdateEmployeePayload = {
   status?: 'ACTIVE' | 'INACTIVE';
   roleId?: number;
 };
+
+export type ListEmployeesParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: 'ACTIVE' | 'INACTIVE';
+  isSoftDeleted?: boolean;
+  roleId?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};

@@ -3,19 +3,9 @@ import type {
   CreateEmployeePayload,
   EmployeeDetail,
   EmployeeListResponse,
+  ListEmployeesParams,
   UpdateEmployeePayload,
 } from '@/modules/employees/types/employee';
-
-export type ListEmployeesParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: 'ACTIVE' | 'INACTIVE';
-  isSoftDeleted?: boolean;
-  roleId?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-};
 
 export async function listEmployees(
   params: ListEmployeesParams = {},

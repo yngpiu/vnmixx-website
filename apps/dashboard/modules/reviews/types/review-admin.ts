@@ -33,3 +33,11 @@ export interface AdminReviewDetailResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+export type AdminReviewListParams = {
+  page?: number;
+  pageSize?: number;
+  visibility?: 'all' | 'visible' | 'hidden';
+  keyword?: string;
+  customerId?: number;
+};

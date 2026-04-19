@@ -1,13 +1,10 @@
 import { apiClient } from '@/lib/axios';
-import type { SizeAdmin, SizeListResponse, SizePublic } from '@/modules/sizes/types/size';
-
-export type ListSizesParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-};
+import type {
+  ListSizesParams,
+  SizeAdmin,
+  SizeListResponse,
+  SizePublic,
+} from '@/modules/sizes/types/size';
 
 /** Danh sách quản trị: phân trang + sort (GET /admin/sizes). */
 export async function listSizes(params: ListSizesParams = {}): Promise<SizeListResponse> {

@@ -4,6 +4,7 @@ import type {
   AnalyticsPaymentMethodMixOnlyResponse,
   AnalyticsPaymentStatusMixOnlyResponse,
   AnalyticsPendingOrdersOnlyResponse,
+  AnalyticsPeriod,
   AnalyticsReviewsSummaryResponse,
   AnalyticsStatusBreakdownOnlyResponse,
   AnalyticsTimeseriesResponse,
@@ -11,13 +12,8 @@ import type {
   AnalyticsTopShippingCitiesResponse,
 } from '@/modules/analytics/types/analytics';
 
-export type AnalyticsDateRangeParams = {
-  from: string;
-  to: string;
-};
-
 export async function getAnalyticsKpisWithDelta(
-  params: AnalyticsDateRangeParams,
+  params: AnalyticsPeriod,
 ): Promise<AnalyticsKpisWithDeltaResponse> {
   const { data } = await apiClient.get<AnalyticsKpisWithDeltaResponse>(
     '/admin/analytics/kpis-with-delta',
@@ -27,7 +23,7 @@ export async function getAnalyticsKpisWithDelta(
 }
 
 export async function getAnalyticsTimeseries(
-  params: AnalyticsDateRangeParams,
+  params: AnalyticsPeriod,
 ): Promise<AnalyticsTimeseriesResponse> {
   const { data } = await apiClient.get<AnalyticsTimeseriesResponse>('/admin/analytics/timeseries', {
     params: { ...params, granularity: 'day' },
@@ -36,7 +32,7 @@ export async function getAnalyticsTimeseries(
 }
 
 export async function getAnalyticsStatusBreakdown(
-  params: AnalyticsDateRangeParams,
+  params: AnalyticsPeriod,
 ): Promise<AnalyticsStatusBreakdownOnlyResponse> {
   const { data } = await apiClient.get<AnalyticsStatusBreakdownOnlyResponse>(
     '/admin/analytics/breakdowns/status',
@@ -46,7 +42,7 @@ export async function getAnalyticsStatusBreakdown(
 }
 
 export async function getAnalyticsPaymentMethodMix(
-  params: AnalyticsDateRangeParams,
+  params: AnalyticsPeriod,
 ): Promise<AnalyticsPaymentMethodMixOnlyResponse> {
   const { data } = await apiClient.get<AnalyticsPaymentMethodMixOnlyResponse>(
     '/admin/analytics/breakdowns/payment-method',
@@ -56,7 +52,7 @@ export async function getAnalyticsPaymentMethodMix(
 }
 
 export async function getAnalyticsPaymentStatusMix(
-  params: AnalyticsDateRangeParams,
+  params: AnalyticsPeriod,
 ): Promise<AnalyticsPaymentStatusMixOnlyResponse> {
   const { data } = await apiClient.get<AnalyticsPaymentStatusMixOnlyResponse>(
     '/admin/analytics/breakdowns/payment-status',
@@ -66,7 +62,7 @@ export async function getAnalyticsPaymentStatusMix(
 }
 
 export async function getAnalyticsPendingOrders(
-  params: AnalyticsDateRangeParams,
+  params: AnalyticsPeriod,
 ): Promise<AnalyticsPendingOrdersOnlyResponse> {
   const { data } = await apiClient.get<AnalyticsPendingOrdersOnlyResponse>(
     '/admin/analytics/orders/pending-actions',
@@ -76,7 +72,7 @@ export async function getAnalyticsPendingOrders(
 }
 
 export async function getAnalyticsTopShippingCities(
-  params: AnalyticsDateRangeParams & { limit?: number },
+  params: AnalyticsPeriod & { limit?: number },
 ): Promise<AnalyticsTopShippingCitiesResponse> {
   const { data } = await apiClient.get<AnalyticsTopShippingCitiesResponse>(
     '/admin/analytics/top-shipping-cities',
@@ -86,7 +82,7 @@ export async function getAnalyticsTopShippingCities(
 }
 
 export async function getAnalyticsTopProducts(
-  params: AnalyticsDateRangeParams,
+  params: AnalyticsPeriod,
 ): Promise<AnalyticsTopProductsResponse> {
   const { data } = await apiClient.get<AnalyticsTopProductsResponse>(
     '/admin/analytics/top-products',
@@ -98,7 +94,7 @@ export async function getAnalyticsTopProducts(
 }
 
 export async function getAnalyticsReviewsSummary(
-  params: AnalyticsDateRangeParams,
+  params: AnalyticsPeriod,
 ): Promise<AnalyticsReviewsSummaryResponse> {
   const { data } = await apiClient.get<AnalyticsReviewsSummaryResponse>(
     '/admin/analytics/reviews/summary',

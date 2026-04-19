@@ -20,3 +20,16 @@ export type SizeListResponse = {
   data: SizeAdmin[];
   meta: SizeListMeta;
 };
+
+export type ListSizesParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type SizesColumnHandlers = {
+  onEdit: (size: SizeAdmin) => void;
+  onDelete: (size: SizeAdmin) => void;
+};

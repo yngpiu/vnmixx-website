@@ -1,24 +1,11 @@
 'use client';
 
 import { ColorsRowActions } from '@/app/colors/colors-row-actions';
-import type { ColorAdmin } from '@/modules/colors/types/color';
+import type { ColorAdmin, ColorsColumnHandlers } from '@/modules/colors/types/color';
 import {
   DataTableColumnHeader,
   dataTableSttColumnDef,
 } from '@/modules/common/components/data-table';
-import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
-import { cn } from '@repo/ui/lib/utils';
-import type { ColumnDef } from '@tanstack/react-table';
-
-const updatedFormatter = new Intl.DateTimeFormat('vi-VN', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
-
-export type ColorsColumnHandlers = {
-  onEdit: (color: ColorAdmin) => void;
-  onDelete: (color: ColorAdmin) => void;
-};
 
 export function createColorsColumns(handlers: ColorsColumnHandlers): ColumnDef<ColorAdmin>[] {
   return [

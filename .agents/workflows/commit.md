@@ -19,8 +19,8 @@ description:
 
 Trước mỗi commit phải chạy tuần tự:
 
-1. `pnpm prettier --write`
-2. `pnpm eslint --fix`
+1. `pnpm format `
+2. `pnpm lint `
 
 Chỉ áp dụng cho staged files thuộc các loại:
 

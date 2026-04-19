@@ -1,15 +1,9 @@
 import { apiClient } from '@/lib/axios';
-import type { CustomerDetail, CustomerListResponse } from '@/modules/customers/types/customer';
-
-export type ListCustomersParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  isActive?: boolean;
-  isSoftDeleted?: boolean;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-};
+import type {
+  CustomerDetail,
+  CustomerListResponse,
+  ListCustomersParams,
+} from '@/modules/customers/types/customer';
 
 export async function listCustomers(
   params: ListCustomersParams = {},

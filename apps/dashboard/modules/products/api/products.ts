@@ -1,21 +1,11 @@
 import { apiClient } from '@/lib/axios';
 import type {
   CreateProductBody,
+  ListProductsParams,
   ProductAdminDetail,
   ProductAdminListResponse,
   UpdateProductBody,
 } from '@/modules/products/types/product';
-
-export type ListProductsParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  categoryId?: number;
-  isActive?: boolean;
-  isSoftDeleted?: boolean;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-};
 
 export async function listProducts(
   params: ListProductsParams = {},

@@ -1,6 +1,6 @@
 'use client';
 
-import type { AuditLogItem } from '@/modules/audit-logs/types/audit-log';
+import type { AuditLogItem, AuditLogsColumnsOptions } from '@/modules/audit-logs/types/audit-log';
 import {
   auditLogActionDisplayName,
   getAuditLogActionBadgeStyles,
@@ -40,10 +40,6 @@ function buildActorLabel(item: AuditLogItem): string {
   }
   return `${item.actorEmployee.fullName} (#${item.actorEmployee.id})`;
 }
-
-export type AuditLogsColumnsOptions = {
-  onOpenActorEmployeeDetail?: (employeeId: number) => void;
-};
 
 export function createAuditLogsColumns(
   options: AuditLogsColumnsOptions = {},

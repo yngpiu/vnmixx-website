@@ -1,21 +1,8 @@
 import { apiClient } from '@/lib/axios';
-import type { AuditLogListResponse, AuditLogStatus } from '@/modules/audit-logs/types/audit-log';
-
-export type ListAuditLogsParams = {
-  page?: number;
-  limit?: number;
-  /** Lọc theo nhiều nhân viên (query lặp `actorEmployeeIds`). */
-  actorEmployeeIds?: number[];
-  /** Substring match on action code when `actions` and `search` are not set. */
-  action?: string;
-  /** Tìm theo tên nhân viên, email hoặc tên hành động (tiếng Việt). */
-  search?: string;
-  /** Exact match on one or more action codes (repeated `actions` query keys). */
-  actions?: string[];
-  /** Lọc theo nhiều loại tài nguyên (query lặp `resourceTypes`). */
-  resourceTypes?: string[];
-  status?: AuditLogStatus;
-};
+import type {
+  AuditLogListResponse,
+  ListAuditLogsParams,
+} from '@/modules/audit-logs/types/audit-log';
 
 /**
  * Gọi GET /admin/audit-logs; mảng được serialize dạng lặp key (Nest parse được).

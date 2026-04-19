@@ -1,29 +1,10 @@
 import { apiClient } from '@/lib/axios';
-import type { CategoryAdmin } from '@/modules/categories/types/category';
-
-export type ListCategoriesParams = {
-  isActive?: boolean;
-  isSoftDeleted?: boolean;
-};
-
-export type CreateCategoryBody = {
-  name: string;
-  slug: string;
-  isFeatured?: boolean;
-  isActive?: boolean;
-  sortOrder?: number;
-  /** Bỏ qua hoặc không gửi = danh mục gốc (cấp 1). */
-  parentId?: number;
-};
-
-export type UpdateCategoryBody = {
-  name?: string;
-  slug?: string;
-  isFeatured?: boolean;
-  isActive?: boolean;
-  sortOrder?: number;
-  parentId?: number | null;
-};
+import type {
+  CategoryAdmin,
+  CreateCategoryBody,
+  ListCategoriesParams,
+  UpdateCategoryBody,
+} from '@/modules/categories/types/category';
 
 export async function listCategories(params: ListCategoriesParams = {}): Promise<CategoryAdmin[]> {
   const { data } = await apiClient.get<CategoryAdmin[]>('/admin/categories', { params });

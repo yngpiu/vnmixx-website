@@ -114,3 +114,14 @@ export type UpdateProductBody = {
   categoryIds?: number[];
   isActive?: boolean;
 };
+
+export type ListProductsParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  categoryId?: number;
+  isActive?: boolean;
+  isSoftDeleted?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};

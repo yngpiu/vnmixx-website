@@ -1,13 +1,10 @@
 import { apiClient } from '@/lib/axios';
-import type { ColorAdmin, ColorListResponse, ColorPublic } from '@/modules/colors/types/color';
-
-export type ListColorsParams = {
-  page?: number;
-  limit?: number;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-};
+import type {
+  ColorAdmin,
+  ColorListResponse,
+  ColorPublic,
+  ListColorsParams,
+} from '@/modules/colors/types/color';
 
 /** Danh sách quản trị: phân trang + sort (GET /admin/colors). */
 export async function listColors(params: ListColorsParams = {}): Promise<ColorListResponse> {

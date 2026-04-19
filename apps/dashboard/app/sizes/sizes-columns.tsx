@@ -6,7 +6,7 @@ import {
   dataTableSttColumnDef,
 } from '@/modules/common/components/data-table';
 import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
-import type { SizeAdmin } from '@/modules/sizes/types/size';
+import type { SizeAdmin, SizesColumnHandlers } from '@/modules/sizes/types/size';
 import { cn } from '@repo/ui/lib/utils';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -14,11 +14,6 @@ const updatedFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
   timeStyle: 'short',
 });
-
-export type SizesColumnHandlers = {
-  onEdit: (size: SizeAdmin) => void;
-  onDelete: (size: SizeAdmin) => void;
-};
 
 export function createSizesColumns(handlers: SizesColumnHandlers): ColumnDef<SizeAdmin>[] {
   return [
