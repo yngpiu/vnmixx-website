@@ -51,7 +51,7 @@ export function CustomerOrdersSection({ customerId }: CustomerOrdersSectionProps
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const listParams = useMemo(
     () => ({
-      ...toListAdminOrdersParams(pagination, columnFilters),
+      ...toListAdminOrdersParams(pagination, columnFilters, []),
       customerId,
     }),
     [customerId, pagination, columnFilters],

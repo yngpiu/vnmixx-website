@@ -51,7 +51,7 @@ export function OrdersTable() {
     ensurePageInRange,
   } = useOrdersListTableState();
   const listParams = useMemo(
-    () => toListAdminOrdersParams(pagination, columnFilters),
+    () => toListAdminOrdersParams(pagination, columnFilters, []),
     [pagination, columnFilters],
   );
   const { data, isLoading, isError, error } = useQuery({
