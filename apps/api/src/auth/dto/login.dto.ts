@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 /** DTO for both customer and employee login. */
@@ -7,6 +8,9 @@ export class LoginDto {
     example: 'customer@example.com',
     description: 'Địa chỉ email đã đăng ký',
   })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;

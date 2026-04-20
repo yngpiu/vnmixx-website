@@ -52,7 +52,7 @@ function refreshCookieBaseOptions(): {
     httpOnly: true,
     secure: isProd,
     sameSite,
-    path: '/auth',
+    path: '/',
   };
 }
 

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
+import { MessageResponseDto } from '../../common/dto/message-response.dto';
 import { CurrentUser, Public, RequireUserType } from '../decorators';
 import {
   AuthResponseDto,
@@ -29,6 +30,7 @@ import {
 } from '../dto';
 import type { AuthenticatedUser } from '../interfaces';
 import { CustomerAuthService } from '../services/customer-auth.service';
+import { PasswordResetService } from '../services/password-reset.service';
 import { TokenService } from '../services/token.service';
 import {
   authBodyFromPair,
@@ -43,6 +45,7 @@ import {
 export class CustomerAuthController {
   constructor(
     private readonly customerAuth: CustomerAuthService,
+    private readonly passwordReset: PasswordResetService,
     private readonly tokenService: TokenService,
   ) {}
 
@@ -126,7 +129,10 @@ export class CustomerAuthController {
 
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Đổi mật khẩu khách hàng và thu hồi toàn bộ phiên' })
-  @ApiOkResponse({ description: 'Đổi mật khẩu thành công. Tất cả phiên đã bị thu hồi.' })
+  @ApiOkResponse({
+    type: MessageResponseDto,
+    description: 'Đổi mật khẩu thành công. Tất cả phiên đã bị thu hồi.',
+  })
   @ApiUnauthorizedResponse({ description: 'Mật khẩu hiện tại không chính xác.' })
   @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ hoặc không tìm thấy khách hàng.' })
   @RequireUserType('CUSTOMER')
@@ -136,11 +142,11 @@ export class CustomerAuthController {
     @Body() dto: ChangePasswordDto,
     @Res({ passthrough: true }) res: Response,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<{ message: string }> {
+  ): Promise<MessageResponseDto> {
     await this.customerAuth.changePassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
     clearRefreshTokenCookie(res);
-    return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };
+    return new MessageResponseDto('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
@@ -156,7 +162,7 @@ export class CustomerAuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
-    return this.customerAuth.requestPasswordReset(dto);
+    return this.passwordReset.requestPasswordReset(dto);
   }
 
   @ApiOperation({ summary: 'Xác thực OTP đặt lại mật khẩu và nhận mã đặt lại dùng một lần' })
@@ -174,11 +180,14 @@ export class CustomerAuthController {
   async forgotPasswordVerifyOtp(
     @Body() dto: ForgotPasswordVerifyOtpDto,
   ): Promise<ResetTokenResponseDto> {
-    return this.customerAuth.verifyPasswordResetOtp(dto);
+    return this.passwordReset.verifyPasswordResetOtp(dto);
   }
 
   @ApiOperation({ summary: 'Đặt lại mật khẩu khách hàng bằng mã đặt lại hợp lệ' })
-  @ApiOkResponse({ description: 'Đặt lại mật khẩu thành công. Tất cả phiên đã bị thu hồi.' })
+  @ApiOkResponse({
+    type: MessageResponseDto,
+    description: 'Đặt lại mật khẩu thành công. Tất cả phiên đã bị thu hồi.',
+  })
   @ApiBadRequestResponse({ description: 'Mã đặt lại không hợp lệ hoặc đã hết hạn.' })
   @Public()
   @Post('forgot-password/reset')
@@ -186,10 +195,10 @@ export class CustomerAuthController {
   async resetPassword(
     @Body() dto: ResetPasswordDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ message: string }> {
-    const { customerId } = await this.customerAuth.resetPassword(dto);
+  ): Promise<MessageResponseDto> {
+    const { customerId } = await this.passwordReset.resetPassword(dto);
     await this.tokenService.revokeAllSessions(customerId, 'CUSTOMER');
     clearRefreshTokenCookie(res);
-    return { message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.' };
+    return new MessageResponseDto('Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 }

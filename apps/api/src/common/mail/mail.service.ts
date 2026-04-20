@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
+import { MAIL_TEMPLATES, renderTemplate } from './mail-templates';
 import { MAIL_QUEUE } from './mail.constants';
 
 export interface SendMailOptions {
@@ -30,6 +31,16 @@ export class MailService {
   /** Returns true when a real SMTP transport is configured. */
   isConfigured(): boolean {
     return this.transporter !== null && this.sender !== null;
+  }
+
+  /** Render a template and enqueue an email. */
+  async sendMailWithTemplate(
+    to: string,
+    templateKey: keyof typeof MAIL_TEMPLATES,
+    context: Record<string, unknown>,
+  ): Promise<void> {
+    const { subject, html, text } = renderTemplate(templateKey, context);
+    return this.sendMail({ to, subject, html, text });
   }
 
   /**

@@ -252,4 +252,34 @@ export class OrderRepository {
 
     return { data, total };
   }
+
+  async findAddressByIdAndCustomer(addressId: number, customerId: number) {
+    return this.prisma.address.findFirst({
+      where: { id: addressId, customerId, deletedAt: null },
+      include: {
+        city: { select: { name: true, giaohangnhanhId: true } },
+        district: { select: { name: true, giaohangnhanhId: true } },
+        ward: { select: { name: true, giaohangnhanhId: true } },
+      },
+    });
+  }
+
+  async findCartWithItems(customerId: number) {
+    return this.prisma.cart.findUnique({
+      where: { customerId },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                color: { select: { name: true } },
+                size: { select: { label: true } },
+                product: { select: { name: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
 }

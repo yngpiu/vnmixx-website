@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,
@@ -14,6 +15,9 @@ export class ForgotPasswordDto {
     example: 'customer@example.com',
     description: 'Địa chỉ email của tài khoản khách hàng',
   })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;
@@ -24,6 +28,9 @@ export class ForgotPasswordVerifyOtpDto {
     example: 'customer@example.com',
     description: 'Địa chỉ email của tài khoản khách hàng',
   })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;
@@ -39,6 +46,9 @@ export class ResetPasswordDto {
     example: 'customer@example.com',
     description: 'Địa chỉ email của tài khoản khách hàng',
   })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;

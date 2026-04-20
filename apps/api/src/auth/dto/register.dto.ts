@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
@@ -31,6 +32,9 @@ export class RegisterDto {
     description: 'Địa chỉ email duy nhất',
     maxLength: 255,
   })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   @MaxLength(255, { message: 'Email không được vượt quá 255 ký tự' })

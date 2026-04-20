@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import type { OrderStatus } from '../../../generated/prisma/client';
+import { OrderStatus, Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { estimateCartPackageFromLines } from '../../shipping/estimate-cart-package';
 import { GhnService } from '../../shipping/services/ghn.service';
@@ -7,6 +7,52 @@ import { ShippingService } from '../../shipping/services/shipping.service';
 import type { CreateOrderDto, ListMyOrdersQueryDto } from '../dto';
 import type { OrderDetailView, OrderListItemView } from '../repositories/order.repository';
 import { OrderRepository } from '../repositories/order.repository';
+
+interface CartItemWithVariant {
+  quantity: number;
+  variant: {
+    id: number;
+    price: number;
+    sku: string;
+    onHand: number;
+    reserved: number;
+    version: number;
+    isActive: boolean;
+    deletedAt: Date | null;
+    product: { name: string };
+    color: { name: string };
+    size: { label: string };
+  };
+}
+
+interface CartWithItems {
+  id: number;
+  items: CartItemWithVariant[];
+}
+
+interface AddressWithGhn {
+  fullName: string;
+  phoneNumber: string;
+  addressLine: string;
+  city: { name: string; giaohangnhanhId: string };
+  district: { name: string; giaohangnhanhId: string };
+  ward: { name: string; giaohangnhanhId: string };
+}
+
+interface PackageInfo {
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
+  insuranceValue: number;
+}
+
+interface ShippingCalculation {
+  fee: number;
+  serviceId: number;
+  toDistrictId: number;
+  toWardCode: string;
+}
 
 @Injectable()
 export class OrderService {
@@ -19,240 +65,67 @@ export class OrderService {
     private readonly shipping: ShippingService,
   ) {}
 
+  // ─── Customer Actions ──────────────────────────────────────────────────────
+
   async placeOrder(customerId: number, dto: CreateOrderDto): Promise<OrderDetailView> {
-    // 1. Validate address belongs to customer, get GHN IDs
-    const address = await this.prisma.address.findFirst({
-      where: { id: dto.addressId, customerId, deletedAt: null },
-      select: {
-        fullName: true,
-        phoneNumber: true,
-        addressLine: true,
-        city: { select: { name: true, giaohangnhanhId: true } },
-        district: { select: { name: true, giaohangnhanhId: true } },
-        ward: { select: { name: true, giaohangnhanhId: true } },
-      },
+    const address = (await this.validateAddressOrFail(
+      customerId,
+      dto.addressId,
+    )) as unknown as AddressWithGhn;
+    const cart = (await this.validateCartOrFail(customerId)) as unknown as CartWithItems;
+
+    const packageInfo = this.calculatePackageInfo(cart.items);
+    const shippingInfo = await this.calculateShippingInfo(address, packageInfo, dto.serviceTypeId);
+
+    const orderCode = await this.executeOrderTransactionWithRetry({
+      customerId,
+      address,
+      cart,
+      packageInfo,
+      shippingInfo,
+      dto,
     });
 
-    if (!address) {
-      throw new NotFoundException(`Không tìm thấy địa chỉ #${dto.addressId}.`);
-    }
+    const result = await this.orderRepo.findByOrderCode(orderCode, customerId);
+    if (!result) throw new InternalError(`Order ${orderCode} created but not found`);
+    return result;
+  }
 
-    // 2. Get cart with items + variant info
-    const cart = await this.prisma.cart.findUnique({
-      where: { customerId },
+  async cancelMyOrder(customerId: number, orderCode: string): Promise<OrderDetailView> {
+    const order = await this.prisma.order.findFirst({
+      where: { orderCode, customerId },
       select: {
         id: true,
-        items: {
-          select: {
-            quantity: true,
-            variant: {
-              select: {
-                id: true,
-                sku: true,
-                price: true,
-                onHand: true,
-                reserved: true,
-                color: { select: { name: true } },
-                size: { select: { label: true } },
-                product: { select: { name: true } },
-              },
-            },
-          },
-        },
+        status: true,
+        items: { select: { id: true, variantId: true, quantity: true } },
       },
     });
 
-    if (!cart || cart.items.length === 0) {
-      throw new BadRequestException('Giỏ hàng trống, không thể đặt hàng.');
+    if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
+    if (order.status !== 'PENDING') {
+      throw new BadRequestException('Chỉ có thể hủy đơn hàng ở trạng thái CHỜ XỬ LÝ.');
     }
-
-    // 3. Re-validate stock
-    for (const item of cart.items) {
-      const availableQty = item.variant.onHand - item.variant.reserved;
-      if (item.quantity > availableQty) {
-        throw new BadRequestException(
-          `Sản phẩm "${item.variant.product.name}" (${item.variant.sku}) không đủ tồn kho. Có thể bán: ${availableQty}, yêu cầu: ${item.quantity}.`,
-        );
-      }
-    }
-
-    const {
-      weight,
-      length: pkgLength,
-      width: pkgWidth,
-      height: pkgHeight,
-      insuranceValue,
-    } = estimateCartPackageFromLines(
-      cart.items.map((item) => ({
-        quantity: item.quantity,
-        unitPrice: item.variant.price,
-      })),
-    );
-
-    // 5. Calculate shipping fee via GHN
-    const shop = this.shipping.getShopGhnIds();
-    const toDistrictId = Number(address.district.giaohangnhanhId);
-    const toWardCode = address.ward.giaohangnhanhId;
-
-    const availableServices = await this.ghn.getAvailableServices(shop.districtId, toDistrictId);
-
-    if (!availableServices || availableServices.length === 0) {
-      throw new BadRequestException('Không có dịch vụ vận chuyển khả dụng cho địa chỉ này.');
-    }
-
-    const matchedService = availableServices.find(
-      (svc) => svc.service_type_id === dto.serviceTypeId,
-    );
-
-    if (!matchedService) {
-      throw new BadRequestException(
-        `Dịch vụ vận chuyển (service_type_id=${dto.serviceTypeId}) không khả dụng cho địa chỉ này.`,
-      );
-    }
-
-    const feeData = await this.ghn.calculateFee({
-      fromDistrictId: shop.districtId,
-      fromWardCode: shop.wardCode,
-      toDistrictId,
-      toWardCode,
-      serviceId: matchedService.service_id,
-      weight,
-      length: pkgLength,
-      width: pkgWidth,
-      height: pkgHeight,
-      insuranceValue,
-    });
-
-    // 6. Transaction: create order, items, payment, deduct stock, clear cart
-    const orderCode = await this.orderRepo.generateOrderCode();
-
-    const subtotal = cart.items.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
-
-    const total = subtotal + feeData.total;
 
     await this.prisma.$transaction(async (tx) => {
-      // a. Create order
-      const order = await tx.order.create({
-        data: {
-          orderCode,
-          customerId,
-          status: 'PENDING',
-          shippingFullName: address.fullName,
-          shippingPhoneNumber: address.phoneNumber,
-          shippingCity: address.city.name,
-          shippingDistrict: address.district.name,
-          shippingWard: address.ward.name,
-          shippingAddressLine: address.addressLine,
-          shippingGhnDistrictId: toDistrictId,
-          shippingGhnWardCode: toWardCode,
-          paymentStatus: 'PENDING',
-          serviceTypeId: dto.serviceTypeId,
-          requiredNote: dto.requiredNote,
-          note: dto.note ?? null,
-          packageWeight: weight,
-          packageLength: pkgLength,
-          packageWidth: pkgWidth,
-          packageHeight: pkgHeight,
-          subtotal,
-          discountAmount: 0,
-          shippingFee: feeData.total,
-          total,
-        },
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
       });
 
-      // b. Create order items (snapshot product info)
-      await tx.orderItem.createMany({
-        data: cart.items.map((item) => ({
-          orderId: order.id,
-          variantId: item.variant.id,
-          productName: item.variant.product.name,
-          colorName: item.variant.color.name,
-          sizeLabel: item.variant.size.label,
-          sku: item.variant.sku,
-          price: item.variant.price,
-          quantity: item.quantity,
-          subtotal: item.variant.price * item.quantity,
-        })),
-      });
-
-      // c. Create payment record
-      await tx.payment.create({
-        data: {
-          orderId: order.id,
-          method: dto.paymentMethod,
-          status: 'PENDING',
-          amount: total,
-        },
-      });
-
-      // d. Create status history
       await tx.orderStatusHistory.create({
-        data: { orderId: order.id, status: 'PENDING' },
+        data: { orderId: order.id, status: 'CANCELLED' },
       });
 
-      // e. Reserve stock
-      for (const item of cart.items) {
-        const currentVariant = await tx.productVariant.findUnique({
-          where: { id: item.variant.id },
-          select: {
-            id: true,
-            sku: true,
-            isActive: true,
-            deletedAt: true,
-            onHand: true,
-            reserved: true,
-            version: true,
-          },
-        });
-
-        if (!currentVariant || !currentVariant.isActive || currentVariant.deletedAt) {
-          throw new BadRequestException(
-            `Biến thể SKU ${item.variant.sku} không còn khả dụng để đặt hàng.`,
-          );
-        }
-
-        const availableQty = currentVariant.onHand - currentVariant.reserved;
-        if (item.quantity > availableQty) {
-          throw new BadRequestException(
-            `Sản phẩm "${item.variant.product.name}" (${item.variant.sku}) không đủ tồn kho. Có thể bán: ${availableQty}, yêu cầu: ${item.quantity}.`,
-          );
-        }
-
-        const updated = await tx.productVariant.updateMany({
-          where: { id: currentVariant.id, version: currentVariant.version },
-          data: {
-            reserved: { increment: item.quantity },
-            version: { increment: 1 },
-          },
-        });
-
-        if (updated.count === 0) {
-          throw new BadRequestException(
-            `Tồn kho của SKU ${item.variant.sku} vừa thay đổi, vui lòng thử lại.`,
-          );
-        }
-
-        await tx.stockMovement.create({
-          data: {
-            variantId: currentVariant.id,
-            orderId: order.id,
-            type: 'RESERVE',
-            delta: item.quantity,
-            onHandAfter: currentVariant.onHand,
-            reservedAfter: currentVariant.reserved + item.quantity,
-            note: 'Giữ tồn kho khi tạo đơn hàng',
-          },
-        });
-      }
-
-      // f. Clear cart
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      await this.releaseStock(tx, order.id, order.items);
     });
 
-    this.logger.log(`Đơn hàng ${orderCode} được tạo bởi customer #${customerId}`);
-
-    return this.orderRepo.findByOrderCode(orderCode, customerId) as Promise<OrderDetailView>;
+    this.logger.log(`Đơn hàng ${orderCode} bị hủy bởi customer #${customerId}`);
+    const result = await this.orderRepo.findByOrderCode(orderCode, customerId);
+    if (!result) throw new NotFoundException('Đơn hàng không tồn tại sau khi hủy');
+    return result;
   }
+
+  // ─── Queries ───────────────────────────────────────────────────────────────
 
   async findMyOrders(
     customerId: number,
@@ -277,101 +150,276 @@ export class OrderService {
 
   async findMyOrderByCode(customerId: number, orderCode: string): Promise<OrderDetailView> {
     const order = await this.orderRepo.findByOrderCode(orderCode, customerId);
-    if (!order) {
-      throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
-    }
+    if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
     return order;
   }
 
-  async cancelMyOrder(customerId: number, orderCode: string): Promise<OrderDetailView> {
-    const order = await this.prisma.order.findFirst({
-      where: { orderCode, customerId },
+  // ─── Private Helpers (Validation & Calculation) ───────────────────────────
+
+  private async validateAddressOrFail(customerId: number, addressId: number) {
+    const address = await this.orderRepo.findAddressByIdAndCustomer(addressId, customerId);
+    if (!address) throw new NotFoundException(`Không tìm thấy địa chỉ #${addressId}.`);
+    return address;
+  }
+
+  private async validateCartOrFail(customerId: number) {
+    const cart = await this.orderRepo.findCartWithItems(customerId);
+    if (!cart || cart.items.length === 0) {
+      throw new BadRequestException('Giỏ hàng trống, không thể đặt hàng.');
+    }
+    return cart;
+  }
+
+  private calculatePackageInfo(items: CartItemWithVariant[]): PackageInfo {
+    return estimateCartPackageFromLines(
+      items.map((item) => ({
+        quantity: item.quantity,
+        unitPrice: item.variant.price,
+      })),
+    );
+  }
+
+  private async calculateShippingInfo(
+    address: AddressWithGhn,
+    pkg: PackageInfo,
+    serviceTypeId: number,
+  ): Promise<ShippingCalculation> {
+    const shop = this.shipping.getShopGhnIds();
+    const toDistrictId = Number(address.district.giaohangnhanhId);
+    const toWardCode = address.ward.giaohangnhanhId;
+
+    const availableServices = await this.ghn.getAvailableServices(shop.districtId, toDistrictId);
+    const matchedService = availableServices?.find((s) => s.service_type_id === serviceTypeId);
+
+    if (!matchedService) {
+      throw new BadRequestException('Dịch vụ vận chuyển không khả dụng cho địa chỉ này.');
+    }
+
+    const feeData = await this.ghn.calculateFee({
+      fromDistrictId: shop.districtId,
+      fromWardCode: shop.wardCode,
+      toDistrictId,
+      toWardCode,
+      serviceId: matchedService.service_id,
+      weight: pkg.weight,
+      length: pkg.length,
+      width: pkg.width,
+      height: pkg.height,
+      insuranceValue: pkg.insuranceValue,
+    });
+
+    return {
+      fee: feeData.total,
+      serviceId: matchedService.service_id,
+      toDistrictId,
+      toWardCode,
+    };
+  }
+
+  // ─── Private Helpers (Execution & Transaction) ────────────────────────────
+
+  private async executeOrderTransactionWithRetry(params: {
+    customerId: number;
+    address: AddressWithGhn;
+    cart: CartWithItems;
+    packageInfo: PackageInfo;
+    shippingInfo: ShippingCalculation;
+    dto: CreateOrderDto;
+  }): Promise<string> {
+    let retries = 0;
+    const maxRetries = 3;
+
+    while (retries < maxRetries) {
+      try {
+        const orderCode = await this.orderRepo.generateOrderCode();
+        const subtotal = params.cart.items.reduce(
+          (sum: number, item) => sum + item.variant.price * item.quantity,
+          0,
+        );
+        const total = subtotal + params.shippingInfo.fee;
+
+        await this.prisma.$transaction(
+          async (tx) => {
+            await this.reserveStock(tx, params.cart.items);
+
+            const order = await tx.order.create({
+              data: {
+                orderCode,
+                customerId: params.customerId,
+                status: 'PENDING',
+                paymentStatus: 'PENDING',
+                shippingFullName: params.address.fullName,
+                shippingPhoneNumber: params.address.phoneNumber,
+                shippingCity: params.address.city.name,
+                shippingDistrict: params.address.district.name,
+                shippingWard: params.address.ward.name,
+                shippingAddressLine: params.address.addressLine,
+                shippingGhnDistrictId: params.shippingInfo.toDistrictId,
+                shippingGhnWardCode: params.shippingInfo.toWardCode,
+                serviceTypeId: params.dto.serviceTypeId,
+                requiredNote: params.dto.requiredNote,
+                note: params.dto.note ?? null,
+                packageWeight: params.packageInfo.weight,
+                packageLength: params.packageInfo.length,
+                packageWidth: params.packageInfo.width,
+                packageHeight: params.packageInfo.height,
+                subtotal,
+                discountAmount: 0,
+                shippingFee: params.shippingInfo.fee,
+                total,
+              },
+            });
+
+            await tx.orderItem.createMany({
+              data: params.cart.items.map((item) => ({
+                orderId: order.id,
+                variantId: item.variant.id,
+                productName: item.variant.product.name,
+                colorName: item.variant.color.name,
+                sizeLabel: item.variant.size.label,
+                sku: item.variant.sku,
+                price: item.variant.price,
+                quantity: item.quantity,
+                subtotal: item.variant.price * item.quantity,
+              })),
+            });
+
+            await tx.payment.create({
+              data: {
+                orderId: order.id,
+                method: params.dto.paymentMethod,
+                status: 'PENDING',
+                amount: total,
+              },
+            });
+
+            await tx.orderStatusHistory.create({
+              data: { orderId: order.id, status: 'PENDING' },
+            });
+
+            await tx.cartItem.deleteMany({ where: { cartId: params.cart.id } });
+          },
+          { isolationLevel: 'Serializable' },
+        );
+
+        this.logger.log(`Đơn hàng ${orderCode} được tạo bởi customer #${params.customerId}`);
+        return orderCode;
+      } catch (error) {
+        if (this.isRetryableError(error) && retries < maxRetries - 1) {
+          retries++;
+          this.logger.warn(`Transaction conflict, retrying order (${retries}/${maxRetries})...`);
+          await new Promise((resolve) => setTimeout(resolve, 50 * retries));
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new BadRequestException('Hệ thống bận, vui lòng thử lại sau giây lát.');
+  }
+
+  private isRetryableError(error: unknown): boolean {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      (error.code === 'P2034' || error.code === 'P2002')
+    );
+  }
+
+  private async reserveStock(tx: Prisma.TransactionClient, items: CartItemWithVariant[]) {
+    const variantIds = items.map((i) => i.variant.id);
+    const variants = await tx.productVariant.findMany({
+      where: { id: { in: variantIds } },
       select: {
         id: true,
-        status: true,
-        items: { select: { id: true, variantId: true, quantity: true } },
+        sku: true,
+        onHand: true,
+        reserved: true,
+        version: true,
+        isActive: true,
+        deletedAt: true,
       },
     });
 
-    if (!order) {
-      throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
-    }
-
-    if (order.status !== 'PENDING') {
-      throw new BadRequestException('Chỉ có thể hủy đơn hàng ở trạng thái chờ xử lý.');
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: order.id },
-        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
-      });
-
-      await tx.orderStatusHistory.create({
-        data: { orderId: order.id, status: 'CANCELLED' },
-      });
-
-      // Release reserved stock for pending order
-      for (const item of order.items) {
-        const variant = await tx.productVariant.findUnique({
-          where: { id: item.variantId },
-          select: { id: true, onHand: true, reserved: true, version: true },
-        });
-
-        if (!variant) continue;
-
-        const releaseQty = Math.min(variant.reserved, item.quantity);
-        const restoreQty = item.quantity - releaseQty;
-        const nextReserved = variant.reserved - releaseQty;
-        const nextOnHand = variant.onHand + restoreQty;
-
-        const updated = await tx.productVariant.updateMany({
-          where: { id: variant.id, version: variant.version },
-          data: {
-            ...(releaseQty > 0 ? { reserved: { decrement: releaseQty } } : {}),
-            ...(restoreQty > 0 ? { onHand: { increment: restoreQty } } : {}),
-            version: { increment: 1 },
-          },
-        });
-
-        if (updated.count === 0) {
-          throw new BadRequestException('Tồn kho vừa thay đổi, vui lòng thử hủy đơn lại.');
-        }
-
-        if (releaseQty > 0) {
-          await tx.stockMovement.create({
-            data: {
-              variantId: variant.id,
-              orderId: order.id,
-              orderItemId: item.id,
-              type: 'RELEASE',
-              delta: -releaseQty,
-              onHandAfter: variant.onHand,
-              reservedAfter: nextReserved,
-              note: 'Nhả giữ tồn kho khi khách hủy đơn hàng PENDING',
-            },
-          });
-        }
-
-        if (restoreQty > 0) {
-          await tx.stockMovement.create({
-            data: {
-              variantId: variant.id,
-              orderId: order.id,
-              orderItemId: item.id,
-              type: 'ADJUSTMENT',
-              delta: restoreQty,
-              onHandAfter: nextOnHand,
-              reservedAfter: nextReserved,
-              note: 'Hoàn tồn kho do dữ liệu giữ hàng không đủ khi hủy đơn',
-            },
-          });
-        }
+    for (const item of items) {
+      const v = variants.find((x) => x.id === item.variant.id);
+      if (!v || !v.isActive || v.deletedAt) {
+        throw new BadRequestException(`Sản phẩm SKU ${item.variant.sku} không còn khả dụng.`);
       }
+
+      const availableQty = v.onHand - v.reserved;
+      if (item.quantity > availableQty) {
+        throw new BadRequestException(
+          `Sản phẩm SKU ${v.sku} không đủ tồn kho (còn ${availableQty}).`,
+        );
+      }
+
+      const updated = await tx.productVariant.updateMany({
+        where: { id: v.id, version: v.version },
+        data: {
+          reserved: { increment: item.quantity },
+          version: { increment: 1 },
+        },
+      });
+
+      if (updated.count === 0) {
+        throw new Prisma.PrismaClientKnownRequestError('Conflict', {
+          code: 'P2034',
+          clientVersion: 'N/A',
+        });
+      }
+
+      await tx.stockMovement.create({
+        data: {
+          variantId: v.id,
+          type: 'RESERVE',
+          delta: item.quantity,
+          onHandAfter: v.onHand,
+          reservedAfter: v.reserved + item.quantity,
+          note: 'Giữ hàng khi tạo đơn hàng',
+        },
+      });
+    }
+  }
+
+  private async releaseStock(
+    tx: Prisma.TransactionClient,
+    orderId: number,
+    items: { variantId: number; quantity: number }[],
+  ) {
+    const variantIds = items.map((i) => i.variantId);
+    const variants = await tx.productVariant.findMany({
+      where: { id: { in: variantIds } },
+      select: { id: true, onHand: true, reserved: true },
     });
 
-    this.logger.log(`Đơn hàng ${orderCode} bị hủy bởi customer #${customerId}`);
+    for (const item of items) {
+      const v = variants.find((x) => x.id === item.variantId);
+      if (!v) continue;
 
-    return this.orderRepo.findByOrderCode(orderCode, customerId) as Promise<OrderDetailView>;
+      const releaseQty = Math.min(v.reserved, item.quantity);
+      const restoreQty = item.quantity - releaseQty;
+
+      await tx.productVariant.update({
+        where: { id: v.id },
+        data: {
+          ...(releaseQty > 0 ? { reserved: { decrement: releaseQty } } : {}),
+          ...(restoreQty > 0 ? { onHand: { increment: restoreQty } } : {}),
+          version: { increment: 1 },
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          variantId: v.id,
+          orderId,
+          type: 'RELEASE',
+          delta: -releaseQty,
+          onHandAfter: v.onHand + restoreQty,
+          reservedAfter: v.reserved - releaseQty,
+          note: 'Hoàn tồn kho khi hủy đơn hàng',
+        },
+      });
+    }
   }
 }
+
+class InternalError extends Error {}

@@ -12,7 +12,7 @@ interface CreateCustomerData {
   isActive?: boolean;
 }
 
-interface CustomerAuthView {
+export interface CustomerAuthView {
   id: number;
   email: string;
   fullName: string;
@@ -22,7 +22,7 @@ interface CustomerAuthView {
   deletedAt: Date | null;
 }
 
-interface CustomerValidationView {
+export interface CustomerValidationView {
   id: number;
   email: string;
   fullName: string;

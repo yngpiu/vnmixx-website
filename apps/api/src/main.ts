@@ -1,10 +1,9 @@
-import { BadRequestException, Logger, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
-import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
-import { randomUUID } from 'node:crypto';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 
 const DEFAULT_DEV_CORS_ORIGINS = [
@@ -14,23 +13,21 @@ const DEFAULT_DEV_CORS_ORIGINS = [
   'http://127.0.0.1:3001',
 ];
 
+import { otelSDK } from './core/tracing/tracing';
+
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
-  const port = Number(process.env.PORT) || 4000;
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    const requestWithId = req as Request & { requestId?: string };
-    requestWithId.requestId = randomUUID();
-    res.setHeader('x-request-id', requestWithId.requestId);
-    const startedAt = Date.now();
-    res.on('finish', () => {
-      const durationInMilliseconds = Date.now() - startedAt;
-      logger.log(
-        `${req.method} ${req.originalUrl} ${res.statusCode} [${requestWithId.requestId}] - ${durationInMilliseconds}ms`,
-      );
-    });
-    next();
+  // Start OpenTelemetry SDK
+  otelSDK.start();
+
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
+
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
   });
+
+  const port = Number(process.env.PORT) || 4000;
 
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cookieParser());
@@ -90,8 +87,9 @@ async function bootstrap() {
 
   await app.listen(port, '0.0.0.0');
   const url = await app.getUrl();
-  logger.log(`API is running on ${url} (port: ${port})`);
-  logger.log(`Swagger UI available at ${url}/docs`);
+  const appLogger = app.get(Logger);
+  appLogger.log(`API is running on ${url} (port: ${port})`);
+  appLogger.log(`Swagger UI available at ${url}/docs`);
 }
 bootstrap().catch((err) => {
   console.error(err);

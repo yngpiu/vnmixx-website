@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, Matches } from 'class-validator';
 
 export class VerifyCustomerOtpDto {
@@ -6,6 +7,9 @@ export class VerifyCustomerOtpDto {
     example: 'customer@example.com',
     description: 'Email khách hàng dùng trong lúc đăng ký',
   })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;
@@ -21,6 +25,9 @@ export class ResendCustomerOtpDto {
     example: 'customer@example.com',
     description: 'Email khách hàng đang chờ xác thực',
   })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   email: string;
