@@ -34,6 +34,10 @@ import {
 } from '../dto';
 import { CustomerService } from '../services/customer.service';
 
+/**
+ * Controller dành cho quản trị viên để quản lý danh sách và trạng thái khách hàng.
+ * Hỗ trợ liệt kê, tìm kiếm, xem chi tiết, cập nhật trạng thái hoạt động và xóa mềm/khôi phục tài khoản khách hàng.
+ */
 @ApiTags('Customers')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -46,7 +50,7 @@ export class CustomerAdminController {
   @ApiOperation({
     summary: 'Liệt kê khách hàng',
     description:
-      'Phân trang, tìm kiếm. `isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc tương ứng.',
+      'Phân trang, tìm kiếm theo tên/email/SĐT. Lọc theo trạng thái `isActive` hoặc `isSoftDeleted`.',
   })
   @ApiOkResponse({ type: CustomerListResponseDto })
   @Get()

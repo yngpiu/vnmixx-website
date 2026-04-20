@@ -1,6 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
+/**
+ * CreateOrderDto: DTO gửi yêu cầu tạo đơn hàng mới.
+ * Vai trò: Validate các thông tin cần thiết từ khách hàng khi thực hiện Checkout.
+ */
 export class CreateOrderDto {
   @ApiProperty({ example: 1, description: 'ID địa chỉ giao hàng' })
   @IsInt({ message: 'ID địa chỉ phải là số nguyên' })

@@ -17,7 +17,6 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import { REFRESH_TOKEN_COOKIE_NAME } from '../constants';
 import { CurrentUser, Public } from '../decorators';
 import { AuthResponseDto, ProfileResponseDto } from '../dto';
 import type { AuthenticatedUser } from '../interfaces';
@@ -30,22 +29,24 @@ import {
   setRefreshTokenCookie,
 } from '../utils';
 
+/**
+ * Controller xử lý các hoạt động xác thực chung như làm mới token, đăng xuất và lấy thông tin cá nhân.
+ * Hỗ trợ cả cơ chế Cookie HttpOnly cho Refresh Token để tăng tính bảo mật.
+ */
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly tokenService: TokenService) {}
 
+  /**
+   * Cấp lại Access Token mới bằng Refresh Token.
+   * Logic: Đọc Refresh Token từ Cookie hoặc Header, xác thực và thực hiện xoay vòng (rotation) token.
+   */
   @ApiOperation({
     summary: 'Làm mới mã truy cập bằng cookie mã làm mới',
-    description: `Đọc refresh token từ cookie HttpOnly \`${REFRESH_TOKEN_COOKIE_NAME}\` (path /auth) hoặc header \`x-refresh-token\`.`,
   })
-  @ApiOkResponse({
-    type: AuthResponseDto,
-    description: 'Làm mới mã truy cập thành công; cookie refresh được xoay vòng.',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Thiếu cookie mã làm mới, hoặc mã không hợp lệ / hết hạn / đã dùng.',
-  })
+  @ApiOkResponse({ type: AuthResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Mã làm mới không hợp lệ hoặc đã hết hạn.' })
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -62,12 +63,15 @@ export class AuthController {
     return authBodyFromPair(pair);
   }
 
+  /**
+   * Đăng xuất phiên làm việc hiện tại.
+   * Vô hiệu hóa Refresh Token tương ứng và xóa Cookie ở phía Client.
+   */
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Đăng xuất phiên hiện tại',
+    summary: 'Đăng xuất',
   })
-  @ApiOkResponse({ description: 'Đăng xuất phiên hiện tại thành công.' })
-  @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+  @ApiOkResponse({ description: 'Đăng xuất thành công.' })
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
@@ -80,12 +84,14 @@ export class AuthController {
     return { message: 'Đăng xuất thành công.' };
   }
 
+  /**
+   * Đăng xuất khỏi tất cả các thiết bị/phiên làm việc của người dùng.
+   */
   @ApiBearerAuth('access-token')
   @ApiOperation({
-    summary: 'Đăng xuất tất cả phiên',
+    summary: 'Đăng xuất tất cả thiết bị',
   })
-  @ApiOkResponse({ description: 'Đăng xuất tất cả phiên thành công.' })
-  @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+  @ApiOkResponse({ description: 'Tất cả phiên đã được chấm dứt.' })
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
   async logoutAll(
@@ -97,14 +103,13 @@ export class AuthController {
     return { message: 'Tất cả phiên đã được chấm dứt.' };
   }
 
+  /**
+   * Trả về thông tin chi tiết của người dùng đang đăng nhập dựa trên JWT.
+   */
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Lấy hồ sơ người dùng đang đăng nhập' })
-  @ApiOkResponse({
-    type: ProfileResponseDto,
-    description: 'Lấy hồ sơ người dùng đã xác thực thành công.',
-  })
-  @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
-  @ApiForbiddenResponse({ description: 'Mã truy cập đã bị thu hồi.' })
+  @ApiOkResponse({ type: ProfileResponseDto })
+  @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập.' })
   @Get('me')
   getProfile(@CurrentUser() user: AuthenticatedUser): ProfileResponseDto {
     return {

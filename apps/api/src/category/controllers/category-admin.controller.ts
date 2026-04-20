@@ -94,6 +94,10 @@ export class CategoryAdminController {
   })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  /**
+   * Xóa mềm một danh mục.
+   * Chỉ thành công nếu danh mục đó không có danh mục con nào đang hoạt động.
+   */
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

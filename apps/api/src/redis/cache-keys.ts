@@ -1,28 +1,32 @@
-// ─── Cache key prefixes ───────────────────────────────────────────────────────
+/**
+ * Định nghĩa tập trung các Key Cache sử dụng trong ứng dụng.
+ * Giúp đảm bảo tính nhất quán và tránh trùng lặp khóa khi làm việc với Redis.
+ */
+// ─── Tiền tố Key Cache (Cache key prefixes) ───────────────────────────────────────────────────────
 
 export const CACHE_KEYS = {
-  // Location (static data)
+  // Địa chỉ (Dữ liệu tĩnh)
   CITIES: 'loc:cities',
   DISTRICTS: (cityId: number) => `loc:districts:${cityId}`,
   WARDS: (districtId: number) => `loc:wards:${districtId}`,
 
-  // Lookup tables
+  // Các bảng tra cứu (Lookup tables)
   COLOR_LIST: 'color:list',
   SIZE_LIST: 'size:list',
 
-  // Category
+  // Danh mục sản phẩm (Category)
   CATEGORY_LIST: 'cat:list',
   CATEGORY_TREE: 'cat:tree',
   CATEGORY_SLUG: (slug: string) => `cat:slug:${slug}`,
 
-  // Product
+  // Sản phẩm (Product)
   PRODUCT_SLUG: (slug: string) => `prod:slug:${slug}`,
   PRODUCT_LIST: (hash: string) => `prod:list:${hash}`,
 
-  // Auth and security
+  // Xác thực và Bảo mật (Auth and security)
   TOKEN_BLACKLIST: (jti: string) => `bl:${jti}`,
   LOGOUT_ALL: (userType: string, userId: number | string) => `loa:${userType}:${userId}`,
-  /** Cached roles + permission names for an employee (invalidated on RBAC changes). */
+  /** Lưu cache roles + permission names của nhân viên (bị hủy khi RBAC thay đổi). */
   EMPLOYEE_AUTHZ: (employeeId: number) => `authz:emp:${employeeId}`,
   CUSTOMER_OTP_VERIFY: (email: string) => `otp:customer:verify:${email}`,
   CUSTOMER_OTP_ATTEMPTS: (email: string) => `otp:customer:attempts:${email}`,
@@ -32,30 +36,30 @@ export const CACHE_KEYS = {
   CUSTOMER_RESET_OTP_RESEND: (email: string) => `otp:customer:reset-resend:${email}`,
   CUSTOMER_RESET_TOKEN: (email: string) => `pwreset:customer:${email}`,
 
-  // Rate limiting
+  // Giới hạn tần suất (Rate limiting)
   THROTTLE: (key: string) => `throttle:${key}`,
   THROTTLE_BLOCK: (key: string) => `throttle:${key}:blocked`,
 } as const;
 
+/**
+ * Thời gian tồn tại của Cache (TTLs - tính bằng giây).
+ */
 // ─── Cache TTLs (seconds) ─────────────────────────────────────────────────────
 
 export const CACHE_TTL = {
-  LOCATION: 86_400, // 24h — static data
-  COLOR: 3_600, // 1h
-  SIZE: 3_600, // 1h
-  CATEGORY: 600, // 10min
-  PRODUCT_DETAIL: 300, // 5min
-  PRODUCT_LIST: 60, // 1min
+  LOCATION: 86_400, // 24 giờ — dữ liệu tĩnh
+  COLOR: 3_600, // 1 giờ
+  SIZE: 3_600, // 1 giờ
+  CATEGORY: 600, // 10 phút
+  PRODUCT_DETAIL: 300, // 5 phút
+  PRODUCT_LIST: 60, // 1 phút
 
-  // Auth and security
-  OTP: 300, // 5min
-  OTP_RESEND_COOLDOWN: 60, // 1min
-  RESET_TOKEN: 600, // 10min
-  /**
-   * Employee roles/permissions snapshot for JWT validation.
-   * Freshness is enforced by invalidation on RBAC/employee-role changes; TTL is only a fallback.
-   */
-  EMPLOYEE_AUTHZ: 86_400, // 24h
+  // Xác thực và Bảo mật (Auth and security)
+  OTP: 300, // 5 phút
+  OTP_RESEND_COOLDOWN: 60, // 1 phút
+  RESET_TOKEN: 600, // 10 phút
+  /** Cache quyền hạn nhân viên để validate JWT. TTL chỉ là dự phòng, fresh dữ liệu được đảm bảo qua việc xóa cache khi RBAC thay đổi. */
+  EMPLOYEE_AUTHZ: 86_400, // 24 giờ
 } as const;
 
 // ─── Redis key prefixes (for legacy callsites) ───────────────────────────────

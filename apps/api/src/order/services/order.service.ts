@@ -54,6 +54,10 @@ interface ShippingCalculation {
   toWardCode: string;
 }
 
+/**
+ * OrderService: Dịch vụ quản lý đơn hàng dành cho khách hàng.
+ * Vai trò: Xử lý luồng đặt hàng (Checkout), hủy đơn hàng, và truy vấn lịch sử đơn hàng của khách.
+ */
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
@@ -67,6 +71,17 @@ export class OrderService {
 
   // ─── Customer Actions ──────────────────────────────────────────────────────
 
+  /**
+   * Thực hiện đặt hàng (Checkout).
+   * Logic thực thi:
+   * 1. Validate địa chỉ nhận hàng và giỏ hàng.
+   * 2. Tính toán kích thước/khối lượng kiện hàng dựa trên sản phẩm trong giỏ.
+   * 3. Gọi API GHN để tính phí vận chuyển thực tế.
+   * 4. Thực thi Transaction: Khóa kho (Reserve SKU), tạo đơn hàng, tạo bản ghi thanh toán và xóa giỏ hàng.
+   * 5. Trả về thông tin chi tiết đơn hàng vừa tạo.
+   * @param customerId ID khách hàng thực hiện đặt hàng.
+   * @param dto Thông tin đơn hàng (địa chỉ, phương thức thanh toán, v.v.).
+   */
   async placeOrder(customerId: number, dto: CreateOrderDto): Promise<OrderDetailView> {
     const address = (await this.validateAddressOrFail(
       customerId,
@@ -91,6 +106,12 @@ export class OrderService {
     return result;
   }
 
+  /**
+   * Hủy đơn hàng bởi khách hàng.
+   * Logic: Chỉ cho phép hủy khi đơn ở trạng thái PENDING. Thực hiện hoàn lại số lượng đã giữ (Reserved) vào kho (On Hand).
+   * @param customerId ID khách hàng.
+   * @param orderCode Mã đơn hàng cần hủy.
+   */
   async cancelMyOrder(customerId: number, orderCode: string): Promise<OrderDetailView> {
     const order = await this.prisma.order.findFirst({
       where: { orderCode, customerId },

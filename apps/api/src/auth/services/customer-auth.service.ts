@@ -39,6 +39,10 @@ export interface CustomerAuthIdentity {
 }
 
 @Injectable()
+/**
+ * Service xử lý logic xác thực cho Khách hàng (Customer).
+ * Bao gồm các quy trình: Đăng ký tài khoản, Xác thực mã OTP qua email, Đăng nhập, và Đổi mật khẩu.
+ */
 export class CustomerAuthService {
   private readonly logger = new Logger(CustomerAuthService.name);
   private readonly saltRounds: number;
@@ -58,7 +62,10 @@ export class CustomerAuthService {
     this.otpMaxAttempts = DEFAULT_OTP_MAX_ATTEMPTS;
   }
 
-  /** Register a new customer and send email OTP for verification. */
+  /**
+   * Đăng ký khách hàng mới.
+   * Logic: Kiểm tra email/SĐT duy nhất -> Hash mật khẩu -> Lưu database (trạng thái chưa kích hoạt) -> Gửi OTP xác thực qua email.
+   */
   async registerCustomer(dto: RegisterDto): Promise<CustomerRegisterResponseDto> {
     await this.assertCustomerEmailNotTaken(dto.email);
     await this.assertCustomerPhoneNotTaken(dto.phoneNumber);
@@ -81,7 +88,10 @@ export class CustomerAuthService {
     };
   }
 
-  /** Verify customer email OTP and return authenticated user identity. */
+  /**
+   * Xác thực mã OTP email của khách hàng.
+   * Logic: Kiểm tra OTP trong Redis -> So khớp mã băm -> Kích hoạt tài khoản trong DB -> Xóa OTP đã sử dụng.
+   */
   async verifyCustomerOtp(dto: VerifyCustomerOtpDto): Promise<CustomerAuthIdentity> {
     const customer = await this.customerRepo.findByEmail(dto.email);
     if (!customer || customer.deletedAt) {
@@ -119,7 +129,10 @@ export class CustomerAuthService {
     return { id: customer.id, email: customer.email, fullName: customer.fullName };
   }
 
-  /** Resend customer email verification OTP with cooldown protection. */
+  /**
+   * Gửi lại mã OTP xác thực email.
+   * Logic: Kiểm tra cooldown (thời gian chờ giữa các lần gửi) -> Tạo và gửi OTP mới qua email.
+   */
   async resendCustomerOtp(dto: ResendCustomerOtpDto): Promise<CustomerRegisterResponseDto> {
     const customer = await this.customerRepo.findByEmail(dto.email);
     if (!customer || customer.deletedAt) {
@@ -138,7 +151,10 @@ export class CustomerAuthService {
     };
   }
 
-  /** Authenticate an existing customer and return identity. */
+  /**
+   * Đăng nhập khách hàng.
+   * Logic: Tìm theo email -> Kiểm tra trạng thái tài khoản (Active/Verified) -> So sánh mật khẩu băm.
+   */
   async loginCustomer(dto: LoginDto): Promise<CustomerAuthIdentity> {
     const customer = await this.customerRepo.findByEmail(dto.email);
     if (!customer || customer.deletedAt) {
@@ -153,7 +169,10 @@ export class CustomerAuthService {
     return { id: customer.id, email: customer.email, fullName: customer.fullName };
   }
 
-  /** Change the password of an authenticated customer. */
+  /**
+   * Đổi mật khẩu cho khách hàng đã đăng nhập.
+   * Logic: Xác thực mật khẩu cũ -> Hash mật khẩu mới -> Cập nhật database.
+   */
   async changePassword(
     customerId: number,
     dto: { currentPassword?: string; newPassword?: string },

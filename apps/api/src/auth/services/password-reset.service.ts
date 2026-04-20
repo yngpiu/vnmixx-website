@@ -26,6 +26,13 @@ import { CustomerRepository } from '../repositories/customer.repository';
 import { OtpService } from './otp.service';
 
 @Injectable()
+/**
+ * Service xử lý quy trình quên mật khẩu và khôi phục mật khẩu (Password Reset).
+ * Quy trình gồm 3 bước chính:
+ * 1. Yêu cầu mã OTP khôi phục qua email.
+ * 2. Xác thực OTP để nhận mã đặt lại (Reset Token) dùng một lần.
+ * 3. Sử dụng mã đặt lại để cập nhật mật khẩu mới.
+ */
 export class PasswordResetService {
   private readonly logger = new Logger(PasswordResetService.name);
   private readonly saltRounds = BCRYPT_SALT_ROUNDS;
@@ -37,6 +44,10 @@ export class PasswordResetService {
     private readonly otpService: OtpService,
   ) {}
 
+  /**
+   * Bước 1: Yêu cầu mã OTP khôi phục mật khẩu.
+   * Logic: Kiểm tra email hợp lệ -> Tạo và gửi OTP khôi phục qua email.
+   */
   async requestPasswordReset(dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
     const customer = await this.customerRepo.findByEmail(dto.email);
 
@@ -74,6 +85,10 @@ export class PasswordResetService {
     };
   }
 
+  /**
+   * Bước 2: Xác thực OTP và cấp mã đặt lại (Reset Token).
+   * Logic: So khớp OTP -> Nếu đúng, tạo UUID làm Reset Token -> Lưu hash Reset Token vào Redis.
+   */
   async verifyPasswordResetOtp(dto: ForgotPasswordVerifyOtpDto): Promise<ResetTokenResponseDto> {
     const customer = await this.customerRepo.findByEmail(dto.email);
 
@@ -117,6 +132,10 @@ export class PasswordResetService {
     return { resetToken };
   }
 
+  /**
+   * Bước 3: Đặt lại mật khẩu bằng Reset Token.
+   * Logic: Kiểm tra Reset Token trong Redis -> So khớp mã băm -> Cập nhật mật khẩu mới vào DB -> Xóa token.
+   */
   async resetPassword(dto: ResetPasswordDto): Promise<{ customerId: number }> {
     const customer = await this.customerRepo.findByEmail(dto.email);
 

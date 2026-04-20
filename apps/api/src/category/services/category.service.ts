@@ -313,6 +313,9 @@ export class CategoryService {
     }
   }
 
+  /**
+   * Xóa toàn bộ dữ liệu cache liên quan đến danh mục khi có thay đổi.
+   */
   private async invalidateCache(): Promise<void> {
     await this.redis.deleteByPattern(CACHE_PATTERNS.ALL_CATEGORIES);
   }

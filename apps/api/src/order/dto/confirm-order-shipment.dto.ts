@@ -1,6 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, Min } from 'class-validator';
 
+/**
+ * ConfirmOrderShipmentDto: DTO dùng cho nhân viên khi xác nhận đơn hàng.
+ * Vai trò: Tiếp nhận thông tin vật lý thực tế của kiện hàng để tính toán vận đơn chính xác.
+ */
 export class ConfirmOrderShipmentDto {
   @ApiProperty({ example: 1200, description: 'Khối lượng kiện hàng (gram)' })
   @IsInt({ message: 'Khối lượng kiện hàng phải là số nguyên' })

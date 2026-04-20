@@ -13,6 +13,7 @@ export enum MediaSortOrder {
   DESC = 'desc',
 }
 
+// DTO định nghĩa các tham số truy vấn khi lấy danh sách media files
 export class ListMediaQueryDto {
   @ApiPropertyOptional({ description: 'Lọc theo thư mục' })
   @IsOptional()

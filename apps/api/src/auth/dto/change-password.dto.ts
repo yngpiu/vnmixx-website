@@ -1,6 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
+/**
+ * DTO cho yêu cầu đổi mật khẩu.
+ * Sử dụng khi người dùng đã đăng nhập và muốn thay đổi mật khẩu hiện tại.
+ */
 export class ChangePasswordDto {
   @ApiProperty({ description: 'Mật khẩu hiện tại' })
   @IsString({ message: 'Mật khẩu hiện tại phải là chuỗi ký tự' })

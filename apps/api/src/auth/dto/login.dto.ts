@@ -2,7 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
-/** DTO for both customer and employee login. */
+/**
+ * DTO cho yêu cầu đăng nhập.
+ * Dùng chung cho cả khách hàng (Customer) và nhân viên (Employee).
+ */
 export class LoginDto {
   @ApiProperty({
     example: 'customer@example.com',

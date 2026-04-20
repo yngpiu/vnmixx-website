@@ -108,12 +108,25 @@ function categoryWhereMatchesSlugTree(slug: string): Prisma.CategoryWhereInput {
   };
 }
 
+/**
+ * ProductRepository: Chịu trách nhiệm thao tác dữ liệu sản phẩm trong Database.
+ * Sử dụng Prisma Client để thực hiện các truy vấn phức tạp, bao gồm lọc, phân trang,
+ * và quản lý các quan hệ (Variants, Images, Categories).
+ */
 @Injectable()
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Truy vấn danh sách sản phẩm cho khách hàng.
+   * Logic:
+   * 1. Lọc theo trạng thái active và chưa bị xóa.
+   * 2. Lọc theo cây danh mục (hỗ trợ slug của danh mục cha/ông).
+   * 3. Lọc theo biến thể (màu sắc, kích thước, khoảng giá).
+   * 4. Tính toán minPrice/maxPrice dựa trên các biến thể hợp lệ.
+   */
   async findPublicList(params: {
     page: number;
     limit: number;

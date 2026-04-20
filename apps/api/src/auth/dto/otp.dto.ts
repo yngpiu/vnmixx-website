@@ -2,6 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, Matches } from 'class-validator';
 
+/**
+ * DTO để xác thực mã OTP khi khách hàng đăng ký tài khoản.
+ */
 export class VerifyCustomerOtpDto {
   @ApiProperty({
     example: 'customer@example.com',
@@ -20,6 +23,9 @@ export class VerifyCustomerOtpDto {
   otp: string;
 }
 
+/**
+ * DTO để yêu cầu gửi lại mã OTP xác thực tài khoản.
+ */
 export class ResendCustomerOtpDto {
   @ApiProperty({
     example: 'customer@example.com',
@@ -33,6 +39,9 @@ export class ResendCustomerOtpDto {
   email: string;
 }
 
+/**
+ * DTO phản hồi sau khi khách hàng đăng ký thành công và đang chờ xác thực OTP.
+ */
 export class CustomerRegisterResponseDto {
   @ApiProperty({
     example: 'Đăng ký thành công. Vui lòng xác thực email bằng mã OTP đã gửi.',

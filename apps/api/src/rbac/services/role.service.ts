@@ -17,7 +17,10 @@ import {
   RoleRepository,
 } from '../repositories/role.repository';
 
-// Service xử lý logic nghiệp vụ cho vai trò và quyền hạn
+/**
+ * RoleService: Chịu trách nhiệm quản lý logic nghiệp vụ cho các vai trò (Roles) trong hệ thống.
+ * Đây là thành phần cốt lõi của hệ thống RBAC (Role-Based Access Control), cho phép định nghĩa các nhóm quyền hạn.
+ */
 @Injectable()
 export class RoleService {
   constructor(
@@ -27,7 +30,9 @@ export class RoleService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  // Lấy danh sách vai trò có lọc và phân trang
+  /**
+   * Lấy danh sách các vai trò có hỗ trợ tìm kiếm theo tên, sắp xếp và phân trang.
+   */
   async findList(params: {
     page: number;
     limit: number;
@@ -38,14 +43,22 @@ export class RoleService {
     return this.roleRepo.findList(params);
   }
 
-  // Tìm một vai trò theo ID hoặc báo lỗi nếu không tồn tại
+  /**
+   * Truy vấn thông tin chi tiết của một vai trò kèm theo danh sách các quyền hạn được gán.
+   */
   async findById(id: number): Promise<RoleDetailView> {
     const role = await this.roleRepo.findById(id);
     if (!role) throw new NotFoundException(`Không tìm thấy vai trò #${id}`);
     return role;
   }
 
-  // Tạo vai trò mới, kiểm tra quyền hạn hợp lệ trước khi lưu
+  /**
+   * Tạo vai trò mới.
+   * Logic:
+   * 1. Kiểm tra tính hợp lệ của các ID quyền hạn (nếu có gán quyền ngay khi tạo).
+   * 2. Lưu vào DB và ghi Audit Log.
+   * 3. Xử lý lỗi trùng tên vai trò.
+   */
   async create(
     dto: CreateRoleDto,
     auditContext: AuditRequestContext = {},
@@ -83,7 +96,15 @@ export class RoleService {
     }
   }
 
-  // Cập nhật thông tin vai trò, bảo vệ vai trò hệ thống và đồng bộ lại quyền hạn
+  /**
+   * Cập nhật vai trò.
+   * Logic:
+   * 1. Bảo vệ các vai trò hệ thống quan trọng (ví dụ: Chủ cửa hàng) không được đổi tên.
+   * 2. Cập nhật thông tin cơ bản (tên, mô tả).
+   * 3. Nếu có cập nhật danh sách quyền hạn (permissionIds), thực hiện đồng bộ (sync) trong DB.
+   * 4. QUAN TRỌNG: Thu hồi cache phân quyền (Authorization Cache) của tất cả nhân viên đang sở hữu vai trò này
+   *    để các thay đổi về quyền hạn có hiệu lực ngay lập tức.
+   */
   async update(
     id: number,
     dto: UpdateRoleDto,
@@ -91,7 +112,7 @@ export class RoleService {
   ): Promise<RoleDetailView> {
     const beforeData = await this.findById(id);
     try {
-      // Ngăn chặn đổi tên vai trò quan trọng của hệ thống
+      // Ngăn chặn đổi tên vai trò quan trọng của hệ thống để tránh phá vỡ logic phân quyền cứng
       if (beforeData.name === 'Chủ cửa hàng' && dto.name && dto.name !== beforeData.name) {
         throw new BadRequestException('Không được phép đổi tên vai trò hệ thống này');
       }
@@ -151,11 +172,16 @@ export class RoleService {
     }
   }
 
-  // Xóa vai trò và xóa cache authz của nhân viên từng gán vai trò này
+  /**
+   * Xóa vai trò.
+   * Logic:
+   * 1. Không cho phép xóa vai trò "Chủ cửa hàng".
+   * 2. Không cho phép xóa vai trò nếu vẫn còn nhân viên đang gán vai trò này.
+   * 3. Xóa vai trò và thu hồi cache phân quyền của các nhân viên liên quan.
+   */
   async delete(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const role = await this.findById(id);
     try {
-      // Không cho phép xóa vai trò cấp cao nhất
       if (role.name === 'Chủ cửa hàng') {
         throw new BadRequestException('Không được phép xóa vai trò hệ thống tối cao');
       }
@@ -190,7 +216,9 @@ export class RoleService {
     }
   }
 
-  // Kiểm tra xem tất cả ID quyền trong mảng có tồn tại thực tế không
+  /**
+   * Kiểm tra xem toàn bộ danh sách ID quyền hạn có tồn tại thực tế trong DB hay không.
+   */
   private async validatePermissionIds(ids: number[]): Promise<void> {
     const uniqueIds = [...new Set(ids)];
     const allExist = await this.permissionRepo.existAll(uniqueIds);
@@ -199,7 +227,9 @@ export class RoleService {
     }
   }
 
-  // Chuyển đổi đầu vào thành mảng ID quyền duy nhất
+  /**
+   * Chuẩn hóa và làm sạch danh sách ID quyền hạn đầu vào.
+   */
   private getPermissionIds(permissionIds: unknown): number[] {
     if (this.isIntegerArray(permissionIds)) {
       return [...new Set(permissionIds)];
@@ -207,7 +237,9 @@ export class RoleService {
     throw new BadRequestException('Danh sách quyền không hợp lệ');
   }
 
-  // Kiểm tra dữ liệu có phải mảng số nguyên không
+  /**
+   * Kiểm tra dữ liệu có phải là mảng số nguyên hay không.
+   */
   private isIntegerArray(value: unknown): value is number[] {
     return (
       Array.isArray(value) &&
@@ -215,12 +247,17 @@ export class RoleService {
     );
   }
 
-  // Thu hồi toàn bộ phiên đăng nhập của danh sách nhân viên
+  /**
+   * Thu hồi cache phân quyền (Authorization Cache) của danh sách nhân viên.
+   * Buộc hệ thống phải tải lại quyền hạn từ DB trong lần truy cập tiếp theo.
+   */
   private async invalidateAuthzForEmployees(employeeIds: number[]): Promise<void> {
     await this.employeeAuthzCache.invalidateMany(employeeIds);
   }
 
-  // Xử lý lỗi trùng lặp tên vai trò từ cơ sở dữ liệu
+  /**
+   * Xử lý lỗi vi phạm ràng buộc duy nhất (Unique Violation) khi trùng tên vai trò.
+   */
   private handleUniqueViolation(err: unknown, name: string): void {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new ConflictException(`Tên vai trò "${name}" đã được sử dụng`);

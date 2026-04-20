@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+/**
+ * CartItemColorDto: DTO đại diện cho thông tin màu sắc của sản phẩm trong giỏ hàng.
+ */
 class CartItemColorDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -11,6 +14,9 @@ class CartItemColorDto {
   hexCode: string;
 }
 
+/**
+ * CartItemSizeDto: DTO đại diện cho thông tin kích thước của sản phẩm trong giỏ hàng.
+ */
 class CartItemSizeDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -19,6 +25,9 @@ class CartItemSizeDto {
   label: string;
 }
 
+/**
+ * CartItemProductDto: DTO đại diện cho thông tin cơ bản của sản phẩm cha trong giỏ hàng.
+ */
 class CartItemProductDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -33,6 +42,10 @@ class CartItemProductDto {
   thumbnail: string | null;
 }
 
+/**
+ * CartItemVariantDto: DTO đại diện cho thông tin biến thể cụ thể của sản phẩm trong giỏ hàng.
+ * Bao gồm thông tin về SKU, giá, và trạng thái tồn kho (onHand, reserved).
+ */
 class CartItemVariantDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -59,6 +72,10 @@ class CartItemVariantDto {
   product: CartItemProductDto;
 }
 
+/**
+ * CartItemResponseDto: DTO phản hồi cho một mục trong giỏ hàng.
+ * Chứa thông tin về số lượng và chi tiết biến thể sản phẩm.
+ */
 export class CartItemResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -76,6 +93,10 @@ export class CartItemResponseDto {
   variant: CartItemVariantDto;
 }
 
+/**
+ * CartResponseDto: DTO phản hồi toàn bộ giỏ hàng của khách hàng.
+ * Vai trò: Cung cấp cấu trúc dữ liệu chuẩn để hiển thị giỏ hàng trên giao diện người dùng.
+ */
 export class CartResponseDto {
   @ApiProperty({ example: 1 })
   id: number;

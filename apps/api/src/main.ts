@@ -15,13 +15,20 @@ const DEFAULT_DEV_CORS_ORIGINS = [
 
 import { otelSDK } from './core/tracing/tracing';
 
+/**
+ * Hàm khởi tạo và cấu hình ứng dụng (Bootstrap).
+ * Thực hiện các bước: Khởi chạy Tracing (OTEL), tạo Instance NestJS,
+ * cấu hình Versioning, Bảo mật (Helmet), CORS, Validation, và Swagger.
+ */
 async function bootstrap() {
-  // Start OpenTelemetry SDK
+  // Khởi động OpenTelemetry SDK để theo dõi (tracing) ứng dụng
   otelSDK.start();
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // Sử dụng Logger pino thay cho logger mặc định của NestJS
   app.useLogger(app.get(Logger));
 
+  // Cấu hình Versioning cho API (mặc định là v1)
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
@@ -29,9 +36,12 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 4000;
 
+  // Thiết lập các header bảo mật bằng Helmet
   app.use(helmet({ contentSecurityPolicy: false }));
+  // Sử dụng cookie-parser để xử lý cookies từ request
   app.use(cookieParser());
 
+  // Cấu hình CORS dựa trên biến môi trường hoặc danh sách mặc định khi dev
   const corsOriginEnv = process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS;
   const origin = corsOriginEnv
     ? corsOriginEnv
@@ -44,13 +54,14 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Cấu hình Global Validation Pipe để tự động kiểm tra kiểu dữ liệu đầu vào (DTO)
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+      whitelist: true, // Loại bỏ các field không có trong DTO
+      forbidNonWhitelisted: true, // Trả về lỗi nếu có field lạ
+      transform: true, // Tự động convert kiểu dữ liệu (vd: string -> number)
       transformOptions: { enableImplicitConversion: true },
-      stopAtFirstError: true,
+      stopAtFirstError: true, // Dừng lại ở lỗi đầu tiên
       exceptionFactory: (errors) => {
         const messages = errors.map((error) => {
           return error.constraints ? Object.values(error.constraints)[0] : 'Dữ liệu không hợp lệ';
@@ -60,6 +71,7 @@ async function bootstrap() {
     }),
   );
 
+  // Cấu hình tài liệu API bằng Swagger
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Vnmixx API')
     .setVersion('1.0')
@@ -85,6 +97,7 @@ async function bootstrap() {
     },
   });
 
+  // Lắng nghe trên port đã cấu hình
   await app.listen(port, '0.0.0.0');
   const url = await app.getUrl();
   const appLogger = app.get(Logger);

@@ -38,7 +38,8 @@ import {
 } from '../dto';
 import { RoleService } from '../services/role.service';
 
-// Controller quản lý các vai trò (roles) và gán quyền cho vai trò
+// Controller quản lý các vai trò (roles) và gán quyền (permissions) cho vai trò
+// Cung cấp các thao tác CRUD cho vai trò và cập nhật danh sách quyền hạn đi kèm
 @ApiTags('RBAC')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -48,7 +49,7 @@ import { RoleService } from '../services/role.service';
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
-  // API lấy danh sách vai trò có phân trang, tìm kiếm và sắp xếp
+  // Lấy danh sách vai trò có phân trang, hỗ trợ tìm kiếm theo tên hoặc mô tả
   @ApiOperation({
     summary: 'Liệt kê vai trò',
     description: 'Danh sách phân trang; tìm theo tên hoặc mô tả qua tham số search.',
@@ -66,7 +67,7 @@ export class RoleController {
     });
   }
 
-  // API lấy thông tin chi tiết của một vai trò kèm các quyền đã gán
+  // Lấy thông tin chi tiết của một vai trò, bao gồm danh sách các quyền đã được gán
   @ApiOperation({ summary: 'Lấy chi tiết vai trò kèm quyền' })
   @ApiOkResponse({ type: RoleDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
@@ -76,7 +77,7 @@ export class RoleController {
     return this.roleService.findById(id);
   }
 
-  // API tạo vai trò mới và gán danh sách quyền ban đầu
+  // Tạo vai trò mới và thiết lập danh sách quyền ban đầu cho vai trò đó
   @ApiOperation({ summary: 'Tạo vai trò mới' })
   @ApiCreatedResponse({ type: RoleDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ hoặc ID quyền không tồn tại.' })
@@ -91,7 +92,7 @@ export class RoleController {
     return this.roleService.create(dto, buildAuditRequestContext(request, user));
   }
 
-  // API cập nhật tên, mô tả và thay đổi danh sách quyền của vai trò
+  // Cập nhật thông tin vai trò và thay đổi (đồng bộ) lại danh sách quyền hạn
   @ApiOperation({ summary: 'Cập nhật vai trò và quyền' })
   @ApiOkResponse({ type: RoleDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
@@ -110,7 +111,7 @@ export class RoleController {
     return this.roleService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
-  // API xóa hoàn toàn một vai trò khỏi hệ thống
+  // Xóa một vai trò khỏi hệ thống (lưu ý: không cho phép xóa các vai trò mặc định của hệ thống)
   @ApiOperation({ summary: 'Xóa vai trò' })
   @ApiNoContentResponse({ description: 'Xóa vai trò thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })

@@ -1,8 +1,9 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Put, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -12,10 +13,15 @@ import {
 import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import { EmployeeProfileResponseDto, UpdateEmployeeProfileDto } from '../dto';
 import { ProfileService } from '../services/profile.service';
 
+/**
+ * Controller xử lý hồ sơ cá nhân cho Nhân viên.
+ * Cho phép nhân viên xem, cập nhật thông tin cơ bản và đổi mật khẩu của chính mình.
+ */
 @ApiTags('Profile')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -54,5 +60,14 @@ export class EmployeeProfileController {
       dto,
       buildAuditRequestContext(request, user),
     );
+  }
+
+  @ApiOperation({ summary: 'Đổi mật khẩu nhân viên hiện tại' })
+  @ApiNoContentResponse({ description: 'Đổi mật khẩu thành công.' })
+  @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
+  @Put('change-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.profileService.changeEmployeePassword(user.id, dto);
   }
 }

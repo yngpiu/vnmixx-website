@@ -37,10 +37,24 @@ type AdminReviewDetailRow = {
   customer: { fullName: string; email: string } | null;
 };
 
+/**
+ * ReviewService: Dịch vụ quản lý đánh giá sản phẩm.
+ * Vai trò: Xử lý luồng gửi đánh giá từ khách hàng và các thao tác quản trị từ nhân viên.
+ */
 @Injectable()
 export class ReviewService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Tạo đánh giá mới cho sản phẩm.
+   * Logic kiểm tra (Validation):
+   * 1. Sản phẩm phải tồn tại và đang hoạt động.
+   * 2. Khách hàng chưa từng đánh giá sản phẩm này trước đó (1 khách/1 sản phẩm).
+   * 3. Khách hàng phải đã mua sản phẩm này và đơn hàng phải ở trạng thái DELIVERED (Đã giao) và SUCCESS (Đã thanh toán).
+   * @param customerId ID khách hàng.
+   * @param productId ID sản phẩm.
+   * @param dto Nội dung đánh giá (rating, title, content).
+   */
   async createProductReview(customerId: number, productId: number, dto: CreateProductReviewDto) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
@@ -105,6 +119,10 @@ export class ReviewService {
     });
   }
 
+  /**
+   * Lấy danh sách đánh giá phục vụ quản trị (Admin).
+   * Hỗ trợ phân trang, lọc theo trạng thái ẩn/hiện, tìm kiếm theo từ khóa (tên khách, tên sản phẩm, nội dung).
+   */
   async getAdminReviews(query: ListAdminReviewsQueryDto): Promise<AdminReviewsListResponseDto> {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 10;
@@ -170,6 +188,30 @@ export class ReviewService {
     };
   }
 
+  /**
+   * Cập nhật trạng thái hiển thị của đánh giá (Ví dụ: Ẩn các đánh giá vi phạm).
+   */
+  async updateAdminReviewStatus(
+    id: number,
+    status: ReviewVisibility,
+  ): Promise<AdminReviewDetailResponseDto> {
+    const review = await this.prisma.productReview.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Không tìm thấy review.');
+    }
+
+    await this.prisma.productReview.update({
+      where: { id },
+      data: { status },
+    });
+
+    return this.getAdminReviewDetail(id);
+  }
+
   async getAdminReviewDetail(id: number): Promise<AdminReviewDetailResponseDto> {
     const review = (await this.prisma.productReview.findUnique({
       where: { id },
@@ -206,27 +248,6 @@ export class ReviewService {
       customerName: review.customer?.fullName ?? null,
       customerEmail: review.customer?.email ?? null,
     };
-  }
-
-  async updateAdminReviewStatus(
-    id: number,
-    status: ReviewVisibility,
-  ): Promise<AdminReviewDetailResponseDto> {
-    const review = await this.prisma.productReview.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-
-    if (!review) {
-      throw new NotFoundException('Không tìm thấy review.');
-    }
-
-    await this.prisma.productReview.update({
-      where: { id },
-      data: { status },
-    });
-
-    return this.getAdminReviewDetail(id);
   }
 
   async deleteAdminReview(id: number): Promise<void> {

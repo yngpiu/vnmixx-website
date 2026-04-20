@@ -22,6 +22,10 @@ import {
   type OrderAdminListItemView,
 } from '../repositories/order.repository';
 
+/**
+ * OrderAdminService: Dịch vụ quản lý đơn hàng dành cho nhân viên/quản trị viên.
+ * Vai trò: Thực hiện các thao tác xác nhận đơn, tạo vận đơn, hủy đơn và quản lý thanh toán.
+ */
 @Injectable()
 export class OrderAdminService {
   private readonly logger = new Logger(OrderAdminService.name);
@@ -34,6 +38,9 @@ export class OrderAdminService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
+  /**
+   * Truy vấn danh sách đơn hàng toàn hệ thống với các bộ lọc.
+   */
   async findAllOrders(query: ListAdminOrdersQueryDto): Promise<{
     data: OrderAdminListItemView[];
     meta: { page: number; limit: number; total: number; totalPages: number };
@@ -55,6 +62,9 @@ export class OrderAdminService {
     };
   }
 
+  /**
+   * Lấy chi tiết đơn hàng theo mã phục vụ giao diện quản trị.
+   */
   async findOrderByCode(orderCode: string): Promise<OrderAdminDetailView> {
     const order = await this.orderRepo.findAdminByOrderCode(orderCode);
     if (!order) {
@@ -63,6 +73,16 @@ export class OrderAdminService {
     return order;
   }
 
+  /**
+   * Xác nhận đơn hàng và đẩy thông tin sang đơn vị vận chuyển (GHN).
+   * Logic thực thi:
+   * 1. Kiểm tra trạng thái đơn hàng (phải là PENDING).
+   * 2. Nếu là chuyển khoản, yêu cầu phải được xác nhận thanh toán trước.
+   * 3. Gọi API GHN để tạo vận đơn thực tế, nhận mã ghnOrderCode.
+   * 4. Thực thi Transaction: Cập nhật trạng thái đơn (AWAITING_SHIPMENT), lưu mã vận đơn.
+   * 5. Xuất kho (Export Stock): Chuyển trạng thái từ Reserved sang thực tế giảm On Hand.
+   * 6. Ghi Audit Log để theo dõi vết hoạt động của nhân viên.
+   */
   async confirmOrder(
     orderCode: string,
     shipment: {
@@ -265,6 +285,13 @@ export class OrderAdminService {
     }
   }
 
+  /**
+   * Hủy đơn hàng bởi admin.
+   * Logic:
+   * 1. Hủy vận đơn GHN nếu đã tạo.
+   * 2. Hoàn lại tồn kho: Nhả phần Reserved (nếu đơn chưa xuất kho) hoặc tăng lại On Hand (nếu đơn đã xuất kho).
+   * 3. Xử lý hoàn tiền (Refund) nếu khách đã thanh toán thành công.
+   */
   async cancelOrder(
     orderCode: string,
     auditContext: AuditRequestContext = {},
@@ -423,6 +450,10 @@ export class OrderAdminService {
     }
   }
 
+  /**
+   * Xác nhận thanh toán chuyển khoản thủ công bởi admin.
+   * Sử dụng khi khách hàng chuyển khoản và nhân viên kiểm tra số dư thành công.
+   */
   async confirmPayment(
     orderCode: string,
     auditContext: AuditRequestContext = {},

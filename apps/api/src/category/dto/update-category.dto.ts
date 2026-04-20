@@ -10,6 +10,10 @@ import {
   Min,
 } from 'class-validator';
 
+/**
+ * UpdateCategoryDto: DTO dùng để cập nhật thông tin danh mục hiện có.
+ * Tất cả các trường đều là tùy chọn.
+ */
 export class UpdateCategoryDto {
   @ApiPropertyOptional({ example: 'Áo sơ mi', description: 'Tên danh mục', maxLength: 100 })
   @IsString({ message: 'Tên danh mục phải là chuỗi ký tự' })

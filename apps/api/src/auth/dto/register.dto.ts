@@ -19,7 +19,10 @@ enum GenderInput {
 
 const regexPhoneNumber = /(84|0[3|5|7|8|9])+([0-9]{8})\b/g;
 
-/** DTO for customer registration. Employees are created by admins. */
+/**
+ * DTO cho yêu cầu đăng ký tài khoản khách hàng mới.
+ * Chứa các thông tin cơ bản và thực hiện kiểm tra định dạng dữ liệu (email, số điện thoại, mật khẩu).
+ */
 export class RegisterDto {
   @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ và tên', maxLength: 100 })
   @IsString({ message: 'Họ tên phải là chuỗi ký tự' })

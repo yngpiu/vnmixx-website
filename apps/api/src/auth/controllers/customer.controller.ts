@@ -42,6 +42,10 @@ import {
 @Throttle({ default: { ttl: 60_000, limit: 10 } })
 @ApiTags('Auth')
 @Controller('auth')
+/**
+ * Controller xử lý các yêu cầu xác thực dành cho Khách hàng (Public API).
+ * Bao gồm các luồng: Đăng ký, Đăng nhập, Xác thực OTP và Quên mật khẩu.
+ */
 export class CustomerAuthController {
   constructor(
     private readonly customerAuth: CustomerAuthService,
@@ -57,6 +61,7 @@ export class CustomerAuthController {
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được đăng ký.' })
   @Public()
   @Post('register')
+  /** Đăng ký tài khoản mới: Lưu thông tin tạm thời và gửi OTP kích hoạt. */
   async register(@Body() dto: RegisterDto): Promise<CustomerRegisterResponseDto> {
     return this.customerAuth.registerCustomer(dto);
   }
@@ -73,6 +78,7 @@ export class CustomerAuthController {
   @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
+  /** Xác thực OTP: Nếu đúng, kích hoạt tài khoản và cấp cặp token truy cập. */
   async verifyOtp(
     @Body() dto: VerifyCustomerOtpDto,
     @Req() req: Request,
@@ -99,6 +105,7 @@ export class CustomerAuthController {
   @Public()
   @Post('resend-otp')
   @HttpCode(HttpStatus.OK)
+  /** Gửi lại mã OTP kích hoạt (có áp dụng cooldown). */
   async resendOtp(@Body() dto: ResendCustomerOtpDto): Promise<CustomerRegisterResponseDto> {
     return this.customerAuth.resendCustomerOtp(dto);
   }
@@ -112,6 +119,7 @@ export class CustomerAuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  /** Đăng nhập bằng email/mật khẩu và nhận cặp token truy cập. */
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
@@ -138,6 +146,7 @@ export class CustomerAuthController {
   @RequireUserType('CUSTOMER')
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
+  /** Đổi mật khẩu cho người dùng đang đăng nhập và buộc đăng nhập lại trên mọi thiết bị. */
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @Res({ passthrough: true }) res: Response,
@@ -161,6 +170,7 @@ export class CustomerAuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  /** Bước 1 Quên mật khẩu: Gửi mã OTP khôi phục qua email. */
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
     return this.passwordReset.requestPasswordReset(dto);
   }
@@ -177,6 +187,7 @@ export class CustomerAuthController {
   @Public()
   @Post('forgot-password/verify-otp')
   @HttpCode(HttpStatus.OK)
+  /** Bước 2 Quên mật khẩu: Kiểm tra OTP và cấp Reset Token (mã định danh đặt lại mật khẩu). */
   async forgotPasswordVerifyOtp(
     @Body() dto: ForgotPasswordVerifyOtpDto,
   ): Promise<ResetTokenResponseDto> {
@@ -192,6 +203,7 @@ export class CustomerAuthController {
   @Public()
   @Post('forgot-password/reset')
   @HttpCode(HttpStatus.OK)
+  /** Bước 3 Quên mật khẩu: Cập nhật mật khẩu mới bằng Reset Token và hủy mọi phiên làm việc cũ. */
   async resetPassword(
     @Body() dto: ResetPasswordDto,
     @Res({ passthrough: true }) res: Response,

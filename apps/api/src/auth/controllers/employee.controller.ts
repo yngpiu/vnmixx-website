@@ -24,6 +24,10 @@ import {
 @Throttle({ default: { ttl: 60_000, limit: 40 } })
 @ApiTags('Auth')
 @Controller('auth/admin')
+/**
+ * Controller xử lý các yêu cầu xác thực dành cho Nhân viên và Quản trị viên (Admin API).
+ * Cung cấp các chức năng: Đăng nhập hệ thống quản lý và Đổi mật khẩu nhân viên.
+ */
 export class EmployeeAuthController {
   constructor(
     private readonly employeeAuth: EmployeeAuthService,
@@ -42,6 +46,7 @@ export class EmployeeAuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  /** Đăng nhập nhân viên bằng email/mật khẩu và nhận token truy cập Dashboard. */
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
@@ -61,6 +66,7 @@ export class EmployeeAuthController {
   @RequireUserType('EMPLOYEE')
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
+  /** Đổi mật khẩu nhân viên: Yêu cầu mật khẩu hiện tại và mật khẩu mới. */
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @Res({ passthrough: true }) res: Response,

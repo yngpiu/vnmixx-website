@@ -5,6 +5,8 @@ import type { CreateAddressDto, UpdateAddressDto } from '../dto';
 import { type AddressView, AddressRepository } from '../repositories/address.repository';
 
 @Injectable()
+// Service quản lý sổ địa chỉ của khách hàng
+// Xử lý các nghiệp vụ: Thêm mới, cập nhật, xóa và thiết lập địa chỉ mặc định
 export class AddressService {
   constructor(
     private readonly addressRepo: AddressRepository,
@@ -12,17 +14,21 @@ export class AddressService {
     private readonly prisma: PrismaService,
   ) {}
 
+  // Lấy tất cả địa chỉ của một khách hàng cụ thể
   async findAll(customerId: number): Promise<AddressView[]> {
     return this.addressRepo.findAllByCustomerId(customerId);
   }
 
+  // Tìm một địa chỉ theo ID và thuộc về khách hàng cụ thể (để đảm bảo bảo mật)
   async findById(id: number, customerId: number): Promise<AddressView> {
     const address = await this.addressRepo.findById(id, customerId);
     if (!address) throw new NotFoundException(`Không tìm thấy địa chỉ #${id}`);
     return address;
   }
 
+  // Tạo địa chỉ mới: kiểm tra tính hợp lệ của địa danh và thiết lập địa chỉ mặc định nếu cần
   async create(customerId: number, dto: CreateAddressDto): Promise<AddressView> {
+    // Xác thực cấu trúc Tỉnh/Thành -> Quận/Huyện -> Phường/Xã
     await this.validateLocationHierarchy(dto.cityId, dto.districtId, dto.wardId);
 
     const shouldBeDefault = dto.isDefault ?? false;
@@ -31,6 +37,7 @@ export class AddressService {
     const makeDefault = shouldBeDefault || isFirst;
 
     if (makeDefault) {
+      // Nếu là địa chỉ mặc định, bỏ đánh dấu mặc định của các địa chỉ cũ trong một transaction
       return this.prisma.$transaction(async (tx) => {
         await tx.address.updateMany({
           where: { customerId, isDefault: true, deletedAt: null },
@@ -79,6 +86,7 @@ export class AddressService {
     });
   }
 
+  // Cập nhật thông tin địa chỉ và kiểm tra lại tính hợp lệ của địa danh nếu có thay đổi
   async update(id: number, customerId: number, dto: UpdateAddressDto): Promise<AddressView> {
     const existing = await this.findById(id, customerId);
 
@@ -101,6 +109,7 @@ export class AddressService {
     });
   }
 
+  // Xóa địa chỉ (soft delete) và tự động chỉ định địa chỉ mặc định mới nếu địa chỉ bị xóa đang là mặc định
   async remove(id: number, customerId: number): Promise<void> {
     const address = await this.findById(id, customerId);
 
@@ -111,7 +120,7 @@ export class AddressService {
       });
 
       if (address.isDefault) {
-        // Tìm địa chỉ đầu tiên còn lại để đặt làm mặc định
+        // Tìm địa chỉ gần nhất còn lại để đặt làm mặc định
         const next = await tx.address.findFirst({
           where: { customerId, deletedAt: null, id: { not: id } },
           orderBy: { createdAt: 'desc' },
@@ -128,6 +137,7 @@ export class AddressService {
     });
   }
 
+  // Thiết lập một địa chỉ cụ thể làm địa chỉ mặc định
   async setDefault(id: number, customerId: number): Promise<AddressView> {
     await this.findById(id, customerId);
 
@@ -145,6 +155,7 @@ export class AddressService {
     return this.findById(id, customerId);
   }
 
+  // Kiểm tra xem bộ ba Tỉnh/Thành, Quận/Huyện, Phường/Xã có nhất quán với nhau không
   private async validateLocationHierarchy(
     cityId: number,
     districtId: number,

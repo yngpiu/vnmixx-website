@@ -1,10 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+/**
+ * WishlistProductVariantDto: DTO đại diện cho thông tin giá của biến thể sản phẩm trong wishlist.
+ */
 class WishlistProductVariantDto {
   @ApiProperty({ example: 299000 })
   price: number;
 }
 
+/**
+ * WishlistProductDto: DTO chứa thông tin sản phẩm hiển thị trong danh sách yêu thích.
+ */
 class WishlistProductDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -22,6 +28,10 @@ class WishlistProductDto {
   variants: WishlistProductVariantDto[];
 }
 
+/**
+ * WishlistItemResponseDto: DTO phản hồi cho một mục trong danh sách yêu thích.
+ * Vai trò: Trả về thông tin ngày thêm và chi tiết sản phẩm cho client.
+ */
 export class WishlistItemResponseDto {
   @ApiProperty()
   createdAt: Date;

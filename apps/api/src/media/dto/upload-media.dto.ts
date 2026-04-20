@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+// DTO định nghĩa cấu trúc dữ liệu bổ sung khi upload file media
 export class UploadMediaDto {
   @ApiPropertyOptional({ description: 'Thư mục đích, ví dụ: banners/slide' })
   @IsOptional()

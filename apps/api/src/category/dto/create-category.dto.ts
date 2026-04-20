@@ -10,6 +10,10 @@ import {
   Min,
 } from 'class-validator';
 
+/**
+ * CreateCategoryDto: DTO dùng để tạo danh mục mới.
+ * Quy định các ràng buộc về tên, slug duy nhất và cấp bậc cha-con.
+ */
 export class CreateCategoryDto {
   @ApiProperty({ example: 'Áo sơ mi', description: 'Tên danh mục', maxLength: 100 })
   @IsString({ message: 'Tên danh mục phải là chuỗi ký tự' })

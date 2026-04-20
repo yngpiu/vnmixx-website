@@ -1,8 +1,9 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Put } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -10,10 +11,15 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import { CustomerProfileResponseDto, UpdateCustomerProfileDto } from '../dto';
 import { ProfileService } from '../services/profile.service';
 
+/**
+ * Controller xử lý hồ sơ cá nhân cho Khách hàng.
+ * Cho phép khách hàng xem, cập nhật thông tin cá nhân và đổi mật khẩu của chính mình.
+ */
 @ApiTags('Profile')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -47,5 +53,14 @@ export class CustomerProfileController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.profileService.updateCustomerProfile(user.id, dto);
+  }
+
+  @ApiOperation({ summary: 'Đổi mật khẩu khách hàng hiện tại' })
+  @ApiNoContentResponse({ description: 'Đổi mật khẩu thành công.' })
+  @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
+  @Put('change-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.profileService.changeCustomerPassword(user.id, dto);
   }
 }

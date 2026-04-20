@@ -1,3 +1,6 @@
+/**
+ * DTO yêu cầu cập nhật hồ sơ Khách hàng.
+ */
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsUrl, Matches, MaxLength } from 'class-validator';
 

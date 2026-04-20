@@ -1,5 +1,9 @@
 import { z } from 'zod/v4';
 
+/**
+ * Định nghĩa Schema kiểm tra tính hợp lệ của các biến môi trường (Environment Variables).
+ * Sử dụng thư viện Zod để validate và ép kiểu (coerce) dữ liệu.
+ */
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
@@ -34,18 +38,24 @@ const envSchema = z.object({
 type EnvVars = z.infer<typeof envSchema>;
 
 /**
- * Validate and transform environment variables at bootstrap.
- * Used by `ConfigModule.forRoot({ validate })` to fail-fast on invalid config.
+ * Hàm kiểm tra và chuyển đổi biến môi trường khi bắt đầu khởi chạy ứng dụng (Bootstrap).
+ * Được sử dụng bởi `ConfigModule.forRoot({ validate })`.
+ * Nếu cấu hình không hợp lệ, ứng dụng sẽ dừng lại ngay lập tức (fail-fast) kèm thông báo lỗi.
  */
 export function validateEnv(config: Record<string, unknown>): EnvVars {
   const result = envSchema.safeParse(config);
+
   if (!result.success) {
     const formatted = z.prettifyError(result.error);
     throw new Error(`❌ Env validation failed:\n${formatted}`);
   }
+
   const validated = result.data;
+
+  // Kiểm tra logic nghiệp vụ bổ sung (ví dụ: Production bắt buộc phải có CORS_ORIGIN)
   if (validated.NODE_ENV === 'production' && !validated.CORS_ORIGIN) {
     throw new Error('❌ CORS_ORIGIN is required in production');
   }
+
   return validated;
 }

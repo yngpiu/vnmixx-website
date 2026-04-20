@@ -37,6 +37,10 @@ import {
 } from '../dto';
 import { SizeService } from '../services/size.service';
 
+/**
+ * SizeAdminController: Endpoint quản trị kích thước.
+ * Vai trò: Cho phép nhân viên quản lý danh mục kích thước dùng chung cho toàn hệ thống.
+ */
 @ApiTags('Sizes')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -46,6 +50,9 @@ import { SizeService } from '../services/size.service';
 export class SizeAdminController {
   constructor(private readonly sizeService: SizeService) {}
 
+  /**
+   * Lấy danh sách kích thước (Admin) có phân trang.
+   */
   @ApiOperation({
     summary: 'Liệt kê kích thước (quản trị)',
     description: 'Phân trang, tìm theo nhãn, sắp xếp.',
@@ -62,6 +69,9 @@ export class SizeAdminController {
     });
   }
 
+  /**
+   * Thêm kích thước mới.
+   */
   @ApiOperation({ summary: 'Tạo kích thước mới' })
   @ApiCreatedResponse({ type: SizeAdminResponseDto })
   @ApiConflictResponse({ description: 'Nhãn kích thước đã được sử dụng.' })
@@ -74,6 +84,9 @@ export class SizeAdminController {
     return this.sizeService.create(dto, buildAuditRequestContext(request, user));
   }
 
+  /**
+   * Cập nhật kích thước.
+   */
   @ApiOperation({ summary: 'Cập nhật kích thước' })
   @ApiOkResponse({ type: SizeAdminResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy kích thước.' })
@@ -88,6 +101,9 @@ export class SizeAdminController {
     return this.sizeService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
+  /**
+   * Xóa kích thước.
+   */
   @ApiOperation({ summary: 'Xóa kích thước' })
   @ApiNoContentResponse({ description: 'Xóa kích thước thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy kích thước.' })

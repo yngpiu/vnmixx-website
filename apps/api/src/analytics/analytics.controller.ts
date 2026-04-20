@@ -48,7 +48,7 @@ export class AnalyticsController {
   async getKpisWithDelta(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsKpisWithDeltaResponseDto> {
-    return this.analyticsService.getKpisWithDelta(query);
+    return await this.analyticsService.getKpisWithDelta(query);
   }
 
   @ApiOperation({
@@ -61,7 +61,7 @@ export class AnalyticsController {
   async getOverview(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsOverviewResponseDto> {
-    return this.analyticsService.getOverview(query);
+    return await this.analyticsService.getOverview(query);
   }
 
   @ApiOperation({ summary: 'Chỉ breakdown trạng thái đơn (tạo trong kỳ)' })
@@ -70,7 +70,7 @@ export class AnalyticsController {
   async getBreakdownStatus(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsStatusBreakdownOnlyResponseDto> {
-    return this.analyticsService.getStatusBreakdownOnly(query);
+    return await this.analyticsService.getStatusBreakdownOnly(query);
   }
 
   @ApiOperation({ summary: 'Chỉ mix phương thức thanh toán' })
@@ -79,7 +79,7 @@ export class AnalyticsController {
   async getBreakdownPaymentMethod(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsPaymentMethodMixOnlyResponseDto> {
-    return this.analyticsService.getPaymentMethodMixOnly(query);
+    return await this.analyticsService.getPaymentMethodMixOnly(query);
   }
 
   @ApiOperation({ summary: 'Chỉ funnel paymentStatus trên đơn trong kỳ' })
@@ -88,7 +88,7 @@ export class AnalyticsController {
   async getBreakdownPaymentStatus(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsPaymentStatusMixOnlyResponseDto> {
-    return this.analyticsService.getPaymentStatusMixOnly(query);
+    return await this.analyticsService.getPaymentStatusMixOnly(query);
   }
 
   @ApiOperation({ summary: 'Đơn cần xử lý (PENDING hoặc CK chưa thành công)' })
@@ -97,7 +97,7 @@ export class AnalyticsController {
   async getPendingOrders(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsPendingOrdersOnlyResponseDto> {
-    return this.analyticsService.getPendingOrdersOnly(query);
+    return await this.analyticsService.getPendingOrdersOnly(query);
   }
 
   @ApiOperation({ summary: 'Top sản phẩm theo GMV (subtotal) trong kỳ' })
@@ -106,7 +106,7 @@ export class AnalyticsController {
   async getTopProducts(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsTopProductsResponseDto> {
-    return this.analyticsService.getTopProducts(query);
+    return await this.analyticsService.getTopProducts(query);
   }
 
   @ApiOperation({ summary: 'Tổng hợp đánh giá khách hàng (rating breakdown + review mới nhất)' })
@@ -115,7 +115,7 @@ export class AnalyticsController {
   async getReviewsSummary(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsReviewsSummaryResponseDto> {
-    return this.analyticsService.getReviewsSummary(query);
+    return await this.analyticsService.getReviewsSummary(query);
   }
 
   @ApiOperation({
@@ -127,7 +127,7 @@ export class AnalyticsController {
   async getTimeseries(
     @Query() query: AnalyticsTimeseriesQueryDto,
   ): Promise<AnalyticsTimeseriesResponseDto> {
-    return this.analyticsService.getTimeseries(query);
+    return await this.analyticsService.getTimeseries(query);
   }
 
   @ApiOperation({ summary: 'Top địa chỉ giao hàng (theo GMV đơn tạo trong kỳ, trừ hủy/hoàn)' })
@@ -136,6 +136,6 @@ export class AnalyticsController {
   async getTopShippingCities(
     @Query() query: AnalyticsTopCitiesQueryDto,
   ): Promise<AnalyticsTopShippingCitiesResponseDto> {
-    return this.analyticsService.getTopShippingCities(query);
+    return await this.analyticsService.getTopShippingCities(query);
   }
 }

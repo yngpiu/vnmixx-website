@@ -25,10 +25,17 @@ interface EmployeePermissions {
   permissions: string[];
 }
 
+/**
+ * Repository xử lý các truy vấn liên quan đến nhân viên (Employee) dành riêng cho xác thực.
+ * Chịu trách nhiệm lấy thông tin tài khoản, mật khẩu băm và quyền hạn từ cơ sở dữ liệu.
+ */
 @Injectable()
 export class EmployeeRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Tìm nhân viên bằng email để phục vụ logic đăng nhập.
+   */
   async findByEmail(email: string): Promise<EmployeeAuthView | null> {
     return this.prisma.employee.findUnique({
       where: { email },
@@ -43,6 +50,9 @@ export class EmployeeRepository {
     });
   }
 
+  /**
+   * Tìm nhân viên bằng ID để xác thực thông tin cơ bản sau khi giải mã JWT.
+   */
   async findById(id: number): Promise<EmployeeValidationView | null> {
     return this.prisma.employee.findUnique({
       where: { id },
@@ -57,6 +67,10 @@ export class EmployeeRepository {
     });
   }
 
+  /**
+   * Tải danh sách vai trò (Roles) và quyền hạn (Permissions) của nhân viên.
+   * Kết quả này thường được cache để tối ưu hiệu năng.
+   */
   async loadPermissions(employeeId: number): Promise<EmployeePermissions> {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId },
@@ -79,6 +93,9 @@ export class EmployeeRepository {
     return { roles, permissions: [...permissionSet] };
   }
 
+  /**
+   * Lấy mật khẩu đã băm của nhân viên theo ID.
+   */
   async findHashedPasswordById(employeeId: number): Promise<string | null> {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employeeId, deletedAt: null },
@@ -87,6 +104,9 @@ export class EmployeeRepository {
     return employee?.hashedPassword ?? null;
   }
 
+  /**
+   * Cập nhật mật khẩu mới cho nhân viên.
+   */
   async updatePassword(employeeId: number, hashedPassword: string): Promise<boolean> {
     const { count } = await this.prisma.employee.updateMany({
       where: { id: employeeId, deletedAt: null },

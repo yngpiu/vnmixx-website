@@ -12,6 +12,10 @@ import {
   SizeView,
 } from '../repositories/size.repository';
 
+/**
+ * SizeService: Quản lý thuộc tính kích thước của sản phẩm.
+ * Vai trò: Cung cấp các nghiệp vụ liên quan đến kích thước (Size/Dimension), hỗ trợ tạo biến thể sản phẩm.
+ */
 @Injectable()
 export class SizeService {
   constructor(
@@ -22,6 +26,10 @@ export class SizeService {
 
   // ─── Public ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Lấy danh sách kích thước cho khách hàng.
+   * Logic: Sử dụng Redis Cache để tăng tốc độ phản hồi.
+   */
   findAllPublic(): Promise<SizeView[]> {
     return this.redis.getOrSet(CACHE_KEYS.SIZE_LIST, CACHE_TTL.SIZE, () =>
       this.repository.findAllPublic(),
@@ -30,10 +38,16 @@ export class SizeService {
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
 
+  /**
+   * Lấy tất cả kích thước (dành cho quản trị).
+   */
   findAll(): Promise<SizeAdminView[]> {
     return this.repository.findAll();
   }
 
+  /**
+   * Tìm kiếm và phân trang danh sách kích thước.
+   */
   findList(params: {
     page: number;
     limit: number;
@@ -44,6 +58,10 @@ export class SizeService {
     return this.repository.findList(params);
   }
 
+  /**
+   * Tạo kích thước mới.
+   * Logic: Lưu vào DB, xóa cache và ghi log hệ thống.
+   */
   async create(dto: CreateSizeDto, auditContext: AuditRequestContext = {}): Promise<SizeAdminView> {
     try {
       const result = await this.repository.create({
@@ -74,6 +92,10 @@ export class SizeService {
     }
   }
 
+  /**
+   * Cập nhật kích thước.
+   * Logic: Kiểm tra tồn tại, cập nhật DB, xóa cache và ghi log.
+   */
   async update(
     id: number,
     dto: UpdateSizeDto,
@@ -113,6 +135,10 @@ export class SizeService {
     }
   }
 
+  /**
+   * Xóa kích thước.
+   * Logic: Kiểm tra ràng buộc (không thể xóa nếu kích thước đang được gán cho sản phẩm).
+   */
   async remove(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const beforeData = await this.repository.findById(id);
     try {
@@ -148,16 +174,25 @@ export class SizeService {
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
+  /**
+   * Xóa cache danh sách kích thước.
+   */
   private async invalidateCache(): Promise<void> {
     await this.redis.del(CACHE_KEYS.SIZE_LIST);
   }
 
+  /**
+   * Tìm kích thước theo ID hoặc báo lỗi.
+   */
   private async findByIdOrFail(id: number): Promise<SizeAdminView> {
     const size = await this.repository.findById(id);
     if (!size) throw new NotFoundException(`Không tìm thấy kích thước #${id}`);
     return size;
   }
 
+  /**
+   * Xử lý lỗi trùng lặp nhãn kích thước.
+   */
   private handleUniqueViolation(err: unknown): void {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new ConflictException('Kích thước với nhãn này đã tồn tại');

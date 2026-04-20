@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MaxLength } from 'class-validator';
 
+// DTO định nghĩa cấu trúc dữ liệu để di chuyển một file media sang thư mục khác
 export class MoveMediaDto {
   @ApiProperty({ description: 'Thư mục đích', example: 'banners/slide' })
   @IsString({ message: 'Thư mục đích phải là chuỗi ký tự' })

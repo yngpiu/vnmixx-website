@@ -1,6 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/** JSON body for login / verify OTP / refresh. Refresh token returned in both body and HttpOnly cookie. */
+/**
+ * DTO phản hồi sau khi đăng nhập hoặc làm mới mã truy cập thành công.
+ * Bao gồm accessToken và refreshToken.
+ */
 export class AuthResponseDto {
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
@@ -13,12 +16,14 @@ export class AuthResponseDto {
 
   @ApiProperty({
     example: 'dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...',
-    description: 'Opaque refresh token (cũng set trong cookie HttpOnly)',
+    description: 'Refresh token dạng đục (opaque) dùng để lấy mã truy cập mới',
   })
   refreshToken: string;
 }
 
-/** Shape returned by profile endpoint. */
+/**
+ * DTO phản hồi thông tin hồ sơ người dùng hiện tại.
+ */
 export class ProfileResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -40,13 +45,13 @@ export class ProfileResponseDto {
 
   @ApiProperty({
     example: ['admin'],
-    description: 'Vai trò của nhân viên (rỗng đối với khách hàng)',
+    description: 'Danh sách các vai trò (Role) của nhân viên',
   })
   roles: string[];
 
   @ApiProperty({
     example: ['product.create'],
-    description: 'Quyền của nhân viên (rỗng đối với khách hàng)',
+    description: 'Danh sách các quyền (Permission) của nhân viên',
   })
   permissions: string[];
 }

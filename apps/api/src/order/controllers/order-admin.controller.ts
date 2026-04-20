@@ -21,6 +21,10 @@ import {
 } from '../dto';
 import { OrderAdminService } from '../services/order-admin.service';
 
+/**
+ * OrderAdminController: Tiếp nhận các yêu cầu quản lý đơn hàng từ phía nhân viên.
+ * Vai trò: Cung cấp các công cụ để liệt kê, xác nhận, tạo vận đơn và xử lý hủy đơn/thanh toán.
+ */
 @ApiTags('Orders (Admin)')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -30,6 +34,9 @@ import { OrderAdminService } from '../services/order-admin.service';
 export class OrderAdminController {
   constructor(private readonly orderAdminService: OrderAdminService) {}
 
+  /**
+   * Lấy toàn bộ đơn hàng của hệ thống kèm các bộ lọc tìm kiếm.
+   */
   @ApiOperation({ summary: 'Liệt kê tất cả đơn hàng (quản trị)' })
   @ApiOkResponse({ type: OrderAdminListResponseDto })
   @Get()
@@ -37,14 +44,20 @@ export class OrderAdminController {
     return this.orderAdminService.findAllOrders(query);
   }
 
+  /**
+   * Xem chi tiết đầy đủ của một đơn hàng bao gồm cả thông tin khách hàng và lịch sử.
+   */
   @ApiOperation({ summary: 'Lấy chi tiết đơn hàng (quản trị)' })
   @ApiOkResponse({ type: OrderAdminDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
   @Get(':orderCode')
   async findByCode(@Param('orderCode') orderCode: string): Promise<OrderAdminDetailResponseDto> {
-    return this.orderAdminService.findOrderByCode(orderCode);
+    return await this.orderAdminService.findOrderByCode(orderCode);
   }
 
+  /**
+   * Xác nhận đơn hàng, cho phép cập nhật kích thước kiện hàng và tự động tạo mã vận đơn GHN.
+   */
   @ApiOperation({ summary: 'Xác nhận đơn hàng và tạo vận đơn GHN' })
   @ApiOkResponse({ type: OrderAdminDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép xác nhận.' })
@@ -63,6 +76,9 @@ export class OrderAdminController {
     );
   }
 
+  /**
+   * Hủy đơn hàng từ phía quản trị viên.
+   */
   @ApiOperation({ summary: 'Hủy đơn hàng (admin)' })
   @ApiOkResponse({ type: OrderAdminDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép hủy.' })
@@ -76,6 +92,9 @@ export class OrderAdminController {
     return this.orderAdminService.cancelOrder(orderCode, buildAuditRequestContext(request, user));
   }
 
+  /**
+   * Xác nhận thủ công việc khách đã chuyển khoản thành công.
+   */
   @ApiOperation({ summary: 'Xác nhận thanh toán chuyển khoản' })
   @ApiOkResponse({ type: OrderAdminDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Đơn hàng không phải chuyển khoản hoặc đã xác nhận.' })

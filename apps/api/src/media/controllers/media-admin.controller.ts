@@ -51,6 +51,8 @@ function isAllowedMimeType(mimeType: string): boolean {
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @Controller('admin/media')
+// Controller cung cấp các endpoint quản trị media dành cho nhân viên/admin
+// Bao gồm các thao tác: liệt kê, upload, tạo thư mục, di chuyển và xóa file/thư mục
 export class MediaAdminController {
   constructor(private readonly mediaService: MediaService) {}
 
@@ -82,6 +84,7 @@ export class MediaAdminController {
     }),
   )
   @Post('upload')
+  // Endpoint tiếp nhận file từ request multipart/form-data và chuyển tiếp sang MediaService
   async uploadFiles(
     @UploadedFiles() files: Express.Multer.File[],
     @Body() dto: UploadMediaDto,
@@ -115,6 +118,7 @@ export class MediaAdminController {
   @ApiOperation({ summary: 'Tạo thư mục mới (ảo)' })
   @ApiOkResponse({ description: 'Thư mục đã tạo.' })
   @Post('folders')
+  // Tạo thư mục logic trong hệ thống để tổ chức lưu trữ media
   async createFolder(
     @Body() dto: CreateFolderDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -127,6 +131,7 @@ export class MediaAdminController {
   @ApiOkResponse({ description: 'Kết quả xóa thư mục.' })
   @Delete('folders')
   @HttpCode(HttpStatus.OK)
+  // Xóa thư mục sẽ xóa toàn bộ file bên trong trên R2 và DB
   async deleteFolder(
     @Query('path') path: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -139,6 +144,7 @@ export class MediaAdminController {
   @ApiOkResponse({ description: 'File đã được di chuyển.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Patch(':id/move')
+  // Cập nhật thư mục cha của một file media
   async moveMedia(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: MoveMediaDto,
@@ -153,6 +159,7 @@ export class MediaAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  // Xóa một file media đơn lẻ
   async deleteMedia(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

@@ -21,7 +21,6 @@ import { LocationModule } from './location/location.module';
 import { MediaModule } from './media/media.module';
 import { OrderModule } from './order/order.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { ProductModule } from './product/product.module';
 import { ProfileModule } from './profile/profile.module';
 import { R2Module } from './r2/r2.module';
 import { RbacModule } from './rbac/rbac.module';
@@ -32,9 +31,16 @@ import { ShippingModule } from './shipping/shipping.module';
 import { SizeModule } from './size/size.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 
+/**
+ * Module gốc (Root Module) của ứng dụng.
+ * Chịu trách nhiệm khởi tạo cấu hình toàn cục, kết nối cơ sở dữ liệu (Prisma, Redis),
+ * và đăng ký tất cả các Module chức năng trong hệ thống.
+ */
 @Module({
   imports: [
+    // Cấu hình biến môi trường toàn cục và validate dữ liệu đầu vào
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    // Cấu hình hàng đợi (Queue) sử dụng Redis thông qua BullMQ
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -47,13 +53,16 @@ import { WishlistModule } from './wishlist/wishlist.module';
         },
       }),
     }),
+    // Cấu hình giới hạn tần suất yêu cầu (Rate Limiting)
     ThrottlerModule.forRoot({
       throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
     }),
+    // Đăng ký các Module nền tảng (Core, Database, Cache)
     CoreModule,
     PrismaModule,
     RedisModule,
     CommonModule,
+    // Đăng ký các Module chức năng nghiệp vụ
     AuditLogModule,
     AuthModule,
     CartModule,
@@ -78,7 +87,9 @@ import { WishlistModule } from './wishlist/wishlist.module';
   controllers: [AppController],
   providers: [
     AppService,
+    // Sử dụng Redis để lưu trữ dữ liệu giới hạn tần suất (Rate Limit)
     { provide: ThrottlerStorage, useClass: ThrottlerStorageRedis },
+    // Áp dụng Rate Limit cho toàn bộ ứng dụng
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

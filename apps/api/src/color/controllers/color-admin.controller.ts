@@ -37,6 +37,10 @@ import {
 } from '../dto';
 import { ColorService } from '../services/color.service';
 
+/**
+ * ColorAdminController: Endpoint quản trị màu sắc.
+ * Vai trò: Cho phép nhân viên quản lý (CRUD) danh mục màu sắc của hệ thống.
+ */
 @ApiTags('Colors')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -46,6 +50,9 @@ import { ColorService } from '../services/color.service';
 export class ColorAdminController {
   constructor(private readonly colorService: ColorService) {}
 
+  /**
+   * Lấy danh sách màu sắc có phân trang và tìm kiếm.
+   */
   @ApiOperation({
     summary: 'Liệt kê màu sắc (quản trị)',
     description: 'Phân trang, tìm theo tên hoặc HEX, sắp xếp.',
@@ -62,6 +69,9 @@ export class ColorAdminController {
     });
   }
 
+  /**
+   * Tạo màu sắc mới.
+   */
   @ApiOperation({ summary: 'Tạo màu mới' })
   @ApiCreatedResponse({ type: ColorAdminResponseDto })
   @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
@@ -74,6 +84,9 @@ export class ColorAdminController {
     return this.colorService.create(dto, buildAuditRequestContext(request, user));
   }
 
+  /**
+   * Cập nhật thông tin màu sắc.
+   */
   @ApiOperation({ summary: 'Cập nhật màu' })
   @ApiOkResponse({ type: ColorAdminResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })
@@ -88,6 +101,9 @@ export class ColorAdminController {
     return this.colorService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
+  /**
+   * Xóa màu sắc khỏi hệ thống.
+   */
   @ApiOperation({ summary: 'Xóa màu' })
   @ApiNoContentResponse({ description: 'Xóa màu thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })

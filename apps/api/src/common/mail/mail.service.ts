@@ -14,6 +14,10 @@ export interface SendMailOptions {
   html: string;
 }
 
+/**
+ * Service xử lý logic gửi email trong ứng dụng.
+ * Hỗ trợ gửi mail qua SMTP và hàng đợi (queue) BullMQ để xử lý bất đồng bộ.
+ */
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -28,12 +32,16 @@ export class MailService {
     this.transporter = this.buildTransporter();
   }
 
-  /** Returns true when a real SMTP transport is configured. */
+  /**
+   * Kiểm tra xem cấu hình SMTP đã sẵn sàng để gửi mail thật chưa.
+   */
   isConfigured(): boolean {
     return this.transporter !== null && this.sender !== null;
   }
 
-  /** Render a template and enqueue an email. */
+  /**
+   * Render nội dung email từ template và đưa vào hàng đợi để gửi đi.
+   */
   async sendMailWithTemplate(
     to: string,
     templateKey: keyof typeof MAIL_TEMPLATES,
@@ -44,8 +52,8 @@ export class MailService {
   }
 
   /**
-   * Enqueue an email to be sent asynchronously via BullMQ.
-   * Falls back to logging in dev mode (no SMTP configured).
+   * Thêm email vào hàng đợi BullMQ để gửi bất đồng bộ.
+   * Nếu không có cấu hình SMTP, email sẽ chỉ được ghi log (dùng cho môi trường dev).
    */
   async sendMail(options: SendMailOptions): Promise<void> {
     if (!this.isConfigured()) {
@@ -64,8 +72,8 @@ export class MailService {
   }
 
   /**
-   * Send an email directly (called by the queue processor).
-   * Should not be used outside of MailProcessor.
+   * Phương thức gửi mail trực tiếp qua transporter.
+   * Được gọi bởi MailProcessor khi xử lý job từ hàng đợi.
    */
   async sendMailDirect(options: SendMailOptions): Promise<void> {
     if (!this.transporter || !this.sender) {
@@ -84,6 +92,9 @@ export class MailService {
     });
   }
 
+  /**
+   * Khởi tạo đối tượng Transporter của nodemailer dựa trên cấu hình môi trường.
+   */
   private buildTransporter(): Transporter | null {
     const host = this.config.get<string>('SMTP_HOST') ?? null;
     const rawPort = Number(this.config.get<string | number>('SMTP_PORT') ?? 587);

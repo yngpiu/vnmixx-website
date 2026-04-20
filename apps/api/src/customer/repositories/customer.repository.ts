@@ -47,10 +47,17 @@ const DETAIL_SELECT = {
   _count: { select: { addresses: true } },
 } as const;
 
+/**
+ * Repository xử lý các thao tác trực tiếp với cơ sở dữ liệu cho thực thể Khách hàng.
+ * Bao gồm các truy vấn phức tạp như phân trang, tìm kiếm toàn văn và xử lý logic xóa mềm.
+ */
 @Injectable()
 export class CustomerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Xây dựng đối tượng sắp xếp dựa trên tham số đầu vào.
+   */
   private buildListOrderBy(
     sortBy?: string,
     sortOrder?: 'asc' | 'desc',
@@ -72,6 +79,10 @@ export class CustomerRepository {
     }
   }
 
+  /**
+   * Lấy danh sách khách hàng có lọc và phân trang.
+   * Sử dụng transaction để đồng bộ việc đếm tổng số bản ghi và lấy dữ liệu trang hiện tại.
+   */
   async findList(params: {
     page: number;
     limit: number;
@@ -112,6 +123,9 @@ export class CustomerRepository {
     };
   }
 
+  /**
+   * Tìm khách hàng theo ID kèm theo các thông tin chi tiết.
+   */
   async findById(id: number): Promise<CustomerDetailView | null> {
     return this.prisma.customer.findUnique({
       where: { id },
@@ -119,6 +133,9 @@ export class CustomerRepository {
     }) as unknown as Promise<CustomerDetailView | null>;
   }
 
+  /**
+   * Cập nhật dữ liệu khách hàng. Chỉ cập nhật nếu khách hàng chưa bị xóa vĩnh viễn.
+   */
   async update(id: number, data: Prisma.CustomerUpdateInput): Promise<CustomerDetailView | null> {
     const { count } = await this.prisma.customer.updateMany({
       where: { id, deletedAt: null },
@@ -128,6 +145,10 @@ export class CustomerRepository {
     return this.findById(id);
   }
 
+  /**
+   * Thực hiện xóa mềm khách hàng.
+   * Đồng thời vô hiệu hóa trạng thái hoạt động của tài khoản.
+   */
   async softDelete(id: number): Promise<boolean> {
     const { count } = await this.prisma.customer.updateMany({
       where: { id, deletedAt: null },
@@ -136,6 +157,10 @@ export class CustomerRepository {
     return count > 0;
   }
 
+  /**
+   * Khôi phục tài khoản khách hàng từ trạng thái xóa mềm.
+   * Đồng thời kích hoạt lại trạng thái hoạt động của tài khoản.
+   */
   async restore(id: number): Promise<CustomerDetailView | null> {
     const { count } = await this.prisma.customer.updateMany({
       where: { id, NOT: { deletedAt: null } },

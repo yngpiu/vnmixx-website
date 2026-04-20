@@ -25,6 +25,10 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import { WishlistItemResponseDto } from '../dto';
 import { WishlistService } from '../services/wishlist.service';
 
+/**
+ * WishlistController: Cung cấp các endpoint quản lý danh sách yêu thích của khách hàng.
+ * Vai trò: Tiếp nhận yêu cầu từ client và điều phối đến WishlistService.
+ */
 @ApiTags('Wishlist')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -34,6 +38,9 @@ import { WishlistService } from '../services/wishlist.service';
 export class WishlistController {
   constructor(private readonly wishlistService: WishlistService) {}
 
+  /**
+   * Lấy danh sách yêu thích của khách hàng đang đăng nhập.
+   */
   @ApiOperation({ summary: 'Lấy danh sách yêu thích của khách hàng hiện tại' })
   @ApiOkResponse({ type: [WishlistItemResponseDto] })
   @Get()
@@ -41,6 +48,9 @@ export class WishlistController {
     return this.wishlistService.findAll(user.id);
   }
 
+  /**
+   * Thêm một sản phẩm vào danh sách yêu thích.
+   */
   @ApiOperation({ summary: 'Thêm sản phẩm vào danh sách yêu thích' })
   @ApiCreatedResponse({ description: 'Thêm vào danh sách yêu thích thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
@@ -54,6 +64,9 @@ export class WishlistController {
     return this.wishlistService.add(user.id, productId);
   }
 
+  /**
+   * Xoá một sản phẩm khỏi danh sách yêu thích.
+   */
   @ApiOperation({ summary: 'Xoá sản phẩm khỏi danh sách yêu thích' })
   @ApiNoContentResponse({ description: 'Xoá khỏi danh sách yêu thích thành công.' })
   @ApiNotFoundResponse({ description: 'Sản phẩm không có trong danh sách yêu thích.' })

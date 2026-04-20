@@ -275,6 +275,9 @@ export class CategoryRepository {
     });
   }
 
+  /**
+   * Kiểm tra xem danh mục hiện tại có bất kỳ danh mục con nào đang hoạt động hay không.
+   */
   async hasActiveChildren(id: number): Promise<boolean> {
     const count = await this.prisma.category.count({
       where: { parentId: id, deletedAt: null, isActive: true },

@@ -30,6 +30,11 @@ import { ProductCacheService } from './product-cache.service';
 import { ProductImageService } from './product-image.service';
 import { ProductVariantService } from './product-variant.service';
 
+/**
+ * ProductService: Quản lý logic cốt lõi của sản phẩm.
+ * Bao gồm: Tạo/cập nhật thông tin cơ bản, quản lý trạng thái, và điều phối các thành phần liên quan (biến thể, hình ảnh).
+ * Tích hợp Cache (Redis) để tối ưu hiệu năng và Audit Log để theo dõi lịch sử thay đổi.
+ */
 @Injectable()
 export class ProductService {
   constructor(
@@ -43,6 +48,10 @@ export class ProductService {
 
   // ─── Public ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Truy vấn danh sách sản phẩm cho khách hàng.
+   * Sử dụng Cache để giảm tải cho Database.
+   */
   findPublicList(
     query: ListProductsQueryDto,
   ): Promise<
@@ -66,6 +75,9 @@ export class ProductService {
     );
   }
 
+  /**
+   * Lấy chi tiết sản phẩm qua Slug cho khách hàng.
+   */
   async findBySlug(slug: string) {
     const cached = await this.redis.getOrSet(
       CACHE_KEYS.PRODUCT_SLUG(slug),
@@ -81,6 +93,10 @@ export class ProductService {
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
 
+  /**
+   * Truy vấn danh sách sản phẩm cho quản trị viên.
+   * Hỗ trợ lọc theo trạng thái (isActive, isSoftDeleted) và phân trang.
+   */
   async findAdminList(query: ListAdminProductsQueryDto) {
     const result = await this.repository.findAdminList({
       page: query.page ?? 1,
@@ -117,6 +133,14 @@ export class ProductService {
     return this.transformAdminDetail(product);
   }
 
+  /**
+   * Logic tạo sản phẩm mới:
+   * 1. Kiểm tra danh mục (phải là danh mục lá).
+   * 2. Kiểm tra tính hợp lệ của Màu sắc và Kích thước.
+   * 3. Validate tổ hợp biến thể và tính duy nhất của SKU.
+   * 4. Tự động xác định ảnh đại diện (thumbnail) nếu không được cung cấp.
+   * 5. Lưu DB và ghi Audit Log.
+   */
   async create(dto: CreateProductDto, auditContext: AuditRequestContext = {}) {
     try {
       const categoryIds = this.resolveProductCategoryIdsInput(dto.categoryIds, dto.categoryId);
@@ -189,6 +213,10 @@ export class ProductService {
     }
   }
 
+  /**
+   * Cập nhật thông tin cơ bản của sản phẩm.
+   * Xử lý đồng bộ danh mục và xóa Cache khi thông tin thay đổi.
+   */
   async update(id: number, dto: UpdateProductDto, auditContext: AuditRequestContext = {}) {
     let beforeData: ProductAdminDetailView | undefined;
     try {
@@ -246,6 +274,9 @@ export class ProductService {
     }
   }
 
+  /**
+   * Xóa mềm sản phẩm (Soft Delete) và xóa Cache liên quan.
+   */
   async softDelete(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const beforeData = await this.findAdminByIdOrFail(id);
     try {
@@ -309,6 +340,7 @@ export class ProductService {
   }
 
   // ─── Variants Delegation ──────────────────────────────────────────────────
+  // Các phương thức dưới đây ủy quyền (delegate) xử lý cho ProductVariantService
 
   async createVariant(
     productId: number,
@@ -339,6 +371,7 @@ export class ProductService {
   }
 
   // ─── Images Delegation ────────────────────────────────────────────────────
+  // Các phương thức dưới đây ủy quyền xử lý cho ProductImageService
 
   async createImage(
     productId: number,
@@ -430,6 +463,10 @@ export class ProductService {
     return [];
   }
 
+  /**
+   * Đảm bảo danh mục tồn tại và là danh mục lá (không có danh mục con).
+   * Ràng buộc này đảm bảo cấu trúc dữ liệu chính xác cho việc gán sản phẩm.
+   */
   private async assertCategoriesExistAndLeaf(categoryIds: number[]): Promise<void> {
     for (const cid of categoryIds) {
       const exists = await this.repository.categoryExists(cid);

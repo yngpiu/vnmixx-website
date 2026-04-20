@@ -2,6 +2,9 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { AuditLogStatus, type Gender } from 'generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import type { ChangePasswordDto } from '../../auth/dto/change-password.dto';
+import { CustomerAuthService } from '../../auth/services/customer-auth.service';
+import { EmployeeAuthService } from '../../auth/services/employee-auth.service';
 import type { UpdateCustomerProfileDto } from '../dto/update-customer-profile.dto';
 import type { UpdateEmployeeProfileDto } from '../dto/update-employee-profile.dto';
 import {
@@ -13,20 +16,32 @@ import {
   type EmployeeProfileView,
 } from '../repositories/employee.repository';
 
+/**
+ * Service quản lý hồ sơ người dùng (Profile).
+ * Xử lý logic xem/cập nhật thông tin cá nhân và đổi mật khẩu cho cả Khách hàng và Nhân viên.
+ */
 @Injectable()
 export class ProfileService {
   constructor(
     private readonly customerRepo: CustomerProfileRepository,
     private readonly employeeRepo: EmployeeProfileRepository,
     private readonly auditLogService: AuditLogService,
+    private readonly customerAuthService: CustomerAuthService,
+    private readonly employeeAuthService: EmployeeAuthService,
   ) {}
 
+  /**
+   * Lấy thông tin hồ sơ của khách hàng theo ID.
+   */
   async getCustomerProfile(customerId: number): Promise<CustomerProfileView> {
     const profile = await this.customerRepo.findById(customerId);
     if (!profile) throw new NotFoundException('Không tìm thấy khách hàng');
     return profile;
   }
 
+  /**
+   * Cập nhật thông tin cá nhân của khách hàng (Họ tên, ngày sinh, giới tính, avatar).
+   */
   async updateCustomerProfile(
     customerId: number,
     dto: UpdateCustomerProfileDto,
@@ -52,12 +67,27 @@ export class ProfileService {
     return updated;
   }
 
+  /**
+   * Đổi mật khẩu cho khách hàng hiện tại.
+   * Logic: Ủy thác cho CustomerAuthService để xác thực mật khẩu cũ và hash mật khẩu mới.
+   */
+  async changeCustomerPassword(customerId: number, dto: ChangePasswordDto): Promise<void> {
+    await this.customerAuthService.changePassword(customerId, dto);
+  }
+
+  /**
+   * Lấy thông tin hồ sơ của nhân viên theo ID.
+   */
   async getEmployeeProfile(employeeId: number): Promise<EmployeeProfileView> {
     const profile = await this.employeeRepo.findById(employeeId);
     if (!profile) throw new NotFoundException('Không tìm thấy nhân viên');
     return profile;
   }
 
+  /**
+   * Cập nhật thông tin cá nhân của nhân viên (Họ tên, số điện thoại, avatar).
+   * Có ghi Audit Log để theo dõi lịch sử thay đổi thông tin nhân viên.
+   */
   async updateEmployeeProfile(
     employeeId: number,
     dto: UpdateEmployeeProfileDto,
@@ -77,6 +107,7 @@ export class ProfileService {
 
       const updated = await this.employeeRepo.update(employeeId, data);
       if (!updated) throw new NotFoundException('Không tìm thấy nhân viên');
+
       await this.auditLogService.write({
         ...auditContext,
         action: 'profile.employee.update',
@@ -100,5 +131,13 @@ export class ProfileService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Đổi mật khẩu cho nhân viên hiện tại.
+   * Logic: Ủy thác cho EmployeeAuthService để xử lý xác thực và cập nhật.
+   */
+  async changeEmployeePassword(employeeId: number, dto: ChangePasswordDto): Promise<void> {
+    await this.employeeAuthService.changePassword(employeeId, dto);
   }
 }

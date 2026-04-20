@@ -2,6 +2,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
+/**
+ * ListMyOrdersQueryDto: DTO chứa các tham số truy vấn danh sách đơn hàng của khách hàng.
+ */
 export class ListMyOrdersQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
   @Type(() => Number)
@@ -46,6 +49,10 @@ export class ListMyOrdersQueryDto {
   status?: string;
 }
 
+/**
+ * ListAdminOrdersQueryDto: DTO chứa các tham số truy vấn danh sách đơn hàng phục vụ quản trị.
+ * Hỗ trợ lọc theo trạng thái đơn, trạng thái thanh toán, từ khóa tìm kiếm và ID khách hàng.
+ */
 export class ListAdminOrdersQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
   @Type(() => Number)

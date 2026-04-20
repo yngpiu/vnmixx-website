@@ -16,10 +16,18 @@ export interface EmployeeAuthResult {
 }
 
 @Injectable()
+/**
+ * Service xử lý logic xác thực cho Nhân viên (Employee).
+ * Quản lý quy trình đăng nhập và đổi mật khẩu cho các tài khoản quản trị/nhân viên.
+ */
 export class EmployeeAuthService {
   constructor(private readonly employeeRepo: EmployeeRepository) {}
 
-  /** Authenticate an employee; roles/permissions resolve on each JWT-validated request. */
+  /**
+   * Đăng nhập nhân viên.
+   * Logic: Kiểm tra email tồn tại -> Kiểm tra trạng thái ACTIVE -> So khớp mật khẩu băm.
+   * Lưu ý: Vai trò (roles) và quyền (permissions) sẽ được xử lý qua JWT Guard ở mỗi request.
+   */
   async loginEmployee(dto: LoginDto): Promise<EmployeeAuthResult> {
     const employee = await this.employeeRepo.findByEmail(dto.email);
     if (!employee || employee.deletedAt) {
@@ -37,6 +45,10 @@ export class EmployeeAuthService {
     };
   }
 
+  /**
+   * Đổi mật khẩu cho nhân viên.
+   * Logic: Xác thực mật khẩu cũ -> Hash mật khẩu mới -> Cập nhật DB.
+   */
   async changePassword(employeeId: number, dto: ChangePasswordDto): Promise<void> {
     const currentHash = await this.employeeRepo.findHashedPasswordById(employeeId);
     if (!currentHash) {

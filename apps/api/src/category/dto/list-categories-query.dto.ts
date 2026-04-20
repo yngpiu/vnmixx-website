@@ -3,6 +3,9 @@ import { IsBoolean, IsOptional } from 'class-validator';
 
 import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
 
+/**
+ * ListCategoriesQueryDto: DTO xử lý các tham số lọc khi liệt kê danh mục (Admin).
+ */
 export class ListCategoriesQueryDto {
   @ApiPropertyOptional({
     example: true,

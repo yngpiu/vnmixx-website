@@ -1,5 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+/**
+ * ColorResponseDto: DTO phản hồi thông tin màu sắc.
+ * Vai trò: Định nghĩa cấu trúc dữ liệu trả về cho client.
+ */
 export class ColorResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -11,6 +15,10 @@ export class ColorResponseDto {
   hexCode: string;
 }
 
+/**
+ * ColorAdminResponseDto: DTO phản hồi thông tin màu sắc cho Admin.
+ * Bao gồm cả thông tin thời gian khởi tạo và cập nhật.
+ */
 export class ColorAdminResponseDto extends ColorResponseDto {
   @ApiProperty()
   createdAt: Date;

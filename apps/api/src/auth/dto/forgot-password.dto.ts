@@ -10,6 +10,9 @@ import {
   MinLength,
 } from 'class-validator';
 
+/**
+ * DTO yêu cầu gửi mã OTP quên mật khẩu qua email.
+ */
 export class ForgotPasswordDto {
   @ApiProperty({
     example: 'customer@example.com',
@@ -23,6 +26,9 @@ export class ForgotPasswordDto {
   email: string;
 }
 
+/**
+ * DTO để xác thực mã OTP quên mật khẩu.
+ */
 export class ForgotPasswordVerifyOtpDto {
   @ApiProperty({
     example: 'customer@example.com',
@@ -41,6 +47,10 @@ export class ForgotPasswordVerifyOtpDto {
   otp: string;
 }
 
+/**
+ * DTO để đặt lại mật khẩu mới sau khi đã xác thực OTP thành công.
+ * resetToken là mã bảo mật dùng một lần nhận được từ bước xác thực OTP.
+ */
 export class ResetPasswordDto {
   @ApiProperty({
     example: 'customer@example.com',
@@ -69,6 +79,9 @@ export class ResetPasswordDto {
   newPassword: string;
 }
 
+/**
+ * DTO phản hồi sau khi yêu cầu gửi OTP quên mật khẩu.
+ */
 export class ForgotPasswordResponseDto {
   @ApiProperty({
     example: 'Mã đặt lại mật khẩu đã được gửi tới email của bạn.',
@@ -88,6 +101,9 @@ export class ForgotPasswordResponseDto {
   resendAfter: number;
 }
 
+/**
+ * DTO chứa mã resetToken trả về sau khi xác thực OTP thành công.
+ */
 export class ResetTokenResponseDto {
   @ApiProperty({
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',

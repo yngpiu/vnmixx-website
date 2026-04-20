@@ -213,6 +213,10 @@ export class ProductAdminListResponseDto {
   meta: PaginationMetaDto;
 }
 
+/**
+ * ProductAdminDetailResponseDto: Chi tiết sản phẩm đầy đủ dành cho admin.
+ * Bao gồm toàn bộ thông tin quản trị: SKU, giá nhập, tồn kho chi tiết, trạng thái xóa mềm.
+ */
 export class ProductAdminDetailResponseDto {
   @ApiProperty({ example: 1 })
   id: number;

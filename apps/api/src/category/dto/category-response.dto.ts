@@ -68,6 +68,9 @@ export class CategoryTreeNodeDto {
   children: CategoryTreeNodeDto[];
 }
 
+/**
+ * CategoryDetailDto: Thông tin chi tiết danh mục kèm theo các danh mục con trực tiếp.
+ */
 export class CategoryDetailDto extends CategoryResponseDto {
   @ApiProperty({ type: () => [CategoryTreeNodeDto], description: 'Danh mục con trực tiếp' })
   children: CategoryTreeNodeDto[];

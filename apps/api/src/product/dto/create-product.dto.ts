@@ -70,6 +70,10 @@ export class CreateProductImageDto {
   sortOrder?: number;
 }
 
+/**
+ * CreateProductDto: DTO chính để tạo một sản phẩm mới hoàn chỉnh.
+ * Hỗ trợ tạo đồng thời thông tin cơ bản, danh sách biến thể, hình ảnh và gán danh mục.
+ */
 export class CreateProductDto {
   @ApiProperty({ example: 'Áo Basic Tee', maxLength: 255 })
   @IsString({ message: 'Tên sản phẩm phải là chuỗi ký tự' })

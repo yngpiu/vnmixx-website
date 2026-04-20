@@ -158,10 +158,18 @@ const ORDER_ADMIN_DETAIL_SELECT = {
 
 // ─── Repository ──────────────────────────────────────────
 
+/**
+ * OrderRepository: Lớp thao tác cơ sở dữ liệu chuyên biệt cho đơn hàng.
+ * Vai trò: Thực hiện các truy vấn phức tạp, bao gồm lấy chi tiết đơn hàng kèm lịch sử trạng thái và thông tin thanh toán.
+ */
 @Injectable()
 export class OrderRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Sinh mã đơn hàng duy nhất theo format: VNM + YYMMDD + 5 ký tự ngẫu nhiên.
+   * Ví dụ: VNM260410ABCDE.
+   */
   async generateOrderCode(): Promise<string> {
     const now = new Date();
     const yy = String(now.getFullYear()).slice(2);
@@ -180,6 +188,9 @@ export class OrderRepository {
     return code!;
   }
 
+  /**
+   * Lấy danh sách đơn hàng của một khách hàng có phân trang.
+   */
   async findByCustomerId(
     customerId: number,
     params: { page: number; limit: number; status?: OrderStatus },
@@ -201,6 +212,9 @@ export class OrderRepository {
     return { data, total };
   }
 
+  /**
+   * Tìm chi tiết đơn hàng theo mã (orderCode), có thể lọc theo customerId (dùng cho khách).
+   */
   async findByOrderCode(orderCode: string, customerId?: number): Promise<OrderDetailView | null> {
     const where: Prisma.OrderWhereInput = { orderCode };
     if (customerId) where.customerId = customerId;
@@ -211,6 +225,9 @@ export class OrderRepository {
     }) as Promise<OrderDetailView | null>;
   }
 
+  /**
+   * Tìm chi tiết đơn hàng theo mã phục vụ giao diện quản trị (Admin).
+   */
   async findAdminByOrderCode(orderCode: string): Promise<OrderAdminDetailView | null> {
     return this.prisma.order.findUnique({
       where: { orderCode },
@@ -218,6 +235,9 @@ export class OrderRepository {
     }) as Promise<OrderAdminDetailView | null>;
   }
 
+  /**
+   * Lấy danh sách đơn hàng toàn hệ thống phục vụ quản trị, hỗ trợ tìm kiếm theo nhiều tiêu chí.
+   */
   async findAllOrders(params: {
     page: number;
     limit: number;

@@ -26,10 +26,17 @@ const SIZE_ADMIN_SELECT = {
   updatedAt: true,
 } as const;
 
+/**
+ * SizeRepository: Thao tác cơ sở dữ liệu cho thực thể kích thước.
+ * Vai trò: Thực hiện các truy vấn CRUD trực tiếp thông qua Prisma.
+ */
 @Injectable()
 export class SizeRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Xây dựng đối tượng sắp xếp cho danh sách kích thước.
+   */
   private buildListOrderBy(
     sortBy?: string,
     sortOrder?: 'asc' | 'desc',
@@ -47,6 +54,9 @@ export class SizeRepository {
     }
   }
 
+  /**
+   * Tìm kiếm và phân trang kích thước trong DB.
+   */
   async findList(params: {
     page: number;
     limit: number;
@@ -74,6 +84,9 @@ export class SizeRepository {
     };
   }
 
+  /**
+   * Lấy danh sách kích thước cho giao diện khách hàng.
+   */
   findAllPublic(): Promise<SizeView[]> {
     return this.prisma.size.findMany({
       orderBy: { sortOrder: 'asc' },
@@ -81,6 +94,9 @@ export class SizeRepository {
     });
   }
 
+  /**
+   * Lấy tất cả kích thước (Admin).
+   */
   findAll(): Promise<SizeAdminView[]> {
     return this.prisma.size.findMany({
       orderBy: { sortOrder: 'asc' },
@@ -88,6 +104,9 @@ export class SizeRepository {
     });
   }
 
+  /**
+   * Tìm kích thước theo ID.
+   */
   findById(id: number): Promise<SizeAdminView | null> {
     return this.prisma.size.findUnique({
       where: { id },
@@ -95,6 +114,9 @@ export class SizeRepository {
     });
   }
 
+  /**
+   * Thêm kích thước mới vào DB.
+   */
   create(data: { label: string; sortOrder: number }): Promise<SizeAdminView> {
     return this.prisma.size.create({
       data,
@@ -102,6 +124,9 @@ export class SizeRepository {
     });
   }
 
+  /**
+   * Cập nhật kích thước trong DB.
+   */
   update(id: number, data: { label?: string; sortOrder?: number }): Promise<SizeAdminView> {
     return this.prisma.size.update({
       where: { id },
@@ -110,10 +135,16 @@ export class SizeRepository {
     });
   }
 
+  /**
+   * Xóa kích thước khỏi DB.
+   */
   async delete(id: number): Promise<void> {
     await this.prisma.size.delete({ where: { id } });
   }
 
+  /**
+   * Kiểm tra kích thước có đang được sử dụng bởi biến thể sản phẩm nào không.
+   */
   async hasVariants(id: number): Promise<boolean> {
     const count = await this.prisma.productVariant.count({ where: { sizeId: id } });
     return count > 0;

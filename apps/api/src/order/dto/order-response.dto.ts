@@ -18,6 +18,9 @@ class PaginationMetaDto {
 
 // ─── Nested DTOs ─────────────────────────────────────────
 
+/**
+ * OrderItemDto: DTO chi tiết từng sản phẩm trong đơn hàng.
+ */
 class OrderItemDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -44,6 +47,9 @@ class OrderItemDto {
   subtotal: number;
 }
 
+/**
+ * PaymentDto: DTO chi tiết thông tin thanh toán của đơn hàng.
+ */
 class PaymentDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -64,6 +70,9 @@ class PaymentDto {
   paidAt: Date | null;
 }
 
+/**
+ * StatusHistoryDto: DTO ghi lại các mốc thay đổi trạng thái của đơn hàng.
+ */
 class StatusHistoryDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -75,6 +84,9 @@ class StatusHistoryDto {
   createdAt: Date;
 }
 
+/**
+ * CustomerBriefDto: DTO chứa thông tin cơ bản của khách hàng chủ đơn.
+ */
 class CustomerBriefDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -89,8 +101,9 @@ class CustomerBriefDto {
   phoneNumber: string;
 }
 
-// ─── List Item ───────────────────────────────────────────
-
+/**
+ * OrderListItemResponseDto: DTO tóm tắt thông tin đơn hàng trong danh sách.
+ */
 export class OrderListItemResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -123,8 +136,9 @@ export class OrderListItemResponseDto {
   items: OrderItemDto[];
 }
 
-// ─── Detail ──────────────────────────────────────────────
-
+/**
+ * OrderDetailResponseDto: DTO chi tiết đầy đủ một đơn hàng dành cho khách hàng.
+ */
 export class OrderDetailResponseDto extends OrderListItemResponseDto {
   @ApiProperty({ example: 'Nguyễn Văn A' })
   shippingFullName: string;
@@ -184,13 +198,17 @@ export class OrderDetailResponseDto extends OrderListItemResponseDto {
   statusHistories: StatusHistoryDto[];
 }
 
-// ─── Admin Detail ────────────────────────────────────────
-
+/**
+ * OrderAdminListItemResponseDto: DTO tóm tắt đơn hàng kèm thông tin khách hàng cho Admin.
+ */
 export class OrderAdminListItemResponseDto extends OrderListItemResponseDto {
   @ApiProperty({ type: CustomerBriefDto })
   customer: CustomerBriefDto;
 }
 
+/**
+ * OrderAdminDetailResponseDto: DTO chi tiết đầy đủ đơn hàng cho Admin.
+ */
 export class OrderAdminDetailResponseDto extends OrderDetailResponseDto {
   @ApiProperty({ example: 1 })
   customerId: number;
@@ -199,8 +217,9 @@ export class OrderAdminDetailResponseDto extends OrderDetailResponseDto {
   customer: CustomerBriefDto;
 }
 
-// ─── List Responses ──────────────────────────────────────
-
+/**
+ * OrderListResponseDto: DTO bọc danh sách đơn hàng và meta phân trang cho khách.
+ */
 export class OrderListResponseDto {
   @ApiProperty({ type: [OrderListItemResponseDto] })
   data: OrderListItemResponseDto[];
@@ -209,6 +228,9 @@ export class OrderListResponseDto {
   meta: PaginationMetaDto;
 }
 
+/**
+ * OrderAdminListResponseDto: DTO bọc danh sách đơn hàng và meta phân trang cho Admin.
+ */
 export class OrderAdminListResponseDto {
   @ApiProperty({ type: [OrderAdminListItemResponseDto] })
   data: OrderAdminListItemResponseDto[];

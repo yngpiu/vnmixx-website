@@ -1,3 +1,6 @@
+/**
+ * Repository quản lý truy vấn dữ liệu hồ sơ Khách hàng.
+ */
 import { Injectable } from '@nestjs/common';
 import type { Gender } from 'generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';

@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { HealthIndicatorResult, HealthIndicatorService } from '@nestjs/terminus';
 import { RedisService } from '../../redis/redis.service';
 
+/**
+ * Chỉ số kiểm tra trạng thái sức khỏe của Redis.
+ */
 @Injectable()
 export class RedisHealthIndicator {
   constructor(
@@ -9,6 +12,9 @@ export class RedisHealthIndicator {
     private readonly healthIndicatorService: HealthIndicatorService,
   ) {}
 
+  /**
+   * Thực hiện lệnh PING tới Redis để đảm bảo service còn sống.
+   */
   async isHealthy(key: string = 'redis'): Promise<HealthIndicatorResult> {
     try {
       const result = await this.redis.getClient().ping();

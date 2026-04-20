@@ -23,6 +23,10 @@ export type AnalyticsKpisRow = {
   aovCompleted: number | null;
 };
 
+/**
+ * AnalyticsService: Dịch vụ cung cấp các số liệu thống kê (KPIs) và báo cáo doanh thu.
+ * Vai trò: Tổng hợp dữ liệu từ đơn hàng, sản phẩm, đánh giá để phục vụ dashboard quản trị.
+ */
 @Injectable()
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -172,6 +176,12 @@ export class AnalyticsService {
     };
   }
 
+  /**
+   * Lấy KPIs quan trọng kèm theo so sánh với kỳ trước (Delta).
+   * GMV: Tổng giá trị đơn hàng được tạo (không bao gồm đơn hủy/trả).
+   * Completed Revenue: Doanh thu thực tế từ các đơn đã giao thành công.
+   * Logic: Tính toán số liệu cho kỳ hiện tại và kỳ trước đó có cùng số lượng ngày, sau đó tính % tăng trưởng.
+   */
   async getKpisWithDelta(dto: AnalyticsDateRangeQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const { fromUtc: prevFrom, toUtc: prevTo } = this.getComparisonPeriod(fromUtc, toUtc);
@@ -188,6 +198,10 @@ export class AnalyticsService {
     };
   }
 
+  /**
+   * Lấy tổng quan hoạt động kinh doanh.
+   * Bao gồm: KPIs chính, tỷ lệ trạng thái đơn hàng, cơ cấu phương thức thanh toán và các đơn hàng cần xử lý ngay.
+   */
   async getOverview(dto: AnalyticsDateRangeQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const createdInPeriod: Prisma.OrderWhereInput = {
@@ -373,6 +387,9 @@ export class AnalyticsService {
     };
   }
 
+  /**
+   * Thống kê Top sản phẩm bán chạy theo doanh thu.
+   */
   async getTopProducts(dto: AnalyticsDateRangeQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const rows = await this.prisma.orderItem.groupBy({
@@ -399,6 +416,10 @@ export class AnalyticsService {
     };
   }
 
+  /**
+   * Tổng hợp dữ liệu đánh giá (Reviews) trong kỳ.
+   * Tính toán điểm trung bình và phân bổ số lượng sao từ 1-5.
+   */
   async getReviewsSummary(dto: AnalyticsDateRangeQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const where: Prisma.ProductReviewWhereInput = {
@@ -474,6 +495,9 @@ export class AnalyticsService {
     };
   }
 
+  /**
+   * Biểu đồ thời gian (Timeseries) cho doanh thu và số lượng đơn hàng hàng ngày.
+   */
   async getTimeseries(dto: AnalyticsTimeseriesQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const dayKeys = this.eachUtcDay(fromUtc, toUtc);
@@ -545,6 +569,9 @@ export class AnalyticsService {
     };
   }
 
+  /**
+   * Top các thành phố có doanh thu và số lượng đơn hàng cao nhất.
+   */
   async getTopShippingCities(dto: AnalyticsTopCitiesQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const limit = dto.limit ?? 8;

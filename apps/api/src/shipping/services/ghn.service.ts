@@ -36,6 +36,8 @@ interface GhnResponse<T> {
 }
 
 @Injectable()
+// Service tích hợp trực tiếp với API của Giao Hàng Nhanh (GHN)
+// Xử lý các yêu cầu về tính phí, lấy dịch vụ, tính thời gian giao hàng và quản lý đơn hàng GHN
 export class GhnService {
   private readonly logger = new Logger(GhnService.name);
   private readonly apiUrl: string;
@@ -48,6 +50,7 @@ export class GhnService {
     this.shopId = this.config.getOrThrow<string>('GHN_SHOP_ID');
   }
 
+  // Lấy danh sách các dịch vụ vận chuyển khả dụng giữa hai địa điểm (Quận/Huyện)
   async getAvailableServices(
     fromDistrictId: number,
     toDistrictId: number,
@@ -63,6 +66,7 @@ export class GhnService {
     );
   }
 
+  // Gọi API GHN để tính toán phí vận chuyển dựa trên địa chỉ, dịch vụ và kích thước gói hàng
   async calculateFee(params: {
     fromDistrictId: number;
     fromWardCode: string;
@@ -93,6 +97,7 @@ export class GhnService {
     );
   }
 
+  // Dự đoán thời gian giao hàng dự kiến
   async getLeadtime(params: {
     fromDistrictId: number;
     fromWardCode: string;
@@ -113,6 +118,7 @@ export class GhnService {
     );
   }
 
+  // Tạo đơn hàng vận chuyển mới trên hệ thống GHN
   async createOrder(params: {
     toName: string;
     toPhone: string;
@@ -159,6 +165,7 @@ export class GhnService {
     );
   }
 
+  // Hủy đơn hàng đã tạo trên hệ thống GHN
   async cancelOrder(orderCodes: string[]): Promise<void> {
     await this.post<unknown>(
       '/switch-status/cancel',
@@ -167,6 +174,7 @@ export class GhnService {
     );
   }
 
+  // Lấy chi tiết trạng thái và lịch sử hành trình của đơn hàng
   async getOrderDetail(orderCode: string): Promise<GhnOrderDetailData> {
     return this.post<GhnOrderDetailData>(
       '/shipping-order/detail',
@@ -175,6 +183,7 @@ export class GhnService {
     );
   }
 
+  // Hàm helper thực hiện gửi request POST JSON đến GHN và xử lý lỗi phản hồi
   private async post<T>(
     path: string,
     body: Record<string, unknown>,

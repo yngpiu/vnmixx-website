@@ -31,12 +31,21 @@ export interface AuditLogWriteInput {
   errorMessage?: string;
 }
 
+/**
+ * AuditLogService: Dịch vụ ghi nhật ký hoạt động của nhân viên trên hệ thống.
+ * Vai trò: Lưu vết mọi thay đổi quan trọng để phục vụ kiểm tra và bảo mật.
+ */
 @Injectable()
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
   constructor(private readonly auditLogRepository: AuditLogRepository) {}
 
+  /**
+   * Ghi một bản ghi nhật ký mới.
+   * Logic: Tự động lọc các thông tin nhạy cảm (password, token) trước khi lưu vào DB.
+   * @param input Thông tin hoạt động cần ghi lại.
+   */
   async write(input: AuditLogWriteInput): Promise<void> {
     try {
       await this.auditLogRepository.create({
@@ -59,12 +68,18 @@ export class AuditLogService {
     }
   }
 
+  /**
+   * Lấy danh sách nhật ký hoạt động có phân trang và bộ lọc.
+   */
   async findList(
     input: ListAuditLogsInput,
   ): Promise<PaginatedAuditLogsResult<AuditLogListItemView>> {
     return this.auditLogRepository.findList(input);
   }
 
+  /**
+   * Chuyển đổi dữ liệu sang dạng JSON an toàn.
+   */
   private toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined {
     if (value === undefined) {
       return undefined;
@@ -76,6 +91,10 @@ export class AuditLogService {
     return sanitizedValue as Prisma.InputJsonValue;
   }
 
+  /**
+   * Khử trùng dữ liệu nhạy cảm.
+   * Logic: Duyệt qua các key của object, nếu trùng với danh sách REDACTED_KEYS thì thay thế bằng '[REDACTED]'.
+   */
   private sanitizeValue(value: unknown): unknown {
     if (Array.isArray(value)) {
       return value.map((item: unknown) => this.sanitizeValue(item));

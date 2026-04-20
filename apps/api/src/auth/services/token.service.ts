@@ -21,6 +21,11 @@ export interface TokenIdentity {
 }
 
 @Injectable()
+/**
+ * Service quản lý vòng đời của các loại Token xác thực.
+ * Chịu trách nhiệm: Cấp cặp Access Token/Refresh Token, Làm mới (Rotation),
+ * Thu hồi (Logout) và Blacklist Access Token thông qua Redis.
+ */
 export class TokenService {
   private readonly logger = new Logger(TokenService.name);
   private readonly accessExpiration: number;
@@ -37,7 +42,10 @@ export class TokenService {
     this.refreshExpiration = DEFAULT_REFRESH_EXPIRATION;
   }
 
-  /** Issue a new access + refresh token pair for the given user identity. */
+  /**
+   * Cấp cặp Access Token (JWT) và Refresh Token (UUID) mới.
+   * Logic: Tạo JWT payload (sub, userType, jti) -> Lưu hash Refresh Token vào Database -> Trả về cặp token.
+   */
   async issueTokenPair(
     user: TokenIdentity,
     userType: 'CUSTOMER' | 'EMPLOYEE',
@@ -66,7 +74,11 @@ export class TokenService {
     };
   }
 
-  /** Exchange a valid refresh token for a new token pair (rotation). */
+  /**
+   * Làm mới Access Token bằng Refresh Token (Token Rotation).
+   * Logic: Kiểm tra tính hợp lệ/hết hạn của Refresh Token -> Thu hồi (revoke) token cũ -> Cấp cặp token mới.
+   * Chống tấn công Replay: Nếu phát hiện Refresh Token đã bị thu hồi trước đó, xóa tất cả phiên đăng nhập của người dùng.
+   */
   async refreshTokens(refreshToken: string, meta: RequestMeta): Promise<TokenPair> {
     const tokenHash = this.hashToken(refreshToken);
     const storedToken = await this.refreshTokenRepo.findByHash(tokenHash);
@@ -96,7 +108,10 @@ export class TokenService {
     return this.refreshEmployeeTokens(ownerId, meta);
   }
 
-  /** Revoke a single refresh token and blacklist the current mã truy cập. */
+  /**
+   * Đăng nhập ra (Logout) phiên hiện tại.
+   * Logic: Thu hồi Refresh Token trong DB -> Thêm jti của Access Token vào Blacklist trong Redis.
+   */
   async logout(
     refreshToken: string | undefined,
     accessTokenJti: string,
@@ -109,7 +124,10 @@ export class TokenService {
     await this.blacklistAccessToken(accessTokenJti, accessTokenExp);
   }
 
-  /** Revoke ALL refresh tokens for a user and blacklist current mã truy cập. */
+  /**
+   * Đăng xuất khỏi tất cả các thiết bị.
+   * Logic: Thu hồi toàn bộ Refresh Token của người dùng -> Đánh dấu mốc thời gian logout-all trong Redis.
+   */
   async logoutAll(
     userId: number,
     userType: 'CUSTOMER' | 'EMPLOYEE',
@@ -122,8 +140,7 @@ export class TokenService {
   }
 
   /**
-   * Revoke all refresh tokens and invalidate all active JWTs for a user without
-   * requiring the caller to hold a current mã truy cập (e.g. after password reset).
+   * Thu hồi toàn bộ phiên đăng nhập (Dùng cho các trường hợp đặc biệt như Reset mật khẩu).
    */
   async revokeAllSessions(userId: number, userType: 'CUSTOMER' | 'EMPLOYEE'): Promise<void> {
     await this.refreshTokenRepo.revokeAllByUser(userId, userType);
