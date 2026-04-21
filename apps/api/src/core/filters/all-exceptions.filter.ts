@@ -122,6 +122,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return ERROR_CODES.CONFLICT;
       case HttpStatus.TOO_MANY_REQUESTS as number:
         return ERROR_CODES.TOO_MANY_REQUESTS;
+      case HttpStatus.BAD_GATEWAY as number:
+        return ERROR_CODES.BAD_GATEWAY;
+      case HttpStatus.SERVICE_UNAVAILABLE as number:
+        return ERROR_CODES.SERVICE_UNAVAILABLE;
+      case HttpStatus.GATEWAY_TIMEOUT as number:
+        return ERROR_CODES.GATEWAY_TIMEOUT;
       default:
         return ERROR_CODES.INTERNAL_SERVER_ERROR;
     }

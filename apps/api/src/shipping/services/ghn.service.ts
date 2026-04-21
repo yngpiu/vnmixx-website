@@ -1,4 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface GhnAvailableService {
@@ -190,18 +196,51 @@ export class GhnService {
     headers: Record<string, string>,
   ): Promise<T> {
     const url = `${this.apiUrl}${path}`;
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch (error) {
+      this.logger.error(
+        `GHN request failed [${path}]: ${error instanceof Error ? error.message : String(error)}`,
+        JSON.stringify(body),
+      );
+      throw new ServiceUnavailableException('Dịch vụ vận chuyển tạm thời không khả dụng.');
+    }
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify(body),
-    });
+    if (res.ok === false) {
+      this.logger.error(
+        `GHN HTTP error [${path}]: ${res.status} ${res.statusText}`,
+        JSON.stringify(body),
+      );
+      throw new BadGatewayException('Kết nối tới dịch vụ vận chuyển thất bại.');
+    }
 
-    const json = (await res.json()) as GhnResponse<T>;
+    let json: GhnResponse<T>;
+    try {
+      json = (await res.json()) as GhnResponse<T>;
+    } catch (error) {
+      this.logger.error(
+        `GHN response parse failed [${path}]: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw new BadGatewayException('Dịch vụ vận chuyển trả về dữ liệu không hợp lệ.');
+    }
 
     if (json.code !== 200) {
       this.logger.error(`GHN API error [${path}]: ${json.message}`, JSON.stringify(body));
-      throw new Error(`GHN API lỗi: ${json.message}`);
+      if (json.code >= 400 && json.code < 500) {
+        throw new BadRequestException(`GHN API lỗi: ${json.message}`);
+      }
+      throw new BadGatewayException(`GHN API lỗi: ${json.message}`);
+    }
+
+    if (json.data === undefined || json.data === null) {
+      this.logger.error(`GHN API returned empty data [${path}]`, JSON.stringify(body));
+      throw new BadGatewayException('Dịch vụ vận chuyển không trả về dữ liệu hợp lệ.');
     }
 
     return json.data;

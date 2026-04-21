@@ -1,7 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import {
+  getPrismaErrorTargets,
+  isPrismaErrorCode,
+  isPrismaKnownRequestError,
+} from '../../common/errors/prisma-error.util';
 import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { CreateColorDto, UpdateColorDto } from '../dto';
@@ -151,7 +156,7 @@ export class ColorService {
 
       if (hasVariants || hasImages) {
         throw new ConflictException(
-          'Cannot delete a color that is in use by product variants or images',
+          'Không thể xóa màu sắc đang được biến thể hoặc ảnh sản phẩm sử dụng',
         );
       }
 
@@ -201,8 +206,8 @@ export class ColorService {
    * Xử lý lỗi vi phạm ràng buộc duy nhất (Unique Constraint) từ Prisma.
    */
   private handleUniqueViolation(err: unknown): void {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      const target = (err.meta?.target as string[])?.join(', ') ?? 'field';
+    if (isPrismaErrorCode(err, 'P2002') && isPrismaKnownRequestError(err)) {
+      const target = getPrismaErrorTargets(err).join(', ') || 'field';
       throw new ConflictException(`Màu sắc với ${target} này đã tồn tại`);
     }
   }

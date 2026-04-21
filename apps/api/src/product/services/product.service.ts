@@ -4,9 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import {
+  getPrismaErrorTargets,
+  isPrismaErrorCode,
+  isPrismaKnownRequestError,
+} from '../../common/errors/prisma-error.util';
 import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import {
@@ -481,9 +486,9 @@ export class ProductService {
   }
 
   private handleUniqueViolation(err: unknown): void {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      const target = (err.meta?.target as string[])?.join(', ') ?? 'field';
-      throw new ConflictException(`Unique constraint violation on ${target}`);
+    if (isPrismaErrorCode(err, 'P2002') && isPrismaKnownRequestError(err)) {
+      const target = getPrismaErrorTargets(err).join(', ') || 'field';
+      throw new ConflictException(`Dữ liệu bị trùng lặp ở trường: ${target}`);
     }
   }
 }

@@ -2,6 +2,7 @@ import {
   BadGatewayException,
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -94,6 +95,7 @@ export class OrderAdminService {
     auditContext: AuditRequestContext = {},
   ): Promise<OrderAdminDetailView> {
     let beforeData: Record<string, unknown> | undefined;
+    let createdGhnOrderCode: string | null = null;
     try {
       const order = await this.prisma.order.findUnique({
         where: { orderCode },
@@ -177,6 +179,7 @@ export class OrderAdminService {
           note: order.note ?? undefined,
           clientOrderCode: orderCode,
         });
+        createdGhnOrderCode = ghnResult.order_code;
       } catch (e) {
         const msg = (e as Error)?.message ?? String(e);
         this.logger.error(`Không thể tạo vận đơn GHN cho đơn ${orderCode}: ${msg}`);
@@ -272,6 +275,18 @@ export class OrderAdminService {
       });
       return result;
     } catch (error) {
+      if (createdGhnOrderCode) {
+        try {
+          await this.ghn.cancelOrder([createdGhnOrderCode]);
+          this.logger.warn(
+            `Đã hủy vận đơn GHN ${createdGhnOrderCode} để bù trừ do xác nhận đơn ${orderCode} thất bại.`,
+          );
+        } catch (rollbackError) {
+          this.logger.error(
+            `Không thể rollback vận đơn GHN ${createdGhnOrderCode}: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
+          );
+        }
+      }
       await this.auditLogService.write({
         ...auditContext,
         action: 'order.confirm',
@@ -329,9 +344,10 @@ export class OrderAdminService {
         try {
           await this.ghn.cancelOrder([order.ghnOrderCode]);
         } catch (e) {
-          this.logger.warn(
+          this.logger.error(
             `Không thể hủy vận đơn GHN ${order.ghnOrderCode}: ${String((e as Error)?.message ?? e)}`,
           );
+          throw new BadGatewayException('Không thể đồng bộ hủy vận đơn với GHN.');
         }
       }
 
@@ -354,7 +370,11 @@ export class OrderAdminService {
             select: { id: true, onHand: true, reserved: true, version: true },
           });
 
-          if (!variant) continue;
+          if (!variant) {
+            throw new InternalServerErrorException(
+              `Không tìm thấy biến thể #${item.variantId} để hoàn tồn kho.`,
+            );
+          }
 
           const releaseQty = Math.min(variant.reserved, item.quantity);
           const onHandIncrement = item.quantity - releaseQty;

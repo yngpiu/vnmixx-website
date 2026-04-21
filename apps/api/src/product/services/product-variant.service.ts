@@ -4,9 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
 import { CreateVariantDto, UpdateVariantDto } from '../dto';
 import { ProductRepository } from '../repositories/product.repository';
 import { ProductCacheService } from './product-cache.service';
@@ -70,7 +71,7 @@ export class ProductVariantService {
         afterData: { productId, sku: dto.sku, colorId: dto.colorId, sizeId: dto.sizeId },
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (isPrismaErrorCode(error, 'P2002')) {
         throw new ConflictException(
           'Biến thể với tổ hợp màu + kích thước này đã tồn tại cho sản phẩm',
         );
@@ -95,9 +96,7 @@ export class ProductVariantService {
       const variant = await this.repository.findVariantById(variantId);
       if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
       if (variant.productId !== productId) {
-        throw new BadRequestException(
-          `Variant #${variantId} does not belong to product #${productId}`,
-        );
+        throw new BadRequestException(`Biến thể #${variantId} không thuộc sản phẩm #${productId}`);
       }
 
       beforeData = variant;
@@ -147,9 +146,7 @@ export class ProductVariantService {
       variant = await this.repository.findVariantById(variantId);
       if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
       if (variant.productId !== productId) {
-        throw new BadRequestException(
-          `Variant #${variantId} does not belong to product #${productId}`,
-        );
+        throw new BadRequestException(`Biến thể #${variantId} không thuộc sản phẩm #${productId}`);
       }
 
       await this.repository.softDeleteVariant(variantId);
@@ -185,7 +182,7 @@ export class ProductVariantService {
       const key = `${v.colorId}-${v.sizeId}`;
       if (combos.has(key)) {
         throw new BadRequestException(
-          `Duplicate variant combo: colorId=${v.colorId}, sizeId=${v.sizeId}`,
+          `Tổ hợp biến thể bị trùng: colorId=${v.colorId}, sizeId=${v.sizeId}`,
         );
       }
       combos.add(key);
@@ -199,7 +196,7 @@ export class ProductVariantService {
     const skus = new Set<string>();
     for (const v of variants) {
       if (skus.has(v.sku)) {
-        throw new BadRequestException(`Duplicate SKU in request: "${v.sku}"`);
+        throw new BadRequestException(`SKU bị trùng trong yêu cầu: "${v.sku}"`);
       }
       skus.add(v.sku);
     }

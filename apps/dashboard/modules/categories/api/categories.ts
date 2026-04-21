@@ -5,6 +5,11 @@ import type {
   ListCategoriesParams,
   UpdateCategoryBody,
 } from '@/modules/categories/types/category';
+export type {
+  CreateCategoryBody,
+  ListCategoriesParams,
+  UpdateCategoryBody,
+} from '@/modules/categories/types/category';
 
 export async function listCategories(params: ListCategoriesParams = {}): Promise<CategoryAdmin[]> {
   const { data } = await apiClient.get<CategoryAdmin[]>('/admin/categories', { params });

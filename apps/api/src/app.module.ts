@@ -21,6 +21,7 @@ import { LocationModule } from './location/location.module';
 import { MediaModule } from './media/media.module';
 import { OrderModule } from './order/order.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProductModule } from './product/product.module';
 import { ProfileModule } from './profile/profile.module';
 import { R2Module } from './r2/r2.module';
 import { RbacModule } from './rbac/rbac.module';

@@ -5,6 +5,7 @@ import type {
   ColorPublic,
   ListColorsParams,
 } from '@/modules/colors/types/color';
+export type { ListColorsParams } from '@/modules/colors/types/color';
 
 /** Danh sách quản trị: phân trang + sort (GET /admin/colors). */
 export async function listColors(params: ListColorsParams = {}): Promise<ColorListResponse> {

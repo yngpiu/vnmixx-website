@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -29,6 +29,8 @@ export type AnalyticsKpisRow = {
  */
 @Injectable()
 export class AnalyticsService {
+  private readonly logger = new Logger(AnalyticsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private isMissingTableError(error: unknown): boolean {
@@ -466,6 +468,7 @@ export class AnalyticsService {
       if (!this.isMissingTableError(error)) {
         throw error;
       }
+      this.logger.warn('Bảng product_reviews chưa tồn tại, trả về thống kê review mặc định.');
     }
     const ratingMap = new Map<number, number>();
     for (const row of ratingGroups) {

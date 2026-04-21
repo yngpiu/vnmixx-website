@@ -4,6 +4,7 @@ import type {
   CustomerListResponse,
   ListCustomersParams,
 } from '@/modules/customers/types/customer';
+export type { ListCustomersParams } from '@/modules/customers/types/customer';
 
 export async function listCustomers(
   params: ListCustomersParams = {},

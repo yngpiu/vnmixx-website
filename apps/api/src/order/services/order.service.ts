@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { OrderStatus, Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { estimateCartPackageFromLines } from '../../shipping/estimate-cart-package';
@@ -102,7 +108,11 @@ export class OrderService {
     });
 
     const result = await this.orderRepo.findByOrderCode(orderCode, customerId);
-    if (!result) throw new InternalError(`Order ${orderCode} created but not found`);
+    if (!result) {
+      throw new InternalServerErrorException(
+        `Không thể truy xuất đơn hàng ${orderCode} sau khi tạo.`,
+      );
+    }
     return result;
   }
 
@@ -414,7 +424,11 @@ export class OrderService {
 
     for (const item of items) {
       const v = variants.find((x) => x.id === item.variantId);
-      if (!v) continue;
+      if (!v) {
+        throw new InternalServerErrorException(
+          `Không tìm thấy biến thể #${item.variantId} để hoàn tồn kho.`,
+        );
+      }
 
       const releaseQty = Math.min(v.reserved, item.quantity);
       const restoreQty = item.quantity - releaseQty;
@@ -442,5 +456,3 @@ export class OrderService {
     }
   }
 }
-
-class InternalError extends Error {}

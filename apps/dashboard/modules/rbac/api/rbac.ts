@@ -7,6 +7,7 @@ import type {
   RoleListResponse,
   UpdateRolePayload,
 } from '@/modules/rbac/types/rbac';
+export type { ListRolesParams } from '@/modules/rbac/types/rbac';
 
 export async function listPermissions(): Promise<Permission[]> {
   const { data } = await apiClient.get<Permission[]>('/admin/permissions');

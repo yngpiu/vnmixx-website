@@ -1,5 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from 'generated/prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
 import { type WishlistItemView, WishlistRepository } from '../repositories/wishlist.repository';
 
 /**
@@ -33,8 +38,11 @@ export class WishlistService {
     try {
       await this.wishlistRepo.add(customerId, productId);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (isPrismaErrorCode(error, 'P2002')) {
         throw new ConflictException('Sản phẩm đã có trong danh sách yêu thích.');
+      }
+      if (isPrismaErrorCode(error, 'P2003')) {
+        throw new BadRequestException('Không thể thêm sản phẩm vào danh sách yêu thích.');
       }
       throw error;
     }
@@ -50,8 +58,11 @@ export class WishlistService {
     try {
       await this.wishlistRepo.remove(customerId, productId);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (isPrismaErrorCode(error, 'P2025')) {
         throw new NotFoundException('Sản phẩm không có trong danh sách yêu thích.');
+      }
+      if (isPrismaErrorCode(error, 'P2003')) {
+        throw new BadRequestException('Không thể xóa sản phẩm khỏi danh sách yêu thích.');
       }
       throw error;
     }

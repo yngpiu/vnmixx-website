@@ -2,6 +2,9 @@ import type { CrudAction, CrudMatrixRow, Permission } from '@/modules/rbac/types
 import { CRUD_ACTIONS } from '@/modules/rbac/types/rbac';
 import { permissionModuleDisplayName } from '@/modules/rbac/utils/permission-label';
 
+export { CRUD_ACTIONS };
+export type { CrudAction, CrudMatrixRow };
+
 export const CRUD_LABELS: Record<CrudAction, string> = {
   create: 'Tạo',
   read: 'Xem',

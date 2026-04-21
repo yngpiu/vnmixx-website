@@ -1,9 +1,12 @@
 import {
+  BadGatewayException,
   BadRequestException,
+  HttpException,
   Injectable,
   Logger,
   NotFoundException,
   OnModuleInit,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -47,7 +50,7 @@ export class ShippingService implements OnModuleInit {
     ]);
 
     if (!district || !ward) {
-      this.logger.warn(
+      this.logger.error(
         `Không tìm thấy district (ghn_id=${this.shopGhnDistrictIdStr}) hoặc ward (ghn_id=${this.shopGhnWardCodeStr}) trong DB. ` +
           'Cập nhật GHN_SHOP_DISTRICT_ID và GHN_SHOP_WARD_ID trong .env để sử dụng tính phí vận chuyển.',
       );
@@ -70,7 +73,7 @@ export class ShippingService implements OnModuleInit {
 
   private ensureInitialized(): void {
     if (!this.initialized) {
-      throw new BadRequestException(
+      throw new ServiceUnavailableException(
         'Dịch vụ vận chuyển chưa được cấu hình. Vui lòng liên hệ quản trị viên.',
       );
     }
@@ -175,8 +178,25 @@ export class ShippingService implements OnModuleInit {
       .filter((r) => r.status === 'fulfilled')
       .map((r) => (r as PromiseFulfilledResult<ShippingFeeResponseDto['services'][number]>).value);
 
+    const rejectedReasons = results
+      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      .map((r): unknown => r.reason);
+
+    if (rejectedReasons.length > 0) {
+      const reasonSummary = rejectedReasons
+        .map((reason) => (reason instanceof Error ? reason.message : String(reason)))
+        .join(' | ');
+      this.logger.warn(`Có dịch vụ GHN tính phí thất bại: ${reasonSummary}`);
+    }
+
     if (services.length === 0) {
-      throw new BadRequestException('Không thể tính phí vận chuyển cho địa chỉ này.');
+      const firstHttpError = rejectedReasons.find(
+        (reason): reason is HttpException => reason instanceof HttpException,
+      );
+      if (firstHttpError && firstHttpError.getStatus() >= 500) {
+        throw firstHttpError;
+      }
+      throw new BadGatewayException('Không thể tính phí vận chuyển từ dịch vụ vận chuyển.');
     }
 
     return { services };

@@ -4,10 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { EmployeeAuthzCacheService } from '../../auth/services/employee-authz-cache.service';
+import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
 import type { CreateRoleDto, UpdateRoleDto } from '../dto';
 import { PermissionRepository } from '../repositories/permission.repository';
 import {
@@ -259,7 +260,7 @@ export class RoleService {
    * Xử lý lỗi vi phạm ràng buộc duy nhất (Unique Violation) khi trùng tên vai trò.
    */
   private handleUniqueViolation(err: unknown, name: string): void {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    if (isPrismaErrorCode(err, 'P2002')) {
       throw new ConflictException(`Tên vai trò "${name}" đã được sử dụng`);
     }
   }

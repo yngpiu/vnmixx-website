@@ -4,6 +4,7 @@ import type {
   AdminReviewListParams,
   AdminReviewsListResponse,
 } from '@/modules/reviews/types/review-admin';
+export type { AdminReviewListParams } from '@/modules/reviews/types/review-admin';
 
 export async function getAdminReviews(
   params: AdminReviewListParams,

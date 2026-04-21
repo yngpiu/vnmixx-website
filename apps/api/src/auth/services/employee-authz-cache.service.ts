@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { EmployeeRepository } from '../repositories/employee.repository';
@@ -14,6 +14,7 @@ interface EmployeeAuthzSnapshot {
  */
 @Injectable()
 export class EmployeeAuthzCacheService {
+  private readonly logger = new Logger(EmployeeAuthzCacheService.name);
   private readonly ttlSeconds: number = CACHE_TTL.EMPLOYEE_AUTHZ;
 
   constructor(
@@ -26,7 +27,14 @@ export class EmployeeAuthzCacheService {
     const key = CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId);
     const cached = await this.redis.getClient().get(key);
     if (cached) {
-      return JSON.parse(cached) as EmployeeAuthzSnapshot;
+      try {
+        return JSON.parse(cached) as EmployeeAuthzSnapshot;
+      } catch (error) {
+        this.logger.warn(
+          `Dữ liệu cache quyền nhân viên #${employeeId} bị lỗi: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+        await this.redis.getClient().del(key);
+      }
     }
     const loaded = await this.employeeRepo.loadPermissions(employeeId);
     const snapshot: EmployeeAuthzSnapshot = {

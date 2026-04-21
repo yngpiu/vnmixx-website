@@ -5,6 +5,10 @@ import type {
   OrderAdminDetail,
   OrderAdminListResponse,
 } from '@/modules/orders/types/order-admin';
+export type {
+  ConfirmOrderShipmentInput,
+  ListAdminOrdersParams,
+} from '@/modules/orders/types/order-admin';
 
 export async function listAdminOrders(
   params: ListAdminOrdersParams = {},

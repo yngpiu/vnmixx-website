@@ -1,5 +1,5 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import type { Transporter } from 'nodemailer';
@@ -57,6 +57,9 @@ export class MailService {
    */
   async sendMail(options: SendMailOptions): Promise<void> {
     if (!this.isConfigured()) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new ServiceUnavailableException('Dịch vụ email chưa được cấu hình.');
+      }
       this.logger.warn(
         'SMTP chưa được cấu hình. Email sẽ chỉ được ghi log cho môi trường phát triển cục bộ.',
       );
@@ -77,6 +80,9 @@ export class MailService {
    */
   async sendMailDirect(options: SendMailOptions): Promise<void> {
     if (!this.transporter || !this.sender) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new ServiceUnavailableException('Dịch vụ email chưa được cấu hình.');
+      }
       this.logger.warn(
         'SMTP chưa được cấu hình. Email sẽ chỉ được ghi log cho môi trường phát triển cục bộ.',
       );

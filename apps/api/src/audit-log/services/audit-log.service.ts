@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
 import {
   AuditLogRepository,
@@ -62,9 +62,13 @@ export class AuditLogService {
         errorMessage: input.errorMessage,
       });
     } catch (error) {
-      this.logger.warn(
+      this.logger.error(
         `Failed to write audit log for ${input.action}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
+      if (input.status === AuditLogStatus.FAILED) {
+        return;
+      }
+      throw new InternalServerErrorException('Không thể ghi nhật ký hệ thống');
     }
   }
 

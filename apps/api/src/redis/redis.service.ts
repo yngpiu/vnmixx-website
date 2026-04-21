@@ -64,7 +64,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
    */
   async getOrSet<T>(key: string, ttlSeconds: number, factory: () => Promise<T>): Promise<T> {
     const cached = await this.client.get(key);
-    if (cached !== null) return JSON.parse(cached) as T;
+    if (cached !== null) {
+      try {
+        return JSON.parse(cached) as T;
+      } catch (error) {
+        this.logger.warn(
+          `Redis cache parse failed for key "${key}": ${error instanceof Error ? error.message : String(error)}`,
+        );
+        await this.client.del(key);
+      }
+    }
 
     const data = await factory();
     await this.client.setex(key, ttlSeconds, JSON.stringify(data));

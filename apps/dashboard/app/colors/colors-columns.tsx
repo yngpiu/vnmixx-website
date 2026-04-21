@@ -6,6 +6,14 @@ import {
   DataTableColumnHeader,
   dataTableSttColumnDef,
 } from '@/modules/common/components/data-table';
+import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
+import { cn } from '@repo/ui/lib/utils';
+import type { ColumnDef } from '@tanstack/react-table';
+
+const updatedFormatter = new Intl.DateTimeFormat('vi-VN', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+});
 
 export function createColorsColumns(handlers: ColorsColumnHandlers): ColumnDef<ColorAdmin>[] {
   return [

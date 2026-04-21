@@ -6,6 +6,7 @@ import type {
   ListEmployeesParams,
   UpdateEmployeePayload,
 } from '@/modules/employees/types/employee';
+export type { ListEmployeesParams } from '@/modules/employees/types/employee';
 
 export async function listEmployees(
   params: ListEmployeesParams = {},

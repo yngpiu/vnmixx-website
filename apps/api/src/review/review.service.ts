@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, ReviewVisibility } from '../../generated/prisma/client';
+import { isPrismaErrorCode } from '../common/errors/prisma-error.util';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
   AdminReviewDetailResponseDto,
@@ -96,27 +97,34 @@ export class ReviewService {
       );
     }
 
-    return this.prisma.productReview.create({
-      data: {
-        productId,
-        customerId,
-        rating: dto.rating,
-        title: dto.title ?? null,
-        content: dto.content ?? null,
-        status: ReviewVisibility.VISIBLE,
-      },
-      select: {
-        id: true,
-        productId: true,
-        customerId: true,
-        rating: true,
-        title: true,
-        content: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    try {
+      return await this.prisma.productReview.create({
+        data: {
+          productId,
+          customerId,
+          rating: dto.rating,
+          title: dto.title ?? null,
+          content: dto.content ?? null,
+          status: ReviewVisibility.VISIBLE,
+        },
+        select: {
+          id: true,
+          productId: true,
+          customerId: true,
+          rating: true,
+          title: true,
+          content: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } catch (error) {
+      if (isPrismaErrorCode(error, 'P2002')) {
+        throw new ConflictException('Bạn đã review sản phẩm này.');
+      }
+      throw error;
+    }
   }
 
   /**

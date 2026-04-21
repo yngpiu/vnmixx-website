@@ -5,6 +5,7 @@ import type {
   SizeListResponse,
   SizePublic,
 } from '@/modules/sizes/types/size';
+export type { ListSizesParams } from '@/modules/sizes/types/size';
 
 /** Danh sách quản trị: phân trang + sort (GET /admin/sizes). */
 export async function listSizes(params: ListSizesParams = {}): Promise<SizeListResponse> {

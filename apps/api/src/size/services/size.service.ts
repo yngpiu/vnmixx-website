@@ -1,7 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
 import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { CreateSizeDto, UpdateSizeDto } from '../dto';
@@ -194,7 +195,7 @@ export class SizeService {
    * Xử lý lỗi trùng lặp nhãn kích thước.
    */
   private handleUniqueViolation(err: unknown): void {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    if (isPrismaErrorCode(err, 'P2002')) {
       throw new ConflictException('Kích thước với nhãn này đã tồn tại');
     }
   }

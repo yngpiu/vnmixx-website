@@ -4,9 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
+import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
 import { CACHE_KEYS, CACHE_PATTERNS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
@@ -321,8 +322,8 @@ export class CategoryService {
   }
 
   private handleUniqueViolation(err: unknown, slug: string): void {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw new ConflictException(`Slug "${slug}" is already taken`);
+    if (isPrismaErrorCode(err, 'P2002')) {
+      throw new ConflictException(`Slug "${slug}" đã được sử dụng`);
     }
   }
 }

@@ -2,6 +2,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { AuditLogStatus } from 'generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { CustomerAuthService } from '../../auth/services/customer-auth.service';
+import { EmployeeAuthService } from '../../auth/services/employee-auth.service';
 import { CustomerProfileRepository } from '../repositories/customer.repository';
 import { EmployeeProfileRepository } from '../repositories/employee.repository';
 import { ProfileService } from './profile.service';
@@ -34,6 +36,18 @@ describe('ProfileService', () => {
           provide: AuditLogService,
           useValue: {
             write: jest.fn(),
+          },
+        },
+        {
+          provide: CustomerAuthService,
+          useValue: {
+            changePassword: jest.fn(),
+          },
+        },
+        {
+          provide: EmployeeAuthService,
+          useValue: {
+            changePassword: jest.fn(),
           },
         },
       ],

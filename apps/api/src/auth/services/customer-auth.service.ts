@@ -8,7 +8,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
-import { Prisma } from '../../../generated/prisma/client';
+import {
+  getPrismaErrorTargets,
+  isPrismaErrorCode,
+  isPrismaKnownRequestError,
+} from '../../common/errors/prisma-error.util';
 import { MailService } from '../../common/mail/mail.service';
 import { RedisService } from '../../redis/redis.service';
 import {
@@ -239,8 +243,8 @@ export class CustomerAuthService {
     try {
       return await this.customerRepo.create(data);
     } catch (error) {
-      if (this.isUniqueConstraintError(error)) {
-        const targets = this.extractConstraintTargets(error.meta?.target);
+      if (isPrismaErrorCode(error, 'P2002') && isPrismaKnownRequestError(error)) {
+        const targets = this.extractConstraintTargets(getPrismaErrorTargets(error));
         if (targets.some((target) => target.includes('email'))) {
           throw new ConflictException('Email đã được đăng ký');
         }
@@ -251,10 +255,6 @@ export class CustomerAuthService {
       }
       throw error;
     }
-  }
-
-  private isUniqueConstraintError(error: unknown): error is Prisma.PrismaClientKnownRequestError {
-    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
   }
 
   private extractConstraintTargets(target: unknown): string[] {

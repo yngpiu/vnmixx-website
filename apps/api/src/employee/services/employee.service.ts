@@ -9,6 +9,11 @@ import { AuditLogStatus, EmployeeStatus, Prisma } from '../../../generated/prism
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { EmployeeAuthzCacheService } from '../../auth/services/employee-authz-cache.service';
+import {
+  getPrismaErrorTargets,
+  isPrismaErrorCode,
+  isPrismaKnownRequestError,
+} from '../../common/errors/prisma-error.util';
 import { RoleRepository } from '../../rbac/repositories/role.repository';
 import type { CreateEmployeeDto } from '../dto/create-employee.dto';
 import type { UpdateEmployeeDto } from '../dto/update-employee.dto';
@@ -251,8 +256,8 @@ export class EmployeeService {
 
   // Xử lý lỗi vi phạm ràng buộc duy nhất (Email hoặc Số điện thoại) từ Database
   private handleUniqueViolation(err: unknown): void {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      const target = (err.meta?.target as string) || '';
+    if (isPrismaErrorCode(err, 'P2002') && isPrismaKnownRequestError(err)) {
+      const target = getPrismaErrorTargets(err).join(',').toLowerCase();
       if (target.includes('email')) {
         throw new ConflictException('Email này đã được đăng ký cho một nhân viên khác');
       }

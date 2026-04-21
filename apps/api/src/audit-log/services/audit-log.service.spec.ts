@@ -97,8 +97,8 @@ describe('AuditLogService', () => {
       );
     });
 
-    it('should catch errors and log a warning if repository.create fails', async () => {
-      const loggerWarnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
+    it('should log error and not throw when failed-action audit write fails', async () => {
+      const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
       repository.create.mockRejectedValueOnce(new Error('DB Error'));
 
       await service.write({
@@ -107,8 +107,20 @@ describe('AuditLogService', () => {
         status: AuditLogStatus.FAILED,
       });
 
-      expect(loggerWarnSpy).toHaveBeenCalled();
-      loggerWarnSpy.mockRestore();
+      expect(loggerErrorSpy).toHaveBeenCalled();
+      loggerErrorSpy.mockRestore();
+    });
+
+    it('should throw when success-action audit write fails', async () => {
+      repository.create.mockRejectedValueOnce(new Error('DB Error'));
+
+      await expect(
+        service.write({
+          action: 'success.action',
+          resourceType: 'test',
+          status: AuditLogStatus.SUCCESS,
+        }),
+      ).rejects.toThrow('Không thể ghi nhật ký hệ thống');
     });
 
     it('should handle non-object values in sanitizeValue', async () => {

@@ -6,6 +6,7 @@ import type {
   ProductAdminListResponse,
   UpdateProductBody,
 } from '@/modules/products/types/product';
+export type { ListProductsParams } from '@/modules/products/types/product';
 
 export async function listProducts(
   params: ListProductsParams = {},

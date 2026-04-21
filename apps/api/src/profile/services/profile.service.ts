@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuditLogStatus, type Gender } from 'generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
@@ -22,6 +28,8 @@ import {
  */
 @Injectable()
 export class ProfileService {
+  private readonly logger = new Logger(ProfileService.name);
+
   constructor(
     private readonly customerRepo: CustomerProfileRepository,
     private readonly employeeRepo: EmployeeProfileRepository,
@@ -34,9 +42,19 @@ export class ProfileService {
    * Lấy thông tin hồ sơ của khách hàng theo ID.
    */
   async getCustomerProfile(customerId: number): Promise<CustomerProfileView> {
-    const profile = await this.customerRepo.findById(customerId);
-    if (!profile) throw new NotFoundException('Không tìm thấy khách hàng');
-    return profile;
+    try {
+      const profile = await this.customerRepo.findById(customerId);
+      if (!profile) throw new NotFoundException('Không tìm thấy khách hàng');
+      return profile;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Không thể lấy hồ sơ khách hàng #${customerId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw new InternalServerErrorException('Không thể lấy thông tin hồ sơ khách hàng.');
+    }
   }
 
   /**
@@ -46,25 +64,35 @@ export class ProfileService {
     customerId: number,
     dto: UpdateCustomerProfileDto,
   ): Promise<CustomerProfileView> {
-    if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
+    try {
+      if (Object.keys(dto).length === 0) {
+        throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
+      }
+
+      const data: {
+        fullName?: string;
+        dob?: Date | null;
+        gender?: Gender | null;
+        avatarUrl?: string;
+      } = {};
+
+      if (dto.fullName !== undefined) data.fullName = dto.fullName;
+      if (dto.dob !== undefined) data.dob = new Date(dto.dob);
+      if (dto.gender !== undefined) data.gender = dto.gender as Gender;
+      if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl;
+
+      const updated = await this.customerRepo.update(customerId, data);
+      if (!updated) throw new NotFoundException('Không tìm thấy khách hàng');
+      return updated;
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Không thể cập nhật hồ sơ khách hàng #${customerId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw new InternalServerErrorException('Không thể cập nhật hồ sơ khách hàng.');
     }
-
-    const data: {
-      fullName?: string;
-      dob?: Date | null;
-      gender?: Gender | null;
-      avatarUrl?: string;
-    } = {};
-
-    if (dto.fullName !== undefined) data.fullName = dto.fullName;
-    if (dto.dob !== undefined) data.dob = new Date(dto.dob);
-    if (dto.gender !== undefined) data.gender = dto.gender as Gender;
-    if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl;
-
-    const updated = await this.customerRepo.update(customerId, data);
-    if (!updated) throw new NotFoundException('Không tìm thấy khách hàng');
-    return updated;
   }
 
   /**

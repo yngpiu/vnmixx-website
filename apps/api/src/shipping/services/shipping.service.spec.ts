@@ -1,4 +1,10 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -79,7 +85,7 @@ describe('ShippingService', () => {
     it('should not initialize if warehouse IDs missing in DB', async () => {
       (prisma.district.findUnique as jest.Mock).mockResolvedValue(null);
       await service.onModuleInit();
-      expect(() => service.getShopGhnIds()).toThrow(BadRequestException);
+      expect(() => service.getShopGhnIds()).toThrow(ServiceUnavailableException);
     });
   });
 
@@ -151,7 +157,7 @@ describe('ShippingService', () => {
       ]);
       ghn.calculateFee.mockRejectedValue(new Error('API Error'));
 
-      await expect(service.calculateFee(customerId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.calculateFee(customerId, dto)).rejects.toThrow(BadGatewayException);
     });
   });
 });
