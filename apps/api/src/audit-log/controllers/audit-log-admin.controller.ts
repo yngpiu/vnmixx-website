@@ -2,6 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -24,6 +25,7 @@ export class AuditLogAdminController {
   @ApiOkResponse({ type: AuditLogListResponseDto })
   @RequirePermissions('audit.read')
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findList(@Query() query: ListAuditLogsQueryDto) {
     const actorIds: number[] = [...(query.actorEmployeeIds ?? [])];
     if (query.actorEmployeeId !== undefined) {

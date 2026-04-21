@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiInternalServerErrorResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
 import { Public } from '../../auth/decorators';
 import { PrismaHealthIndicator } from './prisma-health.indicator';
@@ -26,6 +26,7 @@ export class HealthController {
   @Public()
   @HealthCheck()
   @ApiOperation({ summary: 'Application health check (DB + Redis)' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   check() {
     return this.health.check([
       () => this.prismaHealth.isHealthy(),

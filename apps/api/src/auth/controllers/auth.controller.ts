@@ -11,6 +11,7 @@ import {
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -50,6 +51,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async refreshToken(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -74,6 +76,7 @@ export class AuthController {
   @ApiOkResponse({ description: 'Đăng xuất thành công.' })
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async logout(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -94,6 +97,7 @@ export class AuthController {
   @ApiOkResponse({ description: 'Tất cả phiên đã được chấm dứt.' })
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async logoutAll(
     @Res({ passthrough: true }) res: Response,
     @CurrentUser() user: AuthenticatedUser,
@@ -111,6 +115,7 @@ export class AuthController {
   @ApiOkResponse({ type: ProfileResponseDto })
   @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập.' })
   @Get('me')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   getProfile(@CurrentUser() user: AuthenticatedUser): ProfileResponseDto {
     return {
       id: user.id,

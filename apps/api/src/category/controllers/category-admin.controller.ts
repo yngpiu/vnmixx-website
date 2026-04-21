@@ -14,10 +14,12 @@ import {
   Req,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -53,6 +55,7 @@ export class CategoryAdminController {
   })
   @ApiOkResponse({ type: [CategoryAdminResponseDto] })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(@Query() query: ListCategoriesQueryDto): Promise<CategoryAdminResponseDto[]> {
     return this.categoryService.findAll({
       ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
@@ -64,6 +67,8 @@ export class CategoryAdminController {
   @ApiCreatedResponse({ type: CategoryAdminResponseDto })
   @ApiConflictResponse({ description: 'Slug danh mục đã được sử dụng.' })
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   async create(
     @Body() dto: CreateCategoryDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -77,6 +82,8 @@ export class CategoryAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @ApiConflictResponse({ description: 'Slug danh mục đã được sử dụng.' })
   @Put(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCategoryDto,
@@ -94,6 +101,7 @@ export class CategoryAdminController {
   })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Xóa mềm một danh mục.
    * Chỉ thành công nếu danh mục đó không có danh mục con nào đang hoạt động.
@@ -110,6 +118,7 @@ export class CategoryAdminController {
   @ApiOkResponse({ type: CategoryAdminResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @Patch(':id/restore')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async restore(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

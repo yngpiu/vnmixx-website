@@ -17,10 +17,12 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -59,6 +61,7 @@ export class MediaAdminController {
   @ApiOperation({ summary: 'Liệt kê media files (phân trang, tìm kiếm, lọc)' })
   @ApiOkResponse({ description: 'Danh sách media files.' })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async listMedia(@Query() query: ListMediaQueryDto) {
     return this.mediaService.listMedia(query);
   }
@@ -84,6 +87,8 @@ export class MediaAdminController {
     }),
   )
   @Post('upload')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   // Endpoint tiếp nhận file từ request multipart/form-data và chuyển tiếp sang MediaService
   async uploadFiles(
     @UploadedFiles() files: Express.Multer.File[],
@@ -111,6 +116,7 @@ export class MediaAdminController {
   @ApiOperation({ summary: 'Liệt kê tất cả thư mục' })
   @ApiOkResponse({ description: 'Danh sách đường dẫn thư mục.', type: [String] })
   @Get('folders')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async listFolders(): Promise<string[]> {
     return this.mediaService.listFolders();
   }
@@ -118,6 +124,8 @@ export class MediaAdminController {
   @ApiOperation({ summary: 'Tạo thư mục mới (ảo)' })
   @ApiOkResponse({ description: 'Thư mục đã tạo.' })
   @Post('folders')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   // Tạo thư mục logic trong hệ thống để tổ chức lưu trữ media
   async createFolder(
     @Body() dto: CreateFolderDto,
@@ -131,6 +139,7 @@ export class MediaAdminController {
   @ApiOkResponse({ description: 'Kết quả xóa thư mục.' })
   @Delete('folders')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   // Xóa thư mục sẽ xóa toàn bộ file bên trong trên R2 và DB
   async deleteFolder(
     @Query('path') path: string,
@@ -144,6 +153,8 @@ export class MediaAdminController {
   @ApiOkResponse({ description: 'File đã được di chuyển.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Patch(':id/move')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   // Cập nhật thư mục cha của một file media
   async moveMedia(
     @Param('id', ParseIntPipe) id: number,
@@ -159,6 +170,7 @@ export class MediaAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   // Xóa một file media đơn lẻ
   async deleteMedia(
     @Param('id', ParseIntPipe) id: number,

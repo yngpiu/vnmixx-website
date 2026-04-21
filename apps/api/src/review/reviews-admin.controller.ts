@@ -11,8 +11,10 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -48,6 +50,7 @@ export class ReviewsAdminController {
   @ApiOperation({ summary: 'Danh sách review có phân trang và bộ lọc.' })
   @ApiOkResponse({ type: AdminReviewsListResponseDto })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getReviews(@Query() query: ListAdminReviewsQueryDto): Promise<AdminReviewsListResponseDto> {
     return this.reviewService.getAdminReviews(query);
   }
@@ -59,6 +62,7 @@ export class ReviewsAdminController {
   @ApiOkResponse({ type: AdminReviewDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
   @Get(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getReviewDetail(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<AdminReviewDetailResponseDto> {
@@ -72,6 +76,8 @@ export class ReviewsAdminController {
   @ApiOkResponse({ type: AdminReviewDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
   @Patch(':id/visibility')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   async updateVisibility(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateReviewVisibilityDto,
@@ -87,6 +93,7 @@ export class ReviewsAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async deleteReview(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.reviewService.deleteAdminReview(id);
   }

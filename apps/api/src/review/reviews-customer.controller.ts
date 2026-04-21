@@ -5,6 +5,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOperation,
   ApiTags,
@@ -38,6 +39,7 @@ export class ReviewsCustomerController {
   @ApiConflictResponse({ description: 'Bạn đã review sản phẩm này.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   createProductReview(
     @Param('productId', ParseIntPipe) productId: number,
     @Body() dto: CreateProductReviewDto,

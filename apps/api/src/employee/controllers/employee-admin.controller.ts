@@ -18,6 +18,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -56,6 +57,7 @@ export class EmployeeAdminController {
   @ApiOkResponse({ type: EmployeeListResponseDto })
   @RequirePermissions('employee.read')
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(@Query() query: ListEmployeesQueryDto): Promise<EmployeeListResponseDto> {
     return this.employeeService.findList({
       page: query.page ?? 1,
@@ -75,6 +77,7 @@ export class EmployeeAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @RequirePermissions('employee.read')
   @Get(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findById(@Param('id', ParseIntPipe) id: number): Promise<EmployeeDetailResponseDto> {
     return this.employeeService.findById(id);
   }
@@ -86,6 +89,7 @@ export class EmployeeAdminController {
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được sử dụng.' })
   @RequirePermissions('employee.create')
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async create(
     @Body() dto: CreateEmployeeDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -105,6 +109,7 @@ export class EmployeeAdminController {
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại mới đã được sử dụng.' })
   @RequirePermissions('employee.update')
   @Patch(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateEmployeeDto,
@@ -124,6 +129,7 @@ export class EmployeeAdminController {
   @RequirePermissions('employee.delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -138,6 +144,7 @@ export class EmployeeAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy bản ghi nhân viên đang bị xóa mềm.' })
   @RequirePermissions('employee.update')
   @Patch(':id/restore')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async restore(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

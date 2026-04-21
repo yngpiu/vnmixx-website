@@ -1,5 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiInternalServerErrorResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Public } from '../../auth/decorators';
 import { ColorResponseDto } from '../dto';
 import { ColorService } from '../services/color.service';
@@ -17,6 +22,7 @@ export class ColorController {
   @ApiOkResponse({ type: [ColorResponseDto] })
   @Public()
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findAll(): Promise<ColorResponseDto[]> {
     return this.colorService.findAllPublic();
   }

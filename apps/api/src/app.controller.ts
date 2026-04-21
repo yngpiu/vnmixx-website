@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiInternalServerErrorResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { Public } from './auth/decorators';
 
@@ -16,6 +17,7 @@ export class AppController {
    */
   @Public()
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   getHello(): string {
     return this.appService.getHello();
   }

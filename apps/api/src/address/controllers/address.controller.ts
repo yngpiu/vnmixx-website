@@ -16,6 +16,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -40,6 +41,7 @@ export class AddressController {
   @ApiOperation({ summary: 'Liệt kê tất cả địa chỉ của khách hàng hiện tại' })
   @ApiOkResponse({ type: [AddressResponseDto] })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(@CurrentUser() user: AuthenticatedUser): Promise<AddressResponseDto[]> {
     return this.addressService.findAll(user.id);
   }
@@ -48,6 +50,7 @@ export class AddressController {
   @ApiOkResponse({ type: AddressResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @Get(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -59,6 +62,7 @@ export class AddressController {
   @ApiCreatedResponse({ type: AddressResponseDto })
   @ApiBadRequestResponse({ description: 'Phân cấp địa chỉ không hợp lệ.' })
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async create(
     @Body() dto: CreateAddressDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -71,6 +75,7 @@ export class AddressController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @ApiBadRequestResponse({ description: 'Phân cấp địa chỉ không hợp lệ.' })
   @Put(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAddressDto,
@@ -84,6 +89,7 @@ export class AddressController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -95,6 +101,7 @@ export class AddressController {
   @ApiOkResponse({ type: AddressResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @Patch(':id/set-default')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async setDefault(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

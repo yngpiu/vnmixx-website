@@ -1,5 +1,11 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
-import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Public } from '../../auth/decorators';
 import { CityResponseDto, DistrictResponseDto, WardResponseDto } from '../dto';
 import { LocationService } from '../services/location.service';
@@ -13,6 +19,7 @@ export class LocationController {
   @ApiOkResponse({ type: [CityResponseDto] })
   @Public()
   @Get('cities')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAllCities(): Promise<CityResponseDto[]> {
     return this.locationService.findAllCities();
   }
@@ -22,6 +29,7 @@ export class LocationController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy thành phố.' })
   @Public()
   @Get('cities/:cityId/districts')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findDistrictsByCityId(
     @Param('cityId', ParseIntPipe) cityId: number,
   ): Promise<DistrictResponseDto[]> {
@@ -33,6 +41,7 @@ export class LocationController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy quận/huyện.' })
   @Public()
   @Get('districts/:districtId/wards')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findWardsByDistrictId(
     @Param('districtId', ParseIntPipe) districtId: number,
   ): Promise<WardResponseDto[]> {

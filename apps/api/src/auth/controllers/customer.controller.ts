@@ -4,6 +4,8 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -61,6 +63,8 @@ export class CustomerAuthController {
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được đăng ký.' })
   @Public()
   @Post('register')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Đăng ký tài khoản mới: Lưu thông tin tạm thời và gửi OTP kích hoạt. */
   async register(@Body() dto: RegisterDto): Promise<CustomerRegisterResponseDto> {
     return this.customerAuth.registerCustomer(dto);
@@ -78,6 +82,8 @@ export class CustomerAuthController {
   @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Xác thực OTP: Nếu đúng, kích hoạt tài khoản và cấp cặp token truy cập. */
   async verifyOtp(
     @Body() dto: VerifyCustomerOtpDto,
@@ -105,6 +111,8 @@ export class CustomerAuthController {
   @Public()
   @Post('resend-otp')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Gửi lại mã OTP kích hoạt (có áp dụng cooldown). */
   async resendOtp(@Body() dto: ResendCustomerOtpDto): Promise<CustomerRegisterResponseDto> {
     return this.customerAuth.resendCustomerOtp(dto);
@@ -119,6 +127,8 @@ export class CustomerAuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Đăng nhập bằng email/mật khẩu và nhận cặp token truy cập. */
   async login(
     @Body() dto: LoginDto,
@@ -146,6 +156,8 @@ export class CustomerAuthController {
   @RequireUserType('CUSTOMER')
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiForbiddenResponse({ description: 'Bạn không có quyền thực hiện hành động này.' })
   /** Đổi mật khẩu cho người dùng đang đăng nhập và buộc đăng nhập lại trên mọi thiết bị. */
   async changePassword(
     @Body() dto: ChangePasswordDto,
@@ -170,6 +182,8 @@ export class CustomerAuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Bước 1 Quên mật khẩu: Gửi mã OTP khôi phục qua email. */
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
     return this.passwordReset.requestPasswordReset(dto);
@@ -187,6 +201,7 @@ export class CustomerAuthController {
   @Public()
   @Post('forgot-password/verify-otp')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /** Bước 2 Quên mật khẩu: Kiểm tra OTP và cấp Reset Token (mã định danh đặt lại mật khẩu). */
   async forgotPasswordVerifyOtp(
     @Body() dto: ForgotPasswordVerifyOtpDto,
@@ -203,6 +218,7 @@ export class CustomerAuthController {
   @Public()
   @Post('forgot-password/reset')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /** Bước 3 Quên mật khẩu: Cập nhật mật khẩu mới bằng Reset Token và hủy mọi phiên làm việc cũ. */
   async resetPassword(
     @Body() dto: ResetPasswordDto,

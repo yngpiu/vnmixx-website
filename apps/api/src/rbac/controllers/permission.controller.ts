@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -27,6 +28,7 @@ export class PermissionController {
   @ApiOkResponse({ type: [PermissionResponseDto] })
   @RequirePermissions('rbac.read')
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(): Promise<PermissionResponseDto[]> {
     return this.permissionService.findAll();
   }

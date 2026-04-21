@@ -13,10 +13,12 @@ import {
   Req,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -59,6 +61,7 @@ export class ColorAdminController {
   })
   @ApiOkResponse({ type: ColorListResponseDto })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findList(@Query() query: ListColorsQueryDto): Promise<ColorListResponseDto> {
     return this.colorService.findList({
       page: query.page ?? 1,
@@ -76,6 +79,8 @@ export class ColorAdminController {
   @ApiCreatedResponse({ type: ColorAdminResponseDto })
   @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   create(
     @Body() dto: CreateColorDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -92,6 +97,8 @@ export class ColorAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })
   @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
   @Put(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateColorDto,
@@ -110,6 +117,7 @@ export class ColorAdminController {
   @ApiConflictResponse({ description: 'Không thể xóa màu vì đang được sử dụng.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

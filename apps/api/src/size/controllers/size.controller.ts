@@ -1,5 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiInternalServerErrorResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Public } from '../../auth/decorators';
 import { SizeResponseDto } from '../dto';
 import { SizeService } from '../services/size.service';
@@ -17,6 +22,7 @@ export class SizeController {
   @ApiOkResponse({ type: [SizeResponseDto] })
   @Public()
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findAll(): Promise<SizeResponseDto[]> {
     return this.sizeService.findAllPublic();
   }

@@ -1,5 +1,11 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Public } from '../../auth/decorators';
 import { CategoryDetailDto, CategoryResponseDto } from '../dto';
 import { CategoryService } from '../services/category.service';
@@ -17,6 +23,7 @@ export class CategoryController {
   @ApiOkResponse({ type: [CategoryResponseDto] })
   @Public()
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Trả về danh sách tất cả các danh mục đang hoạt động dưới dạng mảng phẳng.
    */
@@ -29,6 +36,7 @@ export class CategoryController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @Public()
   @Get(':slug')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Tìm kiếm danh mục theo slug duy nhất.
    * Kết quả trả về bao gồm thông tin chi tiết và danh sách các danh mục con trực thuộc (nếu có).

@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -35,6 +36,7 @@ export class EmployeeProfileController {
   @ApiOkResponse({ type: EmployeeProfileResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.profileService.getEmployeeProfile(user.id);
   }
@@ -50,6 +52,7 @@ export class EmployeeProfileController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @Patch()
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async updateProfile(
     @Body() dto: UpdateEmployeeProfileDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -67,6 +70,7 @@ export class EmployeeProfileController {
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
   @Put('change-password')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthenticatedUser) {
     return this.profileService.changeEmployeePassword(user.id, dto);
   }

@@ -18,6 +18,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -57,6 +58,7 @@ export class RoleController {
   @ApiOkResponse({ type: RoleListResponseDto })
   @RequirePermissions('rbac.read')
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findList(@Query() query: ListRolesQueryDto): Promise<RoleListResponseDto> {
     return this.roleService.findList({
       page: query.page ?? 1,
@@ -73,6 +75,7 @@ export class RoleController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
   @RequirePermissions('rbac.read')
   @Get(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<RoleDetailResponseDto> {
     return this.roleService.findById(id);
   }
@@ -84,6 +87,7 @@ export class RoleController {
   @ApiConflictResponse({ description: 'Tên vai trò đã được sử dụng.' })
   @RequirePermissions('rbac.create')
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async create(
     @Body() dto: CreateRoleDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -102,6 +106,7 @@ export class RoleController {
   @ApiConflictResponse({ description: 'Tên vai trò đã được sử dụng.' })
   @RequirePermissions('rbac.update')
   @Put(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRoleDto,
@@ -119,6 +124,7 @@ export class RoleController {
   @RequirePermissions('rbac.delete')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

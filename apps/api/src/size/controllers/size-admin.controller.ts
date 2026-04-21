@@ -13,10 +13,12 @@ import {
   Req,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -59,6 +61,7 @@ export class SizeAdminController {
   })
   @ApiOkResponse({ type: SizeListResponseDto })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findList(@Query() query: ListSizesQueryDto): Promise<SizeListResponseDto> {
     return this.sizeService.findList({
       page: query.page ?? 1,
@@ -76,6 +79,8 @@ export class SizeAdminController {
   @ApiCreatedResponse({ type: SizeAdminResponseDto })
   @ApiConflictResponse({ description: 'Nhãn kích thước đã được sử dụng.' })
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   create(
     @Body() dto: CreateSizeDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -92,6 +97,8 @@ export class SizeAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy kích thước.' })
   @ApiConflictResponse({ description: 'Nhãn kích thước đã được sử dụng.' })
   @Put(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateSizeDto,
@@ -110,6 +117,7 @@ export class SizeAdminController {
   @ApiConflictResponse({ description: 'Không thể xóa kích thước vì đang được sử dụng.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

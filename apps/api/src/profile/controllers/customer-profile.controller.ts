@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -33,6 +34,7 @@ export class CustomerProfileController {
   @ApiOkResponse({ type: CustomerProfileResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.profileService.getCustomerProfile(user.id);
   }
@@ -48,6 +50,7 @@ export class CustomerProfileController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Patch()
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async updateProfile(
     @Body() dto: UpdateCustomerProfileDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -60,6 +63,7 @@ export class CustomerProfileController {
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
   @Put('change-password')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthenticatedUser) {
     return this.profileService.changeCustomerPassword(user.id, dto);
   }

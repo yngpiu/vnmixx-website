@@ -1,5 +1,11 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Public } from '../../auth/decorators';
 import { ListProductsQueryDto, ProductDetailResponseDto, ProductListResponseDto } from '../dto';
 import { ProductService } from '../services/product.service';
@@ -21,6 +27,7 @@ export class ProductController {
   @ApiOkResponse({ type: ProductListResponseDto })
   @Public()
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findAll(@Query() query: ListProductsQueryDto): Promise<ProductListResponseDto> {
     return this.productService.findPublicList(query);
   }
@@ -33,6 +40,7 @@ export class ProductController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Public()
   @Get(':slug')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findBySlug(@Param('slug') slug: string): Promise<ProductDetailResponseDto> {
     return this.productService.findBySlug(slug);
   }

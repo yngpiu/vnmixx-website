@@ -4,6 +4,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -41,6 +42,7 @@ export class OrderController {
   @ApiBadRequestResponse({ description: 'Giỏ hàng trống hoặc tồn kho không đủ.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async placeOrder(
     @Body() dto: CreateOrderDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -54,6 +56,7 @@ export class OrderController {
   @ApiOperation({ summary: 'Lấy danh sách đơn hàng của tôi' })
   @ApiOkResponse({ type: OrderListResponseDto })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findMyOrders(
     @Query() query: ListMyOrdersQueryDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -68,6 +71,7 @@ export class OrderController {
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
   @Get(':orderCode')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findMyOrder(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -84,6 +88,7 @@ export class OrderController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
   @HttpCode(HttpStatus.OK)
   @Post(':orderCode/cancel')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async cancelMyOrder(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,

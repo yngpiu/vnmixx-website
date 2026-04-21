@@ -19,6 +19,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -65,6 +66,7 @@ export class ProductAdminController {
   })
   @ApiOkResponse({ type: ProductAdminListResponseDto })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Liệt kê danh sách sản phẩm với các bộ lọc nâng cao dành cho admin.
    * Hỗ trợ tìm kiếm theo tên, SKU, lọc theo danh mục, trạng thái kích hoạt và trạng thái xóa mềm.
@@ -77,6 +79,7 @@ export class ProductAdminController {
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Get(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Lấy thông tin chi tiết một sản phẩm bao gồm tất cả các biến thể, hình ảnh và thuộc tính.
    */
@@ -89,6 +92,7 @@ export class ProductAdminController {
   @ApiBadRequestResponse({ description: 'Xác thực dữ liệu yêu cầu thất bại.' })
   @ApiConflictResponse({ description: 'Slug hoặc SKU sản phẩm đã được sử dụng.' })
   @Post()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Tạo sản phẩm mới.
    * Logic bao gồm: tạo thông tin cơ bản, các biến thể (SKU, giá, tồn kho),
@@ -108,6 +112,8 @@ export class ProductAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @ApiConflictResponse({ description: 'Slug sản phẩm đã được sử dụng.' })
   @Put(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /**
    * Cập nhật thông tin cơ bản của sản phẩm (tên, mô tả, slug, trạng thái).
    * Lưu ý: Không cập nhật trực tiếp biến thể hoặc hình ảnh qua endpoint này (có các endpoint riêng).
@@ -126,6 +132,7 @@ export class ProductAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Xóa mềm sản phẩm.
    * Chuyển trạng thái `isDeleted` thành true, sản phẩm sẽ không hiển thị ở phía Shop
@@ -143,6 +150,7 @@ export class ProductAdminController {
   @ApiOkResponse({ type: ProductAdminDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Patch(':id/restore')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Khôi phục sản phẩm đã bị xóa mềm trước đó về trạng thái hoạt động.
    */
@@ -161,6 +169,8 @@ export class ProductAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @ApiConflictResponse({ description: 'SKU biến thể hoặc tổ hợp màu-kích thước đã được sử dụng.' })
   @Post(':id/variants')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /**
    * Thêm một biến thể mới cho sản phẩm hiện có.
    * Kiểm tra tính duy nhất của SKU và tổ hợp Màu/Kích thước trong phạm vi sản phẩm.
@@ -178,6 +188,8 @@ export class ProductAdminController {
   @ApiOkResponse({ description: 'Cập nhật biến thể thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc biến thể.' })
   @Put(':id/variants/:variantId')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /**
    * Cập nhật thông tin biến thể: giá bán, giá nhập, số lượng tồn kho và trạng thái.
    * Đây là nơi quản lý kho (Inventory) cho từng SKU cụ thể.
@@ -202,6 +214,7 @@ export class ProductAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc biến thể.' })
   @Delete(':id/variants/:variantId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Xóa mềm một biến thể cụ thể của sản phẩm.
    */
@@ -224,6 +237,8 @@ export class ProductAdminController {
   @ApiCreatedResponse({ description: 'Thêm hình ảnh sản phẩm thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Post(':id/images')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /**
    * Thêm hình ảnh mới cho sản phẩm, có thể chỉ định là ảnh chính (main image).
    */
@@ -240,6 +255,8 @@ export class ProductAdminController {
   @ApiOkResponse({ description: 'Cập nhật hình ảnh sản phẩm thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc hình ảnh.' })
   @Put(':id/images/:imageId')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /**
    * Cập nhật thông tin hình ảnh (URL, thứ tự hiển thị, hoặc đặt làm ảnh chính).
    */
@@ -263,6 +280,7 @@ export class ProductAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc hình ảnh.' })
   @Delete(':id/images/:imageId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Xóa hoàn toàn hình ảnh khỏi cơ sở dữ liệu.
    */

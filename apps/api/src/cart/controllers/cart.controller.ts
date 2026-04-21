@@ -15,6 +15,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -46,6 +47,7 @@ export class CartController {
   @ApiOperation({ summary: 'Lấy giỏ hàng của khách hàng hiện tại' })
   @ApiOkResponse({ type: CartResponseDto })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getCart(@CurrentUser() user: AuthenticatedUser): Promise<CartResponseDto> {
     return this.cartService.getCart(user.id);
   }
@@ -58,6 +60,7 @@ export class CartController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy biến thể sản phẩm.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ.' })
   @Post('items')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async addItem(
     @Body() dto: AddCartItemDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -73,6 +76,7 @@ export class CartController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy mục giỏ hàng.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ.' })
   @Patch('items/:itemId')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async updateItem(
     @Param('itemId', ParseIntPipe) itemId: number,
     @Body() dto: UpdateCartItemDto,
@@ -89,6 +93,7 @@ export class CartController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy mục giỏ hàng.' })
   @Delete('items/:itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async removeItem(
     @Param('itemId', ParseIntPipe) itemId: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -103,6 +108,7 @@ export class CartController {
   @ApiNoContentResponse({ description: 'Xoá giỏ hàng thành công.' })
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async clearCart(@CurrentUser() user: AuthenticatedUser): Promise<void> {
     return this.cartService.clearCart(user.id);
   }

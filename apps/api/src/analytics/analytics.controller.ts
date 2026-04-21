@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -45,6 +46,7 @@ export class AnalyticsController {
   })
   @ApiOkResponse({ type: AnalyticsKpisWithDeltaResponseDto })
   @Get('kpis-with-delta')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getKpisWithDelta(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsKpisWithDeltaResponseDto> {
@@ -58,6 +60,7 @@ export class AnalyticsController {
   })
   @ApiOkResponse({ type: AnalyticsOverviewResponseDto })
   @Get('overview')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getOverview(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsOverviewResponseDto> {
@@ -67,6 +70,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Chỉ breakdown trạng thái đơn (tạo trong kỳ)' })
   @ApiOkResponse({ type: AnalyticsStatusBreakdownOnlyResponseDto })
   @Get('breakdowns/status')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getBreakdownStatus(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsStatusBreakdownOnlyResponseDto> {
@@ -76,6 +80,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Chỉ mix phương thức thanh toán' })
   @ApiOkResponse({ type: AnalyticsPaymentMethodMixOnlyResponseDto })
   @Get('breakdowns/payment-method')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getBreakdownPaymentMethod(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsPaymentMethodMixOnlyResponseDto> {
@@ -85,6 +90,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Chỉ funnel paymentStatus trên đơn trong kỳ' })
   @ApiOkResponse({ type: AnalyticsPaymentStatusMixOnlyResponseDto })
   @Get('breakdowns/payment-status')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getBreakdownPaymentStatus(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsPaymentStatusMixOnlyResponseDto> {
@@ -94,6 +100,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Đơn cần xử lý (PENDING hoặc CK chưa thành công)' })
   @ApiOkResponse({ type: AnalyticsPendingOrdersOnlyResponseDto })
   @Get('orders/pending-actions')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getPendingOrders(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsPendingOrdersOnlyResponseDto> {
@@ -103,6 +110,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Top sản phẩm theo GMV (subtotal) trong kỳ' })
   @ApiOkResponse({ type: AnalyticsTopProductsResponseDto })
   @Get('top-products')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getTopProducts(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsTopProductsResponseDto> {
@@ -112,6 +120,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Tổng hợp đánh giá khách hàng (rating breakdown + review mới nhất)' })
   @ApiOkResponse({ type: AnalyticsReviewsSummaryResponseDto })
   @Get('reviews/summary')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getReviewsSummary(
     @Query() query: AnalyticsDateRangeQueryDto,
   ): Promise<AnalyticsReviewsSummaryResponseDto> {
@@ -124,6 +133,7 @@ export class AnalyticsController {
   })
   @ApiOkResponse({ type: AnalyticsTimeseriesResponseDto })
   @Get('timeseries')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getTimeseries(
     @Query() query: AnalyticsTimeseriesQueryDto,
   ): Promise<AnalyticsTimeseriesResponseDto> {
@@ -133,6 +143,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Top địa chỉ giao hàng (theo GMV đơn tạo trong kỳ, trừ hủy/hoàn)' })
   @ApiOkResponse({ type: AnalyticsTopShippingCitiesResponseDto })
   @Get('top-shipping-cities')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getTopShippingCities(
     @Query() query: AnalyticsTopCitiesQueryDto,
   ): Promise<AnalyticsTopShippingCitiesResponseDto> {

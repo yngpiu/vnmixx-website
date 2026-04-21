@@ -13,6 +13,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -44,6 +45,7 @@ export class WishlistController {
   @ApiOperation({ summary: 'Lấy danh sách yêu thích của khách hàng hiện tại' })
   @ApiOkResponse({ type: [WishlistItemResponseDto] })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(@CurrentUser() user: AuthenticatedUser): Promise<WishlistItemResponseDto[]> {
     return this.wishlistService.findAll(user.id);
   }
@@ -57,6 +59,7 @@ export class WishlistController {
   @ApiConflictResponse({ description: 'Sản phẩm đã có trong danh sách yêu thích.' })
   @Post(':productId')
   @HttpCode(HttpStatus.CREATED)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async add(
     @Param('productId', ParseIntPipe) productId: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -72,6 +75,7 @@ export class WishlistController {
   @ApiNotFoundResponse({ description: 'Sản phẩm không có trong danh sách yêu thích.' })
   @Delete(':productId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('productId', ParseIntPipe) productId: number,
     @CurrentUser() user: AuthenticatedUser,

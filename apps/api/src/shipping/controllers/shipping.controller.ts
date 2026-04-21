@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -30,6 +31,7 @@ export class ShippingController {
     description: 'Giỏ hàng trống hoặc không có dịch vụ vận chuyển khả dụng.',
   })
   @Post('fee')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async calculateFee(
     @Body() dto: CalculateShippingFeeDto,
     @CurrentUser() user: AuthenticatedUser,

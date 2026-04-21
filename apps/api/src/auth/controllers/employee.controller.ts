@@ -2,6 +2,8 @@ import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -46,6 +48,8 @@ export class EmployeeAuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Đăng nhập nhân viên bằng email/mật khẩu và nhận token truy cập Dashboard. */
   async login(
     @Body() dto: LoginDto,
@@ -66,6 +70,8 @@ export class EmployeeAuthController {
   @RequireUserType('EMPLOYEE')
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @ApiForbiddenResponse({ description: 'Bạn không có quyền thực hiện hành động này.' })
   /** Đổi mật khẩu nhân viên: Yêu cầu mật khẩu hiện tại và mật khẩu mới. */
   async changePassword(
     @Body() dto: ChangePasswordDto,

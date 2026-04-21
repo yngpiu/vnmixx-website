@@ -15,6 +15,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -54,6 +55,7 @@ export class CustomerAdminController {
   })
   @ApiOkResponse({ type: CustomerListResponseDto })
   @Get()
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findAll(@Query() query: ListCustomersQueryDto) {
     return this.customerService.findList({
       page: query.page!,
@@ -70,6 +72,7 @@ export class CustomerAdminController {
   @ApiOkResponse({ type: CustomerDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Get(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.customerService.findById(id);
   }
@@ -84,6 +87,7 @@ export class CustomerAdminController {
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Patch(':id')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCustomerDto,
@@ -98,6 +102,7 @@ export class CustomerAdminController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -110,6 +115,7 @@ export class CustomerAdminController {
   @ApiOkResponse({ type: CustomerDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng hoặc khách hàng chưa bị xóa.' })
   @Patch(':id/restore')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   restore(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
