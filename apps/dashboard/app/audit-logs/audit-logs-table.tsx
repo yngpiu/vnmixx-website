@@ -96,7 +96,7 @@ export function AuditLogsTable() {
   });
 
   const rows = data?.data ?? [];
-  const pageCount = Math.max(data?.meta.totalPages ?? 1, 1);
+  const pageCount = Math.max(data?.meta?.totalPages ?? 1, 1);
 
   const columns = useMemo<ColumnDef<AuditLogItem>[]>(
     () => [

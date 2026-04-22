@@ -83,10 +83,23 @@ function registerAuthInterceptors(): void {
 
   /**
    * Response interceptor: use proxy.ts as single refresh source of truth.
-   * On 401 this interceptor only clears local auth state and redirects.
+   * - Automatically unwraps NestJS TransformInterceptor structure.
+   * - Preserves { data, meta } for paginated results.
+   * - Returns only data for single items.
    */
   apiClient.interceptors.response.use(
-    (response: AxiosResponse) => response,
+    (response: AxiosResponse) => {
+      const { data } = response;
+      if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
+        // If it's a paginated response, it will have 'data' and 'meta' at the top level of the payload
+        if ('meta' in data) {
+          const { success: _, timestamp: __, ...payload } = data; // eslint-disable-line @typescript-eslint/no-unused-vars
+          return { ...response, data: payload };
+        }
+        return { ...response, data: data.data };
+      }
+      return response;
+    },
     async (error: AxiosError) => {
       const requestConfig = error.config as RetryableAxiosRequestConfig | undefined;
       const isUnauthorized = error.response?.status === 401;

@@ -55,7 +55,7 @@ export class MediaRepository {
     } else {
       orderBy.createdAt = sortOrder;
     }
-    const [items, total] = await this.prisma.$transaction([
+    const [data, total] = await this.prisma.$transaction([
       this.prisma.mediaFile.findMany({
         where,
         orderBy,
@@ -64,7 +64,15 @@ export class MediaRepository {
       }),
       this.prisma.mediaFile.count({ where }),
     ]);
-    return { items, total, page, pageSize };
+    return {
+      data,
+      meta: {
+        page,
+        limit: pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
   }
 
   async findById(id: number) {

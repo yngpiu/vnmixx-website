@@ -16,10 +16,13 @@ export type MediaFile = {
 
 /** Paginated response from the list media endpoint. */
 export type ListMediaResponse = {
-  items: MediaFile[];
-  total: number;
-  page: number;
-  pageSize: number;
+  data: MediaFile[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 };
 
 /** Parameters for listing media files. */

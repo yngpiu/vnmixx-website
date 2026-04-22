@@ -103,7 +103,7 @@ export function RolesTable() {
   });
 
   const rows = data?.data ?? [];
-  const pageCount = Math.max(data?.meta.totalPages ?? 1, 1);
+  const pageCount = Math.max(data?.meta?.totalPages ?? 1, 1);
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteRole(id),

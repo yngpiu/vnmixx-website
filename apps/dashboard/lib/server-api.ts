@@ -65,9 +65,13 @@ async function executeRequest<T>(
   }
   const text = await response.text();
   if (!text) return undefined as T;
-  const json = JSON.parse(text) as ApiResponse<T> | T;
+  const json = JSON.parse(text) as (ApiResponse<T> & { meta?: unknown }) | T;
   // Auto-unwrap NestJS TransformInterceptor wrapper
   if (typeof json === 'object' && json !== null && 'success' in json && 'data' in json) {
+    if ('meta' in json) {
+      const { success: _, timestamp: __, ...payload } = json; // eslint-disable-line @typescript-eslint/no-unused-vars
+      return payload as T;
+    }
     return (json as ApiResponse<T>).data;
   }
   return json as T;

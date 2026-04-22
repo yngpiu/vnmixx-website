@@ -119,8 +119,8 @@ export function MediaLibrary() {
     queryFn: ({ pageParam }) => listMedia({ ...filterParams, page: pageParam } as ListMediaParams),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      const loaded = lastPage.page * lastPage.pageSize;
-      return loaded < lastPage.total ? lastPage.page + 1 : undefined;
+      const loaded = lastPage.meta.page * lastPage.meta.limit;
+      return loaded < lastPage.meta.total ? lastPage.meta.page + 1 : undefined;
     },
   });
 
@@ -175,7 +175,7 @@ export function MediaLibrary() {
     const seen = new Set<number>();
     const result: MediaFile[] = [];
     for (const page of pages) {
-      for (const item of page.items) {
+      for (const item of page.data) {
         if (!seen.has(item.id)) {
           seen.add(item.id);
           result.push(item);
@@ -184,7 +184,7 @@ export function MediaLibrary() {
     }
     return result;
   }, [mediaQuery.data]);
-  const total = mediaQuery.data?.pages[0]?.total ?? 0;
+  const total = mediaQuery.data?.pages[0]?.meta?.total ?? 0;
   const folders = foldersQuery.data ?? [];
   const hasMore = mediaQuery.hasNextPage ?? false;
 

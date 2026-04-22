@@ -64,7 +64,7 @@ export function CustomerOrdersSection({ customerId }: CustomerOrdersSectionProps
   const table = useReactTable({
     data: ordersQuery.data?.data ?? [],
     columns: ordersColumns,
-    pageCount: Math.max(ordersQuery.data?.meta.totalPages ?? 1, 1),
+    pageCount: Math.max(ordersQuery.data?.meta?.totalPages ?? 1, 1),
     state: {
       pagination,
       columnFilters,

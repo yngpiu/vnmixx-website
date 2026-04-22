@@ -75,8 +75,8 @@ export class MediaService {
       pageSize: query.pageSize,
     });
     return {
-      ...result,
-      items: result.items.map((item) => this.withPublicUrl(item)),
+      data: result.data.map((item) => this.withPublicUrl(item)),
+      meta: result.meta,
     };
   }
 

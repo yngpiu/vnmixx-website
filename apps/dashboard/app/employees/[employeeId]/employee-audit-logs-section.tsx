@@ -82,7 +82,7 @@ export function EmployeeAuditLogsSection({ employeeId }: EmployeeAuditLogsSectio
     placeholderData: keepPreviousData,
   });
   const rows = data?.data ?? [];
-  const pageCount = Math.max(data?.meta.totalPages ?? 1, 1);
+  const pageCount = Math.max(data?.meta?.totalPages ?? 1, 1);
   const columns = useMemo<ColumnDef<AuditLogItem>[]>(
     () => [
       ...createAuditLogsColumns(),

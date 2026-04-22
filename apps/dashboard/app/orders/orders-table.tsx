@@ -61,7 +61,7 @@ export function OrdersTable() {
   });
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const rows = data?.data ?? [];
-  const pageCount = Math.max(data?.meta.totalPages ?? 1, 1);
+  const pageCount = Math.max(data?.meta?.totalPages ?? 1, 1);
   const table = useReactTable({
     data: rows,
     columns,

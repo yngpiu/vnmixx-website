@@ -145,8 +145,8 @@ export function MediaPickerDialog({
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      const loaded = lastPage.page * lastPage.pageSize;
-      return loaded < lastPage.total ? lastPage.page + 1 : undefined;
+      const loaded = lastPage.meta.page * lastPage.meta.limit;
+      return loaded < lastPage.meta.total ? lastPage.meta.page + 1 : undefined;
     },
     enabled: open,
   });
@@ -168,7 +168,7 @@ export function MediaPickerDialog({
     const seen = new Set<number>();
     const rows: MediaFile[] = [];
     for (const page of pages) {
-      for (const item of page.items) {
+      for (const item of page.data) {
         if (seen.has(item.id)) continue;
         seen.add(item.id);
         rows.push(item);
