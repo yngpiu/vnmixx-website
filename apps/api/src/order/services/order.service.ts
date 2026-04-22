@@ -60,10 +60,8 @@ interface ShippingCalculation {
   toWardCode: string;
 }
 
-/**
- * OrderService: Dịch vụ quản lý đơn hàng dành cho khách hàng.
- * Vai trò: Xử lý luồng đặt hàng (Checkout), hủy đơn hàng, và truy vấn lịch sử đơn hàng của khách.
- */
+// Dịch vụ quản lý đơn hàng dành cho khách hàng
+// Vai trò: Xử lý luồng đặt hàng (Checkout), hủy đơn hàng và truy vấn lịch sử đơn hàng
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
@@ -75,29 +73,24 @@ export class OrderService {
     private readonly shipping: ShippingService,
   ) {}
 
-  // ─── Customer Actions ──────────────────────────────────────────────────────
+  // ─── Thao tác của khách hàng ──────────────────────────────────────────────
 
-  /**
-   * Thực hiện đặt hàng (Checkout).
-   * Logic thực thi:
-   * 1. Validate địa chỉ nhận hàng và giỏ hàng.
-   * 2. Tính toán kích thước/khối lượng kiện hàng dựa trên sản phẩm trong giỏ.
-   * 3. Gọi API GHN để tính phí vận chuyển thực tế.
-   * 4. Thực thi Transaction: Khóa kho (Reserve SKU), tạo đơn hàng, tạo bản ghi thanh toán và xóa giỏ hàng.
-   * 5. Trả về thông tin chi tiết đơn hàng vừa tạo.
-   * @param customerId ID khách hàng thực hiện đặt hàng.
-   * @param dto Thông tin đơn hàng (địa chỉ, phương thức thanh toán, v.v.).
-   */
+  // Thực hiện đặt hàng (Checkout)
   async placeOrder(customerId: number, dto: CreateOrderDto): Promise<OrderDetailView> {
+    // 1. Kiểm tra tính hợp lệ của địa chỉ nhận hàng và giỏ hàng
     const address = (await this.validateAddressOrFail(
       customerId,
       dto.addressId,
     )) as unknown as AddressWithGhn;
     const cart = (await this.validateCartOrFail(customerId)) as unknown as CartWithItems;
 
+    // 2. Tính toán kích thước và khối lượng kiện hàng dựa trên các sản phẩm
     const packageInfo = this.calculatePackageInfo(cart.items);
+
+    // 3. Gọi API GHN để lấy phí vận chuyển thực tế
     const shippingInfo = await this.calculateShippingInfo(address, packageInfo, dto.serviceTypeId);
 
+    // 4. Thực thi Transaction: Khóa kho, tạo đơn hàng, thanh toán và xóa giỏ
     const orderCode = await this.executeOrderTransactionWithRetry({
       customerId,
       address,
@@ -107,6 +100,7 @@ export class OrderService {
       dto,
     });
 
+    // 5. Trả về thông tin chi tiết đơn hàng vừa được tạo thành công
     const result = await this.orderRepo.findByOrderCode(orderCode, customerId);
     if (!result) {
       throw new InternalServerErrorException(
@@ -116,13 +110,10 @@ export class OrderService {
     return result;
   }
 
-  /**
-   * Hủy đơn hàng bởi khách hàng.
-   * Logic: Chỉ cho phép hủy khi đơn ở trạng thái PENDING. Thực hiện hoàn lại số lượng đã giữ (Reserved) vào kho (On Hand).
-   * @param customerId ID khách hàng.
-   * @param orderCode Mã đơn hàng cần hủy.
-   */
+  // Hủy đơn hàng bởi khách hàng
+  // Chỉ cho phép hủy khi đơn ở trạng thái PENDING
   async cancelMyOrder(customerId: number, orderCode: string): Promise<OrderDetailView> {
+    // 1. Kiểm tra sự tồn tại và trạng thái của đơn hàng
     const order = await this.prisma.order.findFirst({
       where: { orderCode, customerId },
       select: {
@@ -137,6 +128,7 @@ export class OrderService {
       throw new BadRequestException('Chỉ có thể hủy đơn hàng ở trạng thái CHỜ XỬ LÝ.');
     }
 
+    // 2. Thực hiện cập nhật trạng thái và hoàn lại số lượng sản phẩm vào kho
     await this.prisma.$transaction(async (tx) => {
       await tx.order.update({
         where: { id: order.id },
@@ -156,8 +148,9 @@ export class OrderService {
     return result;
   }
 
-  // ─── Queries ───────────────────────────────────────────────────────────────
+  // ─── Truy vấn ──────────────────────────────────────────────────────────────
 
+  // Lấy danh sách đơn hàng của tôi với phân trang
   async findMyOrders(
     customerId: number,
     query: ListMyOrdersQueryDto,
@@ -179,20 +172,23 @@ export class OrderService {
     };
   }
 
+  // Tìm chi tiết đơn hàng theo mã đơn hàng
   async findMyOrderByCode(customerId: number, orderCode: string): Promise<OrderDetailView> {
     const order = await this.orderRepo.findByOrderCode(orderCode, customerId);
     if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
     return order;
   }
 
-  // ─── Private Helpers (Validation & Calculation) ───────────────────────────
+  // ─── Các hàm bổ trợ (Kiểm tra & Tính toán) ───────────────────────────
 
+  // Kiểm tra địa chỉ có thuộc về khách hàng không
   private async validateAddressOrFail(customerId: number, addressId: number) {
     const address = await this.orderRepo.findAddressByIdAndCustomer(addressId, customerId);
     if (!address) throw new NotFoundException(`Không tìm thấy địa chỉ #${addressId}.`);
     return address;
   }
 
+  // Kiểm tra giỏ hàng có sản phẩm hay không
   private async validateCartOrFail(customerId: number) {
     const cart = await this.orderRepo.findCartWithItems(customerId);
     if (!cart || cart.items.length === 0) {
@@ -201,6 +197,7 @@ export class OrderService {
     return cart;
   }
 
+  // Ước tính kích thước kiện hàng từ danh sách sản phẩm
   private calculatePackageInfo(items: CartItemWithVariant[]): PackageInfo {
     return estimateCartPackageFromLines(
       items.map((item) => ({
@@ -210,6 +207,7 @@ export class OrderService {
     );
   }
 
+  // Tính phí vận chuyển và lấy thông tin dịch vụ GHN
   private async calculateShippingInfo(
     address: AddressWithGhn,
     pkg: PackageInfo,
@@ -219,6 +217,7 @@ export class OrderService {
     const toDistrictId = Number(address.district.giaohangnhanhId);
     const toWardCode = address.ward.giaohangnhanhId;
 
+    // 1. Lấy danh sách dịch vụ khả dụng cho khu vực nhận hàng
     const availableServices = await this.ghn.getAvailableServices(shop.districtId, toDistrictId);
     const matchedService = availableServices?.find((s) => s.service_type_id === serviceTypeId);
 
@@ -226,6 +225,7 @@ export class OrderService {
       throw new BadRequestException('Dịch vụ vận chuyển không khả dụng cho địa chỉ này.');
     }
 
+    // 2. Tính phí thực tế dựa trên cân nặng và kích thước
     const feeData = await this.ghn.calculateFee({
       fromDistrictId: shop.districtId,
       fromWardCode: shop.wardCode,
@@ -247,8 +247,9 @@ export class OrderService {
     };
   }
 
-  // ─── Private Helpers (Execution & Transaction) ────────────────────────────
+  // ─── Các hàm bổ trợ (Thực thi & Giao dịch) ────────────────────────────
 
+  // Thực thi giao dịch tạo đơn hàng với cơ chế thử lại nếu xung đột
   private async executeOrderTransactionWithRetry(params: {
     customerId: number;
     address: AddressWithGhn;
@@ -269,10 +270,13 @@ export class OrderService {
         );
         const total = subtotal + params.shippingInfo.fee;
 
+        // Sử dụng IsolationLevel Serializable để đảm bảo tính nhất quán của tồn kho
         await this.prisma.$transaction(
           async (tx) => {
+            // 1. Giữ hàng trong kho
             await this.reserveStock(tx, params.cart.items);
 
+            // 2. Tạo bản ghi đơn hàng
             const order = await tx.order.create({
               data: {
                 orderCode,
@@ -301,6 +305,7 @@ export class OrderService {
               },
             });
 
+            // 3. Tạo chi tiết đơn hàng
             await tx.orderItem.createMany({
               data: params.cart.items.map((item) => ({
                 orderId: order.id,
@@ -315,6 +320,7 @@ export class OrderService {
               })),
             });
 
+            // 4. Tạo bản ghi thanh toán
             await tx.payment.create({
               data: {
                 orderId: order.id,
@@ -324,10 +330,12 @@ export class OrderService {
               },
             });
 
+            // 5. Lưu lịch sử trạng thái
             await tx.orderStatusHistory.create({
               data: { orderId: order.id, status: 'PENDING' },
             });
 
+            // 6. Xóa các sản phẩm đã đặt khỏi giỏ hàng
             await tx.cartItem.deleteMany({ where: { cartId: params.cart.id } });
           },
           { isolationLevel: 'Serializable' },
@@ -336,6 +344,7 @@ export class OrderService {
         this.logger.log(`Đơn hàng ${orderCode} được tạo bởi customer #${params.customerId}`);
         return orderCode;
       } catch (error) {
+        // Thử lại nếu gặp lỗi xung đột dữ liệu (Deadlock/Concurrent update)
         if (this.isRetryableError(error) && retries < maxRetries - 1) {
           retries++;
           this.logger.warn(`Transaction conflict, retrying order (${retries}/${maxRetries})...`);
@@ -348,6 +357,7 @@ export class OrderService {
     throw new BadRequestException('Hệ thống bận, vui lòng thử lại sau giây lát.');
   }
 
+  // Kiểm tra lỗi có thể thử lại được không (liên quan đến transaction/unique constraint)
   private isRetryableError(error: unknown): boolean {
     return (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -355,6 +365,7 @@ export class OrderService {
     );
   }
 
+  // Thực hiện giữ hàng trong kho (Optimistic Concurrency Control)
   private async reserveStock(tx: Prisma.TransactionClient, items: CartItemWithVariant[]) {
     const variantIds = items.map((i) => i.variant.id);
     const variants = await tx.productVariant.findMany({
@@ -372,10 +383,12 @@ export class OrderService {
 
     for (const item of items) {
       const v = variants.find((x) => x.id === item.variant.id);
+      // 1. Kiểm tra tính khả dụng của sản phẩm
       if (!v || !v.isActive || v.deletedAt) {
         throw new BadRequestException(`Sản phẩm SKU ${item.variant.sku} không còn khả dụng.`);
       }
 
+      // 2. Kiểm tra số lượng tồn kho thực tế còn lại
       const availableQty = v.onHand - v.reserved;
       if (item.quantity > availableQty) {
         throw new BadRequestException(
@@ -383,6 +396,7 @@ export class OrderService {
         );
       }
 
+      // 3. Cập nhật số lượng giữ hàng và tăng version để tránh xung đột
       const updated = await tx.productVariant.updateMany({
         where: { id: v.id, version: v.version },
         data: {
@@ -391,6 +405,7 @@ export class OrderService {
         },
       });
 
+      // Nếu không hàng nào được cập nhật, nghĩa là version đã thay đổi bởi transaction khác
       if (updated.count === 0) {
         throw new Prisma.PrismaClientKnownRequestError('Conflict', {
           code: 'P2034',
@@ -398,6 +413,7 @@ export class OrderService {
         });
       }
 
+      // 4. Lưu vết biến động kho
       await tx.stockMovement.create({
         data: {
           variantId: v.id,
@@ -411,6 +427,7 @@ export class OrderService {
     }
   }
 
+  // Hoàn lại số lượng từ mục giữ hàng về kho khả dụng hoặc tăng tồn kho
   private async releaseStock(
     tx: Prisma.TransactionClient,
     orderId: number,
@@ -430,9 +447,11 @@ export class OrderService {
         );
       }
 
+      // 1. Tính toán số lượng cần hoàn lại từ mục Reserved
       const releaseQty = Math.min(v.reserved, item.quantity);
       const restoreQty = item.quantity - releaseQty;
 
+      // 2. Cập nhật lại kho của biến thể
       await tx.productVariant.update({
         where: { id: v.id },
         data: {
@@ -442,6 +461,7 @@ export class OrderService {
         },
       });
 
+      // 3. Lưu vết biến động kho để đối soát
       await tx.stockMovement.create({
         data: {
           variantId: v.id,

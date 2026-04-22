@@ -21,10 +21,8 @@ import {
 } from '../dto';
 import { OrderService } from '../services/order.service';
 
-/**
- * OrderController: Tiếp nhận các yêu cầu liên quan đến đơn hàng từ phía khách hàng.
- * Vai trò: Điều hướng yêu cầu đặt hàng, hủy đơn và xem lịch sử đơn hàng của cá nhân khách hàng.
- */
+// Tiếp nhận các yêu cầu liên quan đến đơn hàng từ phía khách hàng.
+// Điều hướng yêu cầu đặt hàng, hủy đơn và xem lịch sử mua hàng cá nhân.
 @ApiTags('Orders')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -34,9 +32,7 @@ import { OrderService } from '../services/order.service';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  /**
-   * Endpoint đặt hàng. Khách hàng cung cấp thông tin giao hàng và thanh toán.
-   */
+  // Khởi tạo đơn hàng mới từ giỏ hàng hiện tại của khách hàng.
   @ApiOperation({ summary: 'Đặt hàng (checkout từ giỏ hàng)' })
   @ApiCreatedResponse({ type: OrderDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Giỏ hàng trống hoặc tồn kho không đủ.' })
@@ -50,9 +46,7 @@ export class OrderController {
     return this.orderService.placeOrder(user.id, dto);
   }
 
-  /**
-   * Lấy toàn bộ lịch sử đơn hàng của khách hàng hiện tại.
-   */
+  // Truy xuất toàn bộ lịch sử mua sắm để khách hàng theo dõi các đơn hàng cũ.
   @ApiOperation({ summary: 'Lấy danh sách đơn hàng của tôi' })
   @ApiOkResponse({ type: OrderListResponseDto })
   @Get()
@@ -64,9 +58,7 @@ export class OrderController {
     return this.orderService.findMyOrders(user.id, query);
   }
 
-  /**
-   * Xem chi tiết một đơn hàng dựa trên mã đơn hàng.
-   */
+  // Xem chi tiết một đơn hàng cụ thể để biết trạng thái vận chuyển và thanh toán.
   @ApiOperation({ summary: 'Lấy chi tiết đơn hàng' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
@@ -79,9 +71,7 @@ export class OrderController {
     return this.orderService.findMyOrderByCode(user.id, orderCode);
   }
 
-  /**
-   * Hủy đơn hàng của khách hàng (chỉ thực hiện được khi đơn ở trạng thái PENDING).
-   */
+  // Cho phép khách hàng tự hủy đơn khi đơn vẫn đang trong trạng thái chờ xử lý.
   @ApiOperation({ summary: 'Hủy đơn hàng (chỉ khi trạng thái PENDING)' })
   @ApiOkResponse({ type: OrderDetailResponseDto })
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép hủy.' })

@@ -15,6 +15,7 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import { CalculateShippingFeeDto, ShippingFeeResponseDto } from '../dto';
 import { ShippingService } from '../services/shipping.service';
 
+// Xử lý các yêu cầu liên quan đến vận chuyển cho khách hàng.
 @ApiTags('Shipping')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -24,6 +25,7 @@ import { ShippingService } from '../services/shipping.service';
 export class ShippingController {
   constructor(private readonly shippingService: ShippingService) {}
 
+  // Tính toán phí vận chuyển thực tế để thông báo cho khách hàng trước khi đặt hàng.
   @ApiOperation({ summary: 'Tính phí vận chuyển dựa trên địa chỉ nhận hàng và giỏ hàng' })
   @ApiOkResponse({ type: ShippingFeeResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })

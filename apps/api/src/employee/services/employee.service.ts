@@ -63,12 +63,12 @@ export class EmployeeService {
     auditContext: AuditRequestContext = {},
   ): Promise<EmployeeDetailView> {
     try {
-      // Mã hóa mật khẩu nhân viên
+      // 1. Mã hóa mật khẩu nhân viên bằng Bcrypt để đảm bảo an toàn thông tin
       const hashedPassword = await hash(dto.password, BCRYPT_ROUNDS);
+      // 2. Kiểm tra sự tồn tại của vai trò trước khi gán để đảm bảo tính toàn vẹn dữ liệu
       const roleId = dto.roleId;
       await this.ensureRoleIdExists(roleId);
-
-      // Tạo bản ghi nhân viên cơ bản
+      // 3. Lưu thông tin nhân viên mới vào cơ sở dữ liệu
       const createdEmployee = await this.employeeRepo.create({
         roleId,
         fullName: dto.fullName,
@@ -76,8 +76,7 @@ export class EmployeeService {
         phoneNumber: dto.phoneNumber,
         hashedPassword,
       });
-
-      // Ghi nhật ký thao tác thành công
+      // 4. Ghi lại nhật ký hệ thống về thao tác tạo nhân viên thành công
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.create',
@@ -86,10 +85,9 @@ export class EmployeeService {
         status: AuditLogStatus.SUCCESS,
         afterData: createdEmployee,
       });
-
       return createdEmployee;
     } catch (error) {
-      // Ghi nhật ký thao tác thất bại
+      // 5. Ghi nhận lỗi vào nhật ký nếu quá trình tạo thất bại
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.create',
@@ -98,6 +96,7 @@ export class EmployeeService {
         afterData: dto,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
+      // 6. Xử lý các lỗi vi phạm ràng buộc duy nhất (email, số điện thoại)
       this.handleUniqueViolation(error);
       throw error;
     }
@@ -113,30 +112,28 @@ export class EmployeeService {
     try {
       const hasStatus = dto.status !== undefined;
       const hasRoleId = dto.roleId !== undefined;
-
+      // 1. Kiểm tra đầu vào: phải có ít nhất một thông tin cần thay đổi
       if (!hasStatus && !hasRoleId) {
         throw new BadRequestException(
           'Cần cung cấp ít nhất một thông tin để cập nhật (trạng thái hoặc vai trò)',
         );
       }
-
       const updateData: Prisma.EmployeeUpdateInput = {};
-
-      // Cập nhật trạng thái tài khoản (ACTIVE/INACTIVE)
+      // 2. Cập nhật trạng thái tài khoản (ACTIVE/INACTIVE) nếu có yêu cầu
       if (hasStatus) {
         updateData.status = dto.status!;
       }
-
+      // 3. Kiểm tra và gán vai trò mới cho nhân viên nếu có yêu cầu
       if (hasRoleId) {
         await this.ensureRoleIdExists(dto.roleId!);
         updateData.role = { connect: { id: dto.roleId! } };
       }
-
+      // 4. Thực hiện cập nhật dữ liệu trong DB
       await this.employeeRepo.update(id, updateData);
+      // 5. Thu hồi cache phân quyền của nhân viên để áp dụng quyền mới ngay lập tức
       await this.employeeAuthzCache.invalidate(id);
       const afterData = await this.findById(id);
-
-      // Ghi nhật ký thao tác thành công
+      // 6. Ghi nhận nhật ký cập nhật thành công kèm theo dữ liệu trước và sau khi đổi
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.update',
@@ -146,10 +143,9 @@ export class EmployeeService {
         beforeData,
         afterData,
       });
-
       return afterData;
     } catch (error) {
-      // Ghi nhật ký thao tác thất bại
+      // 7. Ghi nhận lỗi cập nhật vào nhật ký hệ thống
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.update',
@@ -172,25 +168,23 @@ export class EmployeeService {
   ): Promise<void> {
     const beforeData = await this.findById(id);
     try {
-      // Bảo vệ tài khoản quản trị tối cao (mặc định ID 1)
+      // 1. Bảo vệ tài khoản quản trị tối cao (mặc định ID 1) không bao giờ bị xóa
       if (id === 1) {
         throw new BadRequestException(
           'Không được phép xóa tài khoản quản trị tối cao của hệ thống',
         );
       }
-
-      // Ngăn nhân viên tự xóa chính mình
+      // 2. Đảm bảo nhân viên không tự thực hiện hành động xóa tài khoản của chính mình
       if (currentActorId && id === currentActorId) {
         throw new BadRequestException('Bạn không thể tự xóa tài khoản của chính mình');
       }
-
+      // 3. Thực hiện xóa mềm trong DB (đánh dấu trường deletedAt)
       const deleted = await this.employeeRepo.softDelete(id);
       if (!deleted) throw new NotFoundException(`Không tìm thấy nhân viên #${id} để xóa`);
-
+      // 4. Thu hồi cache của nhân viên để ngăn chặn truy cập sau khi bị xóa
       await this.employeeAuthzCache.invalidate(id);
       const afterData = await this.employeeRepo.findById(id);
-
-      // Ghi nhật ký thao tác thành công
+      // 5. Ghi nhận nhật ký xóa thành công
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.delete',
@@ -201,7 +195,7 @@ export class EmployeeService {
         afterData,
       });
     } catch (error) {
-      // Ghi nhật ký thao tác thất bại
+      // 6. Ghi nhận lỗi xóa vào nhật ký hệ thống
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.delete',
@@ -219,16 +213,16 @@ export class EmployeeService {
   async restore(id: number, auditContext: AuditRequestContext = {}): Promise<EmployeeDetailView> {
     const beforeData = await this.findById(id);
     try {
+      // 1. Thực hiện khôi phục bản ghi trong cơ sở dữ liệu
       const restored = await this.employeeRepo.restore(id);
       if (!restored) {
         throw new BadRequestException(
           `Nhân viên #${id} không ở trạng thái bị xóa hoặc không tồn tại`,
         );
       }
-
+      // 2. Thu hồi cache (nếu có) để hệ thống nhận diện lại nhân viên
       await this.employeeAuthzCache.invalidate(id);
-
-      // Ghi nhật ký thao tác thành công
+      // 3. Ghi nhận nhật ký khôi phục thành công
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.restore',
@@ -240,7 +234,7 @@ export class EmployeeService {
       });
       return restored;
     } catch (error) {
-      // Ghi nhật ký thao tác thất bại
+      // 4. Ghi nhận lỗi khôi phục vào nhật ký hệ thống
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.restore',
@@ -268,6 +262,7 @@ export class EmployeeService {
     }
   }
 
+  // Kiểm tra sự tồn tại của vai trò trước khi gán
   private async ensureRoleIdExists(roleId: number): Promise<void> {
     const role = await this.roleRepo.findById(roleId);
     if (!role) {

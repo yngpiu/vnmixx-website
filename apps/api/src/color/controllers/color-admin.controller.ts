@@ -39,10 +39,8 @@ import {
 } from '../dto';
 import { ColorService } from '../services/color.service';
 
-/**
- * ColorAdminController: Endpoint quản trị màu sắc.
- * Vai trò: Cho phép nhân viên quản lý (CRUD) danh mục màu sắc của hệ thống.
- */
+// Quản trị danh mục màu sắc dùng cho việc phân loại và hiển thị sản phẩm.
+// Nhân viên có thể thêm/sửa/xóa các mã màu HEX để đảm bảo tính thẩm mỹ trên giao diện.
 @ApiTags('Colors')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -52,9 +50,7 @@ import { ColorService } from '../services/color.service';
 export class ColorAdminController {
   constructor(private readonly colorService: ColorService) {}
 
-  /**
-   * Lấy danh sách màu sắc có phân trang và tìm kiếm.
-   */
+  // Truy xuất danh sách màu sắc phục vụ trang quản trị.
   @ApiOperation({
     summary: 'Liệt kê màu sắc (quản trị)',
     description: 'Phân trang, tìm theo tên hoặc HEX, sắp xếp.',
@@ -72,9 +68,7 @@ export class ColorAdminController {
     });
   }
 
-  /**
-   * Tạo màu sắc mới.
-   */
+  // Khởi tạo mã màu mới khi nhập các dòng sản phẩm có màu sắc mới.
   @ApiOperation({ summary: 'Tạo màu mới' })
   @ApiCreatedResponse({ type: ColorAdminResponseDto })
   @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
@@ -89,9 +83,7 @@ export class ColorAdminController {
     return this.colorService.create(dto, buildAuditRequestContext(request, user));
   }
 
-  /**
-   * Cập nhật thông tin màu sắc.
-   */
+  // Cập nhật thông tin màu sắc hiện có để đồng bộ với nhận diện thương hiệu.
   @ApiOperation({ summary: 'Cập nhật màu' })
   @ApiOkResponse({ type: ColorAdminResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })
@@ -108,9 +100,7 @@ export class ColorAdminController {
     return this.colorService.update(id, dto, buildAuditRequestContext(request, user));
   }
 
-  /**
-   * Xóa màu sắc khỏi hệ thống.
-   */
+  // Loại bỏ các màu sắc không còn được sử dụng để tối ưu danh mục.
   @ApiOperation({ summary: 'Xóa màu' })
   @ApiNoContentResponse({ description: 'Xóa màu thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })

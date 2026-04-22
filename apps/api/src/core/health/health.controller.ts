@@ -5,10 +5,8 @@ import { Public } from '../../auth/decorators';
 import { PrismaHealthIndicator } from './prisma-health.indicator';
 import { RedisHealthIndicator } from './redis-health.indicator';
 
-/**
- * Controller xử lý các yêu cầu kiểm tra trạng thái sức khỏe (Health Check) của hệ thống.
- * Cung cấp thông tin về trạng thái của DB, Redis và toàn bộ ứng dụng.
- */
+// Kiểm tra trạng thái sức khỏe (Health Check) của hệ thống.
+// Đảm bảo DB, Redis và toàn bộ ứng dụng đang hoạt động ổn định.
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
@@ -18,10 +16,7 @@ export class HealthController {
     private readonly redisHealth: RedisHealthIndicator,
   ) {}
 
-  /**
-   * Endpoint GET /health kiểm tra đồng thời nhiều chỉ số sức khỏe.
-   * Nếu bất kỳ dịch vụ nào (Prisma, Redis) gặp lỗi, endpoint sẽ trả về trạng thái thất bại.
-   */
+  // Kiểm tra đồng thời tính khả dụng của cơ sở dữ liệu và cache.
   @Get()
   @Public()
   @HealthCheck()

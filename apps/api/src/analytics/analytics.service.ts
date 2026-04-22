@@ -23,10 +23,8 @@ export type AnalyticsKpisRow = {
   aovCompleted: number | null;
 };
 
-/**
- * AnalyticsService: Dịch vụ cung cấp các số liệu thống kê (KPIs) và báo cáo doanh thu.
- * Vai trò: Tổng hợp dữ liệu từ đơn hàng, sản phẩm, đánh giá để phục vụ dashboard quản trị.
- */
+// AnalyticsService: Dịch vụ cung cấp các số liệu thống kê (KPIs) và báo cáo doanh thu.
+// Vai trò: Tổng hợp dữ liệu từ đơn hàng, sản phẩm, đánh giá để phục vụ dashboard quản trị.
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
@@ -41,8 +39,11 @@ export class AnalyticsService {
   }
 
   private parseUtcRange(dto: AnalyticsDateRangeQueryDto): UtcRange {
+    // 1. Chuyển đổi chuỗi ngày sang đối tượng Date UTC để đảm bảo tính nhất quán múi giờ
     const fromUtc = new Date(`${dto.from}T00:00:00.000Z`);
     const toUtc = new Date(`${dto.to}T23:59:59.999Z`);
+
+    // 2. Kiểm tra tính hợp lệ của khoảng thời gian (không quá giới hạn cho phép)
     const check = assertAnalyticsRangeWithinMaxDays(fromUtc, toUtc);
     if (!check.ok) {
       throw new BadRequestException(check.message);
@@ -69,14 +70,20 @@ export class AnalyticsService {
   }
 
   private getComparisonPeriod(fromUtc: Date, toUtc: Date): UtcRange {
+    // 1. Tính toán số lượng ngày trong kỳ hiện tại
     const numDays = this.eachUtcDay(fromUtc, toUtc).length;
     const startOfFrom = new Date(
       Date.UTC(fromUtc.getUTCFullYear(), fromUtc.getUTCMonth(), fromUtc.getUTCDate()),
     );
+
+    // 2. Xác định mốc kết thúc của kỳ trước (ngay trước ngày bắt đầu kỳ hiện tại)
     const prevToUtc = new Date(startOfFrom.getTime() - 1);
+
+    // 3. Lùi lại đúng số lượng ngày để xác định mốc bắt đầu của kỳ trước
     const prevFromUtc = new Date(startOfFrom);
     prevFromUtc.setUTCDate(prevFromUtc.getUTCDate() - numDays);
     prevFromUtc.setUTCHours(0, 0, 0, 0);
+
     return { fromUtc: prevFromUtc, toUtc: prevToUtc };
   }
 
@@ -87,6 +94,8 @@ export class AnalyticsService {
     const updatedInPeriod: Prisma.OrderWhereInput = {
       updatedAt: { gte: fromUtc, lte: toUtc },
     };
+
+    // Truy vấn song song nhiều chỉ số để tối ưu hiệu năng truy xuất DB
     const [
       gmvAgg,
       completedAgg,
@@ -97,6 +106,7 @@ export class AnalyticsService {
       cancelledCount,
       returnedCount,
     ] = await Promise.all([
+      // Tính GMV (không tính đơn hủy/trả)
       this.prisma.order.aggregate({
         where: {
           ...createdInPeriod,
@@ -104,6 +114,7 @@ export class AnalyticsService {
         },
         _sum: { total: true },
       }),
+      // Doanh thu hoàn thành (đã giao thành công)
       this.prisma.order.aggregate({
         where: {
           status: 'DELIVERED',
@@ -130,8 +141,11 @@ export class AnalyticsService {
     ]);
     const gmv = gmvAgg._sum.total ?? 0;
     const completedRevenue = completedAgg._sum.total ?? 0;
+
+    // Tính giá trị đơn hàng trung bình (AOV) cho các đơn hoàn thành
     const aovCompleted: number | null =
       ordersCompletedCount > 0 ? Math.round(completedRevenue / ordersCompletedCount) : null;
+
     return {
       gmv,
       completedRevenue,
@@ -178,19 +192,24 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Lấy KPIs quan trọng kèm theo so sánh với kỳ trước (Delta).
-   * GMV: Tổng giá trị đơn hàng được tạo (không bao gồm đơn hủy/trả).
-   * Completed Revenue: Doanh thu thực tế từ các đơn đã giao thành công.
-   * Logic: Tính toán số liệu cho kỳ hiện tại và kỳ trước đó có cùng số lượng ngày, sau đó tính % tăng trưởng.
-   */
+  // Lấy KPIs quan trọng kèm theo so sánh với kỳ trước (Delta).
+  // GMV: Tổng giá trị đơn hàng được tạo (không bao gồm đơn hủy/trả).
+  // Completed Revenue: Doanh thu thực tế từ các đơn đã giao thành công.
+  // Logic: Tính toán số liệu cho kỳ hiện tại và kỳ trước đó có cùng số lượng ngày, sau đó tính % tăng trưởng.
   async getKpisWithDelta(dto: AnalyticsDateRangeQueryDto) {
+    // 1. Xử lý và kiểm tra khoảng thời gian đầu vào
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
+
+    // 2. Xác định kỳ so sánh tương ứng ở quá khứ
     const { fromUtc: prevFrom, toUtc: prevTo } = this.getComparisonPeriod(fromUtc, toUtc);
+
+    // 3. Lấy dữ liệu KPI cho cả hai kỳ
     const [kpis, previousKpis] = await Promise.all([
       this.fetchKpisForRange(fromUtc, toUtc),
       this.fetchKpisForRange(prevFrom, prevTo),
     ]);
+
+    // 4. Tổng hợp và tính toán mức độ tăng trưởng (deltas)
     return {
       period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
       comparisonPeriod: { from: prevFrom.toISOString(), to: prevTo.toISOString() },
@@ -200,34 +219,39 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Lấy tổng quan hoạt động kinh doanh.
-   * Bao gồm: KPIs chính, tỷ lệ trạng thái đơn hàng, cơ cấu phương thức thanh toán và các đơn hàng cần xử lý ngay.
-   */
+  // Lấy tổng quan hoạt động kinh doanh.
+  // Bao gồm: KPIs chính, tỷ lệ trạng thái đơn hàng, cơ cấu phương thức thanh toán và các đơn hàng cần xử lý ngay.
   async getOverview(dto: AnalyticsDateRangeQueryDto) {
+    // 1. Phân tích khoảng thời gian yêu cầu
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const createdInPeriod: Prisma.OrderWhereInput = {
       createdAt: { gte: fromUtc, lte: toUtc },
     };
+
+    // 2. Truy vấn đồng thời các nhóm dữ liệu tổng quan để tối ưu performance
     const [kpis, statusGroups, paymentMethodGroups, paymentStatusGroups, recentOrders] =
       await Promise.all([
         this.fetchKpisForRange(fromUtc, toUtc),
+        // Thống kê theo trạng thái đơn hàng
         this.prisma.order.groupBy({
           by: ['status'],
           where: createdInPeriod,
           _count: { id: true },
           _sum: { total: true },
         }),
+        // Thống kê theo phương thức thanh toán
         this.prisma.payment.groupBy({
           by: ['method'],
           where: { order: createdInPeriod },
           _count: { id: true },
         }),
+        // Thống kê theo trạng thái thanh toán
         this.prisma.order.groupBy({
           by: ['paymentStatus'],
           where: createdInPeriod,
           _count: { id: true },
         }),
+        // Lấy danh sách các đơn hàng mới nhất cần chú ý xử lý
         this.prisma.order.findMany({
           where: {
             ...createdInPeriod,
@@ -252,6 +276,8 @@ export class AnalyticsService {
           },
         }),
       ]);
+
+    // 3. Chuẩn hóa dữ liệu trả về cho frontend
     return {
       period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
       kpis: {
@@ -389,11 +415,11 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Thống kê Top sản phẩm bán chạy theo doanh thu.
-   */
+  // Thống kê Top sản phẩm bán chạy theo doanh thu.
   async getTopProducts(dto: AnalyticsDateRangeQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
+
+    // 1. Nhóm và tính tổng theo sản phẩm để tìm ra các sản phẩm mang lại doanh thu cao nhất
     const rows = await this.prisma.orderItem.groupBy({
       by: ['productName'],
       where: {
@@ -406,11 +432,14 @@ export class AnalyticsService {
       orderBy: { _sum: { subtotal: 'desc' } },
       take: 10,
     });
+
+    // 2. Chuyển đổi kết quả sang dạng DTO dễ sử dụng
     const products = rows.map((row) => ({
       productName: row.productName,
       unitsSold: row._sum.quantity ?? 0,
       revenue: row._sum.subtotal ?? 0,
     }));
+
     return {
       period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
       products,
@@ -418,16 +447,15 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Tổng hợp dữ liệu đánh giá (Reviews) trong kỳ.
-   * Tính toán điểm trung bình và phân bổ số lượng sao từ 1-5.
-   */
+  // Tổng hợp dữ liệu đánh giá (Reviews) trong kỳ.
+  // Tính toán điểm trung bình và phân bổ số lượng sao từ 1-5.
   async getReviewsSummary(dto: AnalyticsDateRangeQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const where: Prisma.ProductReviewWhereInput = {
       status: 'VISIBLE',
       createdAt: { gte: fromUtc, lte: toUtc },
     };
+
     let aggregate: { _count: { id: number }; _avg: { rating: number | null } } = {
       _count: { id: 0 },
       _avg: { rating: null },
@@ -440,7 +468,9 @@ export class AnalyticsService {
       createdAt: Date;
       customer: { fullName: string } | null;
     } | null = null;
+
     try {
+      // 1. Lấy tổng hợp điểm trung bình, phân bổ rating và review mới nhất cùng lúc
       [aggregate, ratingGroups, latestReview] = await Promise.all([
         this.prisma.productReview.aggregate({
           where,
@@ -465,11 +495,14 @@ export class AnalyticsService {
         }),
       ]);
     } catch (error) {
+      // Xử lý trường hợp bảng chưa tồn tại (khi chưa chạy migration) để tránh crash API
       if (!this.isMissingTableError(error)) {
         throw error;
       }
       this.logger.warn('Bảng product_reviews chưa tồn tại, trả về thống kê review mặc định.');
     }
+
+    // 2. Tạo bản đồ phân bổ rating từ 1 đến 5 sao
     const ratingMap = new Map<number, number>();
     for (const row of ratingGroups) {
       ratingMap.set(row.rating, row._count.id);
@@ -478,6 +511,8 @@ export class AnalyticsService {
       rating,
       count: ratingMap.get(rating) ?? 0,
     }));
+
+    // 3. Chuẩn bị dữ liệu hiển thị cho review mới nhất
     const latestReviewDto =
       latestReview === null
         ? null
@@ -489,6 +524,7 @@ export class AnalyticsService {
             isVerifiedPurchase: true,
             createdAt: latestReview.createdAt,
           };
+
     return {
       period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
       averageRating: Math.round((Number(aggregate._avg.rating ?? 0) + Number.EPSILON) * 10) / 10,
@@ -498,12 +534,12 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * Biểu đồ thời gian (Timeseries) cho doanh thu và số lượng đơn hàng hàng ngày.
-   */
+  // Biểu đồ thời gian (Timeseries) cho doanh thu và số lượng đơn hàng hàng ngày.
   async getTimeseries(dto: AnalyticsTimeseriesQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const dayKeys = this.eachUtcDay(fromUtc, toUtc);
+
+    // 1. Truy vấn raw SQL để tận dụng hàm DATE_FORMAT của DB giúp gom nhóm theo ngày hiệu quả hơn
     const gmvRows = await this.prisma.$queryRaw<
       { bucketDate: string; gmv: bigint; ordersCreated: bigint }[]
     >(Prisma.sql`
@@ -517,6 +553,8 @@ export class AnalyticsService {
       GROUP BY DATE_FORMAT(o.created_at, '%Y-%m-%d')
       ORDER BY bucketDate ASC
     `);
+
+    // 2. Lấy số lượng đơn hàng hoàn thành theo ngày (dựa trên thời điểm cập nhật trạng thái)
     const completedRows = await this.prisma.$queryRaw<
       { bucketDate: string; ordersCompleted: bigint }[]
     >(Prisma.sql`
@@ -529,6 +567,8 @@ export class AnalyticsService {
       GROUP BY DATE_FORMAT(o.updated_at, '%Y-%m-%d')
       ORDER BY bucketDate ASC
     `);
+
+    // 3. Lấy số lượng đơn hàng bị hủy theo ngày
     const cancelledRows = await this.prisma.$queryRaw<
       { bucketDate: string; cancelled: bigint }[]
     >(Prisma.sql`
@@ -541,6 +581,8 @@ export class AnalyticsService {
       GROUP BY DATE_FORMAT(o.updated_at, '%Y-%m-%d')
       ORDER BY bucketDate ASC
     `);
+
+    // 4. Map kết quả vào các bản đồ (Map) để tối ưu việc tìm kiếm khi trộn dữ liệu
     const gmvMap = new Map<string, { gmv: number; ordersCreated: number }>();
     for (const row of gmvRows) {
       gmvMap.set(row.bucketDate, {
@@ -556,6 +598,8 @@ export class AnalyticsService {
     for (const row of cancelledRows) {
       cancelledMap.set(row.bucketDate, Number(row.cancelled));
     }
+
+    // 5. Trộn dữ liệu từ các nguồn khác nhau vào mảng kết quả cuối cùng theo từng ngày
     const data = dayKeys.map((bucketDate) => {
       const g = gmvMap.get(bucketDate);
       return {
@@ -566,18 +610,19 @@ export class AnalyticsService {
         cancelled: cancelledMap.get(bucketDate) ?? 0,
       };
     });
+
     return {
       period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
       data,
     };
   }
 
-  /**
-   * Top các thành phố có doanh thu và số lượng đơn hàng cao nhất.
-   */
+  // Top các thành phố có doanh thu và số lượng đơn hàng cao nhất.
   async getTopShippingCities(dto: AnalyticsTopCitiesQueryDto) {
     const { fromUtc, toUtc } = this.parseUtcRange(dto);
     const limit = dto.limit ?? 8;
+
+    // 1. Thống kê theo địa chỉ thành phố giao hàng
     const rows = await this.prisma.order.groupBy({
       by: ['shippingCity'],
       where: {
@@ -589,6 +634,8 @@ export class AnalyticsService {
       orderBy: { _sum: { total: 'desc' } },
       take: limit,
     });
+
+    // 2. Trả về kết quả phân tích thị trường theo khu vực
     return {
       period: { from: fromUtc.toISOString(), to: toUtc.toISOString() },
       cities: rows.map((row) => ({

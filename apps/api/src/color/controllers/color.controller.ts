@@ -9,15 +9,13 @@ import { Public } from '../../auth/decorators';
 import { ColorResponseDto } from '../dto';
 import { ColorService } from '../services/color.service';
 
-/**
- * ColorController: Endpoint công khai cho màu sắc.
- * Vai trò: Cung cấp API cho khách hàng xem danh sách các màu sắc có sẵn.
- */
+// Endpoint công khai để khách hàng tra cứu bảng màu sắc của sản phẩm.
 @ApiTags('Colors')
 @Controller('colors')
 export class ColorController {
   constructor(private readonly colorService: ColorService) {}
 
+  // Liệt kê toàn bộ màu sắc hiện có để hiển thị trong các bộ lọc tìm kiếm của khách hàng.
   @ApiOperation({ summary: 'Liệt kê tất cả màu sắc' })
   @ApiOkResponse({ type: [ColorResponseDto] })
   @Public()

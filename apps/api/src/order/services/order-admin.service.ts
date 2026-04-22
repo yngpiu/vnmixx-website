@@ -23,10 +23,8 @@ import {
   type OrderAdminListItemView,
 } from '../repositories/order.repository';
 
-/**
- * OrderAdminService: Dịch vụ quản lý đơn hàng dành cho nhân viên/quản trị viên.
- * Vai trò: Thực hiện các thao tác xác nhận đơn, tạo vận đơn, hủy đơn và quản lý thanh toán.
- */
+// Dịch vụ quản lý đơn hàng dành cho nhân viên/quản trị viên
+// Vai trò: Thực hiện xác nhận đơn, tạo vận đơn, hủy đơn và quản lý thanh toán
 @Injectable()
 export class OrderAdminService {
   private readonly logger = new Logger(OrderAdminService.name);
@@ -39,9 +37,7 @@ export class OrderAdminService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  /**
-   * Truy vấn danh sách đơn hàng toàn hệ thống với các bộ lọc.
-   */
+  // Truy vấn danh sách đơn hàng toàn hệ thống với các bộ lọc
   async findAllOrders(query: ListAdminOrdersQueryDto): Promise<{
     data: OrderAdminListItemView[];
     meta: { page: number; limit: number; total: number; totalPages: number };
@@ -63,9 +59,7 @@ export class OrderAdminService {
     };
   }
 
-  /**
-   * Lấy chi tiết đơn hàng theo mã phục vụ giao diện quản trị.
-   */
+  // Lấy chi tiết đơn hàng theo mã phục vụ giao diện quản trị
   async findOrderByCode(orderCode: string): Promise<OrderAdminDetailView> {
     const order = await this.orderRepo.findAdminByOrderCode(orderCode);
     if (!order) {
@@ -74,16 +68,7 @@ export class OrderAdminService {
     return order;
   }
 
-  /**
-   * Xác nhận đơn hàng và đẩy thông tin sang đơn vị vận chuyển (GHN).
-   * Logic thực thi:
-   * 1. Kiểm tra trạng thái đơn hàng (phải là PENDING).
-   * 2. Nếu là chuyển khoản, yêu cầu phải được xác nhận thanh toán trước.
-   * 3. Gọi API GHN để tạo vận đơn thực tế, nhận mã ghnOrderCode.
-   * 4. Thực thi Transaction: Cập nhật trạng thái đơn (AWAITING_SHIPMENT), lưu mã vận đơn.
-   * 5. Xuất kho (Export Stock): Chuyển trạng thái từ Reserved sang thực tế giảm On Hand.
-   * 6. Ghi Audit Log để theo dõi vết hoạt động của nhân viên.
-   */
+  // Xác nhận đơn hàng và đẩy thông tin sang đơn vị vận chuyển (GHN)
   async confirmOrder(
     orderCode: string,
     shipment: {
@@ -97,6 +82,7 @@ export class OrderAdminService {
     let beforeData: Record<string, unknown> | undefined;
     let createdGhnOrderCode: string | null = null;
     try {
+      // 1. Lấy thông tin chi tiết đơn hàng hiện tại
       const order = await this.prisma.order.findUnique({
         where: { orderCode },
         select: {
@@ -135,13 +121,14 @@ export class OrderAdminService {
         paymentStatus: order.payments[0]?.status,
       };
 
+      // 2. Kiểm tra trạng thái đơn hàng (phải là PENDING)
       if (order.status !== 'PENDING') {
         throw new BadRequestException(
           `Chỉ có thể xác nhận đơn hàng ở trạng thái chờ xử lý. Trạng thái hiện tại: ${order.status}.`,
         );
       }
 
-      // Check bank transfer payment
+      // 3. Nếu là chuyển khoản, yêu cầu phải được xác nhận thanh toán trước
       const payment = order.payments[0];
       if (payment?.method === 'BANK_TRANSFER' && payment.status !== 'SUCCESS') {
         throw new BadRequestException(
@@ -149,7 +136,7 @@ export class OrderAdminService {
         );
       }
 
-      // Create GHN shipment
+      // 4. Chuẩn bị thông tin và gọi API GHN để tạo vận đơn thực tế
       const toAddress = `${order.shippingAddressLine}, ${order.shippingWard}, ${order.shippingDistrict}, ${order.shippingCity}`;
       const codAmount = payment?.method === 'COD' ? order.total : 0;
 
@@ -186,7 +173,7 @@ export class OrderAdminService {
         throw new BadGatewayException(`Không thể tạo vận đơn GHN: ${msg}`);
       }
 
-      // Update order with GHN info
+      // 5. Thực thi Transaction: Cập nhật trạng thái đơn và xuất kho
       await this.prisma.$transaction(async (tx) => {
         await tx.order.update({
           where: { id: order.id },
@@ -208,7 +195,7 @@ export class OrderAdminService {
           ],
         });
 
-        // Convert reserved stock to exported stock once order is confirmed
+        // 6. Chuyển trạng thái từ Reserved sang thực tế giảm On Hand cho từng biến thể
         for (const item of order.items) {
           const variant = await tx.productVariant.findUnique({
             where: { id: item.variantId },
@@ -263,6 +250,7 @@ export class OrderAdminService {
 
       this.logger.log(`Đơn hàng ${orderCode} đã xác nhận, mã vận đơn GHN: ${ghnResult.order_code}`);
 
+      // 7. Ghi Audit Log để theo dõi lịch sử thao tác của nhân viên
       const result = (await this.orderRepo.findAdminByOrderCode(orderCode)) as OrderAdminDetailView;
       await this.auditLogService.write({
         ...auditContext,
@@ -275,6 +263,7 @@ export class OrderAdminService {
       });
       return result;
     } catch (error) {
+      // 8. Rollback vận đơn GHN nếu các bước sau đó thất bại để tránh lệch dữ liệu
       if (createdGhnOrderCode) {
         try {
           await this.ghn.cancelOrder([createdGhnOrderCode]);
@@ -300,19 +289,14 @@ export class OrderAdminService {
     }
   }
 
-  /**
-   * Hủy đơn hàng bởi admin.
-   * Logic:
-   * 1. Hủy vận đơn GHN nếu đã tạo.
-   * 2. Hoàn lại tồn kho: Nhả phần Reserved (nếu đơn chưa xuất kho) hoặc tăng lại On Hand (nếu đơn đã xuất kho).
-   * 3. Xử lý hoàn tiền (Refund) nếu khách đã thanh toán thành công.
-   */
+  // Hủy đơn hàng bởi admin
   async cancelOrder(
     orderCode: string,
     auditContext: AuditRequestContext = {},
   ): Promise<OrderAdminDetailView> {
     let beforeData: Record<string, unknown> | undefined;
     try {
+      // 1. Kiểm tra sự tồn tại và trạng thái hiện tại của đơn hàng
       const order = await this.prisma.order.findUnique({
         where: { orderCode },
         select: {
@@ -339,7 +323,7 @@ export class OrderAdminService {
         throw new BadRequestException(`Không thể hủy đơn hàng ở trạng thái ${order.status}.`);
       }
 
-      // Cancel GHN shipment if exists
+      // 2. Hủy vận đơn GHN nếu đơn hàng đã được đẩy sang đơn vị vận chuyển
       if (order.ghnOrderCode) {
         try {
           await this.ghn.cancelOrder([order.ghnOrderCode]);
@@ -351,6 +335,7 @@ export class OrderAdminService {
         }
       }
 
+      // 3. Thực thi Transaction: Hoàn lại tồn kho và cập nhật trạng thái đơn
       await this.prisma.$transaction(async (tx) => {
         await tx.order.update({
           where: { id: order.id },
@@ -363,7 +348,7 @@ export class OrderAdminService {
 
         const isPendingOrder = order.status === 'PENDING';
 
-        // Restore stock / release reservation
+        // 4. Hoàn lại tồn kho: Nhả phần Reserved hoặc tăng lại On Hand tùy theo trạng thái đơn
         for (const item of order.items) {
           const variant = await tx.productVariant.findUnique({
             where: { id: item.variantId },
@@ -394,6 +379,7 @@ export class OrderAdminService {
             throw new BadRequestException('Tồn kho vừa thay đổi, vui lòng thử hủy đơn lại.');
           }
 
+          // 5. Lưu vết biến động kho cho thao tác hoàn kho
           if (releaseQty > 0) {
             await tx.stockMovement.create({
               data: {
@@ -429,7 +415,7 @@ export class OrderAdminService {
           }
         }
 
-        // Refund if payment was already confirmed
+        // 6. Xử lý hoàn tiền (Refund) nếu khách hàng đã thanh toán thành công
         const paidPayment = order.payments.find((p) => p.status === 'SUCCESS');
         if (paidPayment) {
           await tx.payment.update({
@@ -470,16 +456,14 @@ export class OrderAdminService {
     }
   }
 
-  /**
-   * Xác nhận thanh toán chuyển khoản thủ công bởi admin.
-   * Sử dụng khi khách hàng chuyển khoản và nhân viên kiểm tra số dư thành công.
-   */
+  // Xác nhận thanh toán chuyển khoản thủ công bởi admin
   async confirmPayment(
     orderCode: string,
     auditContext: AuditRequestContext = {},
   ): Promise<OrderAdminDetailView> {
     let beforeData: Record<string, unknown> | undefined;
     try {
+      // 1. Kiểm tra đơn hàng và bản ghi thanh toán tương ứng
       const order = await this.prisma.order.findUnique({
         where: { orderCode },
         select: {
@@ -501,6 +485,7 @@ export class OrderAdminService {
       };
 
       const payment = order.payments[0];
+      // 2. Chỉ cho phép xác nhận cho phương thức chuyển khoản
       if (!payment || payment.method !== 'BANK_TRANSFER') {
         throw new BadRequestException('Chỉ có thể xác nhận thanh toán cho đơn chuyển khoản.');
       }
@@ -509,6 +494,7 @@ export class OrderAdminService {
         throw new BadRequestException('Thanh toán đã được xác nhận trước đó.');
       }
 
+      // 3. Cập nhật trạng thái thanh toán thành công
       await this.prisma.$transaction(async (tx) => {
         await tx.payment.update({
           where: { id: payment.id },

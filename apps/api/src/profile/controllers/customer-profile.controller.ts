@@ -17,10 +17,8 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import { CustomerProfileResponseDto, UpdateCustomerProfileDto } from '../dto';
 import { ProfileService } from '../services/profile.service';
 
-/**
- * Controller xử lý hồ sơ cá nhân cho Khách hàng.
- * Cho phép khách hàng xem, cập nhật thông tin cá nhân và đổi mật khẩu của chính mình.
- */
+// Xử lý hồ sơ cá nhân cho Khách hàng.
+// Giúp khách hàng cập nhật thông tin liên lạc và quản lý bảo mật tài khoản cá nhân.
 @ApiTags('Profile')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -30,6 +28,7 @@ import { ProfileService } from '../services/profile.service';
 export class CustomerProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
+  // Truy xuất thông tin cá nhân của khách hàng đang đăng nhập.
   @ApiOperation({ summary: 'Lấy hồ sơ khách hàng hiện tại' })
   @ApiOkResponse({ type: CustomerProfileResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
@@ -39,6 +38,7 @@ export class CustomerProfileController {
     return this.profileService.getCustomerProfile(user.id);
   }
 
+  // Cập nhật thông tin định danh và liên lạc của khách hàng.
   @ApiOperation({ summary: 'Cập nhật hồ sơ khách hàng hiện tại' })
   @ApiOkResponse({
     type: CustomerProfileResponseDto,
@@ -58,6 +58,7 @@ export class CustomerProfileController {
     return this.profileService.updateCustomerProfile(user.id, dto);
   }
 
+  // Đổi mật khẩu để tăng cường tính bảo mật cho tài khoản khách hàng.
   @ApiOperation({ summary: 'Đổi mật khẩu khách hàng hiện tại' })
   @ApiNoContentResponse({ description: 'Đổi mật khẩu thành công.' })
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })

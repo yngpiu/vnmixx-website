@@ -37,9 +37,9 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import { CreateFolderDto, ListMediaQueryDto, MoveMediaDto, UploadMediaDto } from '../dto';
 import { MediaService, type UploadedFileInput } from '../services/media.service';
 
-/** Max file size transport limit: 50 MB */
+// Giới hạn kích thước tệp tải lên tối đa: 50 MB
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
-/** Max files per upload: 20 */
+// Số lượng tệp tối đa trong một lần upload: 20
 const MAX_FILES_COUNT = 20;
 const ALLOWED_MIME_PREFIXES = ['image/', 'video/'] as const;
 

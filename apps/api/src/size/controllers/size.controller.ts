@@ -9,15 +9,13 @@ import { Public } from '../../auth/decorators';
 import { SizeResponseDto } from '../dto';
 import { SizeService } from '../services/size.service';
 
-/**
- * SizeController: Endpoint công khai cho kích thước sản phẩm.
- * Vai trò: Cung cấp danh sách các kích thước (S, M, L, XL, v.v.) cho khách hàng.
- */
+// Endpoint công khai để khách hàng tra cứu các kích thước sản phẩm (S, M, L, XL, v.v.).
 @ApiTags('Sizes')
 @Controller('sizes')
 export class SizeController {
   constructor(private readonly sizeService: SizeService) {}
 
+  // Liệt kê toàn bộ kích thước để khách hàng lựa chọn khi mua sắm.
   @ApiOperation({ summary: 'Liệt kê tất cả kích thước' })
   @ApiOkResponse({ type: [SizeResponseDto] })
   @Public()

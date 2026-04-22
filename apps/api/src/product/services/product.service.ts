@@ -35,11 +35,8 @@ import { ProductCacheService } from './product-cache.service';
 import { ProductImageService } from './product-image.service';
 import { ProductVariantService } from './product-variant.service';
 
-/**
- * ProductService: Quản lý logic cốt lõi của sản phẩm.
- * Bao gồm: Tạo/cập nhật thông tin cơ bản, quản lý trạng thái, và điều phối các thành phần liên quan (biến thể, hình ảnh).
- * Tích hợp Cache (Redis) để tối ưu hiệu năng và Audit Log để theo dõi lịch sử thay đổi.
- */
+// Quản lý logic cốt lõi của sản phẩm: thông tin cơ bản, biến thể và hình ảnh
+// Tích hợp Redis Cache để tối ưu hiệu năng và Audit Log để theo dõi lịch sử thay đổi
 @Injectable()
 export class ProductService {
   constructor(
@@ -51,12 +48,9 @@ export class ProductService {
     private readonly redis: RedisService,
   ) {}
 
-  // ─── Public ─────────────────────────────────────────────────────────────────
+  // ─── Công khai (Khách hàng) ──────────────────────────────────────────────────
 
-  /**
-   * Truy vấn danh sách sản phẩm cho khách hàng.
-   * Sử dụng Cache để giảm tải cho Database.
-   */
+  // Truy vấn danh sách sản phẩm cho khách hàng, sử dụng Redis Cache để giảm tải DB
   findPublicList(
     query: ListProductsQueryDto,
   ): Promise<
@@ -74,15 +68,14 @@ export class ProductService {
       sort: query.sort,
     };
 
+    // Dùng mã băm của params làm key để cache các kết quả tìm kiếm khác nhau
     const hash = this.cacheService.hashQuery(params);
     return this.redis.getOrSet(CACHE_KEYS.PRODUCT_LIST(hash), CACHE_TTL.PRODUCT_LIST, () =>
       this.repository.findPublicList(params),
     );
   }
 
-  /**
-   * Lấy chi tiết sản phẩm qua Slug cho khách hàng.
-   */
+  // Lấy chi tiết sản phẩm qua Slug cho khách hàng có sử dụng Cache
   async findBySlug(slug: string) {
     const cached = await this.redis.getOrSet(
       CACHE_KEYS.PRODUCT_SLUG(slug),
@@ -96,12 +89,9 @@ export class ProductService {
     return cached;
   }
 
-  // ─── Admin ──────────────────────────────────────────────────────────────────
+  // ─── Quản trị (Admin) ───────────────────────────────────────────────────────
 
-  /**
-   * Truy vấn danh sách sản phẩm cho quản trị viên.
-   * Hỗ trợ lọc theo trạng thái (isActive, isSoftDeleted) và phân trang.
-   */
+  // Truy vấn danh sách sản phẩm cho quản trị viên, hỗ trợ lọc sâu và phân trang
   async findAdminList(query: ListAdminProductsQueryDto) {
     const result = await this.repository.findAdminList({
       page: query.page ?? 1,
@@ -132,27 +122,23 @@ export class ProductService {
     };
   }
 
+  // Tìm chi tiết sản phẩm theo ID cho admin
   async findAdminById(id: number) {
     const product = await this.repository.findAdminById(id);
     if (!product) throw new NotFoundException(`Không tìm thấy sản phẩm #${id}`);
     return this.transformAdminDetail(product);
   }
 
-  /**
-   * Logic tạo sản phẩm mới:
-   * 1. Kiểm tra danh mục (phải là danh mục lá).
-   * 2. Kiểm tra tính hợp lệ của Màu sắc và Kích thước.
-   * 3. Validate tổ hợp biến thể và tính duy nhất của SKU.
-   * 4. Tự động xác định ảnh đại diện (thumbnail) nếu không được cung cấp.
-   * 5. Lưu DB và ghi Audit Log.
-   */
+  // Logic tạo sản phẩm mới đầy đủ các thành phần liên quan
   async create(dto: CreateProductDto, auditContext: AuditRequestContext = {}) {
     try {
+      // 1. Kiểm tra danh mục phải tồn tại và là danh mục lá (không có con)
       const categoryIds = this.resolveProductCategoryIdsInput(dto.categoryIds, dto.categoryId);
       if (categoryIds.length > 0) {
         await this.assertCategoriesExistAndLeaf(categoryIds);
       }
 
+      // 2. Kiểm tra tính hợp lệ của tất cả các Màu sắc và Kích thước được dùng trong biến thể
       const colorIds = dto.variants.map((v) => v.colorId);
       const sizeIds = dto.variants.map((v) => v.sizeId);
 
@@ -163,6 +149,7 @@ export class ProductService {
       if (!colorsValid) throw new BadRequestException('Một hoặc nhiều ID màu sắc không hợp lệ');
       if (!sizesValid) throw new BadRequestException('Một hoặc nhiều ID kích thước không hợp lệ');
 
+      // 3. Validate tính duy nhất của SKU và tổ hợp các biến thể
       this.variantService.validateVariantCombos(dto.variants);
       this.variantService.validateSkuUniqueness(dto.variants);
 
@@ -172,11 +159,14 @@ export class ProductService {
         }
       }
 
+      // 4. Tự động xác định ảnh thumbnail dựa trên các ảnh được cung cấp
       const autoThumbnail = this.imageService.resolveCreateThumbnail({
         requestedThumbnail: dto.thumbnail,
         variants: dto.variants,
         images: dto.images ?? [],
       });
+
+      // 5. Lưu toàn bộ thông tin sản phẩm vào DB trong một transaction ngầm
       const product = await this.repository.createFull({
         name: dto.name,
         slug: dto.slug,
@@ -188,7 +178,11 @@ export class ProductService {
         variants: dto.variants,
         images: dto.images ?? [],
       });
+
+      // 6. Xóa Cache danh sách sản phẩm vì dữ liệu đã thay đổi
       await this.cacheService.invalidateProductCache(dto.slug);
+
+      // 7. Ghi Audit Log để theo dõi vết tạo mới của nhân viên
       const afterData = this.transformAdminDetail(product);
       await this.auditLogService.write({
         ...auditContext,
@@ -218,16 +212,14 @@ export class ProductService {
     }
   }
 
-  /**
-   * Cập nhật thông tin cơ bản của sản phẩm.
-   * Xử lý đồng bộ danh mục và xóa Cache khi thông tin thay đổi.
-   */
+  // Cập nhật thông tin cơ bản của sản phẩm
   async update(id: number, dto: UpdateProductDto, auditContext: AuditRequestContext = {}) {
     let beforeData: ProductAdminDetailView | undefined;
     try {
       const existing = await this.findAdminByIdOrFail(id);
       beforeData = existing;
 
+      // 1. Xử lý cập nhật danh mục nếu có thay đổi
       let categoryIdsToSync: number[] | undefined;
       if (dto.categoryIds !== undefined) {
         categoryIdsToSync = this.dedupePositiveIds(dto.categoryIds);
@@ -241,6 +233,7 @@ export class ProductService {
         await this.repository.syncProductCategories(id, categoryIdsToSync);
       }
 
+      // 2. Cập nhật các thông tin cơ bản (tên, slug, mô tả...)
       const product = await this.repository.updateBasicInfo(id, {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.slug !== undefined && { slug: dto.slug }),
@@ -248,10 +241,14 @@ export class ProductService {
         ...(dto.thumbnail !== undefined && { thumbnail: dto.thumbnail }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       });
+
+      // 3. Xóa Cache cũ và Cache Slug mới (nếu Slug thay đổi) để đảm bảo dữ liệu mới nhất
       await this.cacheService.invalidateProductCache(existing.slug);
       if (dto.slug && dto.slug !== existing.slug) {
         await this.cacheService.deleteSlugCache(dto.slug);
       }
+
+      // 4. Ghi Audit Log thành công
       const afterData = this.transformAdminDetail(product);
       await this.auditLogService.write({
         ...auditContext,
@@ -279,13 +276,12 @@ export class ProductService {
     }
   }
 
-  /**
-   * Xóa mềm sản phẩm (Soft Delete) và xóa Cache liên quan.
-   */
+  // Xóa mềm sản phẩm và xóa Cache liên quan
   async softDelete(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const beforeData = await this.findAdminByIdOrFail(id);
     try {
       await this.repository.softDelete(id);
+      // Buộc xóa cache để khách hàng không nhìn thấy sản phẩm đã bị xóa
       await this.cacheService.invalidateProductCache(beforeData.slug);
       const afterRow = await this.repository.findAdminById(id);
       const afterData = afterRow ? this.transformAdminDetail(afterRow) : undefined;
@@ -312,6 +308,7 @@ export class ProductService {
     }
   }
 
+  // Khôi phục sản phẩm đã bị xóa mềm
   async restore(id: number, auditContext: AuditRequestContext = {}) {
     const beforeData = await this.findAdminByIdOrFail(id);
     try {
@@ -344,9 +341,9 @@ export class ProductService {
     }
   }
 
-  // ─── Variants Delegation ──────────────────────────────────────────────────
-  // Các phương thức dưới đây ủy quyền (delegate) xử lý cho ProductVariantService
+  // ─── Ủy thác cho ProductVariantService ───────────────────────────────────────
 
+  // Tạo mới biến thể cho sản phẩm
   async createVariant(
     productId: number,
     dto: CreateVariantDto,
@@ -356,6 +353,7 @@ export class ProductService {
     return this.variantService.createVariant(productId, product.slug, dto, auditContext);
   }
 
+  // Cập nhật thông tin biến thể
   async updateVariant(
     productId: number,
     variantId: number,
@@ -366,6 +364,7 @@ export class ProductService {
     return this.variantService.updateVariant(productId, product.slug, variantId, dto, auditContext);
   }
 
+  // Xóa mềm biến thể
   async softDeleteVariant(
     productId: number,
     variantId: number,
@@ -375,9 +374,9 @@ export class ProductService {
     return this.variantService.softDeleteVariant(productId, product.slug, variantId, auditContext);
   }
 
-  // ─── Images Delegation ────────────────────────────────────────────────────
-  // Các phương thức dưới đây ủy quyền xử lý cho ProductImageService
+  // ─── Ủy thác cho ProductImageService ─────────────────────────────────────────
 
+  // Thêm hình ảnh mới cho sản phẩm
   async createImage(
     productId: number,
     dto: CreateImageDto,
@@ -387,6 +386,7 @@ export class ProductService {
     return this.imageService.createImage(productId, product.slug, dto, auditContext);
   }
 
+  // Cập nhật thông tin hình ảnh
   async updateImage(
     productId: number,
     imageId: number,
@@ -397,6 +397,7 @@ export class ProductService {
     return this.imageService.updateImage(productId, product.slug, imageId, dto, auditContext);
   }
 
+  // Xóa hình ảnh khỏi sản phẩm
   async deleteImage(
     productId: number,
     imageId: number,
@@ -406,14 +407,16 @@ export class ProductService {
     return this.imageService.deleteImage(productId, product.slug, imageId, auditContext);
   }
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
+  // ─── Các hàm bổ trợ ─────────────────────────────────────────────────────────
 
+  // Tìm sản phẩm cho admin hoặc ném lỗi nếu không tồn tại
   private async findAdminByIdOrFail(id: number): Promise<ProductAdminDetailView> {
     const product = await this.repository.findAdminById(id);
     if (!product) throw new NotFoundException(`Không tìm thấy sản phẩm #${id}`);
     return product;
   }
 
+  // Chuyển đổi dữ liệu thô sang định dạng hiển thị cho khách hàng
   private transformPublicDetail(product: ProductDetailView) {
     return {
       id: product.id,
@@ -427,6 +430,7 @@ export class ProductService {
     };
   }
 
+  // Chuyển đổi dữ liệu thô sang định dạng hiển thị cho quản trị viên
   private transformAdminDetail(product: ProductAdminDetailView) {
     const categoryIdsFromJoin = product.productCategories?.map((r) => r.categoryId) ?? [];
     const categoryIds =
@@ -453,11 +457,12 @@ export class ProductService {
     };
   }
 
+  // Loại bỏ các ID trùng lặp và ID không hợp lệ (< 1)
   private dedupePositiveIds(ids: number[]): number[] {
     return [...new Set(ids.filter((id) => Number.isInteger(id) && id >= 1))];
   }
 
-  /** Ưu tiên `categoryIds`; nếu rỗng thì dùng `categoryId` đơn (legacy). */
+  // Xử lý logic gán ID danh mục: Ưu tiên danh sách mảng, nếu không có dùng ID đơn
   private resolveProductCategoryIdsInput(
     categoryIds: number[] | undefined,
     categoryId: number | undefined,
@@ -468,10 +473,7 @@ export class ProductService {
     return [];
   }
 
-  /**
-   * Đảm bảo danh mục tồn tại và là danh mục lá (không có danh mục con).
-   * Ràng buộc này đảm bảo cấu trúc dữ liệu chính xác cho việc gán sản phẩm.
-   */
+  // Đảm bảo danh mục tồn tại và là danh mục lá (không có danh mục con) để đảm bảo tính nhất quán dữ liệu
   private async assertCategoriesExistAndLeaf(categoryIds: number[]): Promise<void> {
     for (const cid of categoryIds) {
       const exists = await this.repository.categoryExists(cid);
@@ -485,6 +487,7 @@ export class ProductService {
     }
   }
 
+  // Xử lý lỗi vi phạm ràng buộc duy nhất từ Prisma (ví dụ: trùng Slug hoặc SKU)
   private handleUniqueViolation(err: unknown): void {
     if (isPrismaErrorCode(err, 'P2002') && isPrismaKnownRequestError(err)) {
       const target = getPrismaErrorTargets(err).join(', ') || 'field';

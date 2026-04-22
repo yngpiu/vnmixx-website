@@ -19,10 +19,8 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import { EmployeeProfileResponseDto, UpdateEmployeeProfileDto } from '../dto';
 import { ProfileService } from '../services/profile.service';
 
-/**
- * Controller xử lý hồ sơ cá nhân cho Nhân viên.
- * Cho phép nhân viên xem, cập nhật thông tin cơ bản và đổi mật khẩu của chính mình.
- */
+// Xử lý hồ sơ cá nhân cho Nhân viên.
+// Cho phép nhân viên tự quản lý thông tin cá nhân và bảo mật tài khoản.
 @ApiTags('Profile')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -32,6 +30,7 @@ import { ProfileService } from '../services/profile.service';
 export class EmployeeProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
+  // Lấy thông tin cá nhân của nhân viên đang đăng nhập.
   @ApiOperation({ summary: 'Lấy hồ sơ nhân viên hiện tại' })
   @ApiOkResponse({ type: EmployeeProfileResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
@@ -41,6 +40,7 @@ export class EmployeeProfileController {
     return this.profileService.getEmployeeProfile(user.id);
   }
 
+  // Cập nhật các thông tin cơ bản của nhân viên khi có thay đổi.
   @ApiOperation({ summary: 'Cập nhật hồ sơ nhân viên hiện tại' })
   @ApiOkResponse({
     type: EmployeeProfileResponseDto,
@@ -65,6 +65,7 @@ export class EmployeeProfileController {
     );
   }
 
+  // Thay đổi mật khẩu định kỳ hoặc khi nghi ngờ lộ thông tin để đảm bảo an toàn tài khoản.
   @ApiOperation({ summary: 'Đổi mật khẩu nhân viên hiện tại' })
   @ApiNoContentResponse({ description: 'Đổi mật khẩu thành công.' })
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })

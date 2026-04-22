@@ -6,13 +6,13 @@ import { R2Service } from '../../r2/r2.service';
 import type { CreateFolderDto, ListMediaQueryDto, MoveMediaDto, UploadMediaDto } from '../dto';
 import { MediaRepository } from '../repositories/media.repository';
 
-/** Normalize folder path — strip leading/trailing slashes. */
+// Chuẩn hóa đường dẫn thư mục - loại bỏ gạch chéo ở đầu và cuối
 function normalizeFolder(raw: string | undefined | null): string {
   if (!raw) return '';
   return raw.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
 }
 
-/** Generate a unique R2 key for an upload. */
+// Tạo khóa (key) duy nhất cho tệp tin khi upload lên R2
 function generateObjectKey(folder: string, fileName: string): string {
   const timestamp = Date.now();
   const rand = Math.random().toString(36).slice(2, 8);
@@ -21,6 +21,7 @@ function generateObjectKey(folder: string, fileName: string): string {
   return `${prefix}${timestamp}-${rand}-${safe}`;
 }
 
+// Kiểm tra định dạng tệp tin có được phép không
 function isAllowedMediaMimeType(mimeType: string): boolean {
   return mimeType.startsWith('image/') || mimeType.startsWith('video/');
 }
@@ -28,6 +29,7 @@ function isAllowedMediaMimeType(mimeType: string): boolean {
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
+// Kiểm tra dung lượng tệp tin theo loại (Ảnh 10MB, Video 50MB)
 function isAllowedMediaFileSize(file: UploadedFileInput): boolean {
   if (file.mimetype.startsWith('image/')) {
     return file.size <= MAX_IMAGE_SIZE;
@@ -55,12 +57,12 @@ export class MediaService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  /** Append public URL from env `R2_PUBLIC_URL` + stored object `key` (not persisted in DB). */
+  // Gắn thêm URL công khai từ biến môi trường vào kết quả trả về
   private withPublicUrl<T extends MediaFileRow>(row: T): T & { url: string } {
     return { ...row, url: this.r2.getPublicUrl(row.key) };
   }
 
-  // Lấy danh sách media có phân trang và lọc theo thư mục, loại tệp, tìm kiếm
+  // Lấy danh sách media có phân trang và lọc theo nhiều tiêu chí
   async listMedia(query: ListMediaQueryDto) {
     const folder = query.folder !== undefined ? normalizeFolder(query.folder) : undefined;
     const result = await this.repo.findMany({
@@ -78,7 +80,7 @@ export class MediaService {
     };
   }
 
-  // Xử lý upload một tệp tin đơn lẻ: kiểm tra định dạng, dung lượng, upload lên R2 và lưu DB
+  // Xử lý upload một tệp tin đơn lẻ lên R2 và lưu DB
   async uploadFile(
     file: UploadedFileInput,
     dto: UploadMediaDto,
@@ -86,6 +88,7 @@ export class MediaService {
     auditContext: AuditRequestContext = {},
   ) {
     try {
+      // 1. Kiểm tra định dạng và dung lượng tệp tin trước khi xử lý
       if (!isAllowedMediaMimeType(file.mimetype)) {
         throw new BadRequestException('Chỉ hỗ trợ upload ảnh hoặc video.');
       }
@@ -96,12 +99,15 @@ export class MediaService {
         throw new BadRequestException('Video vượt quá giới hạn 50MB.');
       }
       const folder = normalizeFolder(dto.folder);
-      // Đảm bảo cấu trúc thư mục tồn tại trong DB trước khi lưu file
+
+      // 2. Đảm bảo cấu trúc thư mục logic tồn tại trong Database
       const folderId = await this.repo.ensureFolderHierarchy(folder);
       const key = generateObjectKey(folder, file.originalname);
-      // Upload tệp vật lý lên Cloudflare R2
+
+      // 3. Upload tệp vật lý lên Cloudflare R2 để lưu trữ lâu dài
       await this.r2.uploadFile(key, file.buffer, file.mimetype);
-      // Lưu thông tin meta vào Database
+
+      // 4. Lưu thông tin meta-data của tệp vào Database để quản lý
       const row = await this.repo.create({
         key,
         fileName: file.originalname,
@@ -111,6 +117,8 @@ export class MediaService {
         size: file.size,
         uploadedBy: employeeId,
       });
+
+      // 5. Ghi Audit Log để theo dõi vết upload của nhân viên
       const result = this.withPublicUrl(row);
       await this.auditLogService.write({
         ...auditContext,
@@ -138,7 +146,7 @@ export class MediaService {
     }
   }
 
-  // Upload đồng thời nhiều tệp tin
+  // Upload đồng thời nhiều tệp tin để tối ưu thời gian phản hồi
   async uploadFiles(
     files: UploadedFileInput[],
     dto: UploadMediaDto,
@@ -151,15 +159,20 @@ export class MediaService {
     return results;
   }
 
-  // Xóa media: xóa tệp vật lý trên R2 sau đó xóa bản ghi trong DB
+  // Xóa media: xóa tệp vật lý trên R2 trước khi xóa bản ghi DB
   async deleteMedia(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const media = await this.repo.findById(id);
     if (!media) {
       throw new NotFoundException('Không tìm thấy file media.');
     }
     try {
+      // 1. Xóa tệp vật lý trên Cloudflare R2
       await this.r2.deleteFile(media.key);
+
+      // 2. Xóa bản ghi thông tin trong Database
       await this.repo.deleteById(id);
+
+      // 3. Ghi Audit Log thành công
       await this.auditLogService.write({
         ...auditContext,
         action: 'media.delete',
@@ -182,7 +195,7 @@ export class MediaService {
     }
   }
 
-  // Lấy danh sách tất cả các đường dẫn thư mục hiện có
+  // Lấy danh sách tất cả các đường dẫn thư mục hiện có phục vụ cây thư mục
   async listFolders(): Promise<string[]> {
     return this.repo.findAllFolders();
   }
@@ -218,7 +231,7 @@ export class MediaService {
     }
   }
 
-  // Di chuyển tệp tin sang thư mục khác (chỉ cập nhật đường dẫn logic trong DB, không đổi key R2)
+  // Di chuyển tệp tin sang thư mục khác
   async moveMedia(id: number, dto: MoveMediaDto, auditContext: AuditRequestContext = {}) {
     const media = await this.repo.findById(id);
     if (!media) {
@@ -226,11 +239,16 @@ export class MediaService {
     }
     const beforeData = { id: media.id, folder: media.folder, key: media.key };
     try {
+      // 1. Đảm bảo cấu trúc thư mục đích đã tồn tại
       const targetFolder = normalizeFolder(dto.targetFolder);
       const targetFolderId = await this.repo.ensureFolderHierarchy(targetFolder);
-      // DB-only move: logical `folder` changes; R2 object key unchanged (no copy/delete).
+
+      // 2. Cập nhật đường dẫn logic trong DB.
+      // Không thay đổi Key của đối tượng trên R2 để tránh việc phải copy/xóa tệp vật lý tốn kém tài nguyên.
       const updated = await this.repo.updateFolder(id, targetFolder, media.key, targetFolderId);
       const result = this.withPublicUrl(updated);
+
+      // 3. Ghi Audit Log thành công
       await this.auditLogService.write({
         ...auditContext,
         action: 'media.move',
@@ -256,8 +274,7 @@ export class MediaService {
     }
   }
 
-  /** Delete a folder and all its contents (files in R2 + DB records). */
-  // Xóa toàn bộ thư mục và nội dung bên trong (tệp trên R2 và bản ghi DB)
+  // Xóa toàn bộ thư mục và tất cả nội dung bên trong
   async deleteFolder(
     folderPath: string,
     auditContext: AuditRequestContext = {},
@@ -267,17 +284,22 @@ export class MediaService {
       throw new NotFoundException('Không thể xóa thư mục gốc.');
     }
     try {
-      // Find all files in folder + subfolders
+      // 1. Tìm tất cả các tệp tin thuộc thư mục này và các thư mục con
       const files = await this.repo.findByFolderPrefix(folder);
-      // Delete from R2
+
+      // 2. Thực hiện xóa hàng loạt các tệp vật lý trên R2
       if (files.length > 0) {
         const keys = files.map((f) => f.key);
         await this.r2.deleteFiles(keys);
       }
-      // Delete file records from DB
+
+      // 3. Xóa các bản ghi tệp tin trong Database
       const deletedFiles = await this.repo.deleteByFolderPrefix(folder);
-      // Delete folder records from DB
+
+      // 4. Xóa bản ghi thư mục trong Database
       const deletedFolders = await this.repo.deleteFolders(folder);
+
+      // 5. Ghi Audit Log thao tác xóa thư mục
       const result = { deletedFiles, deletedFolders };
       await this.auditLogService.write({
         ...auditContext,

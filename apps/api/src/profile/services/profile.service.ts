@@ -22,10 +22,8 @@ import {
   type EmployeeProfileView,
 } from '../repositories/employee.repository';
 
-/**
- * Service quản lý hồ sơ người dùng (Profile).
- * Xử lý logic xem/cập nhật thông tin cá nhân và đổi mật khẩu cho cả Khách hàng và Nhân viên.
- */
+// Quản lý hồ sơ người dùng (Profile) cho cả Khách hàng và Nhân viên.
+// Xử lý các nghiệp vụ cập nhật thông tin cá nhân và bảo mật tài khoản.
 @Injectable()
 export class ProfileService {
   private readonly logger = new Logger(ProfileService.name);
@@ -38,9 +36,7 @@ export class ProfileService {
     private readonly employeeAuthService: EmployeeAuthService,
   ) {}
 
-  /**
-   * Lấy thông tin hồ sơ của khách hàng theo ID.
-   */
+  // Truy xuất hồ sơ khách hàng phục vụ hiển thị thông tin cá nhân.
   async getCustomerProfile(customerId: number): Promise<CustomerProfileView> {
     try {
       const profile = await this.customerRepo.findById(customerId);
@@ -57,9 +53,7 @@ export class ProfileService {
     }
   }
 
-  /**
-   * Cập nhật thông tin cá nhân của khách hàng (Họ tên, ngày sinh, giới tính, avatar).
-   */
+  // Cập nhật các thông tin cơ bản của khách hàng (Họ tên, ngày sinh, giới tính, avatar).
   async updateCustomerProfile(
     customerId: number,
     dto: UpdateCustomerProfileDto,
@@ -95,27 +89,19 @@ export class ProfileService {
     }
   }
 
-  /**
-   * Đổi mật khẩu cho khách hàng hiện tại.
-   * Logic: Ủy thác cho CustomerAuthService để xác thực mật khẩu cũ và hash mật khẩu mới.
-   */
+  // Ủy thác việc đổi mật khẩu khách hàng cho chuyên biệt Auth Service.
   async changeCustomerPassword(customerId: number, dto: ChangePasswordDto): Promise<void> {
     await this.customerAuthService.changePassword(customerId, dto);
   }
 
-  /**
-   * Lấy thông tin hồ sơ của nhân viên theo ID.
-   */
+  // Truy xuất hồ sơ nhân viên để quản lý thông tin nhân sự.
   async getEmployeeProfile(employeeId: number): Promise<EmployeeProfileView> {
     const profile = await this.employeeRepo.findById(employeeId);
     if (!profile) throw new NotFoundException('Không tìm thấy nhân viên');
     return profile;
   }
 
-  /**
-   * Cập nhật thông tin cá nhân của nhân viên (Họ tên, số điện thoại, avatar).
-   * Có ghi Audit Log để theo dõi lịch sử thay đổi thông tin nhân viên.
-   */
+  // Cập nhật thông tin nhân viên kèm theo ghi nhật ký hệ thống (Audit Log).
   async updateEmployeeProfile(
     employeeId: number,
     dto: UpdateEmployeeProfileDto,
@@ -161,10 +147,7 @@ export class ProfileService {
     }
   }
 
-  /**
-   * Đổi mật khẩu cho nhân viên hiện tại.
-   * Logic: Ủy thác cho EmployeeAuthService để xử lý xác thực và cập nhật.
-   */
+  // Ủy thác việc đổi mật khẩu nhân viên cho Employee Auth Service.
   async changeEmployeePassword(employeeId: number, dto: ChangePasswordDto): Promise<void> {
     await this.employeeAuthService.changePassword(employeeId, dto);
   }

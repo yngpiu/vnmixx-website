@@ -14,9 +14,9 @@ import { type CalculateShippingFeeDto, type ShippingFeeResponseDto } from '../dt
 import { estimateCartPackageFromLines } from '../estimate-cart-package';
 import { GhnService } from './ghn.service';
 
-@Injectable()
 // Service xử lý logic vận chuyển và tính toán phí giao hàng
 // Kết hợp dữ liệu giỏ hàng để ước tính kích thước gói hàng và gọi GHN Service để lấy báo giá
+@Injectable()
 export class ShippingService implements OnModuleInit {
   private readonly logger = new Logger(ShippingService.name);
 
@@ -38,6 +38,7 @@ export class ShippingService implements OnModuleInit {
 
   // Khởi tạo thông tin địa chỉ kho hàng từ cấu hình hệ thống khi module bắt đầu
   async onModuleInit(): Promise<void> {
+    // Sử dụng Promise.all để lấy thông tin Quận/Huyện và Phường/Xã song song
     const [district, ward] = await Promise.all([
       this.prisma.district.findUnique({
         where: { giaohangnhanhId: this.shopGhnDistrictIdStr },
@@ -66,11 +67,13 @@ export class ShippingService implements OnModuleInit {
     );
   }
 
+  // Trả về ID địa chính của kho hàng
   getShopGhnIds(): { districtId: number; wardCode: string } {
     this.ensureInitialized();
     return { districtId: this.shopGhnDistrictId!, wardCode: this.shopGhnWardCode! };
   }
 
+  // Kiểm tra xem dịch vụ đã được cấu hình đầy đủ chưa
   private ensureInitialized(): void {
     if (!this.initialized) {
       throw new ServiceUnavailableException(
@@ -79,7 +82,7 @@ export class ShippingService implements OnModuleInit {
     }
   }
 
-  // Logic chính để tính toán phí vận chuyển cho một giỏ hàng đến một địa chỉ cụ thể
+  // Tính toán phí vận chuyển cho một giỏ hàng đến một địa chỉ cụ thể
   async calculateFee(
     customerId: number,
     dto: CalculateShippingFeeDto,
@@ -102,7 +105,7 @@ export class ShippingService implements OnModuleInit {
     const toDistrictId = Number(address.district.giaohangnhanhId);
     const toWardCode = address.ward.giaohangnhanhId;
 
-    // 2. Lấy nội dung giỏ hàng hiện tại của khách hàng
+    // 2. Lấy nội dung giỏ hàng hiện tại của khách hàng để tính khối lượng
     const cart = await this.prisma.cart.findUnique({
       where: { customerId },
       select: {
@@ -119,7 +122,7 @@ export class ShippingService implements OnModuleInit {
       throw new BadRequestException('Giỏ hàng trống, không thể tính phí vận chuyển.');
     }
 
-    // 3. Ước tính các thông số gói hàng (cân nặng, dài, rộng, cao) dựa trên các mặt hàng trong giỏ
+    // 3. Ước tính các thông số gói hàng (cân nặng, kích thước) dựa trên các mặt hàng
     const { weight, length, width, height, insuranceValue } = estimateCartPackageFromLines(
       cart.items.map((item) => ({
         quantity: item.quantity,
@@ -137,9 +140,11 @@ export class ShippingService implements OnModuleInit {
       throw new BadRequestException('Không có dịch vụ vận chuyển khả dụng cho địa chỉ này.');
     }
 
-    // 5. Tính phí và thời gian giao hàng dự kiến cho từng dịch vụ khả dụng (thực hiện song song)
+    // 5. Tính phí và thời gian giao hàng dự kiến cho từng dịch vụ khả dụng
+    // Dùng Promise.allSettled để đảm bảo nếu một dịch vụ lỗi vẫn lấy được các dịch vụ còn lại
     const results = await Promise.allSettled(
       availableServices.map(async (svc) => {
+        // Dùng Promise.all để lấy đồng thời phí và thời gian dự kiến của một dịch vụ
         const [fee, leadtime] = await Promise.all([
           this.ghn.calculateFee({
             fromDistrictId,
@@ -174,10 +179,12 @@ export class ShippingService implements OnModuleInit {
       }),
     );
 
+    // 6. Tổng hợp kết quả từ các dịch vụ thành công
     const services = results
       .filter((r) => r.status === 'fulfilled')
       .map((r) => (r as PromiseFulfilledResult<ShippingFeeResponseDto['services'][number]>).value);
 
+    // 7. Ghi log các dịch vụ bị lỗi để quản trị viên theo dõi
     const rejectedReasons = results
       .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
       .map((r): unknown => r.reason);

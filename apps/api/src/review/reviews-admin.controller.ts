@@ -31,10 +31,8 @@ import {
 } from './dto/admin-review.dto';
 import { ReviewService } from './review.service';
 
-/**
- * ReviewsAdminController: Tiếp nhận các yêu cầu quản lý đánh giá từ phía nhân viên.
- * Vai trò: Cho phép liệt kê, xem chi tiết, ẩn/hiện hoặc xóa các đánh giá sản phẩm trên hệ thống.
- */
+// Tiếp nhận các yêu cầu quản lý đánh giá từ phía nhân viên.
+// Cho phép liệt kê, xem chi tiết, ẩn/hiện hoặc xóa các đánh giá sản phẩm trên hệ thống để đảm bảo chất lượng nội dung hiển thị.
 @ApiTags('Reviews (Admin)')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -44,9 +42,7 @@ import { ReviewService } from './review.service';
 export class ReviewsAdminController {
   constructor(private readonly reviewService: ReviewService) {}
 
-  /**
-   * Lấy danh sách đánh giá toàn hệ thống với bộ lọc và phân trang.
-   */
+  // Lấy danh sách đánh giá toàn hệ thống để kiểm duyệt nội dung.
   @ApiOperation({ summary: 'Danh sách review có phân trang và bộ lọc.' })
   @ApiOkResponse({ type: AdminReviewsListResponseDto })
   @Get()
@@ -55,9 +51,7 @@ export class ReviewsAdminController {
     return this.reviewService.getAdminReviews(query);
   }
 
-  /**
-   * Xem chi tiết một đánh giá cụ thể.
-   */
+  // Xem chi tiết đánh giá để hiểu rõ phản hồi của khách hàng.
   @ApiOperation({ summary: 'Chi tiết review.' })
   @ApiOkResponse({ type: AdminReviewDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
@@ -69,9 +63,7 @@ export class ReviewsAdminController {
     return await this.reviewService.getAdminReviewDetail(id);
   }
 
-  /**
-   * Thay đổi trạng thái hiển thị của đánh giá (Ẩn/Hiện).
-   */
+  // Thay đổi trạng thái hiển thị (Ẩn/Hiện) khi review vi phạm chính sách hoặc đã được xử lý.
   @ApiOperation({ summary: 'Cập nhật trạng thái review (ẩn/hiện).' })
   @ApiOkResponse({ type: AdminReviewDetailResponseDto })
   @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
@@ -85,9 +77,7 @@ export class ReviewsAdminController {
     return this.reviewService.updateAdminReviewStatus(id, dto.status);
   }
 
-  /**
-   * Xóa vĩnh viễn một đánh giá khỏi hệ thống.
-   */
+  // Xóa vĩnh viễn đánh giá trong trường hợp nội dung không phù hợp hoặc là spam.
   @ApiOperation({ summary: 'Xóa review.' })
   @ApiNoContentResponse({ description: 'Xóa review thành công.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
