@@ -65,11 +65,10 @@ export class CustomerAuthController {
     return this.customerAuth.registerCustomer(dto);
   }
 
-  @ApiOperation({ summary: 'Xác thực OTP email khách hàng và đăng nhập' })
+  @ApiOperation({ summary: 'Xác thực OTP email khách hàng' })
   @ApiOkResponse({
-    type: AuthResponseDto,
-    description:
-      'Xác thực OTP thành công. Trả accessToken trong JSON; refresh token trong cookie HttpOnly.',
+    type: MessageResponseDto,
+    description: 'Xác thực OTP thành công. Tài khoản đã được kích hoạt.',
   })
   @ApiTooManyRequestsResponse({
     description: 'Bạn đã thử OTP quá nhiều lần. Vui lòng thử lại sau.',
@@ -79,18 +78,10 @@ export class CustomerAuthController {
   @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  /** Xác thực OTP: Nếu đúng, kích hoạt tài khoản và cấp cặp token truy cập. */
-  async verifyOtp(
-    @Body() dto: VerifyCustomerOtpDto,
-    @Req() req: Request,
-  ): Promise<AuthResponseDto> {
-    const identity = await this.customerAuth.verifyCustomerOtp(dto);
-    const pair = await this.tokenService.issueTokenPair(
-      identity,
-      'CUSTOMER',
-      extractRequestMeta(req),
-    );
-    return authBodyFromPair(pair);
+  /** Xác thực OTP: Nếu đúng, kích hoạt tài khoản thành công. */
+  async verifyOtp(@Body() dto: VerifyCustomerOtpDto): Promise<MessageResponseDto> {
+    await this.customerAuth.verifyCustomerOtp(dto);
+    return new MessageResponseDto('Đăng ký tài khoản thành công. Vui lòng đăng nhập.');
   }
 
   @ApiOperation({ summary: 'Gửi lại OTP xác thực email khách hàng' })
