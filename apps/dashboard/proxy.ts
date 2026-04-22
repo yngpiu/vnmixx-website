@@ -1,15 +1,15 @@
+import {
+  ACCESS_TOKEN_MAX_AGE,
+  API_BASE_URL,
+  COOKIE_ACCESS_TOKEN,
+  COOKIE_REFRESH_TOKEN,
+  REFRESH_TOKEN_MAX_AGE,
+} from '@/config/constants';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-const COOKIE_ACCESS_TOKEN = 'vnmixx_access';
-const COOKIE_REFRESH_TOKEN = 'vnmixx_refresh';
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
-const ACCESS_TOKEN_MAX_AGE = 900;
-const REFRESH_TOKEN_MAX_AGE = 604_800;
-
 interface AuthResponse {
   accessToken: string;
-  expiresIn: number;
   refreshToken: string;
 }
 
@@ -48,8 +48,8 @@ async function tryRefresh(
       },
     });
     if (!res.ok) return null;
-    const data: AuthResponse = await res.json();
-    return { accessToken: data.accessToken, newRefreshToken: data.refreshToken };
+    const raw: { success: boolean; data: AuthResponse } = await res.json();
+    return { accessToken: raw.data.accessToken, newRefreshToken: raw.data.refreshToken };
   } catch {
     return null;
   }
@@ -76,7 +76,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         ? NextResponse.redirect(new URL('/dashboard', request.url))
         : NextResponse.next();
       destination.cookies.set(COOKIE_ACCESS_TOKEN, result.accessToken, {
-        httpOnly: false,
+        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',

@@ -52,6 +52,8 @@ import { TokenService } from './services/token.service';
     JwtModule,
     RefreshTokenRepository,
     EmployeeAuthzCacheService,
+    CustomerAuthService,
+    EmployeeAuthService,
   ],
 })
 export class AuthModule {}

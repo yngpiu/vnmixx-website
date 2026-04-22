@@ -6,9 +6,8 @@ import {
   COOKIE_REFRESH_TOKEN,
   REFRESH_TOKEN_MAX_AGE,
 } from '@/config/constants';
-import { apiClient } from '@/lib/axios';
+import { serverApi, ServerApiError } from '@/lib/server-api';
 import type { AuthResponse, UserProfile } from '@/modules/auth/types/auth';
-import { isAxiosError } from 'axios';
 import { cookies } from 'next/headers';
 
 /** Standardized result type for server actions. */
@@ -25,17 +24,13 @@ function createCookieOptions(maxAge: number, isHttpOnly: boolean) {
   };
 }
 
-/** Extract error message from an axios error or fallback. */
+/** Extract error message from a ServerApiError or fallback. */
 function extractErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const raw = err.response?.data as { message?: unknown } | undefined;
-    const m = raw?.message;
-    if (Array.isArray(m)) return m.map(String).join(', ');
-    if (typeof m === 'string' && m.trim()) return m;
-    if (err.response?.status === 429) {
+  if (err instanceof ServerApiError) {
+    if (err.status === 429) {
       return 'Quá nhiều lần thử đăng nhập. Đợi một phút rồi thử lại.';
     }
-    return err.response?.statusText ?? err.message;
+    return err.message;
   }
   return err instanceof Error ? err.message : 'Unknown error';
 }
@@ -50,18 +45,20 @@ export async function loginAction(
   password: string,
 ): Promise<ActionResult<{ accessToken: string; user: UserProfile }>> {
   try {
-    const { data: authData } = await apiClient.post<AuthResponse>('/auth/admin/login', {
-      email,
-      password,
-    });
-    const { data: user } = await apiClient.get<UserProfile>('/auth/me', {
+    const authData = await serverApi.post<AuthResponse>(
+      '/auth/admin/login',
+      { email, password },
+      { skipAuth: true },
+    );
+    const user = await serverApi.get<UserProfile>('/auth/me', {
       headers: { Authorization: `Bearer ${authData.accessToken}` },
+      skipAuth: true,
     });
     const cookieStore = await cookies();
     cookieStore.set(
       COOKIE_ACCESS_TOKEN,
       authData.accessToken,
-      createCookieOptions(ACCESS_TOKEN_MAX_AGE, false),
+      createCookieOptions(ACCESS_TOKEN_MAX_AGE, true),
     );
     cookieStore.set(
       COOKIE_REFRESH_TOKEN,
@@ -83,10 +80,9 @@ export async function logoutAction(): Promise<ActionResult<null>> {
     const accessToken = cookieStore.get(COOKIE_ACCESS_TOKEN)?.value;
     const refreshToken = cookieStore.get(COOKIE_REFRESH_TOKEN)?.value;
     if (accessToken) {
-      await apiClient
+      await serverApi
         .post('/auth/logout', undefined, {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
             ...(refreshToken ? { 'x-refresh-token': refreshToken } : {}),
           },
         })

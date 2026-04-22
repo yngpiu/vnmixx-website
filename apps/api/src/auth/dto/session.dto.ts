@@ -11,9 +11,6 @@ export class AuthResponseDto {
   })
   accessToken: string;
 
-  @ApiProperty({ example: 900, description: 'Thời hạn mã truy cập (giây)' })
-  expiresIn: number;
-
   @ApiProperty({
     example: 'dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...',
     description: 'Refresh token dạng đục (opaque) dùng để lấy mã truy cập mới',

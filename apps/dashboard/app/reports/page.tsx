@@ -1,5 +1,7 @@
-import { redirect } from 'next/navigation';
-
 export default function ReportsPage() {
-  redirect('/analytics');
+  return (
+    <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+      Tính năng đang được phát triển...
+    </div>
+  );
 }

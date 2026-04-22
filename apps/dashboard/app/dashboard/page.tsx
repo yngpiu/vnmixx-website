@@ -1,13 +1,7 @@
-import { AnalyticsShell } from '@/modules/analytics/components/analytics/analytics-shell';
-import { OverviewDashboard } from '@/modules/common/components/dashboard/overview-dashboard';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = { title: 'Tổng quan' };
-
-export default function OverviewPage(): React.JSX.Element {
+export default function DashboardOverviewPage() {
   return (
-    <AnalyticsShell title="Tổng quan" description="" showExport>
-      <OverviewDashboard />
-    </AnalyticsShell>
+    <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+      Tính năng đang được phát triển...
+    </div>
   );
 }

@@ -1,12 +1,11 @@
 import {
   ACCESS_TOKEN_MAX_AGE,
+  API_BASE_URL,
   COOKIE_ACCESS_TOKEN,
   COOKIE_REFRESH_TOKEN,
   REFRESH_TOKEN_MAX_AGE,
 } from '@/config/constants';
-import { apiClient } from '@/lib/axios';
 import type { AuthResponse } from '@/modules/auth/types/auth';
-import { isAxiosError } from 'axios';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -27,13 +26,22 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ success: false, error: 'No refresh token found.' }, { status: 401 });
   }
   try {
-    const { data: authData } = await apiClient.post<AuthResponse>('/auth/refresh', undefined, {
-      headers: { 'x-refresh-token': refreshToken },
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-refresh-token': refreshToken,
+      },
     });
+    if (!response.ok) {
+      throw new Error(`Refresh failed with status ${response.status}`);
+    }
+    const raw: { success: boolean; data: AuthResponse } = await response.json();
+    const authData = raw.data;
     cookieStore.set(
       COOKIE_ACCESS_TOKEN,
       authData.accessToken,
-      createCookieOptions(ACCESS_TOKEN_MAX_AGE, false),
+      createCookieOptions(ACCESS_TOKEN_MAX_AGE, true),
     );
     cookieStore.set(
       COOKIE_REFRESH_TOKEN,
@@ -41,13 +49,12 @@ export async function POST(): Promise<NextResponse> {
       createCookieOptions(REFRESH_TOKEN_MAX_AGE, true),
     );
     return NextResponse.json({ success: true, data: { accessToken: authData.accessToken } });
-  } catch (error) {
+  } catch {
     cookieStore.delete(COOKIE_ACCESS_TOKEN);
     cookieStore.delete(COOKIE_REFRESH_TOKEN);
-    const statusCode = isAxiosError(error) ? (error.response?.status ?? 401) : 500;
     return NextResponse.json(
       { success: false, error: 'Failed to refresh session.' },
-      { status: statusCode },
+      { status: 401 },
     );
   }
 }

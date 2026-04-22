@@ -26,7 +26,6 @@ export function readRefreshToken(req: Request): string | undefined {
 export function authBodyFromPair(pair: TokenPair): AuthResponseDto {
   return {
     accessToken: pair.accessToken,
-    expiresIn: pair.expiresIn,
     refreshToken: pair.refreshToken,
   };
 }

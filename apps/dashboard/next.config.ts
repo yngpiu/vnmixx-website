@@ -14,6 +14,13 @@ const r2PublicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL ?? '';
 const r2Hostname = r2PublicUrl ? extractHostname(r2PublicUrl) : '';
 
 const nextConfig: NextConfig = {
+  productionBrowserSourceMaps: false,
+  experimental: {
+    turbopackFileSystemCacheForDev: false,
+    preloadEntriesOnStart: false,
+    webpackMemoryOptimizations: true,
+    serverSourceMaps: false,
+  },
   transpilePackages: ['@repo/ui'],
   images: {
     remotePatterns: [

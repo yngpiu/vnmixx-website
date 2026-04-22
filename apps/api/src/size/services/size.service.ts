@@ -6,7 +6,12 @@ import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
 import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
 import { RedisService } from '../../redis/redis.service';
 import { CreateSizeDto, UpdateSizeDto } from '../dto';
-import { SizeAdminView, SizeRepository, SizeView } from '../repositories/size.repository';
+import {
+  PaginatedSizeList,
+  SizeAdminView,
+  SizeRepository,
+  SizeView,
+} from '../repositories/size.repository';
 
 // Quản lý thuộc tính kích thước sản phẩm (Size/Dimension).
 // Phục vụ việc phân loại và tạo các biến thể sản phẩm trong hệ thống e-commerce.

@@ -1,13 +1,7 @@
-import { AnalyticsDashboard } from '@/modules/analytics/components/analytics-dashboard';
-import { AnalyticsShell } from '@/modules/analytics/components/analytics/analytics-shell';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = { title: 'Phân tích' };
-
-export default function AnalyticsPage(): React.JSX.Element {
+export default function AnalyticsPage() {
   return (
-    <AnalyticsShell title="Phân tích" description="" showExport>
-      <AnalyticsDashboard />
-    </AnalyticsShell>
+    <div className="flex h-[50vh] items-center justify-center text-muted-foreground">
+      Tính năng đang được phát triển...
+    </div>
   );
 }
