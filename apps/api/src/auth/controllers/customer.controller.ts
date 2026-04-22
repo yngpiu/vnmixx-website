@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -13,7 +13,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 import { MessageResponseDto } from '../../common/dto/message-response.dto';
 import { CurrentUser, Public, RequireUserType } from '../decorators';
 import {
@@ -34,12 +34,7 @@ import type { AuthenticatedUser } from '../interfaces';
 import { CustomerAuthService } from '../services/customer-auth.service';
 import { PasswordResetService } from '../services/password-reset.service';
 import { TokenService } from '../services/token.service';
-import {
-  authBodyFromPair,
-  clearRefreshTokenCookie,
-  extractRequestMeta,
-  setRefreshTokenCookie,
-} from '../utils';
+import { authBodyFromPair, extractRequestMeta } from '../utils';
 
 @Throttle({ default: { ttl: 60_000, limit: 10 } })
 @ApiTags('Auth')
@@ -88,7 +83,6 @@ export class CustomerAuthController {
   async verifyOtp(
     @Body() dto: VerifyCustomerOtpDto,
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponseDto> {
     const identity = await this.customerAuth.verifyCustomerOtp(dto);
     const pair = await this.tokenService.issueTokenPair(
@@ -96,7 +90,6 @@ export class CustomerAuthController {
       'CUSTOMER',
       extractRequestMeta(req),
     );
-    setRefreshTokenCookie(res, pair.refreshToken);
     return authBodyFromPair(pair);
   }
 
@@ -130,18 +123,13 @@ export class CustomerAuthController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Đăng nhập bằng email/mật khẩu và nhận cặp token truy cập. */
-  async login(
-    @Body() dto: LoginDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthResponseDto> {
+  async login(@Body() dto: LoginDto, @Req() req: Request): Promise<AuthResponseDto> {
     const identity = await this.customerAuth.loginCustomer(dto);
     const pair = await this.tokenService.issueTokenPair(
       identity,
       'CUSTOMER',
       extractRequestMeta(req),
     );
-    setRefreshTokenCookie(res, pair.refreshToken);
     return authBodyFromPair(pair);
   }
 
@@ -161,12 +149,10 @@ export class CustomerAuthController {
   /** Đổi mật khẩu cho người dùng đang đăng nhập và buộc đăng nhập lại trên mọi thiết bị. */
   async changePassword(
     @Body() dto: ChangePasswordDto,
-    @Res({ passthrough: true }) res: Response,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<MessageResponseDto> {
     await this.customerAuth.changePassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
-    clearRefreshTokenCookie(res);
     return new MessageResponseDto('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 
@@ -220,13 +206,9 @@ export class CustomerAuthController {
   @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /** Bước 3 Quên mật khẩu: Cập nhật mật khẩu mới bằng Reset Token và hủy mọi phiên làm việc cũ. */
-  async resetPassword(
-    @Body() dto: ResetPasswordDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<MessageResponseDto> {
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<MessageResponseDto> {
     const { customerId } = await this.passwordReset.resetPassword(dto);
     await this.tokenService.revokeAllSessions(customerId, 'CUSTOMER');
-    clearRefreshTokenCookie(res);
     return new MessageResponseDto('Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 }
