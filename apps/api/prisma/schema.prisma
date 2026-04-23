@@ -528,10 +528,12 @@ model OrderItem {
 
   order          Order           @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   variant        ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  stockMovements StockMovement[]
+  stockMovements StockMovement[] @relation("StockMovementOrderItem")
 
   @@index([orderId], map: "idx_order_items_order")
   @@index([variantId], map: "idx_order_items_variant")
+  // Supports a composite FK from StockMovement(order_item_id, order_id).
+  @@unique([id, orderId], map: "uk_order_items_id_order")
   @@map("order_items")
 }
 
@@ -580,12 +582,16 @@ model StockMovement {
 
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   order     Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  orderItem OrderItem?     @relation(fields: [orderItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  // Keeps order_item_id consistent with the same order_id.
+  orderItem OrderItem?     @relation("StockMovementOrderItem", fields: [orderItemId, orderId], references: [id, orderId], onDelete: SetNull, onUpdate: Cascade)
   employee  Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([variantId, createdAt], map: "idx_stock_movements_variant_created")
+  @@index([variantId, type, createdAt], map: "idx_stock_movements_variant_type_created")
   @@index([orderId], map: "idx_stock_movements_order")
+  @@index([orderItemId], map: "idx_stock_movements_order_item")
   @@index([employeeId], map: "idx_stock_movements_employee")
+  @@index([type, createdAt], map: "idx_stock_movements_type_created")
   @@map("stock_movements")
 }
 

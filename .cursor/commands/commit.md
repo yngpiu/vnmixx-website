@@ -1,8 +1,4 @@
----
-description:
----
-
-# Git Workflow Rules
+# commit
 
 ## Mục tiêu
 
