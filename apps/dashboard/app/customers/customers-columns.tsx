@@ -62,10 +62,7 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
     cell: ({ row }) => (
       <div className="flex items-center gap-2 ps-0.5">
         <Avatar size="sm" className="mt-0.5 shrink-0">
-          <AvatarImage
-            src={employeeAvatarDisplayUrl(row.original.avatarUrl, row.original.email)}
-            alt=""
-          />
+          <AvatarImage src={employeeAvatarDisplayUrl(row.original.avatarUrl)} alt="" />
           <AvatarFallback className="text-[10px]">
             {initialsFromFullName(row.original.fullName)}
           </AvatarFallback>

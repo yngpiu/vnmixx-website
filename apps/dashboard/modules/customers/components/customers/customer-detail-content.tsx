@@ -68,7 +68,7 @@ export function CustomerDetailContent({ customerId }: CustomerDetailContentProps
     queryFn: () => getCustomer(customerId),
   });
   const customer: CustomerDetail | undefined = detailQuery.data;
-  const avatarSrc = customer ? employeeAvatarDisplayUrl(customer.avatarUrl, customer.email) : '';
+  const avatarSrc = customer ? employeeAvatarDisplayUrl(customer.avatarUrl) : undefined;
   return (
     <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
       {detailQuery.isLoading ? (

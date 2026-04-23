@@ -254,10 +254,11 @@ describe('OrderService', () => {
       prisma.order.findFirst.mockResolvedValue(mockOrderForCancel as any);
       const tx = {
         order: { update: jest.fn().mockResolvedValue({}) },
+        payment: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
         orderStatusHistory: { create: jest.fn().mockResolvedValue({}) },
         productVariant: {
           findMany: jest.fn().mockResolvedValue([{ id: 1, onHand: 10, reserved: 5, version: 1 }]),
-          update: jest.fn().mockResolvedValue({}),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         },
         stockMovement: { create: jest.fn().mockResolvedValue({}) },
       };
@@ -274,7 +275,11 @@ describe('OrderService', () => {
       expect(result.status).toBe('CANCELLED');
       expect(tx.order.update).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+        data: { status: 'CANCELLED' },
+      });
+      expect(tx.payment.updateMany).toHaveBeenCalledWith({
+        where: { orderId: 1, status: 'PENDING' },
+        data: { status: 'FAILED' },
       });
       expect(tx.orderStatusHistory.create).toHaveBeenCalledWith({
         data: { orderId: 1, status: 'CANCELLED' },

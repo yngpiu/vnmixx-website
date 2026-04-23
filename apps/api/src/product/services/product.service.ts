@@ -133,7 +133,7 @@ export class ProductService {
   async create(dto: CreateProductDto, auditContext: AuditRequestContext = {}) {
     try {
       // 1. Kiểm tra danh mục phải tồn tại và là danh mục lá (không có con)
-      const categoryIds = this.resolveProductCategoryIdsInput(dto.categoryIds, dto.categoryId);
+      const categoryIds = this.resolveProductCategoryIdsInput(dto.categoryIds);
       if (categoryIds.length > 0) {
         await this.assertCategoriesExistAndLeaf(categoryIds);
       }
@@ -172,7 +172,6 @@ export class ProductService {
         slug: dto.slug,
         description: dto.description,
         thumbnail: autoThumbnail,
-        categoryId: categoryIds[0] ?? null,
         categoryIds,
         isActive: dto.isActive,
         variants: dto.variants,
@@ -223,8 +222,6 @@ export class ProductService {
       let categoryIdsToSync: number[] | undefined;
       if (dto.categoryIds !== undefined) {
         categoryIdsToSync = this.dedupePositiveIds(dto.categoryIds);
-      } else if (dto.categoryId !== undefined) {
-        categoryIdsToSync = dto.categoryId ? [dto.categoryId] : [];
       }
       if (categoryIdsToSync !== undefined) {
         if (categoryIdsToSync.length > 0) {
@@ -433,12 +430,7 @@ export class ProductService {
   // Chuyển đổi dữ liệu thô sang định dạng hiển thị cho quản trị viên
   private transformAdminDetail(product: ProductAdminDetailView) {
     const categoryIdsFromJoin = product.productCategories?.map((r) => r.categoryId) ?? [];
-    const categoryIds =
-      categoryIdsFromJoin.length > 0
-        ? categoryIdsFromJoin
-        : product.category
-          ? [product.category.id]
-          : [];
+    const categoryIds = categoryIdsFromJoin;
 
     return {
       id: product.id,
@@ -462,15 +454,10 @@ export class ProductService {
     return [...new Set(ids.filter((id) => Number.isInteger(id) && id >= 1))];
   }
 
-  // Xử lý logic gán ID danh mục: Ưu tiên danh sách mảng, nếu không có dùng ID đơn
-  private resolveProductCategoryIdsInput(
-    categoryIds: number[] | undefined,
-    categoryId: number | undefined,
-  ): number[] {
+  // Xử lý logic gán ID danh mục: chuẩn hóa danh sách mảng ID được truyền từ client
+  private resolveProductCategoryIdsInput(categoryIds: number[] | undefined): number[] {
     const fromArr = this.dedupePositiveIds(categoryIds ?? []);
-    if (fromArr.length > 0) return fromArr;
-    if (categoryId != null && categoryId >= 1) return [categoryId];
-    return [];
+    return fromArr;
   }
 
   // Đảm bảo danh mục tồn tại và là danh mục lá (không có danh mục con) để đảm bảo tính nhất quán dữ liệu

@@ -29,7 +29,7 @@ describe('OrderAdminService', () => {
           useValue: {
             order: { findUnique: jest.fn(), update: jest.fn() },
             productVariant: { findUnique: jest.fn(), updateMany: jest.fn() },
-            payment: { update: jest.fn() },
+            payment: { update: jest.fn(), updateMany: jest.fn() },
             orderStatusHistory: { create: jest.fn(), createMany: jest.fn() },
             stockMovement: { create: jest.fn() },
             $transaction: jest.fn((cb) => cb(prisma)),
@@ -287,11 +287,11 @@ describe('OrderAdminService', () => {
       });
       expect(prisma.order.update).toHaveBeenNthCalledWith(1, {
         where: { id: 1 },
-        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+        data: { status: 'CANCELLED' },
       });
-      expect(prisma.order.update).toHaveBeenNthCalledWith(2, {
-        where: { id: 1 },
-        data: { paymentStatus: 'REFUNDED' },
+      expect(prisma.payment.updateMany).toHaveBeenCalledWith({
+        where: { orderId: 1, status: 'PENDING' },
+        data: { status: 'FAILED' },
       });
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ status: AuditLogStatus.SUCCESS }),
@@ -310,7 +310,6 @@ describe('OrderAdminService', () => {
     const orderData = {
       id: 1,
       orderCode,
-      paymentStatus: 'PENDING',
       payments: [{ id: 1, method: 'BANK_TRANSFER', status: 'PENDING' }],
     };
 
@@ -327,10 +326,6 @@ describe('OrderAdminService', () => {
       expect(prisma.payment.update).toHaveBeenCalledWith({
         where: { id: 1 },
         data: { status: 'SUCCESS', paidAt: expect.any(Date) },
-      });
-      expect(prisma.order.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: { paymentStatus: 'SUCCESS' },
       });
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ status: AuditLogStatus.SUCCESS }),

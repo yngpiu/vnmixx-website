@@ -3,7 +3,6 @@
 import { dashboardRoutes } from '@/config/routes';
 import { useLogout } from '@/modules/auth/hooks/use-auth';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
-import { pravatarFromEmail } from '@/modules/common/utils/avatar';
 import { useTheme, type ThemeMode } from '@/providers/theme-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
@@ -17,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/components/ui/dropdown-menu';
-import { LogOutIcon, MonitorCogIcon, MoonIcon, SettingsIcon, SunIcon } from 'lucide-react';
+import { LogOutIcon, MonitorCogIcon, MoonIcon, SunIcon } from 'lucide-react';
 import Link from 'next/link';
 
 function getAvatarFallback(name: string): string {
@@ -38,8 +37,7 @@ export function HeaderActions() {
   const { theme, setTheme } = useTheme();
   const userName = user?.fullName ?? 'Nhân viên';
   const userEmail = user?.email ?? '';
-  const avatarSrc =
-    user?.avatarUrl?.trim() || (userEmail ? pravatarFromEmail(userEmail) : undefined);
+  const avatarSrc = user?.avatarUrl?.trim() || undefined;
 
   return (
     <div className="flex shrink-0 items-center gap-1.5 pl-1">
@@ -72,11 +70,6 @@ export function HeaderActions() {
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button type="button" variant="ghost" size="icon" className="size-9" asChild>
-        <Link href={dashboardRoutes.settings} aria-label="Mở cài đặt">
-          <SettingsIcon className="size-4" />
-        </Link>
-      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -97,6 +90,13 @@ export function HeaderActions() {
               <p className="text-xs text-muted-foreground">{userEmail}</p>
             </div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href={dashboardRoutes.settings}>Tài khoản</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`${dashboardRoutes.settings}?tab=password`}>Đổi mật khẩu</Link>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"

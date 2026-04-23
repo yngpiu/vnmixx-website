@@ -106,13 +106,17 @@ const ORDER_LIST_SELECT = {
   id: true,
   orderCode: true,
   status: true,
-  paymentStatus: true,
   subtotal: true,
   discountAmount: true,
   shippingFee: true,
   total: true,
   createdAt: true,
   items: { select: ORDER_ITEM_SELECT },
+  payments: {
+    select: { status: true },
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+  },
 } as const;
 
 const ORDER_DETAIL_SELECT = {
@@ -134,7 +138,7 @@ const ORDER_DETAIL_SELECT = {
   expectedDeliveryTime: true,
   couponCode: true,
   updatedAt: true,
-  payments: { select: PAYMENT_SELECT },
+  payments: { select: PAYMENT_SELECT, orderBy: { createdAt: 'desc' as const } },
   statusHistories: { select: STATUS_HISTORY_SELECT, orderBy: { createdAt: 'desc' as const } },
 } as const;
 
@@ -165,6 +169,16 @@ const ORDER_ADMIN_DETAIL_SELECT = {
 @Injectable()
 export class OrderRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private withDerivedPaymentStatus<T extends { payments: { status: string }[] }>(
+    order: T,
+  ): T & { paymentStatus: string } {
+    const paymentStatus = order.payments[0]?.status ?? 'PENDING';
+    return {
+      ...order,
+      paymentStatus,
+    };
+  }
 
   /**
    * Sinh mã đơn hàng duy nhất theo format: VNM + YYMMDD + 5 ký tự ngẫu nhiên.
@@ -198,7 +212,7 @@ export class OrderRepository {
     const where: Prisma.OrderWhereInput = { customerId };
     if (params.status) where.status = params.status;
 
-    const [data, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
         select: ORDER_LIST_SELECT,
@@ -209,6 +223,7 @@ export class OrderRepository {
       this.prisma.order.count({ where }),
     ]);
 
+    const data = rows.map((row) => this.withDerivedPaymentStatus(row));
     return { data, total };
   }
 
@@ -219,20 +234,22 @@ export class OrderRepository {
     const where: Prisma.OrderWhereInput = { orderCode };
     if (customerId) where.customerId = customerId;
 
-    return this.prisma.order.findFirst({
+    const row = await this.prisma.order.findFirst({
       where,
       select: ORDER_DETAIL_SELECT,
-    }) as Promise<OrderDetailView | null>;
+    });
+    return row ? this.withDerivedPaymentStatus(row) : null;
   }
 
   /**
    * Tìm chi tiết đơn hàng theo mã phục vụ giao diện quản trị (Admin).
    */
   async findAdminByOrderCode(orderCode: string): Promise<OrderAdminDetailView | null> {
-    return this.prisma.order.findUnique({
+    const row = await this.prisma.order.findUnique({
       where: { orderCode },
       select: ORDER_ADMIN_DETAIL_SELECT,
-    }) as Promise<OrderAdminDetailView | null>;
+    });
+    return row ? this.withDerivedPaymentStatus(row) : null;
   }
 
   /**
@@ -248,7 +265,9 @@ export class OrderRepository {
   }): Promise<{ data: OrderAdminListItemView[]; total: number }> {
     const where: Prisma.OrderWhereInput = {};
     if (params.status) where.status = params.status;
-    if (params.paymentStatus) where.paymentStatus = params.paymentStatus;
+    if (params.paymentStatus) {
+      where.payments = { some: { status: params.paymentStatus } };
+    }
     if (params.customerId) where.customerId = params.customerId;
     if (params.search) {
       where.OR = [
@@ -259,7 +278,7 @@ export class OrderRepository {
       ];
     }
 
-    const [data, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
         select: ORDER_ADMIN_LIST_SELECT,
@@ -270,6 +289,7 @@ export class OrderRepository {
       this.prisma.order.count({ where }),
     ]);
 
+    const data = rows.map((row) => this.withDerivedPaymentStatus(row));
     return { data, total };
   }
 

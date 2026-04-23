@@ -60,18 +60,16 @@ describe('MediaService', () => {
   describe('listMedia', () => {
     it('should return paginated media with public URLs', async () => {
       const mockResult = {
-        items: [{ id: 1, key: 'file1.jpg', fileName: 'file1.jpg' }],
-        total: 1,
-        page: 1,
-        pageSize: 10,
-        totalPages: 1,
+        data: [{ id: 1, key: 'file1.jpg', fileName: 'file1.jpg' }],
+        meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
       };
       mockMediaRepository.findMany.mockResolvedValue(mockResult);
 
       const result = await service.listMedia({ page: 1, pageSize: 10, folder: '/test/' });
 
       expect(repo.findMany).toHaveBeenCalledWith(expect.objectContaining({ folder: 'test' }));
-      expect(result.items[0].url).toBe('http://public/file1.jpg');
+      expect(result.data[0].url).toBe('http://public/file1.jpg');
+      expect(result.meta.total).toBe(1);
     });
   });
 

@@ -124,11 +124,7 @@ export function PermissionCrudMatrix({
                   {CRUD_ACTIONS.map((action) => {
                     const p = row.byAction[action];
                     if (!p) {
-                      return (
-                        <TableCell key={action} className="text-center align-middle">
-                          <span className="text-muted-foreground/60 text-xs">—</span>
-                        </TableCell>
-                      );
+                      return <TableCell key={action} className="text-center align-middle" />;
                     }
                     const checked = assignedIds.has(p.id);
                     return (

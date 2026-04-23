@@ -38,12 +38,6 @@ export class UpdateProductDto {
   @MaxLength(500, { message: 'URL ảnh đại diện không được vượt quá 500 ký tự' })
   thumbnail?: string;
 
-  @ApiPropertyOptional({ example: 3, nullable: true })
-  @IsInt({ message: 'ID danh mục phải là số nguyên' })
-  @Min(1, { message: 'ID danh mục phải lớn hơn hoặc bằng 1' })
-  @IsOptional()
-  categoryId?: number;
-
   @ApiPropertyOptional({ example: [3, 12], type: [Number] })
   @IsArray({ message: 'Danh sách ID danh mục phải là một mảng' })
   @ArrayMaxSize(40, { message: 'Không được gán quá 40 danh mục' })

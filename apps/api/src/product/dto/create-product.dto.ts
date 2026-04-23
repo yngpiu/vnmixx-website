@@ -101,18 +101,10 @@ export class CreateProductDto {
   @MaxLength(500, { message: 'URL ảnh đại diện không được vượt quá 500 ký tự' })
   thumbnail?: string;
 
-  @ApiPropertyOptional({ example: 3, nullable: true })
-  @IsInt({ message: 'ID danh mục phải là số nguyên' })
-  @Min(1, { message: 'ID danh mục phải lớn hơn hoặc bằng 1' })
-  @IsOptional()
-  /** @deprecated Dùng `categoryIds` để gán nhiều danh mục; nếu chỉ gửi một id có thể dùng trường này. */
-  categoryId?: number;
-
   @ApiPropertyOptional({
     example: [3, 12],
     type: [Number],
-    description:
-      'Nhiều danh mục (thường là các lá). Trùng với `categoryId` đơn lẻ thì ưu tiên mảng này.',
+    description: 'Nhiều danh mục (thường là các lá) được gán cho sản phẩm.',
   })
   @IsArray({ message: 'Danh sách ID danh mục phải là một mảng' })
   @ArrayMaxSize(40, { message: 'Không được gán quá 40 danh mục' })

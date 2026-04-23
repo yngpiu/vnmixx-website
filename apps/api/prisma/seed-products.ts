@@ -103,6 +103,18 @@ function generateProductName(categoryName: string): string {
   return `${categoryName} ${adj} ${mat} ${faker.string.alphanumeric({ length: 4, casing: 'upper' })}`;
 }
 
+function buildProductSlug(name: string, runToken: string, index: number, attempt = 0): string {
+  const suffix = attempt > 0 ? `${runToken}-${index + 1}-${attempt}` : `${runToken}-${index + 1}`;
+  const normalizedBase = faker.helpers
+    .slugify(name)
+    .toLowerCase()
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  const maxBaseLength = 255 - suffix.length - 1;
+  const safeBase = normalizedBase.slice(0, Math.max(1, maxBaseLength)).replace(/-$/g, '');
+  return `${safeBase}-${suffix}`;
+}
+
 export async function seedProducts(): Promise<void> {
   if (!process.env.DATABASE_URL) {
     throw new Error('Thiếu DATABASE_URL (tạo apps/api/.env từ .env.example hoặc export biến).');
@@ -143,6 +155,7 @@ export async function seedProducts(): Promise<void> {
 
     let created = 0;
     const batchSize = 100;
+    const runToken = Date.now().toString(36);
 
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
@@ -154,22 +167,39 @@ export async function seedProducts(): Promise<void> {
         for (let j = i; j < batchEnd; j++) {
           const category = faker.helpers.arrayElement(leafCategories);
           const name = generateProductName(category.name);
-          const slug =
-            faker.helpers.slugify(name).toLowerCase() + '-' + faker.string.uuid().split('-')[0];
           const createdAt = faker.date.between({ from: twoYearsAgo, to: new Date() });
+          let product: { id: number };
+          let slug = '';
+          let attempt = 0;
 
-          const product = await tx.product.create({
-            data: {
-              name,
-              slug,
-              description: buildDescription(name),
-              thumbnail: picsumUrl(`thumb-${slug}`, 480, 600),
-              categoryId: category.id,
-              isActive: faker.datatype.boolean({ probability: 0.9 }),
-              createdAt,
-              updatedAt: createdAt,
-            },
-          });
+          while (true) {
+            slug = buildProductSlug(name, runToken, j, attempt);
+            try {
+              product = await tx.product.create({
+                data: {
+                  name,
+                  slug,
+                  description: buildDescription(name),
+                  thumbnail: picsumUrl(`thumb-${slug}`, 480, 600),
+                  isActive: faker.datatype.boolean({ probability: 0.9 }),
+                  createdAt,
+                  updatedAt: createdAt,
+                },
+                select: { id: true },
+              });
+              break;
+            } catch (error) {
+              if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2002' &&
+                attempt < 5
+              ) {
+                attempt += 1;
+                continue;
+              }
+              throw error;
+            }
+          }
 
           await tx.productCategory.create({
             data: { productId: product.id, categoryId: category.id },

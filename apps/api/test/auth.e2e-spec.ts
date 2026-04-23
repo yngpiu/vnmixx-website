@@ -4,7 +4,6 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
-import { REFRESH_TOKEN_COOKIE_NAME } from '../src/auth/constants';
 import { otelSDK } from '../src/core/tracing/tracing';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -114,13 +113,9 @@ describe('Authentication Flow (e2e)', () => {
       const body = response.body as ApiResponse<{ accessToken: string }>;
       expect(body.success).toBe(true);
       expect(body.data.accessToken).toBeDefined();
+      expect((body.data as any).refreshToken).toBeDefined();
       accessToken = body.data.accessToken;
-
-      const cookies = response.get('Set-Cookie') as string[];
-      expect(cookies).toBeDefined();
-      const rawCookie = cookies.find((c) => c.startsWith(REFRESH_TOKEN_COOKIE_NAME))!;
-      expect(rawCookie).toBeDefined();
-      refreshTokenCookie = rawCookie.split(';')[0];
+      refreshTokenCookie = (body.data as any).refreshToken;
     });
 
     it('should get current profile with access token', async () => {
@@ -137,7 +132,7 @@ describe('Authentication Flow (e2e)', () => {
     it('should refresh tokens', async () => {
       const response = await request(app.getHttpServer())
         .post('/v1/auth/refresh')
-        .set('Cookie', [refreshTokenCookie])
+        .set('x-refresh-token', refreshTokenCookie)
         .expect(200);
 
       const body = response.body as ApiResponse<{ accessToken: string }>;
@@ -150,7 +145,7 @@ describe('Authentication Flow (e2e)', () => {
       await request(app.getHttpServer())
         .post('/v1/auth/logout')
         .set('Authorization', `Bearer ${accessToken}`)
-        .set('Cookie', [refreshTokenCookie])
+        .set('x-refresh-token', refreshTokenCookie)
         .expect(200);
 
       await request(app.getHttpServer())

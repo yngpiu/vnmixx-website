@@ -85,7 +85,7 @@ export function CustomerDetailDialog({
   });
 
   const d = detailQuery.data;
-  const avatarSrc = d ? employeeAvatarDisplayUrl(d.avatarUrl, d.email) : '';
+  const avatarSrc = d ? employeeAvatarDisplayUrl(d.avatarUrl) : undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

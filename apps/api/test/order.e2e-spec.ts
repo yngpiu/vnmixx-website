@@ -108,7 +108,6 @@ describe('Order Flow (e2e)', () => {
       data: {
         name: 'E2E Test Product',
         slug: `e2e-prod-${Date.now()}`,
-        categoryId: category.id,
         isActive: true,
         variants: {
           create: {
@@ -122,6 +121,9 @@ describe('Order Flow (e2e)', () => {
         },
       },
       include: { variants: true },
+    });
+    await prisma.productCategory.create({
+      data: { productId: product.id, categoryId: category.id },
     });
     variantId = product.variants[0].id;
 

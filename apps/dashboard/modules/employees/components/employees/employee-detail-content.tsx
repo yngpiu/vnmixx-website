@@ -70,7 +70,7 @@ export function EmployeeDetailContent({ employeeId }: EmployeeDetailContentProps
     queryFn: () => getEmployee(employeeId),
   });
   const d: EmployeeDetail | undefined = detailQuery.data;
-  const avatarSrc = d ? employeeAvatarDisplayUrl(d.avatarUrl, d.email) : '';
+  const avatarSrc = d ? employeeAvatarDisplayUrl(d.avatarUrl) : undefined;
   return (
     <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
       {detailQuery.isLoading ? (

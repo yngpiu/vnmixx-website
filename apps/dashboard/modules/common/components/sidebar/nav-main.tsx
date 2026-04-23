@@ -34,7 +34,7 @@ function pathnameMatchesItem(pathname: string, item: SidebarNavItem) {
 
 export function NavMain({
   items,
-  groupLabel = 'Điều hướng',
+  groupLabel,
   groupLabelClassName,
 }: {
   groupLabel?: string;
@@ -46,7 +46,9 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className={cn(groupLabelClassName)}>{groupLabel}</SidebarGroupLabel>
+      {groupLabel ? (
+        <SidebarGroupLabel className={cn(groupLabelClassName)}>{groupLabel}</SidebarGroupLabel>
+      ) : null}
       <SidebarMenu>
         {items.map((item) => {
           const isActive = item.isActive ?? pathnameMatchesItem(pathname, item);

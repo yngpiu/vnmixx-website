@@ -132,7 +132,11 @@ export class OrderService {
     await this.prisma.$transaction(async (tx) => {
       await tx.order.update({
         where: { id: order.id },
-        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+        data: { status: 'CANCELLED' },
+      });
+      await tx.payment.updateMany({
+        where: { orderId: order.id, status: 'PENDING' },
+        data: { status: 'FAILED' },
       });
 
       await tx.orderStatusHistory.create({
@@ -282,7 +286,6 @@ export class OrderService {
                 orderCode,
                 customerId: params.customerId,
                 status: 'PENDING',
-                paymentStatus: 'PENDING',
                 shippingFullName: params.address.fullName,
                 shippingPhoneNumber: params.address.phoneNumber,
                 shippingCity: params.address.city.name,
@@ -436,7 +439,7 @@ export class OrderService {
     const variantIds = items.map((i) => i.variantId);
     const variants = await tx.productVariant.findMany({
       where: { id: { in: variantIds } },
-      select: { id: true, onHand: true, reserved: true },
+      select: { id: true, onHand: true, reserved: true, version: true },
     });
 
     for (const item of items) {
@@ -452,14 +455,20 @@ export class OrderService {
       const restoreQty = item.quantity - releaseQty;
 
       // 2. Cập nhật lại kho của biến thể
-      await tx.productVariant.update({
-        where: { id: v.id },
+      const updated = await tx.productVariant.updateMany({
+        where: { id: v.id, version: v.version },
         data: {
           ...(releaseQty > 0 ? { reserved: { decrement: releaseQty } } : {}),
           ...(restoreQty > 0 ? { onHand: { increment: restoreQty } } : {}),
           version: { increment: 1 },
         },
       });
+      if (updated.count === 0) {
+        throw new Prisma.PrismaClientKnownRequestError('Conflict', {
+          code: 'P2034',
+          clientVersion: 'N/A',
+        });
+      }
 
       // 3. Lưu vết biến động kho để đối soát
       await tx.stockMovement.create({

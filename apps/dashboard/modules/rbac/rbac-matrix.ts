@@ -41,7 +41,6 @@ export function buildCrudMatrix(permissions: Permission[]): {
   }
 
   const rows: CrudMatrixRow[] = [...map.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
     .map(([resource, partial]) => ({
       resource,
       label: resourceDisplayLabel(resource),
@@ -51,7 +50,8 @@ export function buildCrudMatrix(permissions: Permission[]): {
         update: partial.update ?? null,
         delete: partial.delete ?? null,
       },
-    }));
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'vi', { sensitivity: 'base' }));
 
   return { rows, other };
 }

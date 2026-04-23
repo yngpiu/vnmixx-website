@@ -4,17 +4,15 @@ import { ADMIN_MODULES, adminModulePath, type AdminModuleSlug } from '@/config/a
 import { dashboardRoutes } from '@/config/routes';
 import {
   BarChart3Icon,
+  ChartColumnIcon,
   ClipboardListIcon,
-  FolderOpenIcon,
-  ImageIcon,
   LayoutDashboardIcon,
   PackageIcon,
-  PaletteIcon,
-  RulerIcon,
   ShieldIcon,
   ShoppingCartIcon,
   StarIcon,
   TagsIcon,
+  TruckIcon,
   UsersIcon,
   UsersRoundIcon,
 } from 'lucide-react';
@@ -43,10 +41,14 @@ export type DashboardSearchEntry = {
   readonly group: string;
 };
 
-function moduleNav(slug: AdminModuleSlug, Icon: typeof PackageIcon): SidebarNavItem {
+function moduleNav(
+  slug: AdminModuleSlug,
+  Icon: typeof PackageIcon,
+  options?: { title?: string; url?: string },
+): SidebarNavItem {
   return {
-    title: ADMIN_MODULES[slug].title,
-    url: adminModulePath(slug),
+    title: options?.title ?? ADMIN_MODULES[slug].title,
+    url: options?.url ?? adminModulePath(slug),
     icon: <Icon className="size-4 shrink-0" />,
   };
 }
@@ -54,15 +56,26 @@ function moduleNav(slug: AdminModuleSlug, Icon: typeof PackageIcon): SidebarNavI
 export const sidebarSections: SidebarSection[] = [
   {
     id: 'overview',
-    groupLabel: 'Tổng quan',
+    groupLabel: '',
     items: [
       {
         title: 'Tổng quan',
         url: dashboardRoutes.overview,
         icon: <LayoutDashboardIcon className="size-4 shrink-0" />,
       },
+    ],
+  },
+  {
+    id: 'management',
+    groupLabel: 'Quản lý',
+    items: [
+      moduleNav('orders', ShoppingCartIcon),
+      moduleNav('products', PackageIcon),
+      moduleNav('categories', TagsIcon),
+      moduleNav('customers', UsersIcon),
+      moduleNav('shipping', TruckIcon, { title: 'Kho hàng' }),
       {
-        title: 'Phân tích',
+        title: 'Ưu đãi',
         url: dashboardRoutes.analytics,
         icon: <BarChart3Icon className="size-4 shrink-0" />,
       },
@@ -71,46 +84,44 @@ export const sidebarSections: SidebarSection[] = [
         url: dashboardRoutes.reviews,
         icon: <StarIcon className="size-4 shrink-0" />,
       },
+      moduleNav('employees', UsersRoundIcon, { title: 'Nhân viên' }),
+      moduleNav('roles', ShieldIcon, { title: 'Vai trò' }),
     ],
   },
   {
-    id: 'commerce',
-    groupLabel: 'Bán hàng',
-    items: [moduleNav('orders', ShoppingCartIcon), moduleNav('customers', UsersIcon)],
-  },
-  {
-    id: 'catalog',
-    groupLabel: 'Sản phẩm & danh mục',
+    id: 'reports',
+    groupLabel: 'Báo cáo',
     items: [
-      moduleNav('products', PackageIcon),
-      moduleNav('categories', TagsIcon),
-      moduleNav('colors', PaletteIcon),
-      moduleNav('sizes', RulerIcon),
+      {
+        title: 'Doanh thu',
+        url: '/reports?type=revenue',
+        icon: <ChartColumnIcon className="size-4 shrink-0" />,
+      },
+      {
+        title: 'Sản phẩm',
+        url: '/reports?type=products',
+        icon: <PackageIcon className="size-4 shrink-0" />,
+      },
+      {
+        title: 'Khách hàng',
+        url: '/reports?type=customers',
+        icon: <UsersIcon className="size-4 shrink-0" />,
+      },
+      {
+        title: 'Tồn kho',
+        url: '/reports?type=inventory',
+        icon: <TruckIcon className="size-4 shrink-0" />,
+      },
     ],
-  },
-  {
-    id: 'org',
-    groupLabel: 'Tổ chức',
-    items: [moduleNav('employees', UsersRoundIcon), moduleNav('roles', ShieldIcon)],
   },
   {
     id: 'system',
     groupLabel: 'Hệ thống',
     items: [
       {
-        title: 'Bộ sưu tập',
-        url: '/media',
-        icon: <ImageIcon className="size-4 shrink-0" />,
-      },
-      {
         title: 'Nhật ký thao tác',
         url: '/audit-logs',
         icon: <ClipboardListIcon className="size-4 shrink-0" />,
-      },
-      {
-        title: 'Báo cáo',
-        url: '/reports',
-        icon: <FolderOpenIcon className="size-4 shrink-0" />,
       },
     ],
   },

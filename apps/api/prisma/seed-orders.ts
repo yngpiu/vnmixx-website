@@ -233,7 +233,6 @@ export async function seedOrders(): Promise<void> {
               shippingDistrict: ward?.district.name ?? 'Quận Đống Đa',
               shippingWard: ward?.name ?? 'Phường Láng Hạ',
               shippingAddressLine: `${faker.number.int({ min: 1, max: 999 })} Đường ${faker.helpers.arrayElement(['Thái Hà', 'Giảng Võ', 'Tôn Đức Thắng', 'Chùa Bộc'])}`,
-              paymentStatus,
               subtotal,
               shippingFee,
               total,

@@ -6,7 +6,7 @@ import { EmployeeStatus, PrismaClient } from '../generated/prisma/client';
 
 const BCRYPT_ROUNDS = 10;
 
-const seedPassword = () => process.env.SEED_EMPLOYEE_PASSWORD ?? '123123';
+const seedPassword = () => process.env.SEED_EMPLOYEE_PASSWORD ?? '12345678';
 
 function pravatarUrl(seed: string): string {
   return `https://i.pravatar.cc/150?u=${encodeURIComponent(seed)}`;

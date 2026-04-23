@@ -17,7 +17,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@repo/ui/components/ui/sidebar';
-import { ChevronsUpDownIcon, LogOutIcon, SettingsIcon } from 'lucide-react';
+import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export function NavUser({
@@ -87,10 +87,10 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href={dashboardRoutes.settings}>
-                <SettingsIcon />
-                Cài đặt cá nhân
-              </Link>
+              <Link href={dashboardRoutes.settings}>Tài khoản</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`${dashboardRoutes.settings}?tab=password`}>Đổi mật khẩu</Link>
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={logout.isPending}

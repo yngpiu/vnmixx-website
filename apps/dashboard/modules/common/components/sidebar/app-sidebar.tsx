@@ -1,7 +1,6 @@
 'use client';
 
 import type { ComponentProps } from 'react';
-import { Fragment } from 'react';
 
 import { dashboardRoutes } from '@/config/routes';
 import { sidebarSections } from '@/config/sidebar-menu';
@@ -14,7 +13,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from '@repo/ui/components/ui/sidebar';
 import Link from 'next/link';
 
@@ -38,15 +36,13 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {sidebarSections.map((section, index) => (
-          <Fragment key={section.id}>
-            {index > 0 ? <SidebarSeparator className="mx-0" /> : null}
-            <NavMain
-              groupLabel={section.groupLabel}
-              groupLabelClassName={section.groupLabelClassName}
-              items={section.items}
-            />
-          </Fragment>
+        {sidebarSections.map((section) => (
+          <NavMain
+            key={section.id}
+            groupLabel={section.groupLabel}
+            groupLabelClassName={section.groupLabelClassName}
+            items={section.items}
+          />
         ))}
       </SidebarContent>
     </Sidebar>

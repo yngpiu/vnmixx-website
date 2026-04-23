@@ -106,7 +106,11 @@ export class OrderAdminService {
           items: {
             select: { id: true, variantId: true, productName: true, quantity: true, price: true },
           },
-          payments: { select: { id: true, method: true, status: true }, take: 1 },
+          payments: {
+            select: { id: true, method: true, status: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
         },
       });
 
@@ -304,7 +308,7 @@ export class OrderAdminService {
           status: true,
           ghnOrderCode: true,
           items: { select: { id: true, variantId: true, quantity: true } },
-          payments: { select: { id: true, status: true } },
+          payments: { select: { id: true, status: true }, orderBy: { createdAt: 'desc' } },
         },
       });
 
@@ -339,7 +343,11 @@ export class OrderAdminService {
       await this.prisma.$transaction(async (tx) => {
         await tx.order.update({
           where: { id: order.id },
-          data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+          data: { status: 'CANCELLED' },
+        });
+        await tx.payment.updateMany({
+          where: { orderId: order.id, status: 'PENDING' },
+          data: { status: 'FAILED' },
         });
 
         await tx.orderStatusHistory.create({
@@ -422,10 +430,6 @@ export class OrderAdminService {
             where: { id: paidPayment.id },
             data: { status: 'REFUNDED' },
           });
-          await tx.order.update({
-            where: { id: order.id },
-            data: { paymentStatus: 'REFUNDED' },
-          });
         }
       });
 
@@ -468,8 +472,11 @@ export class OrderAdminService {
         where: { orderCode },
         select: {
           id: true,
-          paymentStatus: true,
-          payments: { select: { id: true, method: true, status: true }, take: 1 },
+          payments: {
+            select: { id: true, method: true, status: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
         },
       });
 
@@ -479,7 +486,6 @@ export class OrderAdminService {
 
       beforeData = {
         orderCode,
-        paymentStatus: order.paymentStatus,
         paymentMethod: order.payments[0]?.method,
         paymentRecordStatus: order.payments[0]?.status,
       };
@@ -499,11 +505,6 @@ export class OrderAdminService {
         await tx.payment.update({
           where: { id: payment.id },
           data: { status: 'SUCCESS', paidAt: new Date() },
-        });
-
-        await tx.order.update({
-          where: { id: order.id },
-          data: { paymentStatus: 'SUCCESS' },
         });
       });
 

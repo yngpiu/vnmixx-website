@@ -74,8 +74,6 @@ export interface PaginatedResult<T> {
 
 // ─── Select constants ───────────────────────────────────────────────────────
 
-const CATEGORY_BRIEF_SELECT = { id: true, name: true, slug: true } as const;
-
 const VARIANT_PUBLIC_SELECT = {
   id: true,
   colorId: true,
@@ -148,14 +146,9 @@ export class ProductRepository {
       deletedAt: null,
       ...(search && { name: { contains: search } }),
       ...(categorySlug && {
-        OR: [
-          { category: categoryWhereMatchesSlugTree(categorySlug) },
-          {
-            productCategories: {
-              some: { category: categoryWhereMatchesSlugTree(categorySlug) },
-            },
-          },
-        ],
+        productCategories: {
+          some: { category: categoryWhereMatchesSlugTree(categorySlug) },
+        },
       }),
     };
 
@@ -182,7 +175,6 @@ export class ProductRepository {
           name: true,
           slug: true,
           thumbnail: true,
-          category: { select: CATEGORY_BRIEF_SELECT },
           variants: {
             where: { isActive: true, deletedAt: null },
             select: { price: true },
@@ -195,7 +187,7 @@ export class ProductRepository {
       const prices = variants.map((v) => v.price);
       const minP = prices.length ? Math.min(...prices) : null;
       const maxP = prices.length ? Math.max(...prices) : null;
-      return { ...rest, minPrice: minP, maxPrice: maxP };
+      return { ...rest, category: null, minPrice: minP, maxPrice: maxP };
     });
 
     let filtered = data;
@@ -213,26 +205,29 @@ export class ProductRepository {
   }
 
   async findBySlug(slug: string): Promise<ProductDetailView | null> {
-    return this.prisma.product.findFirst({
-      where: { slug, isActive: true, deletedAt: null },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        thumbnail: true,
-        category: { select: CATEGORY_BRIEF_SELECT },
-        variants: {
-          where: { isActive: true, deletedAt: null },
-          select: VARIANT_PUBLIC_SELECT,
-          orderBy: [{ color: { name: 'asc' } }, { size: { sortOrder: 'asc' } }],
+    return this.prisma.product
+      .findFirst({
+        where: { slug, isActive: true, deletedAt: null },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          thumbnail: true,
+          variants: {
+            where: { isActive: true, deletedAt: null },
+            select: VARIANT_PUBLIC_SELECT,
+            orderBy: [{ color: { name: 'asc' } }, { size: { sortOrder: 'asc' } }],
+          },
+          images: {
+            select: IMAGE_SELECT,
+            orderBy: { sortOrder: 'asc' },
+          },
         },
-        images: {
-          select: IMAGE_SELECT,
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
-    });
+      })
+      .then((product) =>
+        product ? { ...product, category: null } : null,
+      ) as Promise<ProductDetailView | null>;
   }
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
@@ -256,7 +251,7 @@ export class ProductRepository {
       case 'variantCount':
         return { variants: { _count: dir } };
       case 'category':
-        return { category: { name: dir } };
+        return { updatedAt: 'desc' };
       default:
         return { updatedAt: 'desc' };
     }
@@ -278,7 +273,7 @@ export class ProductRepository {
       ...softDeletedWhere(isSoftDeleted),
       ...(search && { name: { contains: search } }),
       ...(categoryId !== undefined && {
-        OR: [{ categoryId }, { productCategories: { some: { categoryId } } }],
+        productCategories: { some: { categoryId } },
       }),
       ...(isActive !== undefined && { isActive }),
     };
@@ -296,7 +291,6 @@ export class ProductRepository {
           slug: true,
           thumbnail: true,
           isActive: true,
-          category: { select: { id: true, name: true } },
           createdAt: true,
           updatedAt: true,
           deletedAt: true,
@@ -311,7 +305,7 @@ export class ProductRepository {
 
     const data = products.map(({ variants, ...rest }) => {
       const totalStock = variants.reduce((sum, v) => sum + v.onHand, 0);
-      return { ...rest, totalStock };
+      return { ...rest, category: null, totalStock };
     });
 
     return {
@@ -321,39 +315,47 @@ export class ProductRepository {
   }
 
   async findAdminById(id: number): Promise<ProductAdminDetailView | null> {
-    return this.prisma.product.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        thumbnail: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
-        category: { select: CATEGORY_BRIEF_SELECT },
-        productCategories: { select: { categoryId: true } },
-        variants: {
-          select: {
-            ...VARIANT_PUBLIC_SELECT,
-            isActive: true,
-            createdAt: true,
-            updatedAt: true,
-            deletedAt: true,
+    return this.prisma.product
+      .findUnique({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          thumbnail: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+          productCategories: {
+            select: {
+              categoryId: true,
+            },
+            orderBy: { categoryId: 'asc' },
           },
-          orderBy: [{ color: { name: 'asc' } }, { size: { sortOrder: 'asc' } }],
+          variants: {
+            select: {
+              ...VARIANT_PUBLIC_SELECT,
+              isActive: true,
+              createdAt: true,
+              updatedAt: true,
+              deletedAt: true,
+            },
+            orderBy: [{ color: { name: 'asc' } }, { size: { sortOrder: 'asc' } }],
+          },
+          images: {
+            select: IMAGE_SELECT,
+            orderBy: { sortOrder: 'asc' },
+          },
         },
-        images: {
-          select: IMAGE_SELECT,
-          orderBy: { sortOrder: 'asc' },
-        },
-      },
-    }) as unknown as Promise<ProductAdminDetailView | null>;
+      })
+      .then((product) =>
+        product ? { ...product, category: null } : null,
+      ) as unknown as Promise<ProductAdminDetailView | null>;
   }
 
-  /** Xóa toàn bộ liên kết danh mục, ghi lại danh sách, đồng bộ `category_id` = phần tử đầu (hoặc null). */
+  /** Xóa toàn bộ liên kết danh mục và ghi lại danh sách mới trong bảng nối. */
   async syncProductCategories(productId: number, categoryIds: number[]): Promise<void> {
     const unique = [...new Set(categoryIds)].filter((id) => id >= 1);
     await this.prisma.$transaction(async (tx) => {
@@ -364,10 +366,6 @@ export class ProductRepository {
           skipDuplicates: true,
         });
       }
-      await tx.product.update({
-        where: { id: productId },
-        data: { categoryId: unique[0] ?? null },
-      });
     });
   }
 
@@ -378,7 +376,6 @@ export class ProductRepository {
     slug: string;
     description?: string | null;
     thumbnail?: string | null;
-    categoryId?: number | null;
     categoryIds: number[];
     isActive?: boolean;
     variants: {
@@ -402,7 +399,6 @@ export class ProductRepository {
           slug: data.slug,
           description: data.description ?? null,
           thumbnail: data.thumbnail ?? null,
-          categoryId: data.categoryIds[0] ?? data.categoryId ?? null,
           isActive: data.isActive ?? true,
         },
       });
@@ -460,7 +456,6 @@ export class ProductRepository {
       slug?: string;
       description?: string | null;
       thumbnail?: string | null;
-      categoryId?: number | null;
       isActive?: boolean;
     },
   ): Promise<ProductAdminDetailView> {

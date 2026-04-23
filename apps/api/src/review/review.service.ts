@@ -86,7 +86,7 @@ export class ReviewService {
         order: {
           customerId,
           status: 'DELIVERED',
-          paymentStatus: 'SUCCESS',
+          payments: { some: { status: 'SUCCESS' } },
         },
       },
     });

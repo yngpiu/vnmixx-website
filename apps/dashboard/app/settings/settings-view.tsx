@@ -13,9 +13,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avat
 import { Button } from '@repo/ui/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@repo/ui/components/ui/input-group';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { KeyRoundIcon, UploadCloudIcon, UserIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, KeyRoundIcon, UploadCloudIcon, UserIcon } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -88,6 +95,7 @@ function toErrorMessage(error: unknown): string {
 }
 
 export function SettingsView() {
+  const searchParams = useSearchParams();
   const setUser = useAuthStore((state) => state.setUser);
   const currentUser = useAuthStore((state) => state.user);
   const logout = useLogout();
@@ -125,6 +133,9 @@ export function SettingsView() {
   } = passwordForm;
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [localAvatarPreviewUrl, setLocalAvatarPreviewUrl] = useState<string | null>(null);
+  const [isCurrentPasswordVisible, setIsCurrentPasswordVisible] = useState(false);
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const clearPendingAvatarSelection = useCallback((): void => {
     setLocalAvatarPreviewUrl((previousUrl) => {
       if (previousUrl) {
@@ -179,9 +190,20 @@ export function SettingsView() {
   const isProfileFormSubmittable =
     (isDirty || pendingAvatarFile !== null) && !updateProfileMutation.isPending;
   const settingsMenus: ReadonlyArray<{ key: SettingsTab; label: string; icon: typeof UserIcon }> = [
-    { key: 'profile', label: 'Hồ sơ', icon: UserIcon },
+    { key: 'profile', label: 'Tài khoản', icon: UserIcon },
     { key: 'password', label: 'Mật khẩu', icon: KeyRoundIcon },
   ];
+  const tab = searchParams.get('tab');
+
+  useEffect(() => {
+    if (tab === 'password') {
+      setActiveTab('password');
+      return;
+    }
+    if (tab === 'profile') {
+      setActiveTab('profile');
+    }
+  }, [tab]);
 
   useEffect(() => {
     const profile = profileQuery.data;
@@ -250,6 +272,25 @@ export function SettingsView() {
     }
   }
 
+  function handleCancelProfileChanges(): void {
+    const profile = profileQuery.data;
+    clearErrors();
+    clearPendingAvatarSelection();
+    if (!profile) {
+      reset({
+        fullName: '',
+        phoneNumber: '',
+        avatarUrl: '',
+      });
+      return;
+    }
+    reset({
+      fullName: profile.fullName,
+      phoneNumber: profile.phoneNumber,
+      avatarUrl: profile.avatarUrl ?? '',
+    });
+  }
+
   function handlePasswordSubmit(values: ChangePasswordFormValues): void {
     clearPasswordErrors('root');
     const parsed = changePasswordSchema.safeParse(values);
@@ -270,6 +311,14 @@ export function SettingsView() {
       currentPassword: parsed.data.currentPassword,
       newPassword: parsed.data.newPassword,
     });
+  }
+
+  function handleCancelPasswordChanges(): void {
+    clearPasswordErrors();
+    resetPasswordForm();
+    setIsCurrentPasswordVisible(false);
+    setIsNewPasswordVisible(false);
+    setIsConfirmPasswordVisible(false);
   }
 
   if (profileQuery.isLoading) {
@@ -316,12 +365,16 @@ export function SettingsView() {
           {activeTab === 'profile' ? (
             <section className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold">Hồ sơ</h3>
+                <h3 className="text-lg font-semibold">Tài khoản</h3>
                 <p className="text-sm text-muted-foreground">
                   Cập nhật tên, số điện thoại và ảnh đại diện của tài khoản nhân viên.
                 </p>
               </div>
-              <form className="space-y-5" onSubmit={handleSubmit(handleProfileSubmit)} noValidate>
+              <form
+                className="max-w-xl space-y-5"
+                onSubmit={handleSubmit(handleProfileSubmit)}
+                noValidate
+              >
                 <FieldGroup className="gap-4">
                   <Field>
                     <FieldLabel>Ảnh đại diện</FieldLabel>
@@ -350,23 +403,7 @@ export function SettingsView() {
                             Chọn ảnh
                           </label>
                         </Button>
-                        {pendingAvatarFile ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground"
-                            onClick={() => {
-                              clearPendingAvatarSelection();
-                            }}
-                          >
-                            Bỏ chọn
-                          </Button>
-                        ) : null}
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Ảnh chỉ được tải lên máy chủ khi bạn bấm &quot;Lưu thay đổi&quot;.
-                      </p>
                     </div>
                     <FieldError errors={[errors.avatarUrl]} />
                   </Field>
@@ -389,9 +426,21 @@ export function SettingsView() {
                     <FieldError errors={[errors.phoneNumber]} />
                   </Field>
                 </FieldGroup>
-                <Button type="submit" disabled={!isProfileFormSubmittable}>
-                  {updateProfileMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button type="submit" disabled={!isProfileFormSubmittable}>
+                    {updateProfileMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
+                  </Button>
+                  {isDirty || pendingAvatarFile ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={updateProfileMutation.isPending}
+                      onClick={handleCancelProfileChanges}
+                    >
+                      Huỷ
+                    </Button>
+                  ) : null}
+                </div>
               </form>
             </section>
           ) : null}
@@ -404,52 +453,128 @@ export function SettingsView() {
                 </p>
               </div>
               <form
-                className="space-y-5"
+                className="max-w-xl space-y-5"
                 onSubmit={handleSubmitPassword(handlePasswordSubmit)}
                 noValidate
               >
                 <FieldGroup className="gap-4">
                   <Field>
                     <FieldLabel htmlFor="settings-current-password">Mật khẩu hiện tại</FieldLabel>
-                    <Input
-                      id="settings-current-password"
-                      type="password"
-                      autoComplete="current-password"
-                      {...registerPassword('currentPassword')}
-                    />
+                    <InputGroup>
+                      <InputGroupInput
+                        id="settings-current-password"
+                        type={isCurrentPasswordVisible ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        {...registerPassword('currentPassword')}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                          type="button"
+                          size="icon-xs"
+                          variant="ghost"
+                          onClick={() => setIsCurrentPasswordVisible((prev) => !prev)}
+                          aria-label={
+                            isCurrentPasswordVisible
+                              ? 'Ẩn mật khẩu hiện tại'
+                              : 'Hiện mật khẩu hiện tại'
+                          }
+                          disabled={changePasswordMutation.isPending || logout.isPending}
+                        >
+                          {isCurrentPasswordVisible ? (
+                            <EyeOffIcon className="size-4" />
+                          ) : (
+                            <EyeIcon className="size-4" />
+                          )}
+                        </InputGroupButton>
+                      </InputGroupAddon>
+                    </InputGroup>
                     <FieldError errors={[passwordErrors.currentPassword]} />
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="settings-new-password">Mật khẩu mới</FieldLabel>
-                    <Input
-                      id="settings-new-password"
-                      type="password"
-                      autoComplete="new-password"
-                      {...registerPassword('newPassword')}
-                    />
+                    <InputGroup>
+                      <InputGroupInput
+                        id="settings-new-password"
+                        type={isNewPasswordVisible ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        {...registerPassword('newPassword')}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                          type="button"
+                          size="icon-xs"
+                          variant="ghost"
+                          onClick={() => setIsNewPasswordVisible((prev) => !prev)}
+                          aria-label={
+                            isNewPasswordVisible ? 'Ẩn mật khẩu mới' : 'Hiện mật khẩu mới'
+                          }
+                          disabled={changePasswordMutation.isPending || logout.isPending}
+                        >
+                          {isNewPasswordVisible ? (
+                            <EyeOffIcon className="size-4" />
+                          ) : (
+                            <EyeIcon className="size-4" />
+                          )}
+                        </InputGroupButton>
+                      </InputGroupAddon>
+                    </InputGroup>
                     <FieldError errors={[passwordErrors.newPassword]} />
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="settings-confirm-password">
                       Xác nhận mật khẩu mới
                     </FieldLabel>
-                    <Input
-                      id="settings-confirm-password"
-                      type="password"
-                      autoComplete="new-password"
-                      {...registerPassword('confirmPassword')}
-                    />
+                    <InputGroup>
+                      <InputGroupInput
+                        id="settings-confirm-password"
+                        type={isConfirmPasswordVisible ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        {...registerPassword('confirmPassword')}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                          type="button"
+                          size="icon-xs"
+                          variant="ghost"
+                          onClick={() => setIsConfirmPasswordVisible((prev) => !prev)}
+                          aria-label={
+                            isConfirmPasswordVisible
+                              ? 'Ẩn xác nhận mật khẩu mới'
+                              : 'Hiện xác nhận mật khẩu mới'
+                          }
+                          disabled={changePasswordMutation.isPending || logout.isPending}
+                        >
+                          {isConfirmPasswordVisible ? (
+                            <EyeOffIcon className="size-4" />
+                          ) : (
+                            <EyeIcon className="size-4" />
+                          )}
+                        </InputGroupButton>
+                      </InputGroupAddon>
+                    </InputGroup>
                     <FieldError errors={[passwordErrors.confirmPassword]} />
                   </Field>
                 </FieldGroup>
-                <Button
-                  type="submit"
-                  disabled={
-                    !isPasswordDirty || changePasswordMutation.isPending || logout.isPending
-                  }
-                >
-                  {changePasswordMutation.isPending ? 'Đang đổi mật khẩu...' : 'Đổi mật khẩu'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="submit"
+                    disabled={
+                      !isPasswordDirty || changePasswordMutation.isPending || logout.isPending
+                    }
+                  >
+                    {changePasswordMutation.isPending ? 'Đang đổi mật khẩu...' : 'Đổi mật khẩu'}
+                  </Button>
+                  {isPasswordDirty ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={changePasswordMutation.isPending || logout.isPending}
+                      onClick={handleCancelPasswordChanges}
+                    >
+                      Huỷ
+                    </Button>
+                  ) : null}
+                </div>
               </form>
             </section>
           ) : null}

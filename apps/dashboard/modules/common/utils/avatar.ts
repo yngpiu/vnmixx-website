@@ -1,10 +1,5 @@
 import { API_BASE_URL } from '@/config/constants';
 
-/** Ảnh placeholder ổn định theo email (pravatar.cc). */
-export function pravatarFromEmail(email: string): string {
-  return `https://i.pravatar.cc/150?u=${encodeURIComponent(email)}`;
-}
-
 /** URL tuyệt đối cho ảnh public từ API (đường dẫn tuyệt đối hoặc path gắn base API). */
 export function resolvePublicMediaUrl(url: string | null | undefined): string | null {
   const t = url?.trim();
@@ -15,9 +10,9 @@ export function resolvePublicMediaUrl(url: string | null | undefined): string | 
   return t;
 }
 
-/** Ảnh đại diện hiển thị: `avatarUrl` nếu có, không thì placeholder theo email. */
-export function employeeAvatarDisplayUrl(avatarUrl: string | null, email: string): string {
-  return resolvePublicMediaUrl(avatarUrl) ?? pravatarFromEmail(email);
+/** Ảnh đại diện hiển thị: chỉ dùng `avatarUrl` đã lưu, không fallback link ngoài. */
+export function employeeAvatarDisplayUrl(avatarUrl: string | null | undefined): string | undefined {
+  return resolvePublicMediaUrl(avatarUrl) ?? undefined;
 }
 
 /** Chữ viết tắt từ họ tên cho fallback avatar. */

@@ -283,7 +283,6 @@ model Category {
 
   parent            Category?         @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   children          Category[]        @relation("CategoryTree")
-  products          Product[]
   productCategories ProductCategory[]
 
   @@index([parentId], map: "idx_categories_parent")
@@ -320,31 +319,28 @@ model Size {
 // ─── Products ───────────────────────────────────────────
 
 model Product {
-  id          Int       @id @default(autoincrement()) @db.UnsignedInt
-  categoryId  Int?      @map("category_id") @db.UnsignedInt
-  name        String    @db.VarChar(255)
-  slug        String    @unique(map: "uk_products_slug") @db.VarChar(255)
-  description String?   @db.Text
-  thumbnail   String?   @db.VarChar(500)
-  isActive    Boolean   @default(true) @map("is_active") @db.TinyInt
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(0)
+  id          Int              @id @default(autoincrement()) @db.UnsignedInt
+  name        String           @db.VarChar(255)
+  slug        String           @unique(map: "uk_products_slug") @db.VarChar(255)
+  description String?          @db.Text
+  thumbnail   String?          @db.VarChar(500)
+  isActive    Boolean          @default(true) @map("is_active") @db.TinyInt
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt   DateTime?        @map("deleted_at") @db.Timestamp(0)
 
-  category          Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   productCategories ProductCategory[]
   variants          ProductVariant[]
   images            ProductImage[]
   wishlists         Wishlist[]
   reviews           ProductReview[]
 
-  @@index([categoryId], map: "idx_products_category")
   @@index([isActive, deletedAt], map: "idx_products_active_deleted")
   @@map("products")
 }
 
 /**
- * Gán nhiều danh mục (thường là các lá) cho một sản phẩm. `Product.categoryId` giữ danh mục hiển thị chính (= phần tử đầu khi tạo).
+ * Gán nhiều danh mục (thường là các lá) cho một sản phẩm qua bảng nối many-to-many.
  */
 model ProductCategory {
   productId  Int @map("product_id") @db.UnsignedInt
@@ -383,6 +379,7 @@ model ProductVariant {
   stockMovements StockMovement[]
 
   @@unique([productId, colorId, sizeId], map: "uk_variants_combo")
+  @@index([productId, isActive], map: "idx_variants_product_active")
   @@index([colorId], map: "idx_variants_color")
   @@index([sizeId], map: "idx_variants_size")
   @@map("product_variants")
@@ -486,7 +483,6 @@ model Order {
   shippingAddressLine   String        @map("shipping_address_line") @db.VarChar(255)
   shippingGhnDistrictId Int?          @map("shipping_ghn_district_id") @db.UnsignedInt
   shippingGhnWardCode   String?       @map("shipping_ghn_ward_code") @db.VarChar(20)
-  paymentStatus         PaymentStatus @default(PENDING) @map("payment_status")
   serviceTypeId         Int?          @map("service_type_id") @db.UnsignedSmallInt
   requiredNote          RequiredNote  @default(KHONGCHOXEMHANG) @map("required_note")
   note                  String?       @db.VarChar(500)
@@ -511,8 +507,8 @@ model Order {
   stockMovements  StockMovement[]
 
   @@index([customerId], map: "idx_orders_customer")
+  @@index([customerId, createdAt(sort: Desc)], map: "idx_orders_customer_created")
   @@index([status], map: "idx_orders_status")
-  @@index([paymentStatus], map: "idx_orders_payment_status")
   @@index([ghnOrderCode], map: "idx_orders_ghn_code")
   @@map("orders")
 }
