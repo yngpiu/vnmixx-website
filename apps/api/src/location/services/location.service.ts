@@ -27,7 +27,7 @@ export class LocationService {
   // Lấy danh sách Quận/Huyện dựa theo ID của Tỉnh/Thành phố
   async findDistrictsByCityId(cityId: number): Promise<DistrictView[]> {
     const exists = await this.locationRepo.cityExists(cityId);
-    if (!exists) throw new NotFoundException(`Không tìm thấy thành phố #${cityId}`);
+    if (!exists) throw new NotFoundException(`Không tìm thấy tỉnh/thành phố #${cityId}`);
 
     return this.redis.getOrSet(CACHE_KEYS.DISTRICTS(cityId), CACHE_TTL.LOCATION, () =>
       this.locationRepo.findDistrictsByCityId(cityId),
