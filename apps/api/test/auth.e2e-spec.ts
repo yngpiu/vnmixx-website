@@ -4,7 +4,6 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
-import { otelSDK } from '../src/core/tracing/tracing';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 interface ApiResponse<T = any> {
@@ -68,15 +67,6 @@ describe('Authentication Flow (e2e)', () => {
 
     if (app) {
       await app.close();
-    }
-
-    try {
-      const sdk = otelSDK as { shutdown?: () => Promise<void> };
-      if (sdk && typeof sdk.shutdown === 'function') {
-        await sdk.shutdown();
-      }
-    } catch {
-      // Ignore
     }
   }, 10000);
 

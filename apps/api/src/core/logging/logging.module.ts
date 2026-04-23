@@ -10,18 +10,24 @@ import { LoggerModule } from 'nestjs-pino';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const isProduction = config.get<string>('NODE_ENV') === 'production';
+        const enablePretty =
+          config.get<string>('LOG_PRETTY') === 'true' ||
+          (!isProduction && config.get<string>('LOG_PRETTY') !== 'false');
         return {
           pinoHttp: {
-            transport: isProduction
-              ? undefined
-              : {
+            transport: enablePretty
+              ? {
                   target: 'pino-pretty',
                   options: {
                     colorize: true,
-                    singleLine: true,
+                    singleLine: false,
                     translateTime: 'SYS:standard',
+                    ignore: 'pid,hostname,req.headers,res.headers',
+                    messageFormat:
+                      '{msg} {req.method} {req.url} {res.statusCode} ({responseTime}ms)',
                   },
-                },
+                }
+              : undefined,
             autoLogging: true,
             genReqId: (req: unknown) => {
               const r = req as Request;

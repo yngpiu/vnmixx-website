@@ -13,17 +13,12 @@ const DEFAULT_DEV_CORS_ORIGINS = [
   'http://127.0.0.1:3001',
 ];
 
-import { otelSDK } from './core/tracing/tracing';
-
 /**
  * Hàm khởi tạo và cấu hình ứng dụng (Bootstrap).
- * Thực hiện các bước: Khởi chạy Tracing (OTEL), tạo Instance NestJS,
+ * Thực hiện các bước: Tạo Instance NestJS,
  * cấu hình Versioning, Bảo mật (Helmet), CORS, Validation, và Swagger.
  */
 async function bootstrap() {
-  // Khởi động OpenTelemetry SDK để theo dõi (tracing) ứng dụng
-  otelSDK.start();
-
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   // Sử dụng Logger pino thay cho logger mặc định của NestJS
   app.useLogger(app.get(Logger));

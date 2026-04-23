@@ -5,7 +5,6 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
-import { otelSDK } from '../src/core/tracing/tracing';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { GhnService } from '../src/shipping/services/ghn.service';
 
@@ -159,11 +158,6 @@ describe('Order Flow (e2e)', () => {
       await prisma.$disconnect();
     }
     if (app) await app.close();
-    try {
-      await otelSDK.shutdown();
-    } catch {
-      // Ignore
-    }
   }, 10000);
 
   describe('Order Creation Flow', () => {
