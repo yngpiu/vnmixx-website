@@ -65,32 +65,6 @@ export class RoleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lấy danh sách tất cả vai trò (không phân trang), kèm theo số lượng quyền hạn của mỗi vai trò.
-   */
-  async findAll(): Promise<RoleListView[]> {
-    const roles = await this.prisma.role.findMany({
-      orderBy: { id: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: { select: { rolePermissions: true } },
-      },
-    });
-
-    return roles.map((r) => ({
-      id: r.id,
-      name: r.name,
-      description: r.description,
-      permissionCount: r._count.rolePermissions,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-    }));
-  }
-
-  /**
    * Xây dựng mệnh đề ORDER BY động dựa trên yêu cầu từ API.
    */
   private buildListOrderBy(

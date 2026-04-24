@@ -37,6 +37,7 @@ describe('RoleService', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RoleService,
@@ -52,10 +53,6 @@ describe('RoleService', () => {
     permissionRepo = module.get(PermissionRepository);
     employeeAuthzCache = module.get(EmployeeAuthzCacheService);
     auditLogService = module.get(AuditLogService);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 
   describe('findList', () => {
