@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as nodemailer from 'nodemailer';
-import { MAIL_QUEUE } from './mail.constants';
+import { MAIL_QUEUE } from '../mail.constants';
 import { MailService } from './mail.service';
 
 jest.mock('nodemailer');
@@ -76,7 +76,6 @@ describe('MailService', () => {
     } as any;
     const localService = new MailService(nullConfig, queue);
 
-    // Clear calls because queue might have been used in previous tests
     queue.add.mockClear();
 
     const options = { to: 't@t.com', subject: 'S', html: 'H', text: 'T' };

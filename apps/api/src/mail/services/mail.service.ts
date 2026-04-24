@@ -4,8 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
-import { MAIL_TEMPLATES, renderTemplate } from './mail-templates';
-import { MAIL_QUEUE } from './mail.constants';
+import { MAIL_QUEUE } from '../mail.constants';
+import { MAIL_TEMPLATES, renderTemplate } from '../mail.templates';
 
 export interface SendMailOptions {
   to: string;
@@ -14,10 +14,7 @@ export interface SendMailOptions {
   html: string;
 }
 
-/**
- * Service xử lý logic gửi email trong ứng dụng.
- * Hỗ trợ gửi mail qua SMTP và hàng đợi (queue) BullMQ để xử lý bất đồng bộ.
- */
+// Quản lý luồng render template, enqueue và gửi email qua SMTP.
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -32,29 +29,27 @@ export class MailService {
     this.transporter = this.buildTransporter();
   }
 
-  /**
-   * Kiểm tra xem cấu hình SMTP đã sẵn sàng để gửi mail thật chưa.
-   */
+  // Kiểm tra SMTP và sender đã đủ điều kiện để gửi mail thực tế.
   isConfigured(): boolean {
     return this.transporter !== null && this.sender !== null;
   }
 
-  /**
-   * Render nội dung email từ template và đưa vào hàng đợi để gửi đi.
-   */
+  // Render template theo context rồi đẩy vào luồng gửi mail.
   async sendMailWithTemplate(
     to: string,
     templateKey: keyof typeof MAIL_TEMPLATES,
     context: Record<string, unknown>,
   ): Promise<void> {
-    const { subject, html, text } = renderTemplate(templateKey, context);
-    return this.sendMail({ to, subject, html, text });
+    const rendered = renderTemplate(templateKey, context);
+    return this.sendMail({
+      to,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+    });
   }
 
-  /**
-   * Thêm email vào hàng đợi BullMQ để gửi bất đồng bộ.
-   * Nếu không có cấu hình SMTP, email sẽ chỉ được ghi log (dùng cho môi trường dev).
-   */
+  // Đưa email vào queue để gửi bất đồng bộ và retry khi lỗi tạm thời.
   async sendMail(options: SendMailOptions): Promise<void> {
     if (!this.isConfigured()) {
       if (process.env.NODE_ENV === 'production') {
@@ -74,10 +69,7 @@ export class MailService {
     });
   }
 
-  /**
-   * Phương thức gửi mail trực tiếp qua transporter.
-   * Được gọi bởi MailProcessor khi xử lý job từ hàng đợi.
-   */
+  // Gửi email trực tiếp qua transporter (được gọi từ worker).
   async sendMailDirect(options: SendMailOptions): Promise<void> {
     if (!this.transporter || !this.sender) {
       if (process.env.NODE_ENV === 'production') {
@@ -98,9 +90,7 @@ export class MailService {
     });
   }
 
-  /**
-   * Khởi tạo đối tượng Transporter của nodemailer dựa trên cấu hình môi trường.
-   */
+  // Tạo nodemailer transporter từ cấu hình SMTP trong env.
   private buildTransporter(): Transporter | null {
     const host = this.config.get<string>('SMTP_HOST') ?? null;
     const rawPort = Number(this.config.get<string | number>('SMTP_PORT') ?? 587);

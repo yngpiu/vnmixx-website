@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { MailService } from '../../common/mail/mail.service';
+import { MailService } from '../../mail/services/mail.service';
 import { RedisService } from '../../redis/services/redis.service';
 import { CustomerRepository } from '../repositories/customer.repository';
 import { OtpService } from './otp.service';

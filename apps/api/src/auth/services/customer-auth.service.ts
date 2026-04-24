@@ -13,7 +13,7 @@ import {
   isPrismaErrorCode,
   isPrismaKnownRequestError,
 } from '../../common/errors/prisma-error.util';
-import { MailService } from '../../common/mail/mail.service';
+import { MailService } from '../../mail/services/mail.service';
 import { RedisService } from '../../redis/services/redis.service';
 import {
   BCRYPT_SALT_ROUNDS,

@@ -1,5 +1,6 @@
 import * as handlebars from 'handlebars';
 
+// Danh sách template email dùng chung theo từng nghiệp vụ.
 export const MAIL_TEMPLATES = {
   VERIFICATION_OTP: {
     subject: 'VNMIXX - Mã xác thực email',
@@ -29,17 +30,18 @@ export const MAIL_TEMPLATES = {
   },
 };
 
+// Render template thành subject/html/text hoàn chỉnh trước khi gửi mail.
 export function renderTemplate(
   templateKey: keyof typeof MAIL_TEMPLATES,
   context: Record<string, unknown>,
-) {
+): { subject: string; html: string; text: string } {
   const template = MAIL_TEMPLATES[templateKey];
   const renderHtml = handlebars.compile(template.html);
   const renderText = handlebars.compile(template.text);
 
   return {
     subject: template.subject,
-    html: renderHtml(context),
-    text: renderText(context),
+    html: String(renderHtml(context)),
+    text: String(renderText(context)),
   };
 }

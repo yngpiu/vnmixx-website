@@ -11,12 +11,12 @@ import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { CategoryModule } from './category/category.module';
 import { ColorModule } from './color/color.module';
-import { CommonModule } from './common/common.module';
 import { validateEnv } from './config/env.validation';
 import { CoreModule } from './core/core.module';
 import { CustomerModule } from './customer/customer.module';
 import { EmployeeModule } from './employee/employee.module';
 import { LocationModule } from './location/location.module';
+import { MailModule } from './mail/mail.module';
 import { MediaModule } from './media/media.module';
 import { OrderModule } from './order/order.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -61,7 +61,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     CoreModule,
     PrismaModule,
     RedisModule,
-    CommonModule,
+    MailModule,
     // Đăng ký các Module chức năng nghiệp vụ
     AuditLogModule,
     AuthModule,
