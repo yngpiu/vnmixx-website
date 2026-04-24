@@ -13,9 +13,11 @@ import { LocationService } from '../services/location.service';
 
 @ApiTags('Locations')
 @Controller('locations')
+// API công khai để tra cứu địa chỉ khi khách chọn nơi giao hàng.
 export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 
+  // Trả về toàn bộ tỉnh/thành để bắt đầu luồng chọn địa chỉ.
   @ApiOperation({ summary: 'Liệt kê tất cả tỉnh/thành phố' })
   @ApiOkResponse({ type: [CityResponseDto] })
   @Public()
@@ -25,6 +27,7 @@ export class LocationController {
     return this.locationService.findAllCities();
   }
 
+  // Trả về danh sách quận/huyện thuộc thành phố đã chọn.
   @ApiOperation({ summary: 'Liệt kê quận/huyện theo thành phố' })
   @ApiOkResponse({ type: [DistrictResponseDto] })
   @ApiBadRequestResponse({ description: 'Mã thành phố không hợp lệ.' })
@@ -38,6 +41,7 @@ export class LocationController {
     return this.locationService.findDistrictsByCityId(cityId);
   }
 
+  // Trả về danh sách phường/xã thuộc quận/huyện đã chọn.
   @ApiOperation({ summary: 'Liệt kê phường/xã theo quận/huyện' })
   @ApiOkResponse({ type: [WardResponseDto] })
   @ApiBadRequestResponse({ description: 'Mã quận/huyện không hợp lệ.' })
