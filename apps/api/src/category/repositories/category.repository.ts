@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
 import { softDeletedWhere } from '../../common/prisma/soft-deleted-where';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 
 interface CategoryParentView {
   id: number;

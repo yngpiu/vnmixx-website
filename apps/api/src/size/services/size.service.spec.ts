@@ -2,7 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
 import { CreateSizeDto, PaginatedSizeList, UpdateSizeDto } from '../dto';
 import { SizeAdminView, SizeRepository, SizeView } from '../repositories/size.repository';
 import { SizeService } from './size.service';

@@ -2,7 +2,7 @@
  * Repository quản lý truy vấn dữ liệu hồ sơ Nhân viên.
  */
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 
 export interface EmployeeProfileView {
   id: number;

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReviewVisibility } from '../../generated/prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/services/prisma.service';
 import { ReviewService } from './review.service';
 
 describe('ReviewService', () => {

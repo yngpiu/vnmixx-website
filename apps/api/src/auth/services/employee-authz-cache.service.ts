@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
+import { AUTH_CACHE_KEYS, AUTH_CACHE_TTL } from '../auth.cache';
 import { EmployeeRepository } from '../repositories/employee.repository';
 
 interface EmployeeAuthzSnapshot {
@@ -15,7 +15,7 @@ interface EmployeeAuthzSnapshot {
 @Injectable()
 export class EmployeeAuthzCacheService {
   private readonly logger = new Logger(EmployeeAuthzCacheService.name);
-  private readonly ttlSeconds: number = CACHE_TTL.EMPLOYEE_AUTHZ;
+  private readonly ttlSeconds: number = AUTH_CACHE_TTL.EMPLOYEE_AUTHZ;
 
   constructor(
     private readonly redis: RedisService,
@@ -24,7 +24,7 @@ export class EmployeeAuthzCacheService {
 
   /** Returns roles and permissions, using Redis when possible. */
   async getRolesAndPermissions(employeeId: number): Promise<EmployeeAuthzSnapshot> {
-    const key = CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId);
+    const key = AUTH_CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId);
     const cached = await this.redis.getClient().get(key);
     if (cached) {
       try {
@@ -47,7 +47,7 @@ export class EmployeeAuthzCacheService {
 
   /** Drop cached authz for one employee. */
   async invalidate(employeeId: number): Promise<void> {
-    await this.redis.getClient().del(CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId));
+    await this.redis.getClient().del(AUTH_CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId));
   }
 
   /** Drop cached authz for many employees (e.g. after role permission sync). */
@@ -56,7 +56,7 @@ export class EmployeeAuthzCacheService {
     if (!uniqueIds.length) {
       return;
     }
-    const keys = uniqueIds.map((id) => CACHE_KEYS.EMPLOYEE_AUTHZ(id));
+    const keys = uniqueIds.map((id) => AUTH_CACHE_KEYS.EMPLOYEE_AUTHZ(id));
     await this.redis.getClient().del(...keys);
   }
 }

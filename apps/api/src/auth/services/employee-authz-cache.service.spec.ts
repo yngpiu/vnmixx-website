@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CACHE_KEYS } from '../../redis/cache-keys';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
+import { AUTH_CACHE_KEYS } from '../auth.cache';
 import { EmployeeRepository } from '../repositories/employee.repository';
 import { EmployeeAuthzCacheService } from './employee-authz-cache.service';
 
@@ -41,7 +41,7 @@ describe('EmployeeAuthzCacheService', () => {
 
   describe('getRolesAndPermissions', () => {
     const employeeId = 1;
-    const cacheKey = CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId);
+    const cacheKey = AUTH_CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId);
     const mockSnapshot = {
       roles: ['ADMIN'],
       permissions: ['read:all'],
@@ -76,7 +76,7 @@ describe('EmployeeAuthzCacheService', () => {
   describe('invalidate', () => {
     it('should delete key from redis', async () => {
       const employeeId = 1;
-      const cacheKey = CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId);
+      const cacheKey = AUTH_CACHE_KEYS.EMPLOYEE_AUTHZ(employeeId);
 
       await service.invalidate(employeeId);
 
@@ -94,9 +94,9 @@ describe('EmployeeAuthzCacheService', () => {
     it('should delete multiple keys from redis', async () => {
       const ids = [1, 2, 2, 3];
       const keys = [
-        CACHE_KEYS.EMPLOYEE_AUTHZ(1),
-        CACHE_KEYS.EMPLOYEE_AUTHZ(2),
-        CACHE_KEYS.EMPLOYEE_AUTHZ(3),
+        AUTH_CACHE_KEYS.EMPLOYEE_AUTHZ(1),
+        AUTH_CACHE_KEYS.EMPLOYEE_AUTHZ(2),
+        AUTH_CACHE_KEYS.EMPLOYEE_AUTHZ(3),
       ];
 
       await service.invalidateMany(ids);

@@ -62,11 +62,10 @@ export async function seedProductReviews(): Promise<void> {
     }
 
     console.log('Fetching delivered orders...');
-    // We will pick delivered orders to create realistic reviews
     const deliveredOrders = await prisma.order.findMany({
       where: { status: OrderStatus.DELIVERED },
       include: { items: { include: { variant: true } } },
-      take: 10000, // sample up to 10k orders to generate reviews from
+      take: 10000,
     });
 
     if (deliveredOrders.length === 0) {
@@ -78,25 +77,20 @@ export async function seedProductReviews(): Promise<void> {
     let created = 0;
     const reviewsToCreate: Prisma.ProductReviewCreateManyInput[] = [];
 
-    // Make a composite key to avoid duplicate review for same product-customer pair
     const seenCombos = new Set<string>();
 
     for (const order of deliveredOrders) {
-      // 40% chance an order leaves a review
       if (faker.datatype.boolean({ probability: 0.4 })) {
-        // Pick one random item from the order to review
         const itemToReview = faker.helpers.arrayElement(order.items);
         const comboKey = `${itemToReview.variant.productId}-${order.customerId}`;
 
         if (!seenCombos.has(comboKey)) {
           seenCombos.add(comboKey);
 
-          // Review time is 1-14 days after order creation
           const reviewDate = new Date(
             order.createdAt.getTime() + faker.number.int({ min: 24, max: 336 }) * 3600000,
           );
 
-          // Weighted rating (mostly 4-5 stars)
           const rating = faker.helpers.weightedArrayElement([
             { weight: 60, value: 5 },
             { weight: 25, value: 4 },

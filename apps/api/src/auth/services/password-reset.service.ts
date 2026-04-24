@@ -2,7 +2,7 @@ import { BadRequestException, HttpException, HttpStatus, Injectable, Logger } fr
 import { hash } from 'bcrypt';
 import { createHash, randomUUID, timingSafeEqual } from 'crypto';
 import { MailService } from '../../common/mail/mail.service';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
 import {
   BCRYPT_SALT_ROUNDS,
   CUSTOMER_OTP_LENGTH,

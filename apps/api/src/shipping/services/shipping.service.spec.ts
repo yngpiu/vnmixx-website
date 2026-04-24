@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import { CalculateShippingFeeDto } from '../dto';
 import { GhnAvailableService, GhnFeeData, GhnLeadtimeData, GhnService } from './ghn.service';
 import { ShippingService } from './shipping.service';

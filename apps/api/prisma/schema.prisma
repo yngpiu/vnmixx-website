@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider     = "prisma-client"
   output       = "../generated/prisma"
@@ -12,8 +7,6 @@ generator client {
 datasource db {
   provider = "mysql"
 }
-
-// ─── Enums ───────────────────────────────────────────────
 
 enum Gender {
   MALE
@@ -78,8 +71,6 @@ enum ReviewVisibility {
   HIDDEN
 }
 
-// ─── Customers ───────────────────────────────────────────
-
 model Customer {
   id              Int       @id @default(autoincrement()) @db.UnsignedInt
   fullName        String    @map("full_name") @db.VarChar(100)
@@ -104,8 +95,6 @@ model Customer {
 
   @@map("customers")
 }
-
-// ─── Employees ───────────────────────────────────────────
 
 model Employee {
   id             Int            @id @default(autoincrement()) @db.UnsignedInt
@@ -153,8 +142,6 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// ─── RBAC ────────────────────────────────────────────────
-
 model Role {
   id          Int      @id @default(autoincrement()) @db.UnsignedInt
   name        String   @unique(map: "uk_roles_name") @db.VarChar(50)
@@ -191,8 +178,6 @@ model RolePermission {
   @@index([permissionId], map: "idx_role_perms_permission")
   @@map("role_permissions")
 }
-
-// ─── Geography ───────────────────────────────────────────
 
 model City {
   id              Int      @id @default(autoincrement()) @db.UnsignedInt
@@ -238,8 +223,6 @@ model Ward {
   @@map("wards")
 }
 
-// ─── Addresses ───────────────────────────────────────────
-
 model Address {
   id          Int         @id @default(autoincrement()) @db.UnsignedInt
   customerId  Int         @map("customer_id") @db.UnsignedInt
@@ -267,8 +250,6 @@ model Address {
   @@map("addresses")
 }
 
-// ─── Categories ──────────────────────────────────────────
-
 model Category {
   id         Int       @id @default(autoincrement()) @db.UnsignedInt
   name       String    @db.VarChar(100)
@@ -288,8 +269,6 @@ model Category {
   @@index([parentId], map: "idx_categories_parent")
   @@map("categories")
 }
-
-// ─── Colors & Sizes ─────────────────────────────────────
 
 model Color {
   id        Int      @id @default(autoincrement()) @db.UnsignedInt
@@ -316,8 +295,6 @@ model Size {
   @@map("sizes")
 }
 
-// ─── Products ───────────────────────────────────────────
-
 model Product {
   id          Int              @id @default(autoincrement()) @db.UnsignedInt
   name        String           @db.VarChar(255)
@@ -339,9 +316,6 @@ model Product {
   @@map("products")
 }
 
-/**
- * Gán nhiều danh mục (thường là các lá) cho một sản phẩm qua bảng nối many-to-many.
- */
 model ProductCategory {
   productId  Int @map("product_id") @db.UnsignedInt
   categoryId Int @map("category_id") @db.UnsignedInt
@@ -353,8 +327,6 @@ model ProductCategory {
   @@index([categoryId], map: "idx_product_categories_category")
   @@map("product_categories")
 }
-
-// ─── Product Variants & Images ──────────────────────────
 
 model ProductVariant {
   id        Int       @id @default(autoincrement()) @db.UnsignedInt
@@ -423,8 +395,6 @@ model ProductReview {
   @@map("product_reviews")
 }
 
-// ─── Carts ──────────────────────────────────────────────
-
 model Cart {
   id         Int      @id @default(autoincrement()) @db.UnsignedInt
   customerId Int      @unique(map: "uk_carts_customer") @map("customer_id") @db.UnsignedInt
@@ -453,8 +423,6 @@ model CartItem {
   @@map("cart_items")
 }
 
-// ─── Wishlists ──────────────────────────────────────────
-
 model Wishlist {
   customerId Int      @map("customer_id") @db.UnsignedInt
   productId  Int      @map("product_id") @db.UnsignedInt
@@ -467,8 +435,6 @@ model Wishlist {
   @@index([productId], map: "idx_wishlists_product")
   @@map("wishlists")
 }
-
-// ─── Orders ─────────────────────────────────────────────
 
 model Order {
   id                    Int           @id @default(autoincrement()) @db.UnsignedInt
@@ -532,7 +498,6 @@ model OrderItem {
 
   @@index([orderId], map: "idx_order_items_order")
   @@index([variantId], map: "idx_order_items_variant")
-  // Supports a composite FK from StockMovement(order_item_id, order_id).
   @@unique([id, orderId], map: "uk_order_items_id_order")
   @@map("order_items")
 }
@@ -582,7 +547,6 @@ model StockMovement {
 
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   order     Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  // Keeps order_item_id consistent with the same order_id.
   orderItem OrderItem?     @relation("StockMovementOrderItem", fields: [orderItemId, orderId], references: [id, orderId], onDelete: SetNull, onUpdate: Cascade)
   employee  Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
@@ -594,8 +558,6 @@ model StockMovement {
   @@index([type, createdAt], map: "idx_stock_movements_type_created")
   @@map("stock_movements")
 }
-
-// ─── Refresh Tokens ──────────────────────────────────────
 
 model RefreshToken {
   id         Int       @id @default(autoincrement()) @db.UnsignedInt
@@ -618,13 +580,10 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
-// ─── Media Files ─────────────────────────────────────────
-
 model MediaFile {
   id         Int      @id @default(autoincrement()) @db.UnsignedInt
   key        String   @unique(map: "uk_media_key") @db.VarChar(500)
   fileName   String   @map("file_name") @db.VarChar(255)
-  // One logical folder per file ("" = root). Public URL is not stored; use R2_PUBLIC_URL + key at runtime.
   folder     String   @default("") @db.VarChar(500)
   folderId   Int?     @map("folder_id") @db.UnsignedInt
   mimeType   String   @map("mime_type") @db.VarChar(100)

@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { PrismaService } from '../src/prisma/services/prisma.service';
 
 interface ApiResponse<T = any> {
   success: boolean;

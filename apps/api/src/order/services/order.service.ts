@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OrderStatus, Prisma } from '../../../generated/prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import { estimateCartPackageFromLines } from '../../shipping/estimate-cart-package';
 import { GhnService } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';

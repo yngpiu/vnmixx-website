@@ -13,7 +13,7 @@ import {
 } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import { GhnService, type GhnCreateOrderData } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
 import type { ListAdminOrdersQueryDto } from '../dto';

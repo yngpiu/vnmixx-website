@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { LocationRepository } from '../../location/repositories/location.repository';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import type { CreateAddressDto, UpdateAddressDto } from '../dto';
 import { type AddressView, AddressRepository } from '../repositories/address.repository';
 

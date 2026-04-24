@@ -9,7 +9,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import { type CalculateShippingFeeDto, type ShippingFeeResponseDto } from '../dto';
 import { estimateCartPackageFromLines } from '../estimate-cart-package';
 import { GhnService } from './ghn.service';

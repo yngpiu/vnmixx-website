@@ -3,8 +3,7 @@ import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
-import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
 import { CreateSizeDto, UpdateSizeDto } from '../dto';
 import {
   PaginatedSizeList,
@@ -12,6 +11,7 @@ import {
   SizeRepository,
   SizeView,
 } from '../repositories/size.repository';
+import { SIZE_CACHE_KEYS, SIZE_CACHE_TTL } from '../size.cache';
 
 // Quản lý thuộc tính kích thước sản phẩm (Size/Dimension).
 // Phục vụ việc phân loại và tạo các biến thể sản phẩm trong hệ thống e-commerce.
@@ -27,7 +27,7 @@ export class SizeService {
 
   // Lấy danh sách kích thước hiển thị cho khách hàng, sử dụng Redis Cache để tối ưu hiệu năng.
   findAllPublic(): Promise<SizeView[]> {
-    return this.redis.getOrSet(CACHE_KEYS.SIZE_LIST, CACHE_TTL.SIZE, () =>
+    return this.redis.getOrSet(SIZE_CACHE_KEYS.SIZE_LIST, SIZE_CACHE_TTL.SIZE, () =>
       this.repository.findAllPublic(),
     );
   }
@@ -169,7 +169,7 @@ export class SizeService {
 
   // Vô hiệu hóa cache danh sách kích thước.
   private async invalidateCache(): Promise<void> {
-    await this.redis.del(CACHE_KEYS.SIZE_LIST);
+    await this.redis.del(SIZE_CACHE_KEYS.SIZE_LIST);
   }
 
   // Tìm bản ghi hoặc ném lỗi nếu không tồn tại.

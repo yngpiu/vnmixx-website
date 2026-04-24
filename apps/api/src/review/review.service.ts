@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, ReviewVisibility } from '../../generated/prisma/client';
 import { isPrismaErrorCode } from '../common/errors/prisma-error.util';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/services/prisma.service';
 import type {
   AdminReviewDetailResponseDto,
   AdminReviewsListResponseDto,

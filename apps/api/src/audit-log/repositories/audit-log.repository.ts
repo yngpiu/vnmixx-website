@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuditLogStatus, Prisma } from '../../../generated/prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import { collectAuditLogActionCodesMatchingLabelSearch } from '../audit-log-action-label-search.util';
 
 export interface CreateAuditLogInput {

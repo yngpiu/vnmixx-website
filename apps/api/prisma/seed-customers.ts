@@ -31,8 +31,6 @@ export async function seedCustomers(): Promise<void> {
     const emails = new Set();
     const phones = new Set();
 
-    // Generate trend dates over last 2 years
-    // More customers in recent months, some peaks around Nov-Jan
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
@@ -61,32 +59,27 @@ export async function seedCustomers(): Promise<void> {
 
       const dob = faker.date.birthdate({ min: 18, max: 60, mode: 'age' });
 
-      // Timeline logic: more recent signups
       let createdAt: Date;
       const r = faker.number.float({ min: 0, max: 1 });
       if (r < 0.2) {
-        // First year
         createdAt = faker.date.between({
           from: twoYearsAgo,
           to: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
         });
       } else if (r < 0.5) {
-        // Second year H1
         createdAt = faker.date.between({
           from: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
           to: new Date(twoYearsAgo.getTime() + 547 * 24 * 60 * 60 * 1000),
         });
       } else {
-        // Second year H2 (more users)
         createdAt = faker.date.between({
           from: new Date(twoYearsAgo.getTime() + 547 * 24 * 60 * 60 * 1000),
           to: new Date(),
         });
       }
 
-      // Add seasonal peaks (e.g. November, December, January)
       if (faker.datatype.boolean({ probability: 0.3 })) {
-        const peakMonth = faker.helpers.arrayElement([0, 10, 11]); // Jan, Nov, Dec
+        const peakMonth = faker.helpers.arrayElement([0, 10, 11]);
         createdAt.setMonth(peakMonth);
       }
 
@@ -110,7 +103,6 @@ export async function seedCustomers(): Promise<void> {
       });
     }
 
-    // Insert in batches
     const BATCH_SIZE = 500;
     for (let i = 0; i < customers.length; i += BATCH_SIZE) {
       const batch = customers.slice(i, i + BATCH_SIZE);

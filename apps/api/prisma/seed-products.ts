@@ -98,8 +98,6 @@ function generateProductName(categoryName: string): string {
   const adj = faker.helpers.arrayElement(adjectives);
   const mat = faker.helpers.arrayElement(materials);
 
-  // Category might be something like "Áo thun cổ bẻ polo"
-  // So we generate "Áo thun cổ bẻ polo Cao cấp chất liệu Cotton"
   return `${categoryName} ${adj} ${mat} ${faker.string.alphanumeric({ length: 4, casing: 'upper' })}`;
 }
 
@@ -124,10 +122,6 @@ export async function seedProducts(): Promise<void> {
   const prisma = new PrismaClient({ adapter });
 
   try {
-    // We do NOT wipe out existing seed products here to save time for a massive seed,
-    // unless you want to clean up. We will just use new slugs/SKUs or let Prisma throw if there are duplicates.
-    // For simplicity, we just generate new ones.
-
     const colorByName = await ensureColors(prisma);
     const sizeByLabel = await ensureSizes(prisma);
     const colorIds = COLORS.map((c) => colorByName.get(c.name)).filter(
@@ -205,7 +199,6 @@ export async function seedProducts(): Promise<void> {
             data: { productId: product.id, categoryId: category.id },
           });
 
-          // Generate variants
           const numColors = faker.number.int({ min: 1, max: 4 });
           const numSizes = faker.number.int({ min: 2, max: 6 });
 
@@ -249,8 +242,8 @@ export async function seedProducts(): Promise<void> {
                 colorId,
                 sizeId,
                 sku: `${SEED_SKU_PREFIX}${product.id}-C${colorId}-S${sizeId}-${faker.string.alphanumeric(4).toUpperCase()}`,
-                price: basePrice + sizeId * 5000, // larger sizes slightly more expensive just for variety
-                onHand: faker.number.int({ min: 0, max: 500 }), // highly realistic stock levels
+                price: basePrice + sizeId * 5000,
+                onHand: faker.number.int({ min: 0, max: 500 }),
                 reserved: faker.number.int({ min: 0, max: 20 }),
                 version: 0,
                 createdAt,

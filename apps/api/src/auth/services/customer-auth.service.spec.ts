@@ -8,7 +8,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { MailService } from '../../common/mail/mail.service';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
 import { ChangePasswordDto, LoginDto, RegisterDto, VerifyCustomerOtpDto } from '../dto';
 import { CustomerRepository } from '../repositories/customer.repository';
 import { CustomerAuthService } from './customer-auth.service';

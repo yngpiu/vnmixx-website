@@ -8,8 +8,12 @@ import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
-import { CACHE_KEYS, CACHE_PATTERNS, CACHE_TTL } from '../../redis/cache-keys';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
+import {
+  CATEGORY_CACHE_KEYS,
+  CATEGORY_CACHE_PATTERNS,
+  CATEGORY_CACHE_TTL,
+} from '../category.cache';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
 import {
   CategoryAdminView,
@@ -31,21 +35,21 @@ export class CategoryService {
   // ─── Public ───────────────────────────────────────────────────────────────
 
   async findActiveTree(): Promise<CategoryTreeNode[]> {
-    return this.redis.getOrSet(CACHE_KEYS.CATEGORY_TREE, CACHE_TTL.CATEGORY, () =>
+    return this.redis.getOrSet(CATEGORY_CACHE_KEYS.CATEGORY_TREE, CATEGORY_CACHE_TTL.CATEGORY, () =>
       this.repository.findActiveTree(),
     );
   }
 
   async findActiveFlat(): Promise<CategoryView[]> {
-    return this.redis.getOrSet(CACHE_KEYS.CATEGORY_LIST, CACHE_TTL.CATEGORY, () =>
+    return this.redis.getOrSet(CATEGORY_CACHE_KEYS.CATEGORY_LIST, CATEGORY_CACHE_TTL.CATEGORY, () =>
       this.repository.findAllActive(),
     );
   }
 
   async findBySlug(slug: string): Promise<CategoryView & { children: CategoryTreeNode[] }> {
     const category = await this.redis.getOrSet(
-      CACHE_KEYS.CATEGORY_SLUG(slug),
-      CACHE_TTL.CATEGORY,
+      CATEGORY_CACHE_KEYS.CATEGORY_SLUG(slug),
+      CATEGORY_CACHE_TTL.CATEGORY,
       async () => {
         const result = await this.repository.findBySlug(slug);
         return result ?? null;
@@ -318,7 +322,7 @@ export class CategoryService {
    * Xóa toàn bộ dữ liệu cache liên quan đến danh mục khi có thay đổi.
    */
   private async invalidateCache(): Promise<void> {
-    await this.redis.deleteByPattern(CACHE_PATTERNS.ALL_CATEGORIES);
+    await this.redis.deleteByPattern(CATEGORY_CACHE_PATTERNS.ALL_CATEGORIES);
   }
 
   private handleUniqueViolation(err: unknown, slug: string): void {

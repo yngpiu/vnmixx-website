@@ -52,13 +52,12 @@ export async function seedEmployees(): Promise<void> {
       for (let i = 0; i < dist.count; i++) {
         const isMale = faker.datatype.boolean();
         const fullName = faker.person.fullName({ sex: isMale ? 'male' : 'female' });
-        // Generate valid VN phone format 0[35789]xxxxxxxx
         const phonePrefix = faker.helpers.arrayElement(['03', '05', '07', '08', '09']);
         const phoneNumber = `${phonePrefix}${faker.string.numeric(8)}`;
 
         let email = '';
         if (employeeIndex === 0) {
-          email = 'vnmixx@gmail.com'; // Keep admin email for dev testing
+          email = 'vnmixx@gmail.com';
         } else {
           const emailName = faker.internet
             .username({ firstName: fullName.split(' ').pop(), lastName: fullName.split(' ')[0] })

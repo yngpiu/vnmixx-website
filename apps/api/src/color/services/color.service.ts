@@ -7,8 +7,8 @@ import {
   isPrismaErrorCode,
   isPrismaKnownRequestError,
 } from '../../common/errors/prisma-error.util';
-import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
+import { COLOR_CACHE_KEYS, COLOR_CACHE_TTL } from '../color.cache';
 import { CreateColorDto, UpdateColorDto } from '../dto';
 import {
   ColorAdminView,
@@ -36,7 +36,7 @@ export class ColorService {
    * Logic: Sử dụng Redis Cache để tối ưu hiệu năng truy vấn.
    */
   findAllPublic(): Promise<ColorView[]> {
-    return this.redis.getOrSet(CACHE_KEYS.COLOR_LIST, CACHE_TTL.COLOR, () =>
+    return this.redis.getOrSet(COLOR_CACHE_KEYS.COLOR_LIST, COLOR_CACHE_TTL.COLOR, () =>
       this.repository.findAllPublic(),
     );
   }
@@ -199,7 +199,7 @@ export class ColorService {
    * Xóa cache danh sách màu sắc khi có thay đổi dữ liệu.
    */
   private async invalidateCache(): Promise<void> {
-    await this.redis.del(CACHE_KEYS.COLOR_LIST);
+    await this.redis.del(COLOR_CACHE_KEYS.COLOR_LIST);
   }
 
   /**

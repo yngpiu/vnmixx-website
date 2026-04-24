@@ -2,7 +2,7 @@ import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomUUID } from 'crypto';
 import { EmployeeStatus } from '../../../generated/prisma/client';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
 import {
   BLACKLIST_PREFIX,
   DEFAULT_ACCESS_EXPIRATION,

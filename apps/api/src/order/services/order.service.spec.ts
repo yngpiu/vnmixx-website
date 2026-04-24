@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import { GhnAvailableService, GhnFeeData, GhnService } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
 import { CreateOrderDto, ListMyOrdersQueryDto } from '../dto';

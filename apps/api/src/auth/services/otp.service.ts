@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
 
 export interface OtpPayload {
   customerId: number;

@@ -2,7 +2,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmployeeStatus } from '../../../generated/prisma/client';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
 import { CustomerRepository } from '../repositories/customer.repository';
 import { EmployeeRepository } from '../repositories/employee.repository';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';

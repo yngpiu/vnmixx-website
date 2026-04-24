@@ -1,10 +1,7 @@
 import { Global, Module } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
+import { PrismaService } from './services/prisma.service';
 
-/**
- * Module quản lý kết nối cơ sở dữ liệu (Prisma).
- * Được đánh dấu @Global để PrismaService có thể sử dụng ở mọi nơi mà không cần import lại module này.
- */
+// Cung cấp PrismaService dùng chung toàn ứng dụng qua phạm vi Global module.
 @Global()
 @Module({
   providers: [PrismaService],

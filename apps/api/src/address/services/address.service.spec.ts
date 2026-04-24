@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { LocationRepository } from '../../location/repositories/location.repository';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import { CreateAddressDto, UpdateAddressDto } from '../dto';
 import { AddressRepository, AddressView } from '../repositories/address.repository';
 import { AddressService } from './address.service';

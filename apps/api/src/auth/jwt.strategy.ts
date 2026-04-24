@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { EmployeeStatus } from '../../generated/prisma/client';
-import { RedisService } from '../redis/redis.service';
+import { RedisService } from '../redis/services/redis.service';
 import { BLACKLIST_PREFIX, LOGOUT_ALL_PREFIX } from './constants';
 import type { AuthenticatedUser, JwtPayload } from './interfaces';
 import { CustomerRepository } from './repositories/customer.repository';

@@ -12,8 +12,7 @@ import {
   isPrismaErrorCode,
   isPrismaKnownRequestError,
 } from '../../common/errors/prisma-error.util';
-import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
 import {
   CreateImageDto,
   CreateProductDto,
@@ -24,6 +23,7 @@ import {
   UpdateProductDto,
   UpdateVariantDto,
 } from '../dto';
+import { PRODUCT_CACHE_KEYS, PRODUCT_CACHE_TTL } from '../product.cache';
 import {
   PaginatedResult,
   ProductAdminDetailView,
@@ -70,16 +70,18 @@ export class ProductService {
 
     // Dùng mã băm của params làm key để cache các kết quả tìm kiếm khác nhau
     const hash = this.cacheService.hashQuery(params);
-    return this.redis.getOrSet(CACHE_KEYS.PRODUCT_LIST(hash), CACHE_TTL.PRODUCT_LIST, () =>
-      this.repository.findPublicList(params),
+    return this.redis.getOrSet(
+      PRODUCT_CACHE_KEYS.PRODUCT_LIST(hash),
+      PRODUCT_CACHE_TTL.PRODUCT_LIST,
+      () => this.repository.findPublicList(params),
     );
   }
 
   // Lấy chi tiết sản phẩm qua Slug cho khách hàng có sử dụng Cache
   async findBySlug(slug: string) {
     const cached = await this.redis.getOrSet(
-      CACHE_KEYS.PRODUCT_SLUG(slug),
-      CACHE_TTL.PRODUCT_DETAIL,
+      PRODUCT_CACHE_KEYS.PRODUCT_SLUG(slug),
+      PRODUCT_CACHE_TTL.PRODUCT_DETAIL,
       async () => {
         const product = await this.repository.findBySlug(slug);
         return product ? this.transformPublicDetail(product) : null;

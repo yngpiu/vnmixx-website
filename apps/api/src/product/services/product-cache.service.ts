@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { CACHE_KEYS, CACHE_PATTERNS } from '../../redis/cache-keys';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
+import { PRODUCT_CACHE_KEYS, PRODUCT_CACHE_PATTERNS } from '../product.cache';
 
 /**
  * ProductCacheService: Quản lý bộ nhớ đệm (Cache) cho sản phẩm.
@@ -17,8 +17,8 @@ export class ProductCacheService {
    */
   async invalidateProductCache(slug: string): Promise<void> {
     await Promise.all([
-      this.redis.del(CACHE_KEYS.PRODUCT_SLUG(slug)),
-      this.redis.deleteByPattern(CACHE_PATTERNS.ALL_PRODUCT_LISTS),
+      this.redis.del(PRODUCT_CACHE_KEYS.PRODUCT_SLUG(slug)),
+      this.redis.deleteByPattern(PRODUCT_CACHE_PATTERNS.ALL_PRODUCT_LISTS),
     ]);
   }
 
@@ -26,7 +26,7 @@ export class ProductCacheService {
    * Xóa cache chi tiết sản phẩm theo Slug.
    */
   async deleteSlugCache(slug: string): Promise<void> {
-    await this.redis.del(CACHE_KEYS.PRODUCT_SLUG(slug));
+    await this.redis.del(PRODUCT_CACHE_KEYS.PRODUCT_SLUG(slug));
   }
 
   /**

@@ -7,7 +7,7 @@ import {
 import { Test, type TestingModule } from '@nestjs/testing';
 import { AuditLogStatus } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 import { GhnService } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
 import { OrderRepository } from '../repositories/order.repository';

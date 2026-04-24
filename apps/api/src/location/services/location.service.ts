@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CACHE_KEYS, CACHE_TTL } from '../../redis/cache-keys';
-import { RedisService } from '../../redis/redis.service';
+import { RedisService } from '../../redis/services/redis.service';
+import { LOCATION_CACHE_KEYS, LOCATION_CACHE_TTL } from '../location.cache';
 import {
   type CityView,
   type DistrictView,
@@ -18,7 +18,7 @@ export class LocationService {
 
   // Lấy danh sách tỉnh/thành và lưu cache để tái sử dụng.
   async findAllCities(): Promise<CityView[]> {
-    return this.redis.getOrSet(CACHE_KEYS.CITIES, CACHE_TTL.LOCATION, () =>
+    return this.redis.getOrSet(LOCATION_CACHE_KEYS.CITIES, LOCATION_CACHE_TTL.LOCATION, () =>
       this.locationRepo.findAllCities(),
     );
   }
@@ -28,8 +28,10 @@ export class LocationService {
     const exists = await this.locationRepo.cityExists(cityId);
     if (!exists) throw new NotFoundException(`Không tìm thấy tỉnh/thành phố #${cityId}`);
 
-    return this.redis.getOrSet(CACHE_KEYS.DISTRICTS(cityId), CACHE_TTL.LOCATION, () =>
-      this.locationRepo.findDistrictsByCityId(cityId),
+    return this.redis.getOrSet(
+      LOCATION_CACHE_KEYS.DISTRICTS(cityId),
+      LOCATION_CACHE_TTL.LOCATION,
+      () => this.locationRepo.findDistrictsByCityId(cityId),
     );
   }
 
@@ -38,8 +40,10 @@ export class LocationService {
     const exists = await this.locationRepo.districtExists(districtId);
     if (!exists) throw new NotFoundException(`Không tìm thấy quận/huyện #${districtId}`);
 
-    return this.redis.getOrSet(CACHE_KEYS.WARDS(districtId), CACHE_TTL.LOCATION, () =>
-      this.locationRepo.findWardsByDistrictId(districtId),
+    return this.redis.getOrSet(
+      LOCATION_CACHE_KEYS.WARDS(districtId),
+      LOCATION_CACHE_TTL.LOCATION,
+      () => this.locationRepo.findWardsByDistrictId(districtId),
     );
   }
 }

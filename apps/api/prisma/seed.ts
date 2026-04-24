@@ -15,18 +15,15 @@ import { seedWishlists } from './seed-wishlists';
 async function main() {
   console.log('--- STARTING COMPREHENSIVE SEEDING ---');
 
-  // Core & Infrastructure
   await seedRbac();
   await seedLocations();
   await seedMedia();
 
-  // Master Data
   await seedCategories();
   await seedProducts();
   await seedEmployees();
   await seedCustomers();
 
-  // Dependent Data
   await seedAddresses();
   await seedWishlists();
   await seedOrders();

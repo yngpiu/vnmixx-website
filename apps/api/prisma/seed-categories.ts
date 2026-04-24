@@ -16,10 +16,6 @@ type CatL1 = {
   children: CatL2[];
 };
 
-/**
- * Cây danh mục seed shop quần áo (VN). Slug sinh từ tên (ASCII, gạch ngang).
- * Một số nút `isActive: false` để demo lọc / ẩn trên storefront.
- */
 const FASHION_TREE: CatL1[] = [
   {
     name: 'Áo nam',

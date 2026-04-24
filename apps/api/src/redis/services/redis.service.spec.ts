@@ -3,7 +3,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import Redis from 'ioredis';
 import { RedisService } from './redis.service';
 
-// Mock ioredis
 jest.mock('ioredis', () => {
   return jest.fn().mockImplementation(() => {
     return {

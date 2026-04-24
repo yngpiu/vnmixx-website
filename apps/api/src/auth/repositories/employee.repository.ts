@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EmployeeStatus } from '../../../generated/prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/services/prisma.service';
 
 interface EmployeeAuthView {
   id: number;
