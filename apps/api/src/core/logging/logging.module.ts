@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import type { Request } from 'express';
 import { LoggerModule } from 'nestjs-pino';
 
+// Cấu hình logger toàn cục (Pino) với request id và chế độ pretty theo môi trường.
 @Module({
   imports: [
     LoggerModule.forRootAsync({

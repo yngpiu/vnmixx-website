@@ -5,6 +5,7 @@ import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { TransformInterceptor } from './interceptors/transform.interceptor';
 import { LoggingModule } from './logging/logging.module';
 
+// Khởi tạo các thành phần core dùng chung: logging, CLS, filter và interceptor toàn cục.
 @Module({
   imports: [
     LoggingModule,

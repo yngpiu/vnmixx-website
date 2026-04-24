@@ -13,18 +13,12 @@ interface ErrorResponseBody {
   timestamp: string;
 }
 
-/**
- * Filter dùng để xử lý tất cả các ngoại lệ (exceptions) trong toàn bộ ứng dụng.
- * Đảm bảo mọi lỗi đều được trả về dưới một định dạng chuẩn thống nhất.
- */
 @Catch()
+// Chuẩn hóa mọi exception thành response lỗi thống nhất cho toàn bộ API.
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly logger: PinoLogger) {}
 
-  /**
-   * Phương thức chính để bắt và xử lý ngoại lệ.
-   * Chuyển đổi exception thành response body chuẩn và log lại nếu là lỗi server (500+).
-   */
+  // Bắt exception, trích xuất thông tin lỗi và trả response theo format chuẩn.
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -32,7 +26,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const { statusCode, message, error, code } = this.extractErrorInfo(exception);
 
-    // Log lỗi nếu là lỗi hệ thống (Internal Server Error)
     if (statusCode >= 500) {
       this.logger.error(
         {
@@ -61,9 +54,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(statusCode).json(body);
   }
 
-  /**
-   * Trích xuất thông tin chi tiết từ exception để phân loại lỗi.
-   */
+  // Trích xuất status/message/error/code từ HttpException hoặc lỗi không xác định.
   private extractErrorInfo(exception: unknown): {
     statusCode: number;
     message: string | string[];
@@ -96,7 +87,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       };
     }
 
-    // Mặc định trả về lỗi 500 nếu không xác định được exception
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Lỗi máy chủ nội bộ',
@@ -105,9 +95,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
   }
 
-  /**
-   * Map HTTP Status code sang mã lỗi ứng dụng (ERROR_CODES).
-   */
+  // Ánh xạ HTTP status sang mã lỗi nội bộ của ứng dụng.
   private mapStatusToCode(status: number): string {
     switch (status) {
       case HttpStatus.BAD_REQUEST as number:
