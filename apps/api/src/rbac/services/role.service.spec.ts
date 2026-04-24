@@ -179,6 +179,16 @@ describe('RoleService', () => {
         ConflictException,
       );
     });
+
+    it('should throw NotFoundException when prisma reports missing role on update', async () => {
+      roleRepo.findById.mockResolvedValue(existingRole as any);
+      const error = new Prisma.PrismaClientKnownRequestError('msg', {
+        code: 'P2025',
+        clientVersion: 'v',
+      });
+      roleRepo.update.mockRejectedValue(error);
+      await expect(service.update(id, { name: 'Role Name' })).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('delete', () => {
@@ -217,6 +227,18 @@ describe('RoleService', () => {
       roleRepo.findById.mockResolvedValue({ id: 1, name: 'Role' } as any);
       roleRepo.findEmployeeIdsByRoleId.mockResolvedValue([1]);
       await expect(service.delete(1)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when prisma reports missing role on delete', async () => {
+      const role = { id: 1, name: 'Regular Role' };
+      roleRepo.findById.mockResolvedValue(role as any);
+      roleRepo.findEmployeeIdsByRoleId.mockResolvedValue([]);
+      const error = new Prisma.PrismaClientKnownRequestError('msg', {
+        code: 'P2025',
+        clientVersion: 'v',
+      });
+      roleRepo.delete.mockRejectedValue(error);
+      await expect(service.delete(1)).rejects.toThrow(NotFoundException);
     });
   });
 });

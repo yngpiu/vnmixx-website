@@ -8,7 +8,7 @@ import { RoleRepository } from './repositories/role.repository';
 import { PermissionService } from './services/permission.service';
 import { RoleService } from './services/role.service';
 
-// Module quản lý phân quyền dựa trên vai trò (Role-Based Access Control)
+// Module tập hợp đầy đủ controller, service và repository cho RBAC.
 @Module({
   imports: [AuthModule, AuditLogModule],
   exports: [RoleRepository],
