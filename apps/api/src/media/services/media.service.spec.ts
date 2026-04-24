@@ -2,7 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditLogStatus } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
-import { R2Service } from '../../r2/r2.service';
+import { R2Service } from '../../r2/services/r2.service';
 import { MediaRepository } from '../repositories/media.repository';
 import { MediaService, type UploadedFileInput } from './media.service';
 

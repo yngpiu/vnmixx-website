@@ -1,10 +1,7 @@
 import { Global, Module } from '@nestjs/common';
-import { R2Service } from './r2.service';
+import { R2Service } from './services/r2.service';
 
-/**
- * Module quản lý lưu trữ đối tượng (Object Storage) sử dụng Cloudflare R2.
- * Được đánh dấu @Global để có thể sử dụng R2Service ở bất kỳ đâu trong ứng dụng.
- */
+// Cung cấp R2Service dùng chung toàn ứng dụng qua phạm vi Global module.
 @Global()
 @Module({
   providers: [R2Service],

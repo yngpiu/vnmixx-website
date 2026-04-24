@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { AuditLogStatus, type MediaFile as MediaFileRow } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
-import { R2Service } from '../../r2/r2.service';
+import { R2Service } from '../../r2/services/r2.service';
 import type { CreateFolderDto, ListMediaQueryDto, MoveMediaDto, UploadMediaDto } from '../dto';
 import { MediaRepository } from '../repositories/media.repository';
 
