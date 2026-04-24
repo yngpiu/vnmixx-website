@@ -62,6 +62,12 @@ describe('LocationService', () => {
       expect(repository.findAllCities).toHaveBeenCalled();
       expect(result).toEqual(cities);
     });
+
+    it('should rethrow error when redis getOrSet fails', async () => {
+      const expectedError = new Error('Redis unavailable');
+      mockRedisService.getOrSet.mockRejectedValue(expectedError);
+      await expect(service.findAllCities()).rejects.toThrow(expectedError);
+    });
   });
 
   describe('findDistrictsByCityId', () => {
@@ -87,6 +93,13 @@ describe('LocationService', () => {
       expect(repository.findDistrictsByCityId).toHaveBeenCalledWith(1);
       expect(result).toEqual(districts);
     });
+
+    it('should rethrow error when redis getOrSet fails for districts', async () => {
+      const expectedError = new Error('Cache read failed');
+      mockLocationRepository.cityExists.mockResolvedValue(true);
+      mockRedisService.getOrSet.mockRejectedValue(expectedError);
+      await expect(service.findDistrictsByCityId(1)).rejects.toThrow(expectedError);
+    });
   });
 
   describe('findWardsByDistrictId', () => {
@@ -111,6 +124,13 @@ describe('LocationService', () => {
       );
       expect(repository.findWardsByDistrictId).toHaveBeenCalledWith(1);
       expect(result).toEqual(wards);
+    });
+
+    it('should rethrow error when redis getOrSet fails for wards', async () => {
+      const expectedError = new Error('Cache write failed');
+      mockLocationRepository.districtExists.mockResolvedValue(true);
+      mockRedisService.getOrSet.mockRejectedValue(expectedError);
+      await expect(service.findWardsByDistrictId(1)).rejects.toThrow(expectedError);
     });
   });
 });

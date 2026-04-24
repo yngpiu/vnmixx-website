@@ -40,6 +40,12 @@ describe('LocationRepository', () => {
         select: { id: true, giaohangnhanhId: true, name: true },
       });
     });
+
+    it('should rethrow prisma error when querying cities fails', async () => {
+      const expectedError = new Error('Database timeout');
+      mockPrismaService.city.findMany.mockRejectedValue(expectedError);
+      await expect(repository.findAllCities()).rejects.toThrow(expectedError);
+    });
   });
 
   describe('findDistrictsByCityId', () => {
@@ -81,6 +87,12 @@ describe('LocationRepository', () => {
       const actualExists = await repository.districtExists(2);
       expect(actualExists).toBe(false);
       expect(mockPrismaService.district.count).toHaveBeenCalledWith({ where: { id: 2 } });
+    });
+
+    it('should rethrow prisma error when checking city existence fails', async () => {
+      const expectedError = new Error('Database down');
+      mockPrismaService.city.count.mockRejectedValue(expectedError);
+      await expect(repository.cityExists(1)).rejects.toThrow(expectedError);
     });
   });
 
