@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { LocationService } from '../services/location.service';
 import { LocationController } from './location.controller';
@@ -44,6 +45,12 @@ describe('LocationController', () => {
       expect(mockLocationService.findDistrictsByCityId).toHaveBeenCalledWith(inputCityId);
       expect(actualDistricts).toEqual(expectedDistricts);
     });
+
+    it('should rethrow service exception', async () => {
+      const expectedError = new NotFoundException('Không tìm thấy thành phố.');
+      mockLocationService.findDistrictsByCityId.mockRejectedValue(expectedError);
+      await expect(controller.findDistrictsByCityId(999)).rejects.toThrow(expectedError);
+    });
   });
 
   describe('findWardsByDistrictId', () => {
@@ -56,6 +63,12 @@ describe('LocationController', () => {
       const actualWards = await controller.findWardsByDistrictId(inputDistrictId);
       expect(mockLocationService.findWardsByDistrictId).toHaveBeenCalledWith(inputDistrictId);
       expect(actualWards).toEqual(expectedWards);
+    });
+
+    it('should rethrow service exception', async () => {
+      const expectedError = new NotFoundException('Không tìm thấy quận/huyện.');
+      mockLocationService.findWardsByDistrictId.mockRejectedValue(expectedError);
+      await expect(controller.findWardsByDistrictId(999)).rejects.toThrow(expectedError);
     });
   });
 });

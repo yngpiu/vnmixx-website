@@ -3,72 +3,77 @@ alwaysApply: true
 ---
 
 ---
-description: Behavioral guidelines to reduce common LLM coding mistakes. Use when writing, reviewing, or refactoring code to avoid overcomplication, make surgical changes, surface assumptions, and define verifiable success criteria.
+description: Hướng dẫn hành vi nhằm giảm các lỗi phổ biến của LLM khi lập trình. Sử dụng khi viết, review hoặc refactor code để tránh overcomplication, thực hiện thay đổi mang tính surgical, làm rõ assumptions và xác định tiêu chí thành công có thể kiểm chứng.
 alwaysApply: true
----
+-----------------
 
 # Karpathy behavioral guidelines
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+Hướng dẫn hành vi nhằm giảm các lỗi phổ biến của LLM khi lập trình. Kết hợp với các hướng dẫn riêng của dự án khi cần.
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**Tradeoff:** Các hướng dẫn này ưu tiên sự thận trọng hơn tốc độ. Với các task đơn giản, hãy dùng judgement.
 
 ## 1. Think Before Coding
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+**Đừng giả định. Đừng che giấu sự mơ hồ. Làm rõ tradeoffs.**
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+Trước khi implement:
+
+* Nêu rõ assumptions một cách tường minh. Nếu không chắc chắn, hãy hỏi.
+* Nếu có nhiều cách hiểu, hãy trình bày tất cả — không tự chọn một cách âm thầm.
+* Nếu tồn tại cách tiếp cận đơn giản hơn, hãy nói ra. Push back khi cần.
+* Nếu có điều gì không rõ, hãy dừng lại. Chỉ ra điểm gây nhầm lẫn. Hỏi lại.
 
 ## 2. Simplicity First
 
-**Minimum code that solves the problem. Nothing speculative.**
+**Code tối thiểu để giải quyết vấn đề. Không thêm thắt suy đoán.**
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+* Không thêm feature ngoài yêu cầu.
+* Không tạo abstraction cho code chỉ dùng một lần.
+* Không thêm "flexibility" hoặc "configurability" khi chưa được yêu cầu.
+* Không viết error handling cho các trường hợp không thể xảy ra.
+* Nếu bạn viết 200 dòng mà có thể làm bằng 50 dòng, hãy viết lại.
 
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+Tự hỏi: "Một senior engineer có thấy đoạn này overcomplicated không?" Nếu có, hãy đơn giản hóa.
 
 ## 3. Surgical Changes
 
-**Touch only what you must. Clean up only your own mess.**
+**Chỉ thay đổi những gì cần thiết. Chỉ dọn dẹp phần do chính bạn gây ra.**
 
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
+Khi chỉnh sửa code có sẵn:
 
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
+* Không "cải thiện" các phần code, comment hoặc format không liên quan.
+* Không refactor những thứ không bị lỗi.
+* Giữ style hiện tại, kể cả khi bạn có cách làm khác.
+* Nếu phát hiện dead code không liên quan, hãy mention — không xóa.
 
-The test: Every changed line should trace directly to the user's request.
+Khi thay đổi của bạn tạo ra orphan:
+
+* Xóa các import/variable/function mà CHÍNH thay đổi của bạn khiến không còn dùng.
+* Không xóa dead code đã tồn tại trước đó trừ khi được yêu cầu.
+
+Bài test: Mỗi dòng thay đổi phải truy vết trực tiếp đến yêu cầu của người dùng.
 
 ## 4. Goal-Driven Execution
 
-**Define success criteria. Loop until verified.**
+**Xác định tiêu chí thành công. Lặp lại cho đến khi verify được.**
 
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
+Chuyển task thành mục tiêu có thể kiểm chứng:
 
-For multi-step tasks, state a brief plan:
+* "Add validation" → "Viết test cho input không hợp lệ, sau đó làm cho chúng pass"
+* "Fix the bug" → "Viết test tái hiện bug, sau đó làm cho nó pass"
+* "Refactor X" → "Đảm bảo test pass trước và sau"
+
+Với task nhiều bước, nêu kế hoạch ngắn gọn:
+
 ```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
+1. [Bước] → verify: [cách kiểm tra]
+2. [Bước] → verify: [cách kiểm tra]
+3. [Bước] → verify: [cách kiểm tra]
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+Tiêu chí thành công rõ ràng giúp bạn có thể tự lặp lại. Tiêu chí yếu ("make it work") sẽ luôn cần làm rõ thêm.
 
 ---
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+**Các hướng dẫn này hoạt động hiệu quả khi:** giảm các thay đổi không cần thiết trong diff, giảm số lần phải viết lại do overcomplication, và các câu hỏi làm rõ xuất hiện trước khi implement thay vì sau khi mắc lỗi.

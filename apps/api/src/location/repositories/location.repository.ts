@@ -42,9 +42,11 @@ const WARD_SELECT = {
 } as const;
 
 @Injectable()
+// Repository Prisma cho các thao tác đọc dữ liệu địa chỉ.
 export class LocationRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lấy toàn bộ tỉnh/thành và sắp xếp theo tên tăng dần.
   async findAllCities(): Promise<CityView[]> {
     return this.prisma.city.findMany({
       orderBy: { name: 'asc' },
@@ -52,6 +54,7 @@ export class LocationRepository {
     });
   }
 
+  // Lấy quận/huyện theo cityId và sắp xếp theo tên tăng dần.
   async findDistrictsByCityId(cityId: number): Promise<DistrictView[]> {
     return this.prisma.district.findMany({
       where: { cityId },
@@ -60,6 +63,7 @@ export class LocationRepository {
     });
   }
 
+  // Lấy phường/xã theo districtId và sắp xếp theo tên tăng dần.
   async findWardsByDistrictId(districtId: number): Promise<WardView[]> {
     return this.prisma.ward.findMany({
       where: { districtId },
@@ -68,21 +72,25 @@ export class LocationRepository {
     });
   }
 
+  // Kiểm tra thành phố có tồn tại theo id hay không.
   async cityExists(id: number): Promise<boolean> {
     const count = await this.prisma.city.count({ where: { id } });
     return count > 0;
   }
 
+  // Kiểm tra quận/huyện có tồn tại theo id hay không.
   async districtExists(id: number): Promise<boolean> {
     const count = await this.prisma.district.count({ where: { id } });
     return count > 0;
   }
 
+  // Kiểm tra quận/huyện có thuộc thành phố truyền vào hay không.
   async districtBelongsToCity(districtId: number, cityId: number): Promise<boolean> {
     const count = await this.prisma.district.count({ where: { id: districtId, cityId } });
     return count > 0;
   }
 
+  // Kiểm tra phường/xã có thuộc quận/huyện truyền vào hay không.
   async wardBelongsToDistrict(wardId: number, districtId: number): Promise<boolean> {
     const count = await this.prisma.ward.count({ where: { id: wardId, districtId } });
     return count > 0;

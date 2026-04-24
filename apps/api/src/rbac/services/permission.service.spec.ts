@@ -11,6 +11,7 @@ describe('PermissionService', () => {
   };
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PermissionService,
@@ -20,10 +21,6 @@ describe('PermissionService', () => {
 
     service = module.get<PermissionService>(PermissionService);
     permissionRepo = module.get(PermissionRepository);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 
   describe('findAll', () => {

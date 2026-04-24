@@ -9,22 +9,21 @@ import {
 } from '../repositories/location.repository';
 
 @Injectable()
-// Service quản lý dữ liệu địa chính: Tỉnh/Thành, Quận/Huyện, Phường/Xã
-// Sử dụng Redis Cache để tối ưu hiệu năng truy xuất các dữ liệu ít thay đổi
+// Xử lý luồng đọc dữ liệu địa chỉ theo chiến lược ưu tiên cache.
 export class LocationService {
   constructor(
     private readonly locationRepo: LocationRepository,
     private readonly redis: RedisService,
   ) {}
 
-  // Lấy danh sách tất cả Tỉnh/Thành phố hiện có trong hệ thống
+  // Lấy danh sách tỉnh/thành và lưu cache để tái sử dụng.
   async findAllCities(): Promise<CityView[]> {
     return this.redis.getOrSet(CACHE_KEYS.CITIES, CACHE_TTL.LOCATION, () =>
       this.locationRepo.findAllCities(),
     );
   }
 
-  // Lấy danh sách Quận/Huyện dựa theo ID của Tỉnh/Thành phố
+  // Kiểm tra thành phố tồn tại trước khi trả danh sách quận/huyện.
   async findDistrictsByCityId(cityId: number): Promise<DistrictView[]> {
     const exists = await this.locationRepo.cityExists(cityId);
     if (!exists) throw new NotFoundException(`Không tìm thấy tỉnh/thành phố #${cityId}`);
@@ -34,7 +33,7 @@ export class LocationService {
     );
   }
 
-  // Lấy danh sách Phường/Xã dựa theo ID của Quận/Huyện
+  // Kiểm tra quận/huyện tồn tại trước khi trả danh sách phường/xã.
   async findWardsByDistrictId(districtId: number): Promise<WardView[]> {
     const exists = await this.locationRepo.districtExists(districtId);
     if (!exists) throw new NotFoundException(`Không tìm thấy quận/huyện #${districtId}`);

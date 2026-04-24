@@ -1,5 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -10,14 +11,13 @@ import { Public } from '../../auth/decorators';
 import { CityResponseDto, DistrictResponseDto, WardResponseDto } from '../dto';
 import { LocationService } from '../services/location.service';
 
-// Cung cấp các API công khai để khách hàng tra cứu thông tin hành chính.
-// Phục vụ việc lựa chọn địa chỉ giao hàng chính xác theo dữ liệu của đơn vị vận chuyển.
 @ApiTags('Locations')
 @Controller('locations')
+// API công khai để tra cứu địa chỉ khi khách chọn nơi giao hàng.
 export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 
-  // Lấy danh sách toàn bộ tỉnh thành để khách hàng bắt đầu chọn địa chỉ.
+  // Trả về toàn bộ tỉnh/thành để bắt đầu luồng chọn địa chỉ.
   @ApiOperation({ summary: 'Liệt kê tất cả tỉnh/thành phố' })
   @ApiOkResponse({ type: [CityResponseDto] })
   @Public()
@@ -27,9 +27,10 @@ export class LocationController {
     return this.locationService.findAllCities();
   }
 
-  // Truy xuất các quận huyện thuộc một tỉnh thành cụ thể.
+  // Trả về danh sách quận/huyện thuộc thành phố đã chọn.
   @ApiOperation({ summary: 'Liệt kê quận/huyện theo thành phố' })
   @ApiOkResponse({ type: [DistrictResponseDto] })
+  @ApiBadRequestResponse({ description: 'Mã thành phố không hợp lệ.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy thành phố.' })
   @Public()
   @Get('cities/:cityId/districts')
@@ -40,9 +41,10 @@ export class LocationController {
     return this.locationService.findDistrictsByCityId(cityId);
   }
 
-  // Truy xuất các phường xã thuộc một quận huyện cụ thể để hoàn tất việc chọn địa chỉ.
+  // Trả về danh sách phường/xã thuộc quận/huyện đã chọn.
   @ApiOperation({ summary: 'Liệt kê phường/xã theo quận/huyện' })
   @ApiOkResponse({ type: [WardResponseDto] })
+  @ApiBadRequestResponse({ description: 'Mã quận/huyện không hợp lệ.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy quận/huyện.' })
   @Public()
   @Get('districts/:districtId/wards')
