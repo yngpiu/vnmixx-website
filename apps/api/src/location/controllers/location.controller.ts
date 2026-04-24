@@ -1,17 +1,22 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiExtraModels,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { Public } from '../../auth/decorators';
+import { buildSuccessResponseSchema } from '../../common/swagger/response-schema.util';
+import { ok, type SuccessPayload } from '../../common/utils/success-response.util';
 import { CityResponseDto, DistrictResponseDto, WardResponseDto } from '../dto';
 import { LocationService } from '../services/location.service';
 
 @ApiTags('Locations')
+@ApiExtraModels(CityResponseDto, DistrictResponseDto, WardResponseDto)
 @Controller('locations')
 // API công khai để tra cứu địa chỉ khi khách chọn nơi giao hàng.
 export class LocationController {
@@ -19,17 +24,30 @@ export class LocationController {
 
   // Trả về toàn bộ tỉnh/thành để bắt đầu luồng chọn địa chỉ.
   @ApiOperation({ summary: 'Liệt kê tất cả tỉnh/thành phố' })
-  @ApiOkResponse({ type: [CityResponseDto] })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({
+      type: 'array',
+      items: { $ref: getSchemaPath(CityResponseDto) },
+    }),
+  })
   @Public()
   @Get('cities')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async findAllCities(): Promise<CityResponseDto[]> {
-    return this.locationService.findAllCities();
+  async findAllCities(): Promise<SuccessPayload<CityResponseDto[]>> {
+    return ok(
+      await this.locationService.findAllCities(),
+      'Lấy danh sách tỉnh/thành phố thành công.',
+    );
   }
 
   // Trả về danh sách quận/huyện thuộc thành phố đã chọn.
   @ApiOperation({ summary: 'Liệt kê quận/huyện theo thành phố' })
-  @ApiOkResponse({ type: [DistrictResponseDto] })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({
+      type: 'array',
+      items: { $ref: getSchemaPath(DistrictResponseDto) },
+    }),
+  })
   @ApiBadRequestResponse({ description: 'Mã thành phố không hợp lệ.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy thành phố.' })
   @Public()
@@ -37,13 +55,21 @@ export class LocationController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findDistrictsByCityId(
     @Param('cityId', ParseIntPipe) cityId: number,
-  ): Promise<DistrictResponseDto[]> {
-    return this.locationService.findDistrictsByCityId(cityId);
+  ): Promise<SuccessPayload<DistrictResponseDto[]>> {
+    return ok(
+      await this.locationService.findDistrictsByCityId(cityId),
+      'Lấy danh sách quận/huyện thành công.',
+    );
   }
 
   // Trả về danh sách phường/xã thuộc quận/huyện đã chọn.
   @ApiOperation({ summary: 'Liệt kê phường/xã theo quận/huyện' })
-  @ApiOkResponse({ type: [WardResponseDto] })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({
+      type: 'array',
+      items: { $ref: getSchemaPath(WardResponseDto) },
+    }),
+  })
   @ApiBadRequestResponse({ description: 'Mã quận/huyện không hợp lệ.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy quận/huyện.' })
   @Public()
@@ -51,7 +77,10 @@ export class LocationController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findWardsByDistrictId(
     @Param('districtId', ParseIntPipe) districtId: number,
-  ): Promise<WardResponseDto[]> {
-    return this.locationService.findWardsByDistrictId(districtId);
+  ): Promise<SuccessPayload<WardResponseDto[]>> {
+    return ok(
+      await this.locationService.findWardsByDistrictId(districtId),
+      'Lấy danh sách phường/xã thành công.',
+    );
   }
 }

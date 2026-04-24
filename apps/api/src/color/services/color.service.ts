@@ -6,7 +6,7 @@ import {
   getPrismaErrorTargets,
   isPrismaErrorCode,
   isPrismaKnownRequestError,
-} from '../../common/errors/prisma-error.util';
+} from '../../common/utils/prisma.util';
 import { RedisService } from '../../redis/services/redis.service';
 import { COLOR_CACHE_KEYS, COLOR_CACHE_TTL } from '../color.cache';
 import { CreateColorDto, UpdateColorDto } from '../dto';

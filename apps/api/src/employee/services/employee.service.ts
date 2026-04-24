@@ -13,7 +13,7 @@ import {
   getPrismaErrorTargets,
   isPrismaErrorCode,
   isPrismaKnownRequestError,
-} from '../../common/errors/prisma-error.util';
+} from '../../common/utils/prisma.util';
 import { RoleRepository } from '../../rbac/repositories/role.repository';
 import type { CreateEmployeeDto } from '../dto/create-employee.dto';
 import type { UpdateEmployeeDto } from '../dto/update-employee.dto';

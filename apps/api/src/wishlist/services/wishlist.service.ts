@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
+import { isPrismaErrorCode } from '../../common/utils/prisma.util';
 import { type WishlistItemView, WishlistRepository } from '../repositories/wishlist.repository';
 
 // Quản lý danh sách sản phẩm yêu thích của khách hàng.

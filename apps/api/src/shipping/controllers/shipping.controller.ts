@@ -2,6 +2,7 @@ import { Body, Controller, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -9,9 +10,12 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import { buildSuccessResponseSchema } from '../../common/swagger/response-schema.util';
+import { ok, type SuccessPayload } from '../../common/utils/success-response.util';
 import { CalculateShippingFeeDto, ShippingFeeResponseDto } from '../dto';
 import { ShippingService } from '../services/shipping.service';
 
@@ -21,13 +25,16 @@ import { ShippingService } from '../services/shipping.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('CUSTOMER')
+@ApiExtraModels(ShippingFeeResponseDto)
 @Controller('shipping')
 export class ShippingController {
   constructor(private readonly shippingService: ShippingService) {}
 
   // Tính toán phí vận chuyển thực tế để thông báo cho khách hàng trước khi đặt hàng.
   @ApiOperation({ summary: 'Tính phí vận chuyển dựa trên địa chỉ nhận hàng và giỏ hàng' })
-  @ApiOkResponse({ type: ShippingFeeResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ShippingFeeResponseDto) }),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @ApiBadRequestResponse({
     description: 'Giỏ hàng trống hoặc không có dịch vụ vận chuyển khả dụng.',
@@ -37,7 +44,10 @@ export class ShippingController {
   async calculateFee(
     @Body() dto: CalculateShippingFeeDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ShippingFeeResponseDto> {
-    return this.shippingService.calculateFee(user.id, dto);
+  ): Promise<SuccessPayload<ShippingFeeResponseDto>> {
+    return ok(
+      await this.shippingService.calculateFee(user.id, dto),
+      'Tính phí vận chuyển thành công.',
+    );
   }
 }

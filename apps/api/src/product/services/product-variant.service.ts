@@ -7,7 +7,7 @@ import {
 import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
-import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
+import { isPrismaErrorCode } from '../../common/utils/prisma.util';
 import { CreateVariantDto, UpdateVariantDto } from '../dto';
 import { ProductRepository } from '../repositories/product.repository';
 import { ProductCacheService } from './product-cache.service';

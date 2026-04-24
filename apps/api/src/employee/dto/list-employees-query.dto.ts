@@ -2,7 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
+import { TransformQueryOptionalBoolean } from '../../common/decorators/query-optional-bool.decorator';
 
 const EMPLOYEE_SORT_BY = ['fullName', 'email', 'phoneNumber', 'status', 'createdAt'] as const;
 const EMPLOYEE_STATUS = ['ACTIVE', 'INACTIVE'] as const;

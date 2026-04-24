@@ -12,17 +12,23 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
-  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import {
+  buildNullDataSuccessResponseSchema,
+  buildSuccessResponseSchema,
+} from '../../common/swagger/response-schema.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
 import { WishlistItemResponseDto } from '../dto';
 import { WishlistService } from '../services/wishlist.service';
 
@@ -33,22 +39,33 @@ import { WishlistService } from '../services/wishlist.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('CUSTOMER')
+@ApiExtraModels(WishlistItemResponseDto)
 @Controller('me/wishlist')
 export class WishlistController {
   constructor(private readonly wishlistService: WishlistService) {}
 
   // Lấy danh sách yêu thích để hiển thị các sản phẩm khách hàng đang quan tâm.
   @ApiOperation({ summary: 'Lấy danh sách yêu thích của khách hàng hiện tại' })
-  @ApiOkResponse({ type: [WishlistItemResponseDto] })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({
+      type: 'array',
+      items: { $ref: getSchemaPath(WishlistItemResponseDto) },
+    }),
+  })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async findAll(@CurrentUser() user: AuthenticatedUser): Promise<WishlistItemResponseDto[]> {
-    return this.wishlistService.findAll(user.id);
+  async findAll(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<SuccessPayload<WishlistItemResponseDto[]>> {
+    return ok(await this.wishlistService.findAll(user.id), 'Lấy danh sách yêu thích thành công.');
   }
 
   // Thêm sản phẩm vào danh sách yêu thích để khách hàng có thể theo dõi và mua sau.
   @ApiOperation({ summary: 'Thêm sản phẩm vào danh sách yêu thích' })
-  @ApiCreatedResponse({ description: 'Thêm vào danh sách yêu thích thành công.' })
+  @ApiCreatedResponse({
+    description: 'Thêm vào danh sách yêu thích thành công.',
+    schema: buildNullDataSuccessResponseSchema('Thêm vào danh sách yêu thích thành công.'),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @ApiConflictResponse({ description: 'Sản phẩm đã có trong danh sách yêu thích.' })
   @Post(':productId')
@@ -57,21 +74,26 @@ export class WishlistController {
   async add(
     @Param('productId', ParseIntPipe) productId: number,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<void> {
-    return this.wishlistService.add(user.id, productId);
+  ): Promise<SuccessPayload<null>> {
+    await this.wishlistService.add(user.id, productId);
+    return okNoData('Thêm vào danh sách yêu thích thành công.');
   }
 
   // Xoá sản phẩm khỏi danh sách yêu thích khi khách hàng không còn nhu cầu theo dõi.
   @ApiOperation({ summary: 'Xoá sản phẩm khỏi danh sách yêu thích' })
-  @ApiNoContentResponse({ description: 'Xoá khỏi danh sách yêu thích thành công.' })
+  @ApiOkResponse({
+    description: 'Xóa khỏi danh sách yêu thích thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa khỏi danh sách yêu thích thành công.'),
+  })
   @ApiNotFoundResponse({ description: 'Sản phẩm không có trong danh sách yêu thích.' })
   @Delete(':productId')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('productId', ParseIntPipe) productId: number,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<void> {
-    return this.wishlistService.remove(user.id, productId);
+  ): Promise<SuccessPayload<null>> {
+    await this.wishlistService.remove(user.id, productId);
+    return okNoData('Xóa khỏi danh sách yêu thích thành công.');
   }
 }

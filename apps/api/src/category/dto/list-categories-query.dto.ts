@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsOptional } from 'class-validator';
 
-import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
+import { TransformQueryOptionalBoolean } from '../../common/decorators/query-optional-bool.decorator';
 
 /**
  * ListCategoriesQueryDto: DTO xử lý các tham số lọc khi liệt kê danh mục (Admin).

@@ -30,7 +30,10 @@ describe('LocationController', () => {
       mockLocationService.findAllCities.mockResolvedValue(expectedCities);
       const actualCities = await controller.findAllCities();
       expect(mockLocationService.findAllCities).toHaveBeenCalledTimes(1);
-      expect(actualCities).toEqual(expectedCities);
+      expect(actualCities).toEqual({
+        message: 'Lấy danh sách tỉnh/thành phố thành công.',
+        data: expectedCities,
+      });
     });
   });
 
@@ -43,7 +46,10 @@ describe('LocationController', () => {
       mockLocationService.findDistrictsByCityId.mockResolvedValue(expectedDistricts);
       const actualDistricts = await controller.findDistrictsByCityId(inputCityId);
       expect(mockLocationService.findDistrictsByCityId).toHaveBeenCalledWith(inputCityId);
-      expect(actualDistricts).toEqual(expectedDistricts);
+      expect(actualDistricts).toEqual({
+        message: 'Lấy danh sách quận/huyện thành công.',
+        data: expectedDistricts,
+      });
     });
 
     it('should rethrow service exception', async () => {
@@ -62,7 +68,10 @@ describe('LocationController', () => {
       mockLocationService.findWardsByDistrictId.mockResolvedValue(expectedWards);
       const actualWards = await controller.findWardsByDistrictId(inputDistrictId);
       expect(mockLocationService.findWardsByDistrictId).toHaveBeenCalledWith(inputDistrictId);
-      expect(actualWards).toEqual(expectedWards);
+      expect(actualWards).toEqual({
+        message: 'Lấy danh sách phường/xã thành công.',
+        data: expectedWards,
+      });
     });
 
     it('should rethrow service exception', async () => {

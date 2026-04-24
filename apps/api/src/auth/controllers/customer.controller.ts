@@ -4,6 +4,7 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
@@ -11,10 +12,16 @@ import {
   ApiTags,
   ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
-import { MessageResponseDto } from '../../common/dto/message-response.dto';
+import {
+  buildNullDataSuccessResponseSchema,
+  buildSuccessResponseSchema,
+  errorResponseSchema,
+} from '../../common/swagger/response-schema.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
 import { CurrentUser, Public, RequireUserType } from '../decorators';
 import {
   AuthResponseDto,
@@ -38,6 +45,12 @@ import { authBodyFromPair, extractRequestMeta } from '../utils';
 
 @Throttle({ default: { ttl: 60_000, limit: 10 } })
 @ApiTags('Auth')
+@ApiExtraModels(
+  CustomerRegisterResponseDto,
+  AuthResponseDto,
+  ForgotPasswordResponseDto,
+  ResetTokenResponseDto,
+)
 @Controller('auth')
 /**
  * Controller xử lý các yêu cầu xác thực dành cho Khách hàng (Public API).
@@ -52,22 +65,25 @@ export class CustomerAuthController {
 
   @ApiOperation({ summary: 'Đăng ký tài khoản khách hàng mới và gửi OTP qua email' })
   @ApiCreatedResponse({
-    type: CustomerRegisterResponseDto,
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerRegisterResponseDto) }),
     description: 'Đăng ký khách hàng thành công. OTP xác thực đã được gửi qua email.',
   })
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được đăng ký.' })
   @Public()
   @Post('register')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
+  @ApiBadRequestResponse({
+    description: 'Dữ liệu đầu vào không hợp lệ.',
+    schema: errorResponseSchema('Du lieu dau vao khong hop le.'),
+  })
   /** Đăng ký tài khoản mới: Lưu thông tin tạm thời và gửi OTP kích hoạt. */
-  async register(@Body() dto: RegisterDto): Promise<CustomerRegisterResponseDto> {
-    return this.customerAuth.registerCustomer(dto);
+  async register(@Body() dto: RegisterDto): Promise<SuccessPayload<CustomerRegisterResponseDto>> {
+    return ok(await this.customerAuth.registerCustomer(dto), 'Đăng ký khách hàng thành công.');
   }
 
   @ApiOperation({ summary: 'Xác thực OTP email khách hàng' })
   @ApiOkResponse({
-    type: MessageResponseDto,
+    schema: buildNullDataSuccessResponseSchema('Xác thực OTP thành công.'),
     description: 'Xác thực OTP thành công. Tài khoản đã được kích hoạt.',
   })
   @ApiTooManyRequestsResponse({
@@ -79,14 +95,14 @@ export class CustomerAuthController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Xác thực OTP: Nếu đúng, kích hoạt tài khoản thành công. */
-  async verifyOtp(@Body() dto: VerifyCustomerOtpDto): Promise<MessageResponseDto> {
+  async verifyOtp(@Body() dto: VerifyCustomerOtpDto): Promise<SuccessPayload<null>> {
     await this.customerAuth.verifyCustomerOtp(dto);
-    return new MessageResponseDto('Đăng ký tài khoản thành công. Vui lòng đăng nhập.');
+    return okNoData('Đăng ký tài khoản thành công. Vui lòng đăng nhập.');
   }
 
   @ApiOperation({ summary: 'Gửi lại OTP xác thực email khách hàng' })
   @ApiOkResponse({
-    type: CustomerRegisterResponseDto,
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerRegisterResponseDto) }),
     description: 'Đã gửi lại OTP xác thực thành công.',
   })
   @ApiTooManyRequestsResponse({
@@ -98,13 +114,18 @@ export class CustomerAuthController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Gửi lại mã OTP kích hoạt (có áp dụng cooldown). */
-  async resendOtp(@Body() dto: ResendCustomerOtpDto): Promise<CustomerRegisterResponseDto> {
-    return this.customerAuth.resendCustomerOtp(dto);
+  async resendOtp(
+    @Body() dto: ResendCustomerOtpDto,
+  ): Promise<SuccessPayload<CustomerRegisterResponseDto>> {
+    return ok(await this.customerAuth.resendCustomerOtp(dto), 'Gửi lại OTP thành công.');
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Đăng nhập với vai trò khách hàng' })
-  @ApiOkResponse({ type: AuthResponseDto, description: 'Đăng nhập khách hàng thành công.' })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AuthResponseDto) }),
+    description: 'Đăng nhập khách hàng thành công.',
+  })
   @ApiUnauthorizedResponse({
     description: 'Thông tin đăng nhập không hợp lệ hoặc tài khoản đã bị vô hiệu hóa.',
   })
@@ -114,20 +135,23 @@ export class CustomerAuthController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Đăng nhập bằng email/mật khẩu và nhận cặp token truy cập. */
-  async login(@Body() dto: LoginDto, @Req() req: Request): Promise<AuthResponseDto> {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+  ): Promise<SuccessPayload<AuthResponseDto>> {
     const identity = await this.customerAuth.loginCustomer(dto);
     const pair = await this.tokenService.issueTokenPair(
       identity,
       'CUSTOMER',
       extractRequestMeta(req),
     );
-    return authBodyFromPair(pair);
+    return ok(authBodyFromPair(pair), 'Đăng nhập khách hàng thành công.');
   }
 
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Đổi mật khẩu khách hàng và thu hồi toàn bộ phiên' })
   @ApiOkResponse({
-    type: MessageResponseDto,
+    schema: buildNullDataSuccessResponseSchema('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'),
     description: 'Đổi mật khẩu thành công. Tất cả phiên đã bị thu hồi.',
   })
   @ApiUnauthorizedResponse({ description: 'Mật khẩu hiện tại không chính xác.' })
@@ -141,16 +165,16 @@ export class CustomerAuthController {
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<MessageResponseDto> {
+  ): Promise<SuccessPayload<null>> {
     await this.customerAuth.changePassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
-    return new MessageResponseDto('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
+    return okNoData('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Yêu cầu OTP đặt lại mật khẩu cho tài khoản khách hàng' })
   @ApiOkResponse({
-    type: ForgotPasswordResponseDto,
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ForgotPasswordResponseDto) }),
     description: 'OTP đặt lại mật khẩu đã được gửi nếu tài khoản tồn tại và đã xác thực.',
   })
   @ApiTooManyRequestsResponse({
@@ -162,13 +186,18 @@ export class CustomerAuthController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Bước 1 Quên mật khẩu: Gửi mã OTP khôi phục qua email. */
-  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
-    return this.passwordReset.requestPasswordReset(dto);
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<SuccessPayload<ForgotPasswordResponseDto>> {
+    return ok(
+      await this.passwordReset.requestPasswordReset(dto),
+      'Đã tiếp nhận yêu cầu quên mật khẩu.',
+    );
   }
 
   @ApiOperation({ summary: 'Xác thực OTP đặt lại mật khẩu và nhận mã đặt lại dùng một lần' })
   @ApiOkResponse({
-    type: ResetTokenResponseDto,
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ResetTokenResponseDto) }),
     description: 'Xác thực OTP thành công. Đã cấp mã đặt lại.',
   })
   @ApiTooManyRequestsResponse({
@@ -182,13 +211,15 @@ export class CustomerAuthController {
   /** Bước 2 Quên mật khẩu: Kiểm tra OTP và cấp Reset Token (mã định danh đặt lại mật khẩu). */
   async forgotPasswordVerifyOtp(
     @Body() dto: ForgotPasswordVerifyOtpDto,
-  ): Promise<ResetTokenResponseDto> {
-    return this.passwordReset.verifyPasswordResetOtp(dto);
+  ): Promise<SuccessPayload<ResetTokenResponseDto>> {
+    return ok(await this.passwordReset.verifyPasswordResetOtp(dto), 'Xác thực OTP thành công.');
   }
 
   @ApiOperation({ summary: 'Đặt lại mật khẩu khách hàng bằng mã đặt lại hợp lệ' })
   @ApiOkResponse({
-    type: MessageResponseDto,
+    schema: buildNullDataSuccessResponseSchema(
+      'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.',
+    ),
     description: 'Đặt lại mật khẩu thành công. Tất cả phiên đã bị thu hồi.',
   })
   @ApiBadRequestResponse({ description: 'Mã đặt lại không hợp lệ hoặc đã hết hạn.' })
@@ -197,9 +228,9 @@ export class CustomerAuthController {
   @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /** Bước 3 Quên mật khẩu: Cập nhật mật khẩu mới bằng Reset Token và hủy mọi phiên làm việc cũ. */
-  async resetPassword(@Body() dto: ResetPasswordDto): Promise<MessageResponseDto> {
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<SuccessPayload<null>> {
     const { customerId } = await this.passwordReset.resetPassword(dto);
     await this.tokenService.revokeAllSessions(customerId, 'CUSTOMER');
-    return new MessageResponseDto('Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.');
+    return okNoData('Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 }

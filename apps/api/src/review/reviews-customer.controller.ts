@@ -13,6 +13,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser, RequireUserType } from '../auth/decorators';
 import type { AuthenticatedUser } from '../auth/interfaces';
+import { buildNullDataSuccessResponseSchema } from '../common/swagger/response-schema.util';
+import { okNoData, type SuccessPayload } from '../common/utils/success-response.util';
 import { CreateProductReviewDto } from './dto/create-product-review.dto';
 import { ReviewService } from './review.service';
 
@@ -29,7 +31,10 @@ export class ReviewsCustomerController {
 
   // Ghi nhận đánh giá của khách hàng sau khi đã mua và nhận hàng thành công.
   @ApiOperation({ summary: 'Tạo review sản phẩm sau khi đã nhận hàng và thanh toán thành công' })
-  @ApiCreatedResponse({ description: 'Tạo review thành công.' })
+  @ApiCreatedResponse({
+    description: 'Tạo review thành công.',
+    schema: buildNullDataSuccessResponseSchema('Tạo review thành công.'),
+  })
   @ApiBadRequestResponse({ description: 'Chưa đủ điều kiện review hoặc dữ liệu không hợp lệ.' })
   @ApiConflictResponse({ description: 'Bạn đã review sản phẩm này.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
@@ -39,7 +44,10 @@ export class ReviewsCustomerController {
     @Param('productId', ParseIntPipe) productId: number,
     @Body() dto: CreateProductReviewDto,
     @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.reviewService.createProductReview(user.id, productId, dto);
+  ): Promise<SuccessPayload<null>> {
+    return (async () => {
+      await this.reviewService.createProductReview(user.id, productId, dto);
+      return okNoData('Tạo review thành công.');
+    })();
   }
 }

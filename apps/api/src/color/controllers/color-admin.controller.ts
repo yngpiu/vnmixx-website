@@ -17,19 +17,25 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
-  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import {
+  buildNullDataSuccessResponseSchema,
+  buildSuccessResponseSchema,
+} from '../../common/swagger/response-schema.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
 import {
   ColorAdminResponseDto,
   ColorListResponseDto,
@@ -46,6 +52,7 @@ import { ColorService } from '../services/color.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
+@ApiExtraModels(ColorListResponseDto, ColorAdminResponseDto)
 @Controller('admin/colors')
 export class ColorAdminController {
   constructor(private readonly colorService: ColorService) {}
@@ -55,64 +62,85 @@ export class ColorAdminController {
     summary: 'Liệt kê màu sắc (quản trị)',
     description: 'Phân trang, tìm theo tên hoặc HEX, sắp xếp.',
   })
-  @ApiOkResponse({ type: ColorListResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ColorListResponseDto) }),
+  })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  findList(@Query() query: ListColorsQueryDto): Promise<ColorListResponseDto> {
-    return this.colorService.findList({
-      page: query.page ?? 1,
-      limit: query.limit ?? 20,
-      search: query.search,
-      sortBy: query.sortBy,
-      sortOrder: query.sortOrder,
-    });
+  async findList(
+    @Query() query: ListColorsQueryDto,
+  ): Promise<SuccessPayload<ColorListResponseDto>> {
+    return ok(
+      await this.colorService.findList({
+        page: query.page ?? 1,
+        limit: query.limit ?? 20,
+        search: query.search,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+      }),
+      'Lấy danh sách màu sắc thành công.',
+    );
   }
 
   // Khởi tạo mã màu mới khi nhập các dòng sản phẩm có màu sắc mới.
   @ApiOperation({ summary: 'Tạo màu mới' })
-  @ApiCreatedResponse({ type: ColorAdminResponseDto })
+  @ApiCreatedResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ColorAdminResponseDto) }),
+  })
   @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
   @Post()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  create(
+  async create(
     @Body() dto: CreateColorDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<ColorAdminResponseDto> {
-    return this.colorService.create(dto, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<Awaited<ReturnType<ColorService['create']>>>> {
+    return ok(
+      await this.colorService.create(dto, buildAuditRequestContext(request, user)),
+      'Tạo màu sắc thành công.',
+    );
   }
 
   // Cập nhật thông tin màu sắc hiện có để đồng bộ với nhận diện thương hiệu.
   @ApiOperation({ summary: 'Cập nhật màu' })
-  @ApiOkResponse({ type: ColorAdminResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ColorAdminResponseDto) }),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })
   @ApiConflictResponse({ description: 'Tên màu hoặc mã HEX đã được sử dụng.' })
   @Put(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateColorDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<ColorAdminResponseDto> {
-    return this.colorService.update(id, dto, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<Awaited<ReturnType<ColorService['update']>>>> {
+    return ok(
+      await this.colorService.update(id, dto, buildAuditRequestContext(request, user)),
+      'Cập nhật màu sắc thành công.',
+    );
   }
 
   // Loại bỏ các màu sắc không còn được sử dụng để tối ưu danh mục.
   @ApiOperation({ summary: 'Xóa màu' })
-  @ApiNoContentResponse({ description: 'Xóa màu thành công.' })
+  @ApiOkResponse({
+    description: 'Xóa màu sắc thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa màu sắc thành công.'),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })
   @ApiConflictResponse({ description: 'Không thể xóa màu vì đang được sử dụng.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  remove(
+  async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<void> {
-    return this.colorService.remove(id, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<null>> {
+    await this.colorService.remove(id, buildAuditRequestContext(request, user));
+    return okNoData('Xóa màu sắc thành công.');
   }
 }

@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
-import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
+import { isPrismaErrorCode } from '../../common/utils/prisma.util';
 import { RedisService } from '../../redis/services/redis.service';
 import { CreateSizeDto, UpdateSizeDto } from '../dto';
 import {

@@ -8,7 +8,7 @@ import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { EmployeeAuthzCacheService } from '../../auth/services/employee-authz-cache.service';
-import { isPrismaErrorCode } from '../../common/errors/prisma-error.util';
+import { isPrismaErrorCode } from '../../common/utils/prisma.util';
 import type { CreateRoleDto, UpdateRoleDto } from '../dto';
 import { PermissionRepository } from '../repositories/permission.repository';
 import {

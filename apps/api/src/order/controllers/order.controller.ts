@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -10,9 +11,12 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import { buildSuccessResponseSchema } from '../../common/swagger/response-schema.util';
+import { ok, type SuccessPayload } from '../../common/utils/success-response.util';
 import {
   CreateOrderDto,
   ListMyOrdersQueryDto,
@@ -27,6 +31,7 @@ import { OrderService } from '../services/order.service';
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
+@ApiExtraModels(OrderDetailResponseDto, OrderListResponseDto)
 @RequireUserType('CUSTOMER')
 @Controller('me/orders')
 export class OrderController {
@@ -34,7 +39,9 @@ export class OrderController {
 
   // Khởi tạo đơn hàng mới từ giỏ hàng hiện tại của khách hàng.
   @ApiOperation({ summary: 'Đặt hàng (checkout từ giỏ hàng)' })
-  @ApiCreatedResponse({ type: OrderDetailResponseDto })
+  @ApiCreatedResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderDetailResponseDto) }),
+  })
   @ApiBadRequestResponse({ description: 'Giỏ hàng trống hoặc tồn kho không đủ.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @Post()
@@ -42,38 +49,50 @@ export class OrderController {
   async placeOrder(
     @Body() dto: CreateOrderDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<OrderDetailResponseDto> {
-    return this.orderService.placeOrder(user.id, dto);
+  ): Promise<SuccessPayload<OrderDetailResponseDto>> {
+    return ok(await this.orderService.placeOrder(user.id, dto), 'Đặt hàng thành công.');
   }
 
   // Truy xuất toàn bộ lịch sử mua sắm để khách hàng theo dõi các đơn hàng cũ.
   @ApiOperation({ summary: 'Lấy danh sách đơn hàng của tôi' })
-  @ApiOkResponse({ type: OrderListResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderListResponseDto) }),
+  })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findMyOrders(
     @Query() query: ListMyOrdersQueryDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<OrderListResponseDto> {
-    return this.orderService.findMyOrders(user.id, query);
+  ): Promise<SuccessPayload<OrderListResponseDto>> {
+    return ok(
+      await this.orderService.findMyOrders(user.id, query),
+      'Lấy danh sách đơn hàng thành công.',
+    );
   }
 
   // Xem chi tiết một đơn hàng cụ thể để biết trạng thái vận chuyển và thanh toán.
   @ApiOperation({ summary: 'Lấy chi tiết đơn hàng' })
-  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderDetailResponseDto) }),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
   @Get(':orderCode')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findMyOrder(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<OrderDetailResponseDto> {
-    return this.orderService.findMyOrderByCode(user.id, orderCode);
+  ): Promise<SuccessPayload<OrderDetailResponseDto>> {
+    return ok(
+      await this.orderService.findMyOrderByCode(user.id, orderCode),
+      'Lấy chi tiết đơn hàng thành công.',
+    );
   }
 
   // Cho phép khách hàng tự hủy đơn khi đơn vẫn đang trong trạng thái chờ xử lý.
   @ApiOperation({ summary: 'Hủy đơn hàng (chỉ khi trạng thái PENDING)' })
-  @ApiOkResponse({ type: OrderDetailResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderDetailResponseDto) }),
+  })
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép hủy.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
   @HttpCode(HttpStatus.OK)
@@ -82,7 +101,10 @@ export class OrderController {
   async cancelMyOrder(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<OrderDetailResponseDto> {
-    return this.orderService.cancelMyOrder(user.id, orderCode);
+  ): Promise<SuccessPayload<OrderDetailResponseDto>> {
+    return ok(
+      await this.orderService.cancelMyOrder(user.id, orderCode),
+      'Hủy đơn hàng thành công.',
+    );
   }
 }

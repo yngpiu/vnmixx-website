@@ -17,19 +17,25 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
-  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import {
+  buildNullDataSuccessResponseSchema,
+  buildSuccessResponseSchema,
+} from '../../common/swagger/response-schema.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
 import {
   CreateSizeDto,
   ListSizesQueryDto,
@@ -46,6 +52,7 @@ import { SizeService } from '../services/size.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
+@ApiExtraModels(SizeListResponseDto, SizeAdminResponseDto)
 @Controller('admin/sizes')
 export class SizeAdminController {
   constructor(private readonly sizeService: SizeService) {}
@@ -55,64 +62,83 @@ export class SizeAdminController {
     summary: 'Liệt kê kích thước (quản trị)',
     description: 'Phân trang, tìm theo nhãn, sắp xếp.',
   })
-  @ApiOkResponse({ type: SizeListResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(SizeListResponseDto) }),
+  })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  findList(@Query() query: ListSizesQueryDto): Promise<SizeListResponseDto> {
-    return this.sizeService.findList({
-      page: query.page ?? 1,
-      limit: query.limit ?? 20,
-      search: query.search,
-      sortBy: query.sortBy,
-      sortOrder: query.sortOrder,
-    });
+  async findList(@Query() query: ListSizesQueryDto): Promise<SuccessPayload<SizeListResponseDto>> {
+    return ok(
+      await this.sizeService.findList({
+        page: query.page ?? 1,
+        limit: query.limit ?? 20,
+        search: query.search,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+      }),
+      'Lấy danh sách kích thước thành công.',
+    );
   }
 
   // Khởi tạo các loại kích thước mới để áp dụng cho các dòng sản phẩm mới.
   @ApiOperation({ summary: 'Tạo kích thước mới' })
-  @ApiCreatedResponse({ type: SizeAdminResponseDto })
+  @ApiCreatedResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(SizeAdminResponseDto) }),
+  })
   @ApiConflictResponse({ description: 'Nhãn kích thước đã được sử dụng.' })
   @Post()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  create(
+  async create(
     @Body() dto: CreateSizeDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SizeAdminResponseDto> {
-    return this.sizeService.create(dto, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<Awaited<ReturnType<SizeService['create']>>>> {
+    return ok(
+      await this.sizeService.create(dto, buildAuditRequestContext(request, user)),
+      'Tạo kích thước thành công.',
+    );
   }
 
   // Chỉnh sửa thông tin kích thước khi có sai sót hoặc thay đổi quy chuẩn.
   @ApiOperation({ summary: 'Cập nhật kích thước' })
-  @ApiOkResponse({ type: SizeAdminResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(SizeAdminResponseDto) }),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy kích thước.' })
   @ApiConflictResponse({ description: 'Nhãn kích thước đã được sử dụng.' })
   @Put(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateSizeDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SizeAdminResponseDto> {
-    return this.sizeService.update(id, dto, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<Awaited<ReturnType<SizeService['update']>>>> {
+    return ok(
+      await this.sizeService.update(id, dto, buildAuditRequestContext(request, user)),
+      'Cập nhật kích thước thành công.',
+    );
   }
 
   // Loại bỏ các kích thước không còn sử dụng để làm gọn danh mục.
   @ApiOperation({ summary: 'Xóa kích thước' })
-  @ApiNoContentResponse({ description: 'Xóa kích thước thành công.' })
+  @ApiOkResponse({
+    description: 'Xóa kích thước thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa kích thước thành công.'),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy kích thước.' })
   @ApiConflictResponse({ description: 'Không thể xóa kích thước vì đang được sử dụng.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  remove(
+  async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<void> {
-    return this.sizeService.remove(id, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<null>> {
+    await this.sizeService.remove(id, buildAuditRequestContext(request, user));
+    return okNoData('Xóa kích thước thành công.');
   }
 }

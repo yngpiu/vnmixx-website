@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiInternalServerErrorResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { Public } from './auth/decorators';
+import { ok, type SuccessPayload } from './common/utils/success-response.util';
 
 // Controller gốc của ứng dụng.
 // Cung cấp các endpoint cơ bản để kiểm tra trạng thái hoạt động của API.
@@ -14,7 +15,7 @@ export class AppController {
   @Public()
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  getHello(): string {
-    return this.appService.getHello();
+  getHello(): SuccessPayload<string> {
+    return ok(this.appService.getHello(), 'Kiểm tra trạng thái API thành công.');
   }
 }

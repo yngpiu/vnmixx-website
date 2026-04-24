@@ -2,15 +2,22 @@ import { Body, Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/commo
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
+import {
+  buildNullDataSuccessResponseSchema,
+  buildSuccessResponseSchema,
+} from '../../common/swagger/response-schema.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
 import { CurrentUser, Public, RequireUserType } from '../decorators';
 import { AuthResponseDto, ChangePasswordDto, LoginDto } from '../dto';
 import type { AuthenticatedUser } from '../interfaces';
@@ -20,6 +27,7 @@ import { authBodyFromPair, extractRequestMeta } from '../utils';
 
 @Throttle({ default: { ttl: 60_000, limit: 40 } })
 @ApiTags('Auth')
+@ApiExtraModels(AuthResponseDto)
 @Controller('auth/admin')
 /**
  * Controller xử lý các yêu cầu xác thực dành cho Nhân viên và Quản trị viên (Admin API).
@@ -33,7 +41,7 @@ export class EmployeeAuthController {
 
   @ApiOperation({ summary: 'Đăng nhập với vai trò nhân viên' })
   @ApiOkResponse({
-    type: AuthResponseDto,
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AuthResponseDto) }),
     description:
       'Đăng nhập nhân viên thành công (accessToken trong JSON; refresh trong cookie HttpOnly).',
   })
@@ -46,15 +54,21 @@ export class EmployeeAuthController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Đăng nhập nhân viên bằng email/mật khẩu và nhận token truy cập Dashboard. */
-  async login(@Body() dto: LoginDto, @Req() req: Request): Promise<AuthResponseDto> {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+  ): Promise<SuccessPayload<AuthResponseDto>> {
     const { user } = await this.employeeAuth.loginEmployee(dto);
     const pair = await this.tokenService.issueTokenPair(user, 'EMPLOYEE', extractRequestMeta(req));
-    return authBodyFromPair(pair);
+    return ok(authBodyFromPair(pair), 'Đăng nhập nhân viên thành công.');
   }
 
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Đổi mật khẩu nhân viên và thu hồi toàn bộ phiên' })
-  @ApiOkResponse({ description: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' })
+  @ApiOkResponse({
+    description: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.',
+    schema: buildNullDataSuccessResponseSchema('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'),
+  })
   @ApiUnauthorizedResponse({ description: 'Mật khẩu hiện tại không chính xác.' })
   @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ hoặc không tìm thấy nhân viên.' })
   @RequireUserType('EMPLOYEE')
@@ -66,9 +80,9 @@ export class EmployeeAuthController {
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<{ message: string }> {
+  ): Promise<SuccessPayload<null>> {
     await this.employeeAuth.changePassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'EMPLOYEE', user.jti, user.exp);
-    return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };
+    return okNoData('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 }

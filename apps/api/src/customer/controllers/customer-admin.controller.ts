@@ -14,19 +14,25 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
-  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import {
+  buildNullDataSuccessResponseSchema,
+  buildSuccessResponseSchema,
+} from '../../common/swagger/response-schema.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
 import {
   CustomerDetailResponseDto,
   CustomerListResponseDto,
@@ -42,6 +48,7 @@ import { CustomerService } from '../services/customer.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
+@ApiExtraModels(CustomerListResponseDto, CustomerDetailResponseDto)
 @Controller('admin/customers')
 export class CustomerAdminController {
   constructor(private readonly customerService: CustomerService) {}
@@ -52,29 +59,40 @@ export class CustomerAdminController {
     description:
       'Phân trang, tìm kiếm theo tên/email/SĐT. Lọc theo trạng thái `isActive` hoặc `isSoftDeleted`.',
   })
-  @ApiOkResponse({ type: CustomerListResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerListResponseDto) }),
+  })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  findAll(@Query() query: ListCustomersQueryDto) {
-    return this.customerService.findList({
-      page: query.page!,
-      limit: query.limit!,
-      search: query.search,
-      isActive: query.isActive,
-      isSoftDeleted: query.isSoftDeleted,
-      sortBy: query.sortBy,
-      sortOrder: query.sortOrder,
-    });
+  async findAll(
+    @Query() query: ListCustomersQueryDto,
+  ): Promise<SuccessPayload<CustomerListResponseDto>> {
+    return ok(
+      await this.customerService.findList({
+        page: query.page!,
+        limit: query.limit!,
+        search: query.search,
+        isActive: query.isActive,
+        isSoftDeleted: query.isSoftDeleted,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+      }),
+      'Lấy danh sách khách hàng thành công.',
+    );
   }
 
   // Xem chi tiết khách hàng để phục vụ việc đối soát và hỗ trợ kỹ thuật.
   @ApiOperation({ summary: 'Lấy chi tiết khách hàng theo ID' })
-  @ApiOkResponse({ type: CustomerDetailResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerDetailResponseDto) }),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Get(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  findById(@Param('id', ParseIntPipe) id: number) {
-    return this.customerService.findById(id);
+  async findById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<SuccessPayload<CustomerDetailResponseDto>> {
+    return ok(await this.customerService.findById(id), 'Lấy chi tiết khách hàng thành công.');
   }
 
   // Điều chỉnh trạng thái hoạt động (khóa/mở khóa) tài khoản khách hàng.
@@ -82,48 +100,62 @@ export class CustomerAdminController {
     summary: 'Cập nhật khách hàng',
     description: 'Chỉ cho phép đổi trạng thái hoạt động (kích hoạt / vô hiệu hóa).',
   })
-  @ApiOkResponse({ type: CustomerDetailResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerDetailResponseDto) }),
+  })
   @ApiBadRequestResponse({
     description: 'Thiếu trạng thái hoặc xác thực dữ liệu thất bại.',
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Patch(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  update(
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCustomerDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ) {
-    return this.customerService.update(id, dto, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<Awaited<ReturnType<CustomerService['update']>>>> {
+    return ok(
+      await this.customerService.update(id, dto, buildAuditRequestContext(request, user)),
+      'Cập nhật khách hàng thành công.',
+    );
   }
 
   // Xóa tài khoản khách hàng khi có yêu cầu hoặc vi phạm nghiêm trọng chính sách hệ thống.
   @ApiOperation({ summary: 'Xóa mềm khách hàng' })
-  @ApiNoContentResponse({ description: 'Xóa khách hàng thành công.' })
+  @ApiOkResponse({
+    description: 'Xóa khách hàng thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa khách hàng thành công.'),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  remove(
+  async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<void> {
-    return this.customerService.softDelete(id, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<null>> {
+    await this.customerService.softDelete(id, buildAuditRequestContext(request, user));
+    return okNoData('Xóa khách hàng thành công.');
   }
 
   // Khôi phục tài khoản khách hàng đã bị xóa trước đó.
   @ApiOperation({ summary: 'Khôi phục khách hàng đã xóa mềm' })
-  @ApiOkResponse({ type: CustomerDetailResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerDetailResponseDto) }),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng hoặc khách hàng chưa bị xóa.' })
   @Patch(':id/restore')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  restore(
+  async restore(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ) {
-    return this.customerService.restore(id, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<Awaited<ReturnType<CustomerService['restore']>>>> {
+    return ok(
+      await this.customerService.restore(id, buildAuditRequestContext(request, user)),
+      'Khôi phục khách hàng thành công.',
+    );
   }
 }

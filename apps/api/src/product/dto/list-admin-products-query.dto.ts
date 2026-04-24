@@ -2,7 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-import { TransformQueryOptionalBoolean } from '../../common/transforms/query-optional-boolean.transform';
+import { TransformQueryOptionalBoolean } from '../../common/decorators/query-optional-bool.decorator';
 
 const ADMIN_PRODUCT_SORT_BY = [
   'name',

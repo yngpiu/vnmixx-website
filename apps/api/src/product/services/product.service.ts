@@ -11,7 +11,7 @@ import {
   getPrismaErrorTargets,
   isPrismaErrorCode,
   isPrismaKnownRequestError,
-} from '../../common/errors/prisma-error.util';
+} from '../../common/utils/prisma.util';
 import { RedisService } from '../../redis/services/redis.service';
 import {
   CreateImageDto,

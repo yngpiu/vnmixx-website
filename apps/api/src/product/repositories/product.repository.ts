@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
-import { softDeletedWhere } from '../../common/prisma/soft-deleted-where';
+import { softDeletedWhere } from '../../common/utils/prisma.util';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
 // ─── View types ─────────────────────────────────────────────────────────────

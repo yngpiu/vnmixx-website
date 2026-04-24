@@ -8,9 +8,6 @@ interface ErrorResponseBody {
   statusCode: number;
   code: string;
   message: string | string[];
-  error: string;
-  path: string;
-  timestamp: string;
 }
 
 @Catch()
@@ -24,7 +21,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const { statusCode, message, error, code } = this.extractErrorInfo(exception);
+    const { statusCode, message, code } = this.extractErrorInfo(exception);
 
     if (statusCode >= 500) {
       this.logger.error(
@@ -46,9 +43,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode,
       code,
       message,
-      error,
-      path: request.url,
-      timestamp: new Date().toISOString(),
     };
 
     response.status(statusCode).json(body);
@@ -58,7 +52,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private extractErrorInfo(exception: unknown): {
     statusCode: number;
     message: string | string[];
-    error: string;
     code: string;
   } {
     if (exception instanceof HttpException) {
@@ -74,7 +67,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return {
           statusCode: status,
           message: (res.message as string | string[]) ?? exception.message,
-          error: (res.error as string) ?? HttpStatus[status] ?? 'Lỗi',
           code,
         };
       }
@@ -82,7 +74,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return {
         statusCode: status,
         message: typeof response === 'string' ? response : exception.message,
-        error: HttpStatus[status] ?? 'Lỗi',
         code,
       };
     }
@@ -90,7 +81,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Lỗi máy chủ nội bộ',
-      error: 'Internal Server Error',
       code: ERROR_CODES.INTERNAL_SERVER_ERROR,
     };
   }

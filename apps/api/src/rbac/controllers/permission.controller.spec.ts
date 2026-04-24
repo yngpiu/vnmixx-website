@@ -32,7 +32,10 @@ describe('PermissionController', () => {
       const actualPermissions = await controller.findAll();
 
       expect(mockPermissionService.findAll).toHaveBeenCalledTimes(1);
-      expect(actualPermissions).toEqual(expectedPermissions);
+      expect(actualPermissions).toEqual({
+        message: 'Lấy danh sách quyền thành công.',
+        data: expectedPermissions,
+      });
     });
   });
 });

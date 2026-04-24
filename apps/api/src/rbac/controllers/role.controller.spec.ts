@@ -40,7 +40,10 @@ describe('RoleController', () => {
         sortBy: undefined,
         sortOrder: undefined,
       });
-      expect(actualResult).toEqual(expectedResult);
+      expect(actualResult).toEqual({
+        message: 'Lấy danh sách vai trò thành công.',
+        data: expectedResult,
+      });
     });
   });
 
@@ -52,7 +55,10 @@ describe('RoleController', () => {
       const actualRole = await controller.findOne(7);
 
       expect(mockRoleService.findById).toHaveBeenCalledWith(7);
-      expect(actualRole).toEqual(expectedRole);
+      expect(actualRole).toEqual({
+        message: 'Lấy chi tiết vai trò thành công.',
+        data: expectedRole,
+      });
     });
   });
 
@@ -72,7 +78,10 @@ describe('RoleController', () => {
       const actualRole = await controller.create(createDto, currentUser as never, request);
 
       expect(mockRoleService.create).toHaveBeenCalledTimes(1);
-      expect(actualRole).toEqual(expectedRole);
+      expect(actualRole).toEqual({
+        message: 'Tạo vai trò thành công.',
+        data: expectedRole,
+      });
     });
   });
 
@@ -92,7 +101,10 @@ describe('RoleController', () => {
       const actualRole = await controller.update(3, updateDto, currentUser as never, request);
 
       expect(mockRoleService.update).toHaveBeenCalledTimes(1);
-      expect(actualRole).toEqual(expectedRole);
+      expect(actualRole).toEqual({
+        message: 'Cập nhật vai trò thành công.',
+        data: expectedRole,
+      });
     });
   });
 
@@ -107,9 +119,12 @@ describe('RoleController', () => {
       } as Request;
       mockRoleService.delete.mockResolvedValue(undefined);
 
-      await controller.remove(3, currentUser as never, request);
+      const result = await controller.remove(3, currentUser as never, request);
 
       expect(mockRoleService.delete).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        message: 'Xóa vai trò thành công.',
+      });
     });
   });
 });

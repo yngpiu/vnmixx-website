@@ -18,19 +18,25 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
-  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import {
+  buildNullDataSuccessResponseSchema,
+  buildSuccessResponseSchema,
+} from '../../common/swagger/response-schema.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
 import {
   CategoryAdminResponseDto,
   CreateCategoryDto,
@@ -44,6 +50,7 @@ import { CategoryService } from '../services/category.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
+@ApiExtraModels(CategoryAdminResponseDto)
 @Controller('admin/categories')
 export class CategoryAdminController {
   constructor(private readonly categoryService: CategoryService) {}
@@ -53,18 +60,30 @@ export class CategoryAdminController {
     description:
       '`isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc (cùng quy ước danh sách admin khác).',
   })
-  @ApiOkResponse({ type: [CategoryAdminResponseDto] })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({
+      type: 'array',
+      items: { $ref: getSchemaPath(CategoryAdminResponseDto) },
+    }),
+  })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async findAll(@Query() query: ListCategoriesQueryDto): Promise<CategoryAdminResponseDto[]> {
-    return this.categoryService.findAll({
-      ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
-      ...(query.isSoftDeleted !== undefined ? { isSoftDeleted: query.isSoftDeleted } : {}),
-    });
+  async findAll(
+    @Query() query: ListCategoriesQueryDto,
+  ): Promise<SuccessPayload<CategoryAdminResponseDto[]>> {
+    return ok(
+      await this.categoryService.findAll({
+        ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
+        ...(query.isSoftDeleted !== undefined ? { isSoftDeleted: query.isSoftDeleted } : {}),
+      }),
+      'Lấy danh sách danh mục thành công.',
+    );
   }
 
   @ApiOperation({ summary: 'Tạo danh mục mới' })
-  @ApiCreatedResponse({ type: CategoryAdminResponseDto })
+  @ApiCreatedResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CategoryAdminResponseDto) }),
+  })
   @ApiConflictResponse({ description: 'Slug danh mục đã được sử dụng.' })
   @Post()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
@@ -73,12 +92,17 @@ export class CategoryAdminController {
     @Body() dto: CreateCategoryDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<CategoryAdminResponseDto> {
-    return this.categoryService.create(dto, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<CategoryAdminResponseDto>> {
+    return ok(
+      await this.categoryService.create(dto, buildAuditRequestContext(request, user)),
+      'Tạo danh mục thành công.',
+    );
   }
 
   @ApiOperation({ summary: 'Cập nhật danh mục' })
-  @ApiOkResponse({ type: CategoryAdminResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CategoryAdminResponseDto) }),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @ApiConflictResponse({ description: 'Slug danh mục đã được sử dụng.' })
   @Put(':id')
@@ -89,18 +113,24 @@ export class CategoryAdminController {
     @Body() dto: UpdateCategoryDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<CategoryAdminResponseDto> {
-    return this.categoryService.update(id, dto, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<CategoryAdminResponseDto>> {
+    return ok(
+      await this.categoryService.update(id, dto, buildAuditRequestContext(request, user)),
+      'Cập nhật danh mục thành công.',
+    );
   }
 
   @ApiOperation({ summary: 'Xóa danh mục' })
-  @ApiNoContentResponse({ description: 'Xóa danh mục thành công.' })
+  @ApiOkResponse({
+    description: 'Xóa danh mục thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa danh mục thành công.'),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @ApiConflictResponse({
     description: 'Không thể xóa danh mục vì còn danh mục con đang hoạt động.',
   })
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /**
    * Xóa mềm một danh mục.
@@ -110,12 +140,15 @@ export class CategoryAdminController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<void> {
-    return this.categoryService.softDelete(id, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<null>> {
+    await this.categoryService.softDelete(id, buildAuditRequestContext(request, user));
+    return okNoData('Xóa danh mục thành công.');
   }
 
   @ApiOperation({ summary: 'Khôi phục danh mục đã xóa' })
-  @ApiOkResponse({ type: CategoryAdminResponseDto })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CategoryAdminResponseDto) }),
+  })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @Patch(':id/restore')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
@@ -123,7 +156,10 @@ export class CategoryAdminController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<CategoryAdminResponseDto> {
-    return this.categoryService.restore(id, buildAuditRequestContext(request, user));
+  ): Promise<SuccessPayload<CategoryAdminResponseDto>> {
+    return ok(
+      await this.categoryService.restore(id, buildAuditRequestContext(request, user)),
+      'Khôi phục danh mục thành công.',
+    );
   }
 }
