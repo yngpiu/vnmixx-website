@@ -11,7 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { CategoryModule } from './category/category.module';
 import { ColorModule } from './color/color.module';
-import { validateEnv } from './config/env.validation';
+import { validateEnv } from './common/config/env.validation';
 import { CoreModule } from './core/core.module';
 import { CustomerModule } from './customer/customer.module';
 import { EmployeeModule } from './employee/employee.module';

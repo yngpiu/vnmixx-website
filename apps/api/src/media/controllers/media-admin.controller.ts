@@ -37,7 +37,7 @@ import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
 } from '../../common/swagger/response-schema.util';
-import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/response.util';
 import { CreateFolderDto, ListMediaQueryDto, MoveMediaDto, UploadMediaDto } from '../dto';
 import { MediaService, type UploadedFileInput } from '../services/media.service';
 

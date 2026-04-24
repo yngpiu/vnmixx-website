@@ -23,7 +23,7 @@ import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
 } from '../../common/swagger/response-schema.util';
-import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/response.util';
 import { CurrentUser, Public } from '../decorators';
 import { AuthResponseDto, ProfileResponseDto } from '../dto';
 import type { AuthenticatedUser } from '../interfaces';

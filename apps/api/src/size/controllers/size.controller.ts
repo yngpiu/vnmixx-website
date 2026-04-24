@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../../auth/decorators';
 import { buildSuccessResponseSchema } from '../../common/swagger/response-schema.util';
-import { ok, type SuccessPayload } from '../../common/utils/success-response.util';
+import { ok, type SuccessPayload } from '../../common/utils/response.util';
 import { SizeResponseDto } from '../dto';
 import { SizeService } from '../services/size.service';
 

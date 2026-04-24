@@ -14,7 +14,7 @@ import {
 import { CurrentUser, RequireUserType } from '../auth/decorators';
 import type { AuthenticatedUser } from '../auth/interfaces';
 import { buildNullDataSuccessResponseSchema } from '../common/swagger/response-schema.util';
-import { okNoData, type SuccessPayload } from '../common/utils/success-response.util';
+import { okNoData, type SuccessPayload } from '../common/utils/response.util';
 import { CreateProductReviewDto } from './dto/create-product-review.dto';
 import { ReviewService } from './review.service';
 

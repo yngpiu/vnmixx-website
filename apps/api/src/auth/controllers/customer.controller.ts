@@ -21,7 +21,7 @@ import {
   buildSuccessResponseSchema,
   errorResponseSchema,
 } from '../../common/swagger/response-schema.util';
-import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/response.util';
 import { CurrentUser, Public, RequireUserType } from '../decorators';
 import {
   AuthResponseDto,

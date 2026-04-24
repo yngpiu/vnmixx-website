@@ -19,7 +19,7 @@ import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
 } from '../../common/swagger/response-schema.util';
-import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/response.util';
 import { CustomerProfileResponseDto, UpdateCustomerProfileDto } from '../dto';
 import { ProfileService } from '../services/profile.service';
 

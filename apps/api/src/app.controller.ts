@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiInternalServerErrorResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { Public } from './auth/decorators';
-import { ok, type SuccessPayload } from './common/utils/success-response.util';
+import { ok, type SuccessPayload } from './common/utils/response.util';
 
 // Controller gốc của ứng dụng.
 // Cung cấp các endpoint cơ bản để kiểm tra trạng thái hoạt động của API.

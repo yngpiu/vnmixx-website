@@ -30,7 +30,7 @@ import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
 } from '../../common/swagger/response-schema.util';
-import { ok, okNoData, type SuccessPayload } from '../../common/utils/success-response.util';
+import { ok, okNoData, type SuccessPayload } from '../../common/utils/response.util';
 import { AddCartItemDto, CartItemResponseDto, CartResponseDto, UpdateCartItemDto } from '../dto';
 import { CartService } from '../services/cart.service';
 

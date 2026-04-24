@@ -17,7 +17,7 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import { buildSuccessResponseSchema } from '../../common/swagger/response-schema.util';
-import { ok, type SuccessPayload } from '../../common/utils/success-response.util';
+import { ok, type SuccessPayload } from '../../common/utils/response.util';
 import {
   ConfirmOrderShipmentDto,
   ListAdminOrdersQueryDto,
