@@ -236,7 +236,6 @@ model Address {
   isDefault   Boolean     @default(false) @map("is_default") @db.TinyInt
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt   DateTime?   @map("deleted_at") @db.Timestamp(0)
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   city     City     @relation(fields: [cityId], references: [id], onDelete: Restrict, onUpdate: Cascade)

@@ -295,7 +295,7 @@ export class OrderRepository {
 
   async findAddressByIdAndCustomer(addressId: number, customerId: number) {
     return this.prisma.address.findFirst({
-      where: { id: addressId, customerId, deletedAt: null },
+      where: { id: addressId, customerId },
       include: {
         city: { select: { name: true, giaohangnhanhId: true } },
         district: { select: { name: true, giaohangnhanhId: true } },

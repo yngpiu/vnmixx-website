@@ -31,6 +31,7 @@ describe('AddressService', () => {
         updateMany: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        delete: jest.fn(),
         findFirst: jest.fn(),
       },
     };
@@ -197,7 +198,7 @@ describe('AddressService', () => {
       addressRepo.findById.mockResolvedValue(address);
       const tx = {
         address: {
-          update: jest.fn().mockResolvedValue({}),
+          delete: jest.fn().mockResolvedValue({}),
           findFirst: jest.fn().mockResolvedValue(null),
         },
       };
@@ -205,9 +206,8 @@ describe('AddressService', () => {
       prisma.$transaction.mockImplementation(async (cb) => cb(tx as unknown as PrismaService));
 
       await service.remove(1, 1);
-      expect(tx.address.update).toHaveBeenCalledWith({
+      expect(tx.address.delete).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { deletedAt: expect.any(Date), isDefault: false },
       });
       expect(tx.address.findFirst).not.toHaveBeenCalled();
     });
@@ -217,6 +217,7 @@ describe('AddressService', () => {
       addressRepo.findById.mockResolvedValue(address);
       const tx = {
         address: {
+          delete: jest.fn().mockResolvedValue({}),
           update: jest.fn().mockResolvedValue({}),
           findFirst: jest.fn().mockResolvedValue({ id: 2 }),
         },
@@ -226,12 +227,15 @@ describe('AddressService', () => {
 
       await service.remove(1, 1);
       expect(tx.address.findFirst).toHaveBeenCalledWith({
-        where: { customerId: 1, deletedAt: null, id: { not: 1 } },
+        where: { customerId: 1, id: { not: 1 } },
         orderBy: { createdAt: 'desc' },
         select: { id: true },
       });
-      expect(tx.address.update).toHaveBeenCalledTimes(2);
-      expect(tx.address.update).toHaveBeenNthCalledWith(2, {
+      expect(tx.address.delete).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+      expect(tx.address.update).toHaveBeenCalledTimes(1);
+      expect(tx.address.update).toHaveBeenCalledWith({
         where: { id: 2 },
         data: { isDefault: true },
       });
@@ -254,7 +258,7 @@ describe('AddressService', () => {
       const result = await service.setDefault(1, 1);
       expect(result).toBe(address);
       expect(tx.address.updateMany).toHaveBeenCalledWith({
-        where: { customerId: 1, isDefault: true, deletedAt: null },
+        where: { customerId: 1, isDefault: true },
         data: { isDefault: false },
       });
       expect(tx.address.update).toHaveBeenCalledWith({

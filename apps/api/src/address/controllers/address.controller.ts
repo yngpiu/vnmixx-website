@@ -30,8 +30,10 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
-} from '../../common/swagger/response-schema.util';
-import { ok, okNoData, type SuccessPayload } from '../../common/utils/response.util';
+  ok,
+  okNoData,
+  type SuccessPayload,
+} from '../../common/utils/response.util';
 import { AddressResponseDto, CreateAddressDto, UpdateAddressDto } from '../dto';
 import { AddressService } from '../services/address.service';
 
@@ -104,7 +106,7 @@ export class AddressController {
     return ok(await this.addressService.update(id, user.id, dto), 'Cập nhật địa chỉ thành công.');
   }
 
-  @ApiOperation({ summary: 'Xóa địa chỉ (xóa mềm)' })
+  @ApiOperation({ summary: 'Xóa địa chỉ (xóa cứng)' })
   @ApiOkResponse({
     description: 'Xóa địa chỉ thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa địa chỉ thành công.'),

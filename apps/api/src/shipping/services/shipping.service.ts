@@ -91,7 +91,7 @@ export class ShippingService implements OnModuleInit {
 
     // 1. Lấy thông tin địa chỉ nhận hàng và trích xuất mã địa chính GHN
     const address = await this.prisma.address.findFirst({
-      where: { id: dto.addressId, customerId, deletedAt: null },
+      where: { id: dto.addressId, customerId },
       select: {
         district: { select: { giaohangnhanhId: true } },
         ward: { select: { giaohangnhanhId: true } },

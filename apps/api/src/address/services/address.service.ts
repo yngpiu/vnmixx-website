@@ -40,7 +40,7 @@ export class AddressService {
       // Nếu là địa chỉ mặc định, bỏ đánh dấu mặc định của các địa chỉ cũ trong một transaction
       return this.prisma.$transaction(async (tx) => {
         await tx.address.updateMany({
-          where: { customerId, isDefault: true, deletedAt: null },
+          where: { customerId, isDefault: true },
           data: { isDefault: false },
         });
 
@@ -109,20 +109,19 @@ export class AddressService {
     });
   }
 
-  // Xóa địa chỉ (soft delete) và tự động chỉ định địa chỉ mặc định mới nếu địa chỉ bị xóa đang là mặc định
+  // Xóa cứng địa chỉ và tự động chỉ định địa chỉ mặc định mới nếu địa chỉ bị xóa đang là mặc định
   async remove(id: number, customerId: number): Promise<void> {
     const address = await this.findById(id, customerId);
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.address.update({
+      await tx.address.delete({
         where: { id },
-        data: { deletedAt: new Date(), isDefault: false },
       });
 
       if (address.isDefault) {
         // Tìm địa chỉ gần nhất còn lại để đặt làm mặc định
         const next = await tx.address.findFirst({
-          where: { customerId, deletedAt: null, id: { not: id } },
+          where: { customerId, id: { not: id } },
           orderBy: { createdAt: 'desc' },
           select: { id: true },
         });
@@ -143,7 +142,7 @@ export class AddressService {
 
     await this.prisma.$transaction(async (tx) => {
       await tx.address.updateMany({
-        where: { customerId, isDefault: true, deletedAt: null },
+        where: { customerId, isDefault: true },
         data: { isDefault: false },
       });
       await tx.address.update({

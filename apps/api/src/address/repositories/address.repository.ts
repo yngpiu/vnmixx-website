@@ -35,7 +35,7 @@ export class AddressRepository {
 
   async findAllByCustomerId(customerId: number): Promise<AddressView[]> {
     return this.prisma.address.findMany({
-      where: { customerId, deletedAt: null },
+      where: { customerId },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
       select: ADDRESS_SELECT,
     }) as unknown as Promise<AddressView[]>;
@@ -43,7 +43,7 @@ export class AddressRepository {
 
   async findById(id: number, customerId: number): Promise<AddressView | null> {
     return this.prisma.address.findFirst({
-      where: { id, customerId, deletedAt: null },
+      where: { id, customerId },
       select: ADDRESS_SELECT,
     }) as unknown as Promise<AddressView | null>;
   }
@@ -84,16 +84,9 @@ export class AddressRepository {
     }) as unknown as Promise<AddressView>;
   }
 
-  async softDelete(id: number): Promise<void> {
-    await this.prisma.address.update({
-      where: { id },
-      data: { deletedAt: new Date(), isDefault: false },
-    });
-  }
-
   async clearDefault(customerId: number): Promise<void> {
     await this.prisma.address.updateMany({
-      where: { customerId, isDefault: true, deletedAt: null },
+      where: { customerId, isDefault: true },
       data: { isDefault: false },
     });
   }
@@ -107,7 +100,7 @@ export class AddressRepository {
 
   async countByCustomerId(customerId: number): Promise<number> {
     return this.prisma.address.count({
-      where: { customerId, deletedAt: null },
+      where: { customerId },
     });
   }
 }
