@@ -10,6 +10,7 @@ import {
   OrderRepository,
 } from '../repositories/order.repository';
 import { OrderService } from './order.service';
+import { SepayService } from './sepay.service';
 
 describe('OrderService', () => {
   let service: OrderService;
@@ -93,6 +94,26 @@ describe('OrderService', () => {
             getShopGhnIds: jest.fn().mockReturnValue({ districtId: 1, wardCode: '1' }),
           },
         },
+        {
+          provide: SepayService,
+          useValue: {
+            buildPaymentCode: jest.fn().mockImplementation((orderCode: string) => `DH${orderCode}`),
+            buildQrPaymentFields: jest.fn().mockReturnValue({
+              provider: 'SEPAY',
+              bankCode: 'MBBank',
+              bankName: 'Ngân hàng TMCP Quân đội',
+              accountNumber: '0903252427',
+              accountName: 'BUI TAN VIET',
+              qrTemplate: 'compact',
+              transferContent: 'DHORD-123',
+              qrImageUrl:
+                'https://qr.sepay.vn/img?bank=MBBank&acc=0903252427&template=compact&amount=130000&des=DHORD-123',
+              expiresAt: new Date('2026-04-25T10:15:00.000Z'),
+            }),
+            verifyWebhookAuthorization: jest.fn(),
+            extractPaymentCode: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -139,7 +160,7 @@ describe('OrderService', () => {
         },
         order: { create: jest.fn().mockResolvedValue({ id: 1 }) },
         orderItem: { createMany: jest.fn() },
-        payment: { create: jest.fn() },
+        payment: { create: jest.fn().mockResolvedValue({ id: 99 }) },
         orderStatusHistory: { create: jest.fn() },
         cartItem: { deleteMany: jest.fn() },
         stockMovement: { create: jest.fn() },
@@ -168,6 +189,8 @@ describe('OrderService', () => {
             customerId: 1,
             shippingFee: 30000,
             total: 130000,
+            paymentCode: 'DHORD-123',
+            status: 'PENDING_CONFIRMATION',
           }),
         }),
       );
@@ -189,7 +212,7 @@ describe('OrderService', () => {
         }),
       );
       expect(tx.orderStatusHistory.create).toHaveBeenCalledWith({
-        data: { orderId: 1, status: 'PENDING' },
+        data: { orderId: 1, status: 'PENDING_CONFIRMATION' },
       });
       expect(tx.cartItem.deleteMany).toHaveBeenCalledWith({ where: { cartId: 1 } });
       expect(orderRepo.findByOrderCode).toHaveBeenCalledWith('ORD-123', 1);
@@ -246,12 +269,12 @@ describe('OrderService', () => {
   describe('cancelMyOrder', () => {
     const mockOrderForCancel = {
       id: 1,
-      status: 'PENDING',
+      status: 'PENDING_CONFIRMATION',
       items: [{ id: 1, variantId: 1, quantity: 2 }],
     };
 
     it('should cancel a pending order successfully', async () => {
-      prisma.order.findFirst.mockResolvedValue(mockOrderForCancel as any);
+      (prisma.order.findFirst as jest.Mock).mockResolvedValue(mockOrderForCancel as any);
       const tx = {
         order: { update: jest.fn().mockResolvedValue({}) },
         payment: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
@@ -279,7 +302,7 @@ describe('OrderService', () => {
       });
       expect(tx.payment.updateMany).toHaveBeenCalledWith({
         where: { orderId: 1, status: 'PENDING' },
-        data: { status: 'FAILED' },
+        data: { status: 'CANCELLED' },
       });
       expect(tx.orderStatusHistory.create).toHaveBeenCalledWith({
         data: { orderId: 1, status: 'CANCELLED' },
@@ -287,8 +310,8 @@ describe('OrderService', () => {
       expect(tx.stockMovement.create).toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException if order is not PENDING', async () => {
-      prisma.order.findFirst.mockResolvedValue({
+    it('should throw BadRequestException if order is not cancellable', async () => {
+      (prisma.order.findFirst as jest.Mock).mockResolvedValue({
         ...mockOrderForCancel,
         status: 'PROCESSING',
       } as any);

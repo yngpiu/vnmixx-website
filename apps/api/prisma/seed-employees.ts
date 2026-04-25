@@ -1,7 +1,6 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { hash } from 'bcrypt';
-import 'dotenv/config';
 import { EmployeeStatus, PrismaClient } from '../generated/prisma/client';
 
 const BCRYPT_ROUNDS = 10;

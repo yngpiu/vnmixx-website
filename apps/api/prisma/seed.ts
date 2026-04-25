@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { seedAddresses } from './seed-addresses';
 import { seedAuditLogs } from './seed-audit-logs';
 import { seedCategories } from './seed-categories';

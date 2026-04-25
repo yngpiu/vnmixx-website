@@ -6,4 +6,5 @@ export {
   OrderAdminListResponseDto,
   OrderDetailResponseDto,
   OrderListResponseDto,
+  OrderPaymentStatusResponseDto,
 } from './order-response.dto';

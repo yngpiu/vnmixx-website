@@ -1,10 +1,9 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import 'dotenv/config';
 import { AuditLogStatus, Prisma, PrismaClient } from '../generated/prisma/client';
 
 const SEED_REQUEST_ID_PREFIX = 'seed-audit-';
-const AUDIT_LOG_COUNT = 5000;
+const AUDIT_LOG_COUNT = Number(process.env.SEED_AUDIT_LOG_COUNT ?? 800);
 
 export async function seedAuditLogs(): Promise<void> {
   if (!process.env.DATABASE_URL) {

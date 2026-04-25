@@ -1,5 +1,4 @@
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import 'dotenv/config';
 import { AddressType, PrismaClient } from '../generated/prisma/client';
 
 async function wipeSeedAddresses(prisma: PrismaClient): Promise<void> {

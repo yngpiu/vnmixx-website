@@ -19,9 +19,27 @@ export interface PaymentView {
   id: number;
   method: string;
   status: string;
+  provider: string | null;
   transactionId: string | null;
+  providerReferenceCode: string | null;
   amount: number;
+  amountPaid: number;
   paidAt: Date | null;
+  expiredAt: Date | null;
+}
+
+export interface CheckoutInfoView {
+  provider: string;
+  bankCode: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  qrTemplate: string | null;
+  amount: number;
+  transferContent: string;
+  qrImageUrl: string;
+  status: string;
+  expiresAt: Date | null;
 }
 
 export interface StatusHistoryView {
@@ -44,6 +62,7 @@ export interface OrderListItemView {
 }
 
 export interface OrderDetailView extends OrderListItemView {
+  paymentCode: string;
   shippingFullName: string;
   shippingPhoneNumber: string;
   shippingCity: string;
@@ -62,7 +81,16 @@ export interface OrderDetailView extends OrderListItemView {
   couponCode: string | null;
   updatedAt: Date;
   payments: PaymentView[];
+  checkoutSession: CheckoutInfoView | null;
   statusHistories: StatusHistoryView[];
+}
+
+export interface OrderPaymentStatusView {
+  orderCode: string;
+  orderStatus: string;
+  paymentStatus: string;
+  paymentCode: string;
+  checkoutSession: CheckoutInfoView | null;
 }
 
 export interface OrderAdminListItemView extends OrderListItemView {
@@ -91,9 +119,20 @@ const PAYMENT_SELECT = {
   id: true,
   method: true,
   status: true,
+  provider: true,
   transactionId: true,
+  providerReferenceCode: true,
   amount: true,
+  amountPaid: true,
   paidAt: true,
+  expiredAt: true,
+  bankCode: true,
+  bankName: true,
+  accountNumber: true,
+  accountName: true,
+  qrTemplate: true,
+  transferContent: true,
+  qrImageUrl: true,
 } as const;
 
 const STATUS_HISTORY_SELECT = {
@@ -121,6 +160,7 @@ const ORDER_LIST_SELECT = {
 
 const ORDER_DETAIL_SELECT = {
   ...ORDER_LIST_SELECT,
+  paymentCode: true,
   shippingFullName: true,
   shippingPhoneNumber: true,
   shippingCity: true,
@@ -160,6 +200,10 @@ const ORDER_ADMIN_DETAIL_SELECT = {
   customer: { select: CUSTOMER_BRIEF_SELECT },
 } as const;
 
+type PaymentSelectRow = Prisma.PaymentGetPayload<{
+  select: typeof PAYMENT_SELECT;
+}>;
+
 // ─── Repository ──────────────────────────────────────────
 
 /**
@@ -177,6 +221,85 @@ export class OrderRepository {
     return {
       ...order,
       paymentStatus,
+    };
+  }
+
+  private mapPaymentView<
+    T extends {
+      id: number;
+      method: string;
+      status: string;
+      provider: string | null;
+      transactionId: string | null;
+      providerReferenceCode: string | null;
+      amount: number;
+      amountPaid: number;
+      paidAt: Date | null;
+      expiredAt: Date | null;
+    },
+  >(payment: T): PaymentView {
+    return {
+      id: payment.id,
+      method: payment.method,
+      status: payment.status,
+      provider: payment.provider,
+      transactionId: payment.transactionId,
+      providerReferenceCode: payment.providerReferenceCode,
+      amount: payment.amount,
+      amountPaid: payment.amountPaid,
+      paidAt: payment.paidAt,
+      expiredAt: payment.expiredAt,
+    };
+  }
+
+  private deriveCheckoutInfo<
+    T extends {
+      method: string;
+      provider: string | null;
+      bankCode: string | null;
+      bankName: string | null;
+      accountNumber: string | null;
+      accountName: string | null;
+      qrTemplate: string | null;
+      amount: number;
+      transferContent: string | null;
+      qrImageUrl: string | null;
+      status: string;
+      expiredAt: Date | null;
+    },
+  >(payments: T[]): CheckoutInfoView | null {
+    const qrPayment = payments.find((payment) => payment.method === 'BANK_TRANSFER_QR');
+    if (
+      !qrPayment?.provider ||
+      !qrPayment.bankCode ||
+      !qrPayment.bankName ||
+      !qrPayment.accountNumber ||
+      !qrPayment.accountName ||
+      !qrPayment.transferContent ||
+      !qrPayment.qrImageUrl
+    ) {
+      return null;
+    }
+
+    return {
+      provider: qrPayment.provider,
+      bankCode: qrPayment.bankCode,
+      bankName: qrPayment.bankName,
+      accountNumber: qrPayment.accountNumber,
+      accountName: qrPayment.accountName,
+      qrTemplate: qrPayment.qrTemplate,
+      amount: qrPayment.amount,
+      transferContent: qrPayment.transferContent,
+      qrImageUrl: qrPayment.qrImageUrl,
+      status:
+        qrPayment.status === 'SUCCESS'
+          ? 'PAID'
+          : qrPayment.status === 'EXPIRED'
+            ? 'EXPIRED'
+            : qrPayment.status === 'CANCELLED'
+              ? 'CANCELLED'
+              : 'ACTIVE',
+      expiresAt: qrPayment.expiredAt,
     };
   }
 
@@ -238,7 +361,16 @@ export class OrderRepository {
       where,
       select: ORDER_DETAIL_SELECT,
     });
-    return row ? this.withDerivedPaymentStatus(row) : null;
+    if (!row) {
+      return null;
+    }
+
+    const withPaymentStatus = this.withDerivedPaymentStatus(row);
+    return {
+      ...withPaymentStatus,
+      payments: withPaymentStatus.payments.map((payment) => this.mapPaymentView(payment)),
+      checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payments),
+    };
   }
 
   /**
@@ -249,7 +381,50 @@ export class OrderRepository {
       where: { orderCode },
       select: ORDER_ADMIN_DETAIL_SELECT,
     });
-    return row ? this.withDerivedPaymentStatus(row) : null;
+    if (!row) {
+      return null;
+    }
+
+    const withPaymentStatus = this.withDerivedPaymentStatus(row);
+    return {
+      ...withPaymentStatus,
+      payments: withPaymentStatus.payments.map((payment) => this.mapPaymentView(payment)),
+      checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payments),
+    };
+  }
+
+  async findMyPaymentStatus(
+    customerId: number,
+    orderCode: string,
+  ): Promise<OrderPaymentStatusView | null> {
+    const row = await this.prisma.order.findFirst({
+      where: { customerId, orderCode },
+      select: {
+        orderCode: true,
+        status: true,
+        paymentCode: true,
+        payments: {
+          select: PAYMENT_SELECT,
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    const payments = row.payments as PaymentSelectRow[];
+    const latestPayment = payments[0];
+
+    return {
+      orderCode: row.orderCode,
+      orderStatus: row.status,
+      paymentStatus: latestPayment?.status ?? 'PENDING',
+      paymentCode: row.paymentCode,
+      checkoutSession: this.deriveCheckoutInfo(payments),
+    };
   }
 
   /**

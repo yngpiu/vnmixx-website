@@ -1,6 +1,5 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import 'dotenv/config';
 import { OrderStatus, Prisma, PrismaClient } from '../generated/prisma/client';
 
 const REVIEW_TITLES = [

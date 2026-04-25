@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { OrderStatus, Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
@@ -11,8 +12,14 @@ import { estimateCartPackageFromLines } from '../../shipping/estimate-cart-packa
 import { GhnService } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
 import type { CreateOrderDto, ListMyOrdersQueryDto } from '../dto';
-import type { OrderDetailView, OrderListItemView } from '../repositories/order.repository';
+import { SepayWebhookDto } from '../dto/sepay-webhook.dto';
+import type {
+  OrderDetailView,
+  OrderListItemView,
+  OrderPaymentStatusView,
+} from '../repositories/order.repository';
 import { OrderRepository } from '../repositories/order.repository';
+import { SepayService } from './sepay.service';
 
 interface CartItemWithVariant {
   quantity: number;
@@ -71,6 +78,7 @@ export class OrderService {
     private readonly orderRepo: OrderRepository,
     private readonly ghn: GhnService,
     private readonly shipping: ShippingService,
+    private readonly sepay: SepayService,
   ) {}
 
   // ─── Thao tác của khách hàng ──────────────────────────────────────────────
@@ -111,7 +119,7 @@ export class OrderService {
   }
 
   // Hủy đơn hàng bởi khách hàng
-  // Chỉ cho phép hủy khi đơn ở trạng thái PENDING
+  // Chỉ cho phép hủy khi đơn đang chờ thanh toán hoặc chờ xác nhận
   async cancelMyOrder(customerId: number, orderCode: string): Promise<OrderDetailView> {
     // 1. Kiểm tra sự tồn tại và trạng thái của đơn hàng
     const order = await this.prisma.order.findFirst({
@@ -124,8 +132,10 @@ export class OrderService {
     });
 
     if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
-    if (order.status !== 'PENDING') {
-      throw new BadRequestException('Chỉ có thể hủy đơn hàng ở trạng thái CHỜ XỬ LÝ.');
+    if (!['PENDING_PAYMENT', 'PENDING_CONFIRMATION'].includes(order.status)) {
+      throw new BadRequestException(
+        'Chỉ có thể hủy đơn hàng ở trạng thái chờ thanh toán hoặc chờ xác nhận.',
+      );
     }
 
     // 2. Thực hiện cập nhật trạng thái và hoàn lại số lượng sản phẩm vào kho
@@ -136,7 +146,7 @@ export class OrderService {
       });
       await tx.payment.updateMany({
         where: { orderId: order.id, status: 'PENDING' },
-        data: { status: 'FAILED' },
+        data: { status: 'CANCELLED' },
       });
 
       await tx.orderStatusHistory.create({
@@ -178,9 +188,180 @@ export class OrderService {
 
   // Tìm chi tiết đơn hàng theo mã đơn hàng
   async findMyOrderByCode(customerId: number, orderCode: string): Promise<OrderDetailView> {
+    await this.expirePendingQrOrderIfNeeded(customerId, orderCode);
     const order = await this.orderRepo.findByOrderCode(orderCode, customerId);
     if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
     return order;
+  }
+
+  async findMyPaymentStatus(
+    customerId: number,
+    orderCode: string,
+  ): Promise<OrderPaymentStatusView> {
+    await this.expirePendingQrOrderIfNeeded(customerId, orderCode);
+    const paymentStatus = await this.orderRepo.findMyPaymentStatus(customerId, orderCode);
+    if (!paymentStatus) {
+      throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
+    }
+    return paymentStatus;
+  }
+
+  async handleSepayWebhook(
+    authorizationHeader: string | undefined,
+    payload: SepayWebhookDto,
+  ): Promise<{ duplicate: boolean; matched: boolean; orderCode?: string }> {
+    if (!this.sepay.verifyWebhookAuthorization(authorizationHeader)) {
+      throw new UnauthorizedException('Webhook SePay không hợp lệ.');
+    }
+
+    const existing = await this.prisma.sepayTransaction.findUnique({
+      where: { sepayTransactionId: payload.id },
+      select: { id: true },
+    });
+    if (existing) {
+      return { duplicate: true, matched: false };
+    }
+
+    const transactionDate = new Date(payload.transactionDate);
+    if (Number.isNaN(transactionDate.getTime())) {
+      throw new BadRequestException('transactionDate không hợp lệ.');
+    }
+
+    const normalizedTransferType = payload.transferType === 'in' ? 'IN' : 'OUT';
+    const matchedPaymentCode = this.sepay.extractPaymentCode(payload.content);
+    const now = new Date();
+
+    const loggedTransaction = await this.prisma.sepayTransaction.create({
+      data: {
+        sepayTransactionId: payload.id,
+        gateway: payload.gateway,
+        transactionDate,
+        accountNumber: payload.accountNumber ?? null,
+        subAccount: payload.subAccount ?? null,
+        transferType: normalizedTransferType,
+        transferAmount: payload.transferAmount,
+        accumulated: payload.accumulated ?? null,
+        code: payload.code ?? null,
+        content: payload.content,
+        referenceCode: payload.referenceCode ?? null,
+        description: payload.description ?? null,
+        matchedPaymentCode,
+        matchStatus: normalizedTransferType === 'IN' ? 'UNMATCHED' : 'IGNORED',
+        rawPayload: payload as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    if (normalizedTransferType !== 'IN') {
+      await this.prisma.sepayTransaction.update({
+        where: { id: loggedTransaction.id },
+        data: { processedAt: now },
+      });
+      return { duplicate: false, matched: false };
+    }
+
+    if (!matchedPaymentCode) {
+      await this.prisma.sepayTransaction.update({
+        where: { id: loggedTransaction.id },
+        data: { processedAt: now },
+      });
+      return { duplicate: false, matched: false };
+    }
+
+    const order = await this.prisma.order.findFirst({
+      where: {
+        paymentCode: matchedPaymentCode,
+        total: payload.transferAmount,
+        payments: {
+          some: {
+            method: 'BANK_TRANSFER_QR',
+          },
+        },
+      },
+      select: {
+        id: true,
+        orderCode: true,
+        status: true,
+        payments: {
+          where: { method: 'BANK_TRANSFER_QR' },
+          select: { id: true, status: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    const payment = order?.payments[0];
+    if (!order || !payment) {
+      await this.prisma.sepayTransaction.update({
+        where: { id: loggedTransaction.id },
+        data: { processedAt: now },
+      });
+      return { duplicate: false, matched: false };
+    }
+
+    if (payment.status !== 'PENDING') {
+      await this.prisma.sepayTransaction.update({
+        where: { id: loggedTransaction.id },
+        data: {
+          orderId: order.id,
+          paymentId: payment.id,
+          matchStatus: 'IGNORED',
+          processedAt: now,
+        },
+      });
+      return { duplicate: false, matched: false, orderCode: order.orderCode };
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const updatedPayment = await tx.payment.updateMany({
+        where: { id: payment.id, status: 'PENDING' },
+        data: {
+          provider: 'SEPAY',
+          status: 'SUCCESS',
+          transactionId: String(payload.id),
+          providerReferenceCode: payload.referenceCode ?? null,
+          amountPaid: payload.transferAmount,
+          paidAt: now,
+          lastPayloadReceivedAt: now,
+        },
+      });
+
+      if (updatedPayment.count === 0) {
+        await tx.sepayTransaction.update({
+          where: { id: loggedTransaction.id },
+          data: {
+            orderId: order.id,
+            paymentId: payment.id,
+            matchStatus: 'IGNORED',
+            processedAt: now,
+          },
+        });
+        return;
+      }
+
+      const orderUpdated = await tx.order.updateMany({
+        where: { id: order.id, status: 'PENDING_PAYMENT' },
+        data: { status: 'PENDING_CONFIRMATION' },
+      });
+
+      if (orderUpdated.count > 0) {
+        await tx.orderStatusHistory.create({
+          data: { orderId: order.id, status: 'PENDING_CONFIRMATION' },
+        });
+      }
+
+      await tx.sepayTransaction.update({
+        where: { id: loggedTransaction.id },
+        data: {
+          orderId: order.id,
+          paymentId: payment.id,
+          matchStatus: 'MATCHED',
+          processedAt: now,
+        },
+      });
+    });
+
+    return { duplicate: false, matched: true, orderCode: order.orderCode };
   }
 
   // ─── Các hàm bổ trợ (Kiểm tra & Tính toán) ───────────────────────────
@@ -268,11 +449,16 @@ export class OrderService {
     while (retries < maxRetries) {
       try {
         const orderCode = await this.orderRepo.generateOrderCode();
+        const paymentCode = this.sepay.buildPaymentCode(orderCode);
         const subtotal = params.cart.items.reduce(
           (sum: number, item) => sum + item.variant.price * item.quantity,
           0,
         );
         const total = subtotal + params.shippingInfo.fee;
+        const initialOrderStatus =
+          params.dto.paymentMethod === 'BANK_TRANSFER_QR'
+            ? 'PENDING_PAYMENT'
+            : 'PENDING_CONFIRMATION';
 
         // Sử dụng IsolationLevel Serializable để đảm bảo tính nhất quán của tồn kho
         await this.prisma.$transaction(
@@ -284,8 +470,9 @@ export class OrderService {
             const order = await tx.order.create({
               data: {
                 orderCode,
+                paymentCode,
                 customerId: params.customerId,
-                status: 'PENDING',
+                status: initialOrderStatus,
                 shippingFullName: params.address.fullName,
                 shippingPhoneNumber: params.address.phoneNumber,
                 shippingCity: params.address.city.name,
@@ -324,18 +511,28 @@ export class OrderService {
             });
 
             // 4. Tạo bản ghi thanh toán
+            const paymentData: Prisma.PaymentUncheckedCreateInput = {
+              orderId: order.id,
+              method: params.dto.paymentMethod,
+              provider: params.dto.paymentMethod === 'BANK_TRANSFER_QR' ? 'SEPAY' : null,
+              status: 'PENDING',
+              amount: total,
+              amountPaid: 0,
+              ...(params.dto.paymentMethod === 'BANK_TRANSFER_QR'
+                ? this.sepay.buildQrPaymentFields({
+                    amount: total,
+                    paymentCode,
+                  })
+                : {}),
+            };
+
             await tx.payment.create({
-              data: {
-                orderId: order.id,
-                method: params.dto.paymentMethod,
-                status: 'PENDING',
-                amount: total,
-              },
+              data: paymentData,
             });
 
             // 5. Lưu lịch sử trạng thái
             await tx.orderStatusHistory.create({
-              data: { orderId: order.id, status: 'PENDING' },
+              data: { orderId: order.id, status: initialOrderStatus },
             });
 
             // 6. Xóa các sản phẩm đã đặt khỏi giỏ hàng
@@ -366,6 +563,57 @@ export class OrderService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       (error.code === 'P2034' || error.code === 'P2002')
     );
+  }
+
+  private async expirePendingQrOrderIfNeeded(customerId: number, orderCode: string): Promise<void> {
+    const order = await this.prisma.order.findFirst({
+      where: {
+        customerId,
+        orderCode,
+        status: 'PENDING_PAYMENT',
+        payments: {
+          some: {
+            method: 'BANK_TRANSFER_QR',
+            status: 'PENDING',
+            expiredAt: { not: null },
+          },
+        },
+      },
+      select: {
+        id: true,
+        items: { select: { variantId: true, quantity: true } },
+        payments: {
+          where: {
+            method: 'BANK_TRANSFER_QR',
+            status: 'PENDING',
+            expiredAt: { not: null },
+          },
+          select: { id: true, expiredAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    const expiresAt = order?.payments[0]?.expiredAt;
+    if (!order || !expiresAt || expiresAt.getTime() > Date.now()) {
+      return;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status: 'CANCELLED' },
+      });
+      await tx.payment.updateMany({
+        where: { orderId: order.id, status: 'PENDING' },
+        data: { status: 'EXPIRED', expiredAt: expiresAt },
+      });
+      await tx.orderStatusHistory.create({
+        data: { orderId: order.id, status: 'CANCELLED' },
+      });
+      await this.releaseStock(tx, order.id, order.items);
+    });
   }
 
   // Thực hiện giữ hàng trong kho (Optimistic Concurrency Control)

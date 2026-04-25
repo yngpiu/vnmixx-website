@@ -125,16 +125,16 @@ export class OrderAdminService {
         paymentStatus: order.payments[0]?.status,
       };
 
-      // 2. Kiểm tra trạng thái đơn hàng (phải là PENDING)
-      if (order.status !== 'PENDING') {
+      // 2. Kiểm tra trạng thái đơn hàng (phải là PENDING_CONFIRMATION)
+      if (order.status !== 'PENDING_CONFIRMATION') {
         throw new BadRequestException(
-          `Chỉ có thể xác nhận đơn hàng ở trạng thái chờ xử lý. Trạng thái hiện tại: ${order.status}.`,
+          `Chỉ có thể xác nhận đơn hàng ở trạng thái chờ xác nhận. Trạng thái hiện tại: ${order.status}.`,
         );
       }
 
       // 3. Nếu là chuyển khoản, yêu cầu phải được xác nhận thanh toán trước
       const payment = order.payments[0];
-      if (payment?.method === 'BANK_TRANSFER' && payment.status !== 'SUCCESS') {
+      if (payment?.method === 'BANK_TRANSFER_QR' && payment.status !== 'SUCCESS') {
         throw new BadRequestException(
           'Cần xác nhận thanh toán chuyển khoản trước khi xử lý đơn hàng.',
         );
@@ -322,7 +322,7 @@ export class OrderAdminService {
         ghnOrderCode: order.ghnOrderCode,
       };
 
-      const nonCancellable: OrderStatus[] = ['DELIVERED', 'CANCELLED', 'RETURNED'];
+      const nonCancellable: OrderStatus[] = ['DELIVERED', 'CANCELLED'];
       if (nonCancellable.includes(order.status)) {
         throw new BadRequestException(`Không thể hủy đơn hàng ở trạng thái ${order.status}.`);
       }
@@ -347,14 +347,15 @@ export class OrderAdminService {
         });
         await tx.payment.updateMany({
           where: { orderId: order.id, status: 'PENDING' },
-          data: { status: 'FAILED' },
+          data: { status: 'CANCELLED' },
         });
 
         await tx.orderStatusHistory.create({
           data: { orderId: order.id, status: 'CANCELLED' },
         });
 
-        const isPendingOrder = order.status === 'PENDING';
+        const isPendingOrder =
+          order.status === 'PENDING_PAYMENT' || order.status === 'PENDING_CONFIRMATION';
 
         // 4. Hoàn lại tồn kho: Nhả phần Reserved hoặc tăng lại On Hand tùy theo trạng thái đơn
         for (const item of order.items) {
@@ -399,7 +400,7 @@ export class OrderAdminService {
                 onHandAfter: variant.onHand,
                 reservedAfter: nextReserved,
                 note: isPendingOrder
-                  ? 'Nhả giữ tồn kho khi admin hủy đơn PENDING'
+                  ? 'Nhả giữ tồn kho khi admin hủy đơn chờ xử lý'
                   : 'Nhả phần giữ tồn còn lại khi admin hủy đơn',
               },
             });
@@ -411,7 +412,7 @@ export class OrderAdminService {
                 variantId: variant.id,
                 orderId: order.id,
                 orderItemId: item.id,
-                type: isPendingOrder ? 'ADJUSTMENT' : 'RETURN',
+                type: 'ADJUSTMENT',
                 delta: onHandIncrement,
                 onHandAfter: nextOnHand,
                 reservedAfter: nextReserved,
@@ -421,15 +422,6 @@ export class OrderAdminService {
               },
             });
           }
-        }
-
-        // 6. Xử lý hoàn tiền (Refund) nếu khách hàng đã thanh toán thành công
-        const paidPayment = order.payments.find((p) => p.status === 'SUCCESS');
-        if (paidPayment) {
-          await tx.payment.update({
-            where: { id: paidPayment.id },
-            data: { status: 'REFUNDED' },
-          });
         }
       });
 
@@ -472,8 +464,9 @@ export class OrderAdminService {
         where: { orderCode },
         select: {
           id: true,
+          status: true,
           payments: {
-            select: { id: true, method: true, status: true },
+            select: { id: true, method: true, status: true, amount: true },
             orderBy: { createdAt: 'desc' },
             take: 1,
           },
@@ -491,8 +484,8 @@ export class OrderAdminService {
       };
 
       const payment = order.payments[0];
-      // 2. Chỉ cho phép xác nhận cho phương thức chuyển khoản
-      if (!payment || payment.method !== 'BANK_TRANSFER') {
+      // 2. Chỉ cho phép xác nhận cho phương thức chuyển khoản QR
+      if (!payment || payment.method !== 'BANK_TRANSFER_QR') {
         throw new BadRequestException('Chỉ có thể xác nhận thanh toán cho đơn chuyển khoản.');
       }
 
@@ -504,8 +497,25 @@ export class OrderAdminService {
       await this.prisma.$transaction(async (tx) => {
         await tx.payment.update({
           where: { id: payment.id },
-          data: { status: 'SUCCESS', paidAt: new Date() },
+          data: {
+            provider: 'SEPAY',
+            status: 'SUCCESS',
+            amountPaid: payment.amount,
+            paidAt: new Date(),
+          },
         });
+        const orderUpdated =
+          order.status === 'PENDING_PAYMENT'
+            ? await tx.order.updateMany({
+                where: { id: order.id, status: 'PENDING_PAYMENT' },
+                data: { status: 'PENDING_CONFIRMATION' },
+              })
+            : { count: 0 };
+        if (orderUpdated.count > 0) {
+          await tx.orderStatusHistory.create({
+            data: { orderId: order.id, status: 'PENDING_CONFIRMATION' },
+          });
+        }
       });
 
       this.logger.log(`Thanh toán chuyển khoản cho đơn hàng ${orderCode} đã được xác nhận`);

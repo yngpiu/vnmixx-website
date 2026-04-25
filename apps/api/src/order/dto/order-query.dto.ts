@@ -22,26 +22,26 @@ export class ListMyOrdersQueryDto {
   limit?: number = 20;
 
   @ApiPropertyOptional({
-    example: 'PENDING',
+    example: 'PENDING_PAYMENT',
     enum: [
-      'PENDING',
+      'PENDING_PAYMENT',
+      'PENDING_CONFIRMATION',
       'PROCESSING',
       'AWAITING_SHIPMENT',
       'SHIPPED',
       'DELIVERED',
       'CANCELLED',
-      'RETURNED',
     ],
   })
   @IsEnum(
     [
-      'PENDING',
+      'PENDING_PAYMENT',
+      'PENDING_CONFIRMATION',
       'PROCESSING',
       'AWAITING_SHIPMENT',
       'SHIPPED',
       'DELIVERED',
       'CANCELLED',
-      'RETURNED',
     ] as const,
     { message: 'Trạng thái đơn hàng không hợp lệ' },
   )
@@ -70,26 +70,26 @@ export class ListAdminOrdersQueryDto {
   limit?: number = 20;
 
   @ApiPropertyOptional({
-    example: 'PENDING',
+    example: 'PENDING_PAYMENT',
     enum: [
-      'PENDING',
+      'PENDING_PAYMENT',
+      'PENDING_CONFIRMATION',
       'PROCESSING',
       'AWAITING_SHIPMENT',
       'SHIPPED',
       'DELIVERED',
       'CANCELLED',
-      'RETURNED',
     ],
   })
   @IsEnum(
     [
-      'PENDING',
+      'PENDING_PAYMENT',
+      'PENDING_CONFIRMATION',
       'PROCESSING',
       'AWAITING_SHIPMENT',
       'SHIPPED',
       'DELIVERED',
       'CANCELLED',
-      'RETURNED',
     ] as const,
     { message: 'Trạng thái đơn hàng không hợp lệ' },
   )
@@ -98,9 +98,9 @@ export class ListAdminOrdersQueryDto {
 
   @ApiPropertyOptional({
     example: 'PENDING',
-    enum: ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'],
+    enum: ['PENDING', 'SUCCESS', 'FAILED', 'EXPIRED', 'CANCELLED'],
   })
-  @IsEnum(['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'] as const, {
+  @IsEnum(['PENDING', 'SUCCESS', 'FAILED', 'EXPIRED', 'CANCELLED'] as const, {
     message: 'Trạng thái thanh toán không hợp lệ',
   })
   @IsOptional()

@@ -54,20 +54,73 @@ class PaymentDto {
   @ApiProperty({ example: 1 })
   id: number;
 
-  @ApiProperty({ example: 'COD', enum: ['COD', 'BANK_TRANSFER'] })
+  @ApiProperty({ example: 'COD', enum: ['COD', 'BANK_TRANSFER_QR'] })
   method: string;
 
-  @ApiProperty({ example: 'PENDING', enum: ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'] })
+  @ApiProperty({
+    example: 'PENDING',
+    enum: ['PENDING', 'SUCCESS', 'FAILED', 'EXPIRED', 'CANCELLED'],
+  })
   status: string;
+
+  @ApiPropertyOptional({ example: 'SEPAY', nullable: true })
+  provider: string | null;
 
   @ApiPropertyOptional({ example: null, nullable: true })
   transactionId: string | null;
 
+  @ApiPropertyOptional({ example: null, nullable: true })
+  providerReferenceCode: string | null;
+
   @ApiProperty({ example: 528000 })
   amount: number;
 
+  @ApiProperty({ example: 528000 })
+  amountPaid: number;
+
   @ApiPropertyOptional({ example: null, nullable: true })
   paidAt: Date | null;
+
+  @ApiPropertyOptional({ example: null, nullable: true })
+  expiredAt: Date | null;
+}
+
+class QrCheckoutInfoDto {
+  @ApiProperty({ example: 'SEPAY' })
+  provider: string;
+
+  @ApiProperty({ example: 'MBBank' })
+  bankCode: string;
+
+  @ApiProperty({ example: 'Ngân hàng TMCP Quân đội' })
+  bankName: string;
+
+  @ApiProperty({ example: '0903252427' })
+  accountNumber: string;
+
+  @ApiProperty({ example: 'BUI TAN VIET' })
+  accountName: string;
+
+  @ApiPropertyOptional({ example: 'compact', nullable: true })
+  qrTemplate: string | null;
+
+  @ApiProperty({ example: 528000 })
+  amount: number;
+
+  @ApiProperty({ example: 'DHVNM260410A1B2C' })
+  transferContent: string;
+
+  @ApiProperty({
+    example:
+      'https://qr.sepay.vn/img?bank=MBBank&acc=0903252427&template=compact&amount=528000&des=DHVNM260410A1B2C',
+  })
+  qrImageUrl: string;
+
+  @ApiProperty({ example: 'ACTIVE', enum: ['ACTIVE', 'PAID', 'EXPIRED', 'CANCELLED'] })
+  status: string;
+
+  @ApiPropertyOptional({ example: '2026-04-10T10:15:00.000Z', nullable: true })
+  expiresAt: Date | null;
 }
 
 /**
@@ -140,6 +193,9 @@ export class OrderListItemResponseDto {
  * OrderDetailResponseDto: DTO chi tiết đầy đủ một đơn hàng dành cho khách hàng.
  */
 export class OrderDetailResponseDto extends OrderListItemResponseDto {
+  @ApiProperty({ example: 'DHVNM260410A1B2C' })
+  paymentCode: string;
+
   @ApiProperty({ example: 'Nguyễn Văn A' })
   shippingFullName: string;
 
@@ -194,8 +250,28 @@ export class OrderDetailResponseDto extends OrderListItemResponseDto {
   @ApiProperty({ type: [PaymentDto] })
   payments: PaymentDto[];
 
+  @ApiPropertyOptional({ type: QrCheckoutInfoDto, nullable: true })
+  checkoutSession: QrCheckoutInfoDto | null;
+
   @ApiProperty({ type: [StatusHistoryDto] })
   statusHistories: StatusHistoryDto[];
+}
+
+export class OrderPaymentStatusResponseDto {
+  @ApiProperty({ example: 'VNM260410A1B2C' })
+  orderCode: string;
+
+  @ApiProperty({ example: 'PENDING_PAYMENT' })
+  orderStatus: string;
+
+  @ApiProperty({ example: 'PENDING' })
+  paymentStatus: string;
+
+  @ApiProperty({ example: 'DHVNM260410A1B2C' })
+  paymentCode: string;
+
+  @ApiPropertyOptional({ type: QrCheckoutInfoDto, nullable: true })
+  checkoutSession: QrCheckoutInfoDto | null;
 }
 
 /**

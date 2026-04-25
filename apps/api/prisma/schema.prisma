@@ -20,25 +20,38 @@ enum AddressType {
 }
 
 enum OrderStatus {
-  PENDING
+  PENDING_PAYMENT
+  PENDING_CONFIRMATION
   PROCESSING
   AWAITING_SHIPMENT
   SHIPPED
   DELIVERED
   CANCELLED
-  RETURNED
 }
 
 enum PaymentMethod {
   COD
-  BANK_TRANSFER
+  BANK_TRANSFER_QR
 }
 
 enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
-  REFUNDED
+  EXPIRED
+  CANCELLED
+}
+
+enum SepayTransferType {
+  IN
+  OUT
+}
+
+enum SepayMatchStatus {
+  MATCHED
+  UNMATCHED
+  DUPLICATE
+  IGNORED
 }
 
 enum EmployeeStatus {
@@ -438,8 +451,9 @@ model Wishlist {
 model Order {
   id                    Int           @id @default(autoincrement()) @db.UnsignedInt
   orderCode             String        @unique(map: "uk_orders_code") @map("order_code") @db.VarChar(20)
+  paymentCode           String        @unique(map: "uk_orders_payment_code") @map("payment_code") @db.VarChar(64)
   customerId            Int           @map("customer_id") @db.UnsignedInt
-  status                OrderStatus   @default(PENDING)
+  status                OrderStatus   @default(PENDING_CONFIRMATION)
   shippingFullName      String        @map("shipping_full_name") @db.VarChar(100)
   shippingPhoneNumber   String        @map("shipping_phone_number") @db.VarChar(20)
   shippingCity          String        @map("shipping_city") @db.VarChar(100)
@@ -465,11 +479,12 @@ model Order {
   createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
 
-  customer        Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  items           OrderItem[]
-  statusHistories OrderStatusHistory[]
-  payments        Payment[]
-  stockMovements  StockMovement[]
+  customer          Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items             OrderItem[]
+  statusHistories   OrderStatusHistory[]
+  payments          Payment[]
+  sepayTransactions SepayTransaction[]
+  stockMovements    StockMovement[]
 
   @@index([customerId], map: "idx_orders_customer")
   @@index([customerId, createdAt(sort: Desc)], map: "idx_orders_customer_created")
@@ -514,21 +529,68 @@ model OrderStatusHistory {
 }
 
 model Payment {
-  id            Int           @id @default(autoincrement()) @db.UnsignedInt
-  orderId       Int           @map("order_id") @db.UnsignedInt
-  method        PaymentMethod
-  status        PaymentStatus @default(PENDING)
-  transactionId String?       @map("transaction_id") @db.VarChar(100)
-  amount        Int           @db.UnsignedInt
-  paidAt        DateTime?     @map("paid_at") @db.Timestamp(0)
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
+  id                    Int           @id @default(autoincrement()) @db.UnsignedInt
+  orderId               Int           @map("order_id") @db.UnsignedInt
+  method                PaymentMethod
+  status                PaymentStatus @default(PENDING)
+  provider              String?       @db.VarChar(30)
+  transactionId         String?       @map("transaction_id") @db.VarChar(100)
+  providerReferenceCode String?       @map("provider_reference_code") @db.VarChar(100)
+  bankCode              String?       @map("bank_code") @db.VarChar(30)
+  bankName              String?       @map("bank_name") @db.VarChar(100)
+  accountNumber         String?       @map("account_number") @db.VarChar(50)
+  accountName           String?       @map("account_name") @db.VarChar(150)
+  qrTemplate            String?       @map("qr_template") @db.VarChar(30)
+  transferContent       String?       @map("transfer_content") @db.VarChar(255)
+  qrImageUrl            String?       @map("qr_image_url") @db.VarChar(1000)
+  amount                Int           @db.UnsignedInt
+  amountPaid            Int           @default(0) @map("amount_paid") @db.UnsignedInt
+  paidAt                DateTime?     @map("paid_at") @db.Timestamp(0)
+  expiredAt             DateTime?     @map("expired_at") @db.Timestamp(0)
+  lastPayloadReceivedAt DateTime?     @map("last_payload_received_at") @db.Timestamp(0)
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sepayTransactions SepayTransaction[]
 
   @@index([orderId], map: "idx_payments_order")
   @@index([transactionId], map: "idx_payments_transaction")
+  @@index([status, expiredAt], map: "idx_payments_status_expired")
   @@map("payments")
+}
+
+model SepayTransaction {
+  id                Int               @id @default(autoincrement()) @db.UnsignedInt
+  sepayTransactionId Int              @unique(map: "uk_sepay_transactions_sepay_id") @map("sepay_transaction_id") @db.UnsignedInt
+  gateway           String            @db.VarChar(100)
+  transactionDate   DateTime          @map("transaction_date") @db.Timestamp(0)
+  accountNumber     String?           @map("account_number") @db.VarChar(100)
+  subAccount        String?           @map("sub_account") @db.VarChar(250)
+  transferType      SepayTransferType @map("transfer_type")
+  transferAmount    Int               @map("transfer_amount") @db.UnsignedInt
+  accumulated       Int?              @db.UnsignedInt
+  code              String?           @db.VarChar(250)
+  content           String            @db.VarChar(1000)
+  referenceCode     String?           @map("reference_code") @db.VarChar(255)
+  description       String?           @db.Text
+  orderId           Int?              @map("order_id") @db.UnsignedInt
+  paymentId         Int?              @map("payment_id") @db.UnsignedInt
+  matchedPaymentCode String?          @map("matched_payment_code") @db.VarChar(64)
+  matchStatus       SepayMatchStatus  @default(UNMATCHED) @map("match_status")
+  rawPayload        Json              @map("raw_payload")
+  receivedAt        DateTime          @default(now()) @map("received_at") @db.Timestamp(0)
+  processedAt       DateTime?         @map("processed_at") @db.Timestamp(0)
+
+  order   Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([orderId], map: "idx_sepay_transactions_order")
+  @@index([paymentId], map: "idx_sepay_transactions_payment")
+  @@index([matchedPaymentCode], map: "idx_sepay_transactions_payment_code")
+  @@index([referenceCode], map: "idx_sepay_transactions_reference")
+  @@index([transferType, receivedAt], map: "idx_sepay_transactions_type_received")
+  @@map("sepay_transactions")
 }
 
 model StockMovement {

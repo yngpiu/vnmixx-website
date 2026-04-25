@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env ./node_modules/@nestjs/cli/bin/nest.js start --watch",
     "build": "nest build",
+    "db:seed": "node --env-file-if-exists=.env --import tsx prisma/seed.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node --env-file-if-exists=.env ./node_modules/@nestjs/cli/bin/nest.js start",
     "start:dev": "node --env-file-if-exists=.env ./node_modules/@nestjs/cli/bin/nest.js start --watch",

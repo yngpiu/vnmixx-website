@@ -15,25 +15,53 @@ import { OrderAdminService } from './order-admin.service';
 
 describe('OrderAdminService', () => {
   let service: OrderAdminService;
-  let prisma: jest.Mocked<PrismaService>;
+  let prisma: {
+    order: {
+      findUnique: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    productVariant: {
+      findUnique: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    payment: {
+      update: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    orderStatusHistory: {
+      create: jest.Mock;
+      createMany: jest.Mock;
+    };
+    stockMovement: {
+      create: jest.Mock;
+    };
+    $transaction: jest.Mock;
+  };
   let orderRepo: jest.Mocked<OrderRepository>;
   let ghn: jest.Mocked<GhnService>;
   let auditLogService: jest.Mocked<AuditLogService>;
 
   beforeEach(async () => {
+    prisma = {
+      order: {
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      productVariant: { findUnique: jest.fn(), updateMany: jest.fn() },
+      payment: { update: jest.fn(), updateMany: jest.fn() },
+      orderStatusHistory: { create: jest.fn(), createMany: jest.fn() },
+      stockMovement: { create: jest.fn() },
+      $transaction: jest.fn((cb: (tx: typeof prisma) => unknown) => cb(prisma)),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrderAdminService,
         {
           provide: PrismaService,
-          useValue: {
-            order: { findUnique: jest.fn(), update: jest.fn() },
-            productVariant: { findUnique: jest.fn(), updateMany: jest.fn() },
-            payment: { update: jest.fn(), updateMany: jest.fn() },
-            orderStatusHistory: { create: jest.fn(), createMany: jest.fn() },
-            stockMovement: { create: jest.fn() },
-            $transaction: jest.fn((cb) => cb(prisma)),
-          },
+          useValue: prisma,
         },
         {
           provide: OrderRepository,
@@ -63,7 +91,6 @@ describe('OrderAdminService', () => {
     }).compile();
 
     service = module.get<OrderAdminService>(OrderAdminService);
-    prisma = module.get(PrismaService);
     orderRepo = module.get(OrderRepository);
     ghn = module.get(GhnService);
     auditLogService = module.get(AuditLogService);
@@ -115,7 +142,7 @@ describe('OrderAdminService', () => {
     const orderData = {
       id: 1,
       orderCode,
-      status: 'PENDING',
+      status: 'PENDING_CONFIRMATION',
       total: 100000,
       subtotal: 90000,
       shippingFullName: 'John Doe',
@@ -193,7 +220,7 @@ describe('OrderAdminService', () => {
       );
     });
 
-    it('should throw BadRequestException if order is not PENDING', async () => {
+    it('should throw BadRequestException if order is not PENDING_CONFIRMATION', async () => {
       prisma.order.findUnique.mockResolvedValue({ ...orderData, status: 'CANCELLED' } as any);
 
       await expect(service.confirmOrder(orderCode, shipment)).rejects.toThrow(BadRequestException);
@@ -247,13 +274,14 @@ describe('OrderAdminService', () => {
     const orderData = {
       id: 1,
       orderCode,
-      status: 'PENDING',
+      status: 'PENDING_CONFIRMATION',
+      // keep current status before admin cancel
       ghnOrderCode: 'GHN123',
       items: [{ id: 1, variantId: 1, quantity: 1 }],
       payments: [{ id: 1, status: 'SUCCESS' }],
     };
 
-    it('should successfully cancel order and refund', async () => {
+    it('should successfully cancel order', async () => {
       prisma.order.findUnique.mockResolvedValue(orderData as any);
       prisma.productVariant.findUnique.mockResolvedValue({
         id: 1,
@@ -281,17 +309,13 @@ describe('OrderAdminService', () => {
           version: { increment: 1 },
         },
       });
-      expect(prisma.payment.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: { status: 'REFUNDED' },
-      });
       expect(prisma.order.update).toHaveBeenNthCalledWith(1, {
         where: { id: 1 },
         data: { status: 'CANCELLED' },
       });
       expect(prisma.payment.updateMany).toHaveBeenCalledWith({
         where: { orderId: 1, status: 'PENDING' },
-        data: { status: 'FAILED' },
+        data: { status: 'CANCELLED' },
       });
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ status: AuditLogStatus.SUCCESS }),
@@ -310,7 +334,8 @@ describe('OrderAdminService', () => {
     const orderData = {
       id: 1,
       orderCode,
-      payments: [{ id: 1, method: 'BANK_TRANSFER', status: 'PENDING' }],
+      status: 'PENDING_PAYMENT',
+      payments: [{ id: 1, method: 'BANK_TRANSFER_QR', status: 'PENDING', amount: 100000 }],
     };
 
     it('should successfully confirm payment', async () => {
@@ -325,7 +350,12 @@ describe('OrderAdminService', () => {
       expect(result.paymentStatus).toBe('SUCCESS');
       expect(prisma.payment.update).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { status: 'SUCCESS', paidAt: expect.any(Date) },
+        data: {
+          provider: 'SEPAY',
+          status: 'SUCCESS',
+          amountPaid: 100000,
+          paidAt: expect.any(Date),
+        },
       });
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ status: AuditLogStatus.SUCCESS }),

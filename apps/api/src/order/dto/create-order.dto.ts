@@ -12,11 +12,13 @@ export class CreateOrderDto {
 
   @ApiProperty({
     example: 'COD',
-    enum: ['COD', 'BANK_TRANSFER'],
+    enum: ['COD', 'BANK_TRANSFER_QR'],
     description: 'Phương thức thanh toán',
   })
-  @IsEnum(['COD', 'BANK_TRANSFER'] as const, { message: 'Phương thức thanh toán không hợp lệ' })
-  paymentMethod: 'COD' | 'BANK_TRANSFER';
+  @IsEnum(['COD', 'BANK_TRANSFER_QR'] as const, {
+    message: 'Phương thức thanh toán không hợp lệ',
+  })
+  paymentMethod: 'COD' | 'BANK_TRANSFER_QR';
 
   @ApiProperty({ example: 2, description: 'Loại dịch vụ GHN (2: Hàng nhẹ, 5: Hàng nặng)' })
   @IsInt({ message: 'ID loại dịch vụ phải là số nguyên' })

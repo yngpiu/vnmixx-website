@@ -1,9 +1,8 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import 'dotenv/config';
 import { Prisma, PrismaClient } from '../generated/prisma/client';
 
-const MEDIA_COUNT = 500;
+const MEDIA_COUNT = Number(process.env.SEED_MEDIA_COUNT ?? 120);
 
 export async function seedMedia(): Promise<void> {
   if (!process.env.DATABASE_URL) {

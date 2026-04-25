@@ -1,9 +1,8 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import 'dotenv/config';
 import { Prisma, PrismaClient } from '../generated/prisma/client';
 
-const PRODUCT_COUNT = 1500;
+const PRODUCT_COUNT = Number(process.env.SEED_PRODUCT_COUNT ?? 200);
 const SEED_SKU_PREFIX = 'VNMIXX-';
 
 const COLORS: { name: string; hexCode: string }[] = [

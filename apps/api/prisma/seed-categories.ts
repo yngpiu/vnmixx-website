@@ -1,5 +1,4 @@
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import 'dotenv/config';
 import { PrismaClient } from '../generated/prisma/client';
 
 type CatLeaf = string | { name: string; isActive?: boolean };
