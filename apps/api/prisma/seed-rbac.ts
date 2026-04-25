@@ -69,6 +69,10 @@ const PERMISSIONS: { name: string; description: string }[] = [
     update: 'Đánh giá: cập nhật',
     delete: 'Đánh giá: xóa',
   }),
+  ...crud('support-chat', {
+    read: 'Chat hỗ trợ: xem danh sách và tin nhắn',
+    create: 'Chat hỗ trợ: nhận phân công và gửi tin nhắn',
+  }),
 ];
 
 type RoleSeed = {
@@ -96,7 +100,7 @@ const ROLES: RoleSeed[] = [
       'Lên đơn, chăm sóc khách, xử lý theo quy trình cửa hàng; được xem danh mục để tư vấn, không sửa master dữ liệu hàng.',
     permissionNames: PERMISSIONS.filter(
       (p) =>
-        /^(order|customer|review)\./.test(p.name) ||
+        /^(order|customer|review|support-chat)\./.test(p.name) ||
         /^(product|category|color|size)\.read$/.test(p.name),
     ).map((p) => p.name),
   },

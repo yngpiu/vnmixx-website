@@ -29,6 +29,7 @@ import { RedisModule } from './redis/redis.module';
 import { ReviewModule } from './review/review.module';
 import { ShippingModule } from './shipping/shipping.module';
 import { SizeModule } from './size/size.module';
+import { SupportChatModule } from './support-chat/support-chat.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 
 // Module gốc dùng để ghép cấu hình và toàn bộ module nghiệp vụ.
@@ -73,6 +74,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     ReviewModule,
     R2Module,
     MediaModule,
+    SupportChatModule,
   ],
   controllers: [AppController],
   providers: [

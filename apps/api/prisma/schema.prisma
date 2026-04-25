@@ -79,6 +79,11 @@ enum AuditLogStatus {
   FAILED
 }
 
+enum ChatSenderType {
+  CUSTOMER
+  EMPLOYEE
+}
+
 enum ReviewVisibility {
   VISIBLE
   HIDDEN
@@ -105,6 +110,7 @@ model Customer {
   wishlists      Wishlist[]
   orders         Order[]
   productReviews ProductReview[]
+  supportChats   SupportChat[]
 
   @@map("customers")
 }
@@ -122,11 +128,12 @@ model Employee {
   updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamp(0)
   deletedAt      DateTime?      @map("deleted_at") @db.Timestamp(0)
 
-  role             Role           @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  role             Role             @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   refreshTokens    RefreshToken[]
   stockMovements   StockMovement[]
   mediaFiles       MediaFile[]
-  auditLogsAsActor AuditLog[]      @relation("AuditLogActor")
+  auditLogsAsActor AuditLog[]       @relation("AuditLogActor")
+  chatAssignments  ChatAssignment[]
 
   @@index([roleId], map: "idx_employees_role")
   @@map("employees")
@@ -678,4 +685,45 @@ model MediaFolder {
 
   @@index([parentId], map: "idx_folder_parent")
   @@map("media_folders")
+}
+
+model SupportChat {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  customerId Int      @unique(map: "uk_support_chats_customer") @map("customer_id") @db.UnsignedInt
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  customer    Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  messages    ChatMessage[]
+  assignments ChatAssignment[]
+
+  @@map("support_chats")
+}
+
+model ChatMessage {
+  id               Int            @id @default(autoincrement()) @db.UnsignedInt
+  chatId           Int            @map("chat_id") @db.UnsignedInt
+  senderType       ChatSenderType @map("sender_type")
+  senderCustomerId Int?           @map("sender_customer_id") @db.UnsignedInt
+  senderEmployeeId Int?           @map("sender_employee_id") @db.UnsignedInt
+  content          String         @db.VarChar(2000)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+
+  chat SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([chatId, createdAt], map: "idx_chat_messages_chat_created")
+  @@map("chat_messages")
+}
+
+model ChatAssignment {
+  chatId     Int      @map("chat_id") @db.UnsignedInt
+  employeeId Int      @map("employee_id") @db.UnsignedInt
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamp(0)
+
+  chat     SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  employee Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([chatId, employeeId])
+  @@index([employeeId], map: "idx_chat_assignments_employee")
+  @@map("chat_assignments")
 }
