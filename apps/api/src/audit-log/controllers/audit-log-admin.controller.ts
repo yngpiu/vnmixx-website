@@ -11,8 +11,11 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import { RequirePermissions, RequireUserType } from '../../auth/decorators';
-import { buildSuccessResponseSchema } from '../../common/swagger/response-schema.util';
-import { ok, type SuccessPayload } from '../../common/utils/response.util';
+import {
+  buildSuccessResponseSchema,
+  ok,
+  type SuccessPayload,
+} from '../../common/utils/response.util';
 import { AuditLogListResponseDto, ListAuditLogsQueryDto } from '../dto';
 import { AuditLogService } from '../services/audit-log.service';
 

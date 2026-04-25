@@ -4,14 +4,12 @@ import { AppService } from './app.service';
 import { Public } from './auth/decorators';
 import { ok, type SuccessPayload } from './common/utils/response.util';
 
-// Controller gốc của ứng dụng.
-// Cung cấp các endpoint cơ bản để kiểm tra trạng thái hoạt động của API.
+// Endpoint gốc để kiểm tra trạng thái API.
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  // Endpoint mặc định trả về lời chào "Hello World!".
-  // Được đánh dấu @Public để có thể truy cập công khai mà không cần xác thực (Health Check).
+  // Trả về phản hồi health check mặc định.
   @Public()
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })

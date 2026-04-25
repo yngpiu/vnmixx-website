@@ -13,17 +13,13 @@ const DEFAULT_DEV_CORS_ORIGINS = [
   'http://127.0.0.1:3001',
 ];
 
-/**
- * Hàm khởi tạo và cấu hình ứng dụng (Bootstrap).
- * Thực hiện các bước: Tạo Instance NestJS,
- * cấu hình Versioning, Bảo mật (Helmet), CORS, Validation, và Swagger.
- */
+// Khởi tạo và cấu hình toàn bộ ứng dụng API.
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  // Sử dụng Logger pino thay cho logger mặc định của NestJS
+  // Sử dụng logger pino cho toàn ứng dụng.
   app.useLogger(app.get(Logger));
 
-  // Cấu hình Versioning cho API (mặc định là v1)
+  // Bật versioning theo URI với phiên bản mặc định v1.
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
@@ -31,12 +27,12 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 4000;
 
-  // Thiết lập các header bảo mật bằng Helmet
+  // Bật các header bảo mật cơ bản qua Helmet.
   app.use(helmet({ contentSecurityPolicy: false }));
-  // Sử dụng cookie-parser để xử lý cookies từ request
+  // Bật parser để đọc cookie từ request.
   app.use(cookieParser());
 
-  // Cấu hình CORS dựa trên biến môi trường hoặc danh sách mặc định khi dev
+  // Cấu hình CORS từ biến môi trường hoặc danh sách dev mặc định.
   const corsOriginEnv = process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS;
   const origin = corsOriginEnv
     ? corsOriginEnv
@@ -49,14 +45,14 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Cấu hình Global Validation Pipe để tự động kiểm tra kiểu dữ liệu đầu vào (DTO)
+  // Áp dụng validation pipe toàn cục cho dữ liệu đầu vào.
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Loại bỏ các field không có trong DTO
-      forbidNonWhitelisted: true, // Trả về lỗi nếu có field lạ
-      transform: true, // Tự động convert kiểu dữ liệu (vd: string -> number)
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: { enableImplicitConversion: true },
-      stopAtFirstError: true, // Dừng lại ở lỗi đầu tiên
+      stopAtFirstError: true,
       exceptionFactory: (errors) => {
         const messages = errors.map((error) => {
           return error.constraints ? Object.values(error.constraints)[0] : 'Dữ liệu không hợp lệ';
@@ -66,7 +62,7 @@ async function bootstrap() {
     }),
   );
 
-  // Cấu hình tài liệu API bằng Swagger
+  // Cấu hình tài liệu API qua Swagger.
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Vnmixx API')
     .setVersion('1.0')
@@ -92,7 +88,7 @@ async function bootstrap() {
     },
   });
 
-  // Lắng nghe trên port đã cấu hình
+  // Khởi động server và ghi log địa chỉ truy cập.
   await app.listen(port, '0.0.0.0');
   const url = await app.getUrl();
   const appLogger = app.get(Logger);

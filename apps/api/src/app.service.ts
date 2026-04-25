@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
-// Service gốc của ứng dụng.
-// Chứa các logic xử lý cơ bản nhất của hệ thống.
+// Service gốc phục vụ endpoint kiểm tra trạng thái.
 @Injectable()
 export class AppService {
-  // Trả về lời chào mặc định phục vụ mục đích kiểm tra dịch vụ
+  // Trả về nội dung mặc định cho health check.
   getHello(): string {
     return 'Hello World!';
   }

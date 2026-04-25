@@ -20,8 +20,10 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
-} from '../../common/swagger/response-schema.util';
-import { ok, okNoData, type SuccessPayload } from '../../common/utils/response.util';
+  ok,
+  okNoData,
+  type SuccessPayload,
+} from '../../common/utils/response.util';
 import { EmployeeProfileResponseDto, UpdateEmployeeProfileDto } from '../dto';
 import { ProfileService } from '../services/profile.service';
 

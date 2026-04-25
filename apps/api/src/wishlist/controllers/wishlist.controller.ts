@@ -27,8 +27,10 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
-} from '../../common/swagger/response-schema.util';
-import { ok, okNoData, type SuccessPayload } from '../../common/utils/response.util';
+  ok,
+  okNoData,
+  type SuccessPayload,
+} from '../../common/utils/response.util';
 import { WishlistItemResponseDto } from '../dto';
 import { WishlistService } from '../services/wishlist.service';
 

@@ -15,8 +15,11 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
-import { buildSuccessResponseSchema } from '../../common/swagger/response-schema.util';
-import { ok, type SuccessPayload } from '../../common/utils/response.util';
+import {
+  buildSuccessResponseSchema,
+  ok,
+  type SuccessPayload,
+} from '../../common/utils/response.util';
 import {
   CreateOrderDto,
   ListMyOrdersQueryDto,
