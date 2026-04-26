@@ -18,13 +18,14 @@ import { CreateCategoryDto, UpdateCategoryDto } from '../dto';
 import {
   CategoryAdminView,
   CategoryRepository,
-  CategoryTreeNode,
+  CategoryTreeNodeView,
   CategoryView,
 } from '../repositories/category.repository';
 
 const MAX_DEPTH = 3;
 
 @Injectable()
+// Xử lý logic nghiệp vụ cho danh mục sản phẩm.
 export class CategoryService {
   constructor(
     private readonly repository: CategoryRepository,
@@ -32,21 +33,22 @@ export class CategoryService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  // ─── Public ───────────────────────────────────────────────────────────────
-
-  async findActiveTree(): Promise<CategoryTreeNode[]> {
+  // Lấy cấu trúc cây danh mục đang hoạt động và lưu cache để tái sử dụng.
+  async findActiveTree(): Promise<CategoryTreeNodeView[]> {
     return this.redis.getOrSet(CATEGORY_CACHE_KEYS.CATEGORY_TREE, CATEGORY_CACHE_TTL.CATEGORY, () =>
       this.repository.findActiveTree(),
     );
   }
 
+  // Lấy danh sách danh mục phẳng đang hoạt động và lưu cache để tái sử dụng.
   async findActiveFlat(): Promise<CategoryView[]> {
     return this.redis.getOrSet(CATEGORY_CACHE_KEYS.CATEGORY_LIST, CATEGORY_CACHE_TTL.CATEGORY, () =>
       this.repository.findAllActive(),
     );
   }
 
-  async findBySlug(slug: string): Promise<CategoryView & { children: CategoryTreeNode[] }> {
+  // Kiểm tra danh mục tồn tại theo slug trước khi trả về chi tiết.
+  async findBySlug(slug: string): Promise<CategoryView & { children: CategoryTreeNodeView[] }> {
     const category = await this.redis.getOrSet(
       CATEGORY_CACHE_KEYS.CATEGORY_SLUG(slug),
       CATEGORY_CACHE_TTL.CATEGORY,
@@ -61,8 +63,7 @@ export class CategoryService {
     return category;
   }
 
-  // ─── Admin ────────────────────────────────────────────────────────────────
-
+  // Lấy toàn bộ danh sách danh mục cho Admin với các bộ lọc tùy chọn.
   async findAll(opts?: {
     isActive?: boolean;
     isSoftDeleted?: boolean;
@@ -70,6 +71,7 @@ export class CategoryService {
     return this.repository.findAll(opts);
   }
 
+  // Lấy chi tiết danh mục theo ID, ném lỗi nếu không tồn tại.
   async findById(id: number): Promise<CategoryAdminView> {
     const category = await this.repository.findById(id);
     if (!category) {
@@ -78,6 +80,7 @@ export class CategoryService {
     return category;
   }
 
+  // Kiểm tra tính hợp lệ của danh mục cha và tạo mới danh mục.
   async create(
     dto: CreateCategoryDto,
     auditContext: AuditRequestContext = {},
@@ -119,6 +122,7 @@ export class CategoryService {
     }
   }
 
+  // Cập nhật thông tin danh mục, đảm bảo không có tham chiếu vòng lặp.
   async update(
     id: number,
     dto: UpdateCategoryDto,
@@ -183,6 +187,7 @@ export class CategoryService {
     }
   }
 
+  // Xóa mềm danh mục, kiểm tra không có danh mục con đang hoạt động trước khi xóa.
   async softDelete(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const beforeData = await this.repository.findById(id);
     try {
@@ -219,6 +224,7 @@ export class CategoryService {
     }
   }
 
+  // Khôi phục danh mục đã xóa mềm, kiểm tra danh mục cha hợp lệ.
   async restore(id: number, auditContext: AuditRequestContext = {}): Promise<CategoryAdminView> {
     const beforeSnapshot = await this.repository.findById(id);
     try {
@@ -268,6 +274,7 @@ export class CategoryService {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
+  // Kiểm tra tính hợp lệ của danh mục cha khi tạo mới hoặc cập nhật.
   private async validateParentForCreate(parentId: number): Promise<void> {
     const parent = await this.repository.findById(parentId);
     if (!parent) {
@@ -286,10 +293,7 @@ export class CategoryService {
     }
   }
 
-  /**
-   * Walk up the ancestor chain and return how deep parentId is (1-indexed).
-   * Root category = depth 1, its child = depth 2, etc.
-   */
+  // Đếm độ sâu của danh mục hiện tại (tối đa là 3 cấp).
   private async getAncestorDepth(categoryId: number): Promise<number> {
     let depth = 0;
     let currentId: number | null = categoryId;
@@ -304,7 +308,7 @@ export class CategoryService {
     return depth;
   }
 
-  /** Ensure newParentId is not a descendant of categoryId (prevents cycles). */
+  // Đảm bảo danh mục cha mới không phải là hậu duệ của danh mục hiện tại (tránh vòng lặp).
   private async validateNoCircularRef(categoryId: number, newParentId: number): Promise<void> {
     let currentId: number | null = newParentId;
 
@@ -318,13 +322,12 @@ export class CategoryService {
     }
   }
 
-  /**
-   * Xóa toàn bộ dữ liệu cache liên quan đến danh mục khi có thay đổi.
-   */
+  // Xóa toàn bộ dữ liệu cache liên quan đến danh mục khi có thay đổi.
   private async invalidateCache(): Promise<void> {
     await this.redis.deleteByPattern(CATEGORY_CACHE_PATTERNS.ALL_CATEGORIES);
   }
 
+  // Xử lý lỗi vi phạm ràng buộc duy nhất từ Prisma (P2002).
   private handleUniqueViolation(err: unknown, slug: string): void {
     if (isPrismaErrorCode(err, 'P2002')) {
       throw new ConflictException(`Slug "${slug}" đã được sử dụng`);

@@ -1,10 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
 
-/**
- * CreateColorDto: DTO tạo mới màu sắc.
- * Vai trò: Định nghĩa và validate dữ liệu đầu vào khi thêm một màu sắc mới.
- */
 export class CreateColorDto {
   @ApiProperty({ example: 'Trắng', maxLength: 50 })
   @IsString({ message: 'Tên màu sắc phải là chuỗi ký tự' })

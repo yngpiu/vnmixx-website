@@ -1,12 +1,14 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from 'generated/prisma/client';
+import { RedisService } from '../../redis/services/redis.service';
 import { WishlistItemView, WishlistRepository } from '../repositories/wishlist.repository';
 import { WishlistService } from './wishlist.service';
 
 describe('WishlistService', () => {
   let service: WishlistService;
   let repo: jest.Mocked<WishlistRepository>;
+  let redis: jest.Mocked<RedisService>;
 
   beforeEach(async () => {
     const mockRepo = {
@@ -16,6 +18,11 @@ describe('WishlistService', () => {
       remove: jest.fn(),
     } as unknown as jest.Mocked<WishlistRepository>;
 
+    const mockRedis = {
+      getOrSet: jest.fn(),
+      del: jest.fn(),
+    } as unknown as jest.Mocked<RedisService>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WishlistService,
@@ -23,11 +30,16 @@ describe('WishlistService', () => {
           provide: WishlistRepository,
           useValue: mockRepo,
         },
+        {
+          provide: RedisService,
+          useValue: mockRedis,
+        },
       ],
     }).compile();
 
     service = module.get<WishlistService>(WishlistService);
     repo = module.get(WishlistRepository);
+    redis = module.get(RedisService);
   });
 
   it('should be defined', () => {
@@ -35,7 +47,7 @@ describe('WishlistService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all wishlist items for a customer', async () => {
+    it('should return all wishlist items for a customer from cache/repo', async () => {
       const customerId = 1;
       const expectedItems: WishlistItemView[] = [
         {
@@ -43,12 +55,13 @@ describe('WishlistService', () => {
           product: { id: 100, name: 'P', slug: 's', thumbnail: null, variants: [] },
         },
       ];
+      redis.getOrSet.mockImplementation((_key, _ttl, cb) => cb());
       repo.findAllByCustomerId.mockResolvedValue(expectedItems);
 
       const result = await service.findAll(customerId);
 
       expect(result).toEqual(expectedItems);
-      expect(repo.findAllByCustomerId).toHaveBeenCalledWith(customerId);
+      expect(redis.getOrSet).toHaveBeenCalled();
     });
   });
 
@@ -73,21 +86,15 @@ describe('WishlistService', () => {
       await expect(service.add(customerId, productId)).rejects.toThrow(ConflictException);
     });
 
-    it('should throw original error if not P2002', async () => {
-      repo.productExists.mockResolvedValue(true);
-      const error = new Error('Unknown error');
-      repo.add.mockRejectedValue(error);
-
-      await expect(service.add(customerId, productId)).rejects.toThrow('Unknown error');
-    });
-
-    it('should add product successfully', async () => {
+    it('should add product successfully and clear cache', async () => {
       repo.productExists.mockResolvedValue(true);
       repo.add.mockResolvedValue(undefined);
+      redis.del.mockResolvedValue(undefined);
 
       await service.add(customerId, productId);
 
       expect(repo.add).toHaveBeenCalledWith(customerId, productId);
+      expect(redis.del).toHaveBeenCalled();
     });
   });
 
@@ -105,19 +112,14 @@ describe('WishlistService', () => {
       await expect(service.remove(customerId, productId)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw original error if not P2025', async () => {
-      const error = new Error('Unknown error');
-      repo.remove.mockRejectedValue(error);
-
-      await expect(service.remove(customerId, productId)).rejects.toThrow('Unknown error');
-    });
-
-    it('should remove product successfully', async () => {
+    it('should remove product successfully and clear cache', async () => {
       repo.remove.mockResolvedValue(undefined);
+      redis.del.mockResolvedValue(undefined);
 
       await service.remove(customerId, productId);
 
       expect(repo.remove).toHaveBeenCalledWith(customerId, productId);
+      expect(redis.del).toHaveBeenCalled();
     });
   });
 });

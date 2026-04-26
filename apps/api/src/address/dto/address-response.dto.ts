@@ -21,16 +21,16 @@ export class AddressResponseDto {
   @ApiProperty({ example: '123 Nguyễn Huệ' })
   addressLine: string;
 
-  @ApiProperty({ enum: ['HOME', 'OFFICE'], example: 'HOME' })
+  @ApiProperty({ example: 'HOME', enum: ['HOME', 'OFFICE'] })
   type: string;
 
   @ApiProperty({ example: true })
   isDefault: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-03-20T09:00:00.000Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-03-20T09:00:00.000Z' })
   updatedAt: Date;
 
   @ApiProperty({ type: LocationItemDto })

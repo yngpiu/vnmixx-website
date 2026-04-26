@@ -122,7 +122,7 @@ describe('PasswordResetService', () => {
     it('should throw BadRequestException on wrong OTP', async () => {
       customerRepo.findByEmail.mockResolvedValue(mockCustomer as any);
       mockRedisClient.get.mockResolvedValue('{}');
-      otpService.parseOtpPayload.mockReturnValue({ customerId: 1 });
+      otpService.parseOtpPayload.mockReturnValue({ customerId: 1, otpHash: 'test-hash' });
       otpService.hasMatchingHash.mockReturnValue(false);
       otpService.incrementFailedAttempt.mockResolvedValue(1);
 

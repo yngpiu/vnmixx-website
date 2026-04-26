@@ -1,9 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-/**
- * SizeResponseDto: DTO phản hồi thông tin kích thước.
- * Vai trò: Định nghĩa cấu trúc dữ liệu kích thước trả về cho client.
- */
+// SizeResponseDto: DTO phản hồi thông tin kích thước.
+// Vai trò: Định nghĩa cấu trúc dữ liệu kích thước trả về cho client.
 export class SizeResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -15,14 +13,12 @@ export class SizeResponseDto {
   sortOrder: number;
 }
 
-/**
- * SizeAdminResponseDto: DTO phản hồi thông tin kích thước cho Admin.
- */
+// SizeAdminResponseDto: DTO phản hồi thông tin kích thước cho Admin.
 export class SizeAdminResponseDto extends SizeResponseDto {
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   updatedAt: Date;
 }
 

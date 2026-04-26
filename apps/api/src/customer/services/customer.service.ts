@@ -64,7 +64,7 @@ export class CustomerService {
         resourceType: 'customer',
         resourceId: String(id),
         status: AuditLogStatus.SUCCESS,
-        beforeData: beforeData ?? undefined,
+        beforeData,
         afterData: updated,
       });
       return updated;
@@ -76,7 +76,7 @@ export class CustomerService {
         resourceType: 'customer',
         resourceId: String(id),
         status: AuditLogStatus.FAILED,
-        beforeData: beforeData ?? undefined,
+        beforeData,
         afterData: dto,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -101,7 +101,7 @@ export class CustomerService {
         resourceType: 'customer',
         resourceId: String(id),
         status: AuditLogStatus.SUCCESS,
-        beforeData: beforeData ?? undefined,
+        beforeData,
         afterData: afterData ?? undefined,
       });
     } catch (error) {
@@ -112,7 +112,7 @@ export class CustomerService {
         resourceType: 'customer',
         resourceId: String(id),
         status: AuditLogStatus.FAILED,
-        beforeData: beforeData ?? undefined,
+        beforeData,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
@@ -122,6 +122,8 @@ export class CustomerService {
   // Khôi phục khách hàng từ trạng thái xóa mềm.
   async restore(id: number, auditContext: AuditRequestContext = {}): Promise<CustomerDetailView> {
     const beforeData = await this.customerRepo.findById(id);
+    if (!beforeData) throw new NotFoundException('Không tìm thấy khách hàng');
+
     try {
       // 1. Thực hiện khôi phục bản ghi đã xóa trong cơ sở dữ liệu
       const restored = await this.customerRepo.restore(id);
@@ -135,7 +137,7 @@ export class CustomerService {
         resourceType: 'customer',
         resourceId: String(id),
         status: AuditLogStatus.SUCCESS,
-        beforeData: beforeData ?? undefined,
+        beforeData,
         afterData: restored,
       });
       return restored;
@@ -147,7 +149,7 @@ export class CustomerService {
         resourceType: 'customer',
         resourceId: String(id),
         status: AuditLogStatus.FAILED,
-        beforeData: beforeData ?? undefined,
+        beforeData,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;

@@ -1,6 +1,4 @@
-/**
- * DTO phản hồi thông tin hồ sơ người dùng.
- */
+// DTO phản hồi thông tin hồ sơ người dùng.
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CustomerProfileResponseDto {

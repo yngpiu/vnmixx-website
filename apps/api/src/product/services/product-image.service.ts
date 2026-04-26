@@ -6,10 +6,8 @@ import { CreateImageDto, UpdateImageDto } from '../dto';
 import { ProductRepository } from '../repositories/product.repository';
 import { ProductCacheService } from './product-cache.service';
 
-/**
- * ProductImageService: Quản lý thư viện hình ảnh của sản phẩm.
- * Hỗ trợ gắn hình ảnh với từng màu sắc cụ thể để hiển thị chính xác khi khách hàng chọn màu.
- */
+// ProductImageService: Quản lý thư viện hình ảnh của sản phẩm.
+// Hỗ trợ gắn hình ảnh với từng màu sắc cụ thể để hiển thị chính xác khi khách hàng chọn màu.
 @Injectable()
 export class ProductImageService {
   constructor(
@@ -18,10 +16,8 @@ export class ProductImageService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  /**
-   * Thêm hình ảnh mới cho sản phẩm.
-   * Hình ảnh có thể gắn với một `colorId` hoặc dùng chung cho toàn bộ sản phẩm.
-   */
+  // Thêm hình ảnh mới cho sản phẩm.
+  // Hình ảnh có thể gắn với một `colorId` hoặc dùng chung cho toàn bộ sản phẩm.
   async createImage(
     productId: number,
     slug: string,
@@ -59,9 +55,7 @@ export class ProductImageService {
     }
   }
 
-  /**
-   * Cập nhật thông tin hình ảnh (Màu sắc liên kết, văn bản thay thế, thứ tự hiển thị).
-   */
+  // Cập nhật thông tin hình ảnh (Màu sắc liên kết, văn bản thay thế, thứ tự hiển thị).
   async updateImage(
     productId: number,
     slug: string,
@@ -115,9 +109,7 @@ export class ProductImageService {
     }
   }
 
-  /**
-   * Xóa hình ảnh khỏi hệ thống.
-   */
+  // Xóa hình ảnh khỏi hệ thống.
   async deleteImage(
     productId: number,
     slug: string,
@@ -156,10 +148,8 @@ export class ProductImageService {
     }
   }
 
-  /**
-   * Logic xác định Thumbnail tự động:
-   * Nếu không cung cấp requestedThumbnail, hệ thống sẽ lấy ảnh đầu tiên của màu sắc thuộc biến thể đầu tiên.
-   */
+  // Logic xác định Thumbnail tự động:
+  // Nếu không cung cấp requestedThumbnail, hệ thống sẽ lấy ảnh đầu tiên của màu sắc thuộc biến thể đầu tiên.
   resolveCreateThumbnail(params: {
     requestedThumbnail?: string;
     variants: { colorId: number }[];

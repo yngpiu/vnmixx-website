@@ -17,11 +17,11 @@ import {
 import { CategoryDetailDto, CategoryResponseDto } from '../dto';
 import { CategoryService } from '../services/category.service';
 
-// Truy vấn danh mục sản phẩm cho phía Shop.
-// Các API này công khai để khách hàng có thể tra cứu và điều hướng sản phẩm dễ dàng.
 @ApiTags('Categories')
 @ApiExtraModels(CategoryResponseDto, CategoryDetailDto)
 @Controller('categories')
+// Truy vấn danh mục sản phẩm cho phía Shop.
+// Các API này công khai để khách hàng có thể tra cứu và điều hướng sản phẩm dễ dàng.
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 

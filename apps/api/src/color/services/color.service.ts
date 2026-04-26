@@ -17,10 +17,7 @@ import {
   PaginatedColorList,
 } from '../repositories/color.repository';
 
-/**
- * ColorService: Quản lý thuộc tính màu sắc của sản phẩm.
- * Vai trò: Cung cấp các nghiệp vụ liên quan đến màu sắc, được sử dụng để phân loại và tạo biến thể sản phẩm.
- */
+// Quản lý thuộc tính màu sắc của sản phẩm để phân loại và tạo biến thể.
 @Injectable()
 export class ColorService {
   constructor(
@@ -31,10 +28,7 @@ export class ColorService {
 
   // ─── Public ─────────────────────────────────────────────────────────────────
 
-  /**
-   * Lấy danh sách màu sắc cho khách hàng.
-   * Logic: Sử dụng Redis Cache để tối ưu hiệu năng truy vấn.
-   */
+  // Lấy danh sách màu sắc và lưu cache để tái sử dụng cho khách hàng.
   findAllPublic(): Promise<ColorView[]> {
     return this.redis.getOrSet(COLOR_CACHE_KEYS.COLOR_LIST, COLOR_CACHE_TTL.COLOR, () =>
       this.repository.findAllPublic(),
@@ -43,16 +37,12 @@ export class ColorService {
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
 
-  /**
-   * Lấy tất cả màu sắc (dành cho quản trị).
-   */
+  // Lấy tất cả màu sắc dành cho quản trị.
   findAll(): Promise<ColorAdminView[]> {
     return this.repository.findAll();
   }
 
-  /**
-   * Tìm kiếm và phân trang danh sách màu sắc.
-   */
+  // Tìm kiếm và phân trang danh sách màu sắc.
   findList(params: {
     page: number;
     limit: number;
@@ -63,10 +53,7 @@ export class ColorService {
     return this.repository.findList(params);
   }
 
-  /**
-   * Tạo màu sắc mới.
-   * Logic: Lưu thông tin vào DB, xóa cache cũ và ghi Audit Log.
-   */
+  // Tạo màu sắc mới, lưu vào DB, xóa cache và ghi Audit Log.
   async create(
     dto: CreateColorDto,
     auditContext: AuditRequestContext = {},
@@ -97,10 +84,7 @@ export class ColorService {
     }
   }
 
-  /**
-   * Cập nhật thông tin màu sắc.
-   * Logic: Kiểm tra tồn tại, cập nhật DB, xóa cache và ghi Audit Log.
-   */
+  // Kiểm tra tồn tại, cập nhật DB, xóa cache và ghi Audit Log.
   async update(
     id: number,
     dto: UpdateColorDto,
@@ -140,10 +124,7 @@ export class ColorService {
     }
   }
 
-  /**
-   * Xóa màu sắc.
-   * Logic: Kiểm tra ràng buộc dữ liệu (không thể xóa nếu đang được sử dụng bởi biến thể sản phẩm hoặc hình ảnh).
-   */
+  // Kiểm tra ràng buộc và xóa màu sắc khỏi DB, xóa cache và ghi Audit Log.
   async remove(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const beforeData = await this.repository.findById(id);
     try {
@@ -186,25 +167,19 @@ export class ColorService {
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
-  /**
-   * Tìm màu sắc theo ID hoặc ném lỗi nếu không tồn tại.
-   */
+  // Tìm màu sắc theo ID hoặc ném lỗi nếu không tồn tại.
   private async findByIdOrFail(id: number): Promise<ColorAdminView> {
     const color = await this.repository.findById(id);
     if (!color) throw new NotFoundException(`Không tìm thấy màu sắc #${id}`);
     return color;
   }
 
-  /**
-   * Xóa cache danh sách màu sắc khi có thay đổi dữ liệu.
-   */
+  // Xóa cache danh sách màu sắc khi có thay đổi dữ liệu.
   private async invalidateCache(): Promise<void> {
     await this.redis.del(COLOR_CACHE_KEYS.COLOR_LIST);
   }
 
-  /**
-   * Xử lý lỗi vi phạm ràng buộc duy nhất (Unique Constraint) từ Prisma.
-   */
+  // Xử lý lỗi vi phạm ràng buộc duy nhất từ Prisma.
   private handleUniqueViolation(err: unknown): void {
     if (isPrismaErrorCode(err, 'P2002') && isPrismaKnownRequestError(err)) {
       const target = getPrismaErrorTargets(err).join(', ') || 'field';

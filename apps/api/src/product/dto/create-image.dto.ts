@@ -1,9 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
-/**
- * CreateImageDto: DTO dùng để thêm một hình ảnh mới vào sản phẩm đã tồn tại.
- */
+// CreateImageDto: DTO dùng để thêm một hình ảnh mới vào sản phẩm đã tồn tại.
 export class CreateImageDto {
   @ApiProperty({ example: 'https://example.com/image.jpg', maxLength: 500 })
   @IsString({ message: 'URL hình ảnh phải là chuỗi ký tự' })

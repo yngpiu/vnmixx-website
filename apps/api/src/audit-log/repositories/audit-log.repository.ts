@@ -58,10 +58,34 @@ export interface AuditLogListItemView {
   createdAt: Date;
 }
 
+const AUDIT_LOG_SELECT = {
+  id: true,
+  action: true,
+  resourceType: true,
+  resourceId: true,
+  requestId: true,
+  ipAddress: true,
+  userAgent: true,
+  beforeData: true,
+  afterData: true,
+  status: true,
+  errorMessage: true,
+  createdAt: true,
+  actorEmployee: {
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+    },
+  },
+} as const;
+
 @Injectable()
+// Repository Prisma cho các thao tác với nhật ký hệ thống (Audit Log).
 export class AuditLogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Tạo mới một bản ghi nhật ký hoạt động.
   async create(data: CreateAuditLogInput): Promise<void> {
     await this.prisma.auditLog.create({
       data: {
@@ -80,6 +104,7 @@ export class AuditLogRepository {
     });
   }
 
+  // Lấy danh sách nhật ký hoạt động kèm phân trang và bộ lọc nâng cao.
   async findList(
     input: ListAuditLogsInput,
   ): Promise<PaginatedAuditLogsResult<AuditLogListItemView>> {
@@ -139,27 +164,7 @@ export class AuditLogRepository {
         skip: (input.page - 1) * input.limit,
         take: input.limit,
         orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          action: true,
-          resourceType: true,
-          resourceId: true,
-          requestId: true,
-          ipAddress: true,
-          userAgent: true,
-          beforeData: true,
-          afterData: true,
-          status: true,
-          errorMessage: true,
-          createdAt: true,
-          actorEmployee: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-            },
-          },
-        },
+        select: AUDIT_LOG_SELECT,
       }),
     ]);
 

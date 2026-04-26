@@ -1,10 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsString, MaxLength, Min } from 'class-validator';
 
-/**
- * CreateVariantDto: DTO dùng để thêm một biến thể mới vào sản phẩm đã tồn tại.
- * Đảm bảo các ràng buộc về SKU duy nhất và tổ hợp thuộc tính (Màu/Size) không trùng lặp.
- */
+// CreateVariantDto: DTO dùng để thêm một biến thể mới vào sản phẩm đã tồn tại.
+// Đảm bảo các ràng buộc về SKU duy nhất và tổ hợp thuộc tính (Màu/Size) không trùng lặp.
 export class CreateVariantDto {
   @ApiProperty({ example: 1 })
   @IsInt({ message: 'ID màu sắc phải là số nguyên' })

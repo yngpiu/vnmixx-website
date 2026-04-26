@@ -1,6 +1,4 @@
-/**
- * Repository quản lý truy vấn dữ liệu hồ sơ Nhân viên.
- */
+// Repository quản lý truy vấn dữ liệu hồ sơ Nhân viên.
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/services/prisma.service';
 

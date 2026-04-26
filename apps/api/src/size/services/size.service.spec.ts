@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { RedisService } from '../../redis/services/redis.service';
-import { CreateSizeDto, PaginatedSizeList, UpdateSizeDto } from '../dto';
+import { CreateSizeDto, UpdateSizeDto } from '../dto';
 import { SizeAdminView, SizeRepository, SizeView } from '../repositories/size.repository';
 import { SizeService } from './size.service';
 
@@ -88,7 +88,7 @@ describe('SizeService', () => {
 
   describe('findList', () => {
     it('should return paginated list', async () => {
-      const paginated: PaginatedSizeList = {
+      const paginated = {
         data: [mockSize],
         meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
       };

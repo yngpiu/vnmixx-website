@@ -11,7 +11,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-enum GenderInput {
+export enum GenderInput {
   MALE = 'MALE',
   FEMALE = 'FEMALE',
   OTHER = 'OTHER',

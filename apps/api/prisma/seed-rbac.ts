@@ -69,10 +69,8 @@ const PERMISSIONS: { name: string; description: string }[] = [
     update: 'Đánh giá: cập nhật',
     delete: 'Đánh giá: xóa',
   }),
-  ...crud('support-chat', {
-    read: 'Chat hỗ trợ: xem danh sách và tin nhắn',
-    create: 'Chat hỗ trợ: nhận phân công và gửi tin nhắn',
-  }),
+  { name: 'support-chat.read', description: 'Chat hỗ trợ: xem danh sách và tin nhắn' },
+  { name: 'support-chat.create', description: 'Chat hỗ trợ: nhận phân công và gửi tin nhắn' },
 ];
 
 type RoleSeed = {

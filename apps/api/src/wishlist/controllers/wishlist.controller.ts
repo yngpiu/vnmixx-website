@@ -9,6 +9,7 @@ import {
   Post,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -34,8 +35,6 @@ import {
 import { WishlistItemResponseDto } from '../dto';
 import { WishlistService } from '../services/wishlist.service';
 
-// Cung cấp các endpoint quản lý danh sách yêu thích của khách hàng.
-// Tiếp nhận yêu cầu từ client và điều phối đến WishlistService để xử lý dữ liệu.
 @ApiTags('Wishlist')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -43,36 +42,39 @@ import { WishlistService } from '../services/wishlist.service';
 @RequireUserType('CUSTOMER')
 @ApiExtraModels(WishlistItemResponseDto)
 @Controller('me/wishlist')
+// Controller quản lý danh sách yêu thích cá nhân của khách hàng.
 export class WishlistController {
   constructor(private readonly wishlistService: WishlistService) {}
 
-  // Lấy danh sách yêu thích để hiển thị các sản phẩm khách hàng đang quan tâm.
+  // Lấy danh sách các sản phẩm mà khách hàng đã thêm vào mục yêu thích.
   @ApiOperation({ summary: 'Lấy danh sách yêu thích của khách hàng hiện tại' })
   @ApiOkResponse({
+    description: 'Lấy danh sách yêu thích thành công.',
     schema: buildSuccessResponseSchema({
       type: 'array',
       items: { $ref: getSchemaPath(WishlistItemResponseDto) },
     }),
   })
-  @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get()
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<WishlistItemResponseDto[]>> {
     return ok(await this.wishlistService.findAll(user.id), 'Lấy danh sách yêu thích thành công.');
   }
 
-  // Thêm sản phẩm vào danh sách yêu thích để khách hàng có thể theo dõi và mua sau.
+  // Thêm một sản phẩm mới vào danh sách yêu thích để theo dõi sau.
   @ApiOperation({ summary: 'Thêm sản phẩm vào danh sách yêu thích' })
   @ApiCreatedResponse({
     description: 'Thêm vào danh sách yêu thích thành công.',
     schema: buildNullDataSuccessResponseSchema('Thêm vào danh sách yêu thích thành công.'),
   })
+  @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @ApiConflictResponse({ description: 'Sản phẩm đã có trong danh sách yêu thích.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Post(':productId')
   @HttpCode(HttpStatus.CREATED)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async add(
     @Param('productId', ParseIntPipe) productId: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -81,16 +83,17 @@ export class WishlistController {
     return okNoData('Thêm vào danh sách yêu thích thành công.');
   }
 
-  // Xoá sản phẩm khỏi danh sách yêu thích khi khách hàng không còn nhu cầu theo dõi.
+  // Loại bỏ sản phẩm khỏi danh sách yêu thích khi không còn nhu cầu.
   @ApiOperation({ summary: 'Xoá sản phẩm khỏi danh sách yêu thích' })
   @ApiOkResponse({
     description: 'Xóa khỏi danh sách yêu thích thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa khỏi danh sách yêu thích thành công.'),
   })
+  @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ.' })
   @ApiNotFoundResponse({ description: 'Sản phẩm không có trong danh sách yêu thích.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':productId')
   @HttpCode(HttpStatus.OK)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('productId', ParseIntPipe) productId: number,
     @CurrentUser() user: AuthenticatedUser,

@@ -3,6 +3,9 @@ import { EmployeeStatus, Prisma } from '../../../generated/prisma/client';
 import { softDeletedWhere } from '../../common/utils/prisma.util';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
+/**
+ * Interface cho dữ liệu nhân viên trong danh sách.
+ */
 export interface EmployeeListItemView {
   id: number;
   fullName: string;
@@ -15,16 +18,25 @@ export interface EmployeeListItemView {
   role: { id: number; name: string } | null;
 }
 
+/**
+ * Interface cho dữ liệu chi tiết nhân viên.
+ */
 export interface EmployeeDetailView extends EmployeeListItemView {
   avatarUrl: string | null;
   updatedAt: Date;
 }
 
+/**
+ * Interface cho kết quả phân trang.
+ */
 export interface PaginatedResult<T> {
   data: T[];
   meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
+/**
+ * Các trường dữ liệu cần lấy cho danh sách nhân viên.
+ */
 const LIST_SELECT = {
   id: true,
   fullName: true,
@@ -37,6 +49,9 @@ const LIST_SELECT = {
   role: { select: { id: true, name: true } },
 } as const;
 
+/**
+ * Các trường dữ liệu cần lấy cho chi tiết nhân viên.
+ */
 const DETAIL_SELECT = {
   ...LIST_SELECT,
   avatarUrl: true,
@@ -44,9 +59,13 @@ const DETAIL_SELECT = {
 } as const;
 
 @Injectable()
+// Repository Prisma cho các thao tác với dữ liệu nhân viên.
 export class EmployeeRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Xây dựng điều kiện sắp xếp cho danh sách nhân viên.
+   */
   private buildListOrderBy(
     sortBy?: string,
     sortOrder?: 'asc' | 'desc',
@@ -68,6 +87,7 @@ export class EmployeeRepository {
     }
   }
 
+  // Lấy danh sách nhân viên có phân trang, tìm kiếm và lọc.
   async findList(params: {
     page: number;
     limit: number;
@@ -110,6 +130,7 @@ export class EmployeeRepository {
     };
   }
 
+  // Tìm kiếm một nhân viên theo ID.
   async findById(id: number): Promise<EmployeeDetailView | null> {
     return this.prisma.employee.findUnique({
       where: { id },
@@ -117,6 +138,7 @@ export class EmployeeRepository {
     }) as unknown as Promise<EmployeeDetailView | null>;
   }
 
+  // Tạo nhân viên mới trong cơ sở dữ liệu.
   async create(data: {
     fullName: string;
     email: string;
@@ -137,6 +159,7 @@ export class EmployeeRepository {
     return this.findById(employee.id) as Promise<EmployeeDetailView>;
   }
 
+  // Cập nhật thông tin nhân viên theo ID.
   async update(id: number, data: Prisma.EmployeeUpdateInput): Promise<EmployeeDetailView | null> {
     const { count } = await this.prisma.employee.updateMany({
       where: { id, deletedAt: null },
@@ -146,6 +169,7 @@ export class EmployeeRepository {
     return this.findById(id);
   }
 
+  // Thực hiện xóa mềm nhân viên bằng cách cập nhật deletedAt.
   async softDelete(id: number): Promise<boolean> {
     const { count } = await this.prisma.employee.updateMany({
       where: { id, deletedAt: null },
@@ -157,6 +181,7 @@ export class EmployeeRepository {
     return count > 0;
   }
 
+  // Khôi phục nhân viên từ trạng thái đã xóa mềm.
   async restore(id: number): Promise<EmployeeDetailView | null> {
     const { count } = await this.prisma.employee.updateMany({
       where: { id, NOT: { deletedAt: null } },
@@ -169,6 +194,7 @@ export class EmployeeRepository {
     return this.findById(id);
   }
 
+  // Kiểm tra sự tồn tại của email nhân viên.
   async emailExists(email: string, excludeId?: number): Promise<boolean> {
     const count = await this.prisma.employee.count({
       where: { email, ...(excludeId && { id: { not: excludeId } }) },
@@ -176,6 +202,7 @@ export class EmployeeRepository {
     return count > 0;
   }
 
+  // Kiểm tra sự tồn tại của số điện thoại nhân viên.
   async phoneExists(phone: string, excludeId?: number): Promise<boolean> {
     const count = await this.prisma.employee.count({
       where: { phoneNumber: phone, ...(excludeId && { id: { not: excludeId } }) },

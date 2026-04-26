@@ -51,19 +51,19 @@ export class AuditLogResponseDto {
   @ApiPropertyOptional({ example: 'Mozilla/5.0', nullable: true })
   userAgent: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ example: { name: 'Old Name' }, nullable: true })
   beforeData: unknown;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ example: { name: 'New Name' }, nullable: true })
   afterData: unknown;
 
-  @ApiProperty({ enum: AuditLogStatus })
+  @ApiProperty({ enum: AuditLogStatus, example: AuditLogStatus.SUCCESS })
   status: AuditLogStatus;
 
   @ApiPropertyOptional({ example: 'Không tìm thấy vai trò #2', nullable: true })
   errorMessage: string | null;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-03-20T10:00:00Z' })
   createdAt: Date;
 }
 

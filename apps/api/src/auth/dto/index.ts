@@ -8,5 +8,5 @@ export {
 } from './forgot-password.dto';
 export { LoginDto } from './login.dto';
 export { CustomerRegisterResponseDto, ResendCustomerOtpDto, VerifyCustomerOtpDto } from './otp.dto';
-export { RegisterDto } from './register.dto';
+export { GenderInput, RegisterDto } from './register.dto';
 export { AuthResponseDto, ProfileResponseDto } from './session.dto';

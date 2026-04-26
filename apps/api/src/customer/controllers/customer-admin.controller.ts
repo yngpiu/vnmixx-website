@@ -64,6 +64,7 @@ export class CustomerAdminController {
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerListResponseDto) }),
   })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(

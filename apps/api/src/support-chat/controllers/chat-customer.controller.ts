@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiExtraModels,
@@ -29,12 +30,10 @@ import {
   ok,
   type SuccessPayload,
 } from '../../common/utils/response.util';
-import { ChatDetailResponseDto, MessagesListResponseDto } from '../dto/chat-response.dto';
+import { ChatDetailResponseDto, MessagesListResponseDto } from '../dto';
 import { MessagesQueryDto } from '../dto/messages-query.dto';
 import { SupportChatService } from '../services/support-chat.service';
 
-// Tiếp nhận yêu cầu chat hỗ trợ từ phía khách hàng.
-// Cho phép tạo/lấy cuộc hội thoại và xem lịch sử tin nhắn.
 @ApiTags('Support Chat (Khách hàng)')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -42,17 +41,18 @@ import { SupportChatService } from '../services/support-chat.service';
 @RequireUserType('CUSTOMER')
 @ApiExtraModels(ChatDetailResponseDto, MessagesListResponseDto)
 @Controller('customer/support-chat')
+// Controller xử lý các yêu cầu chat hỗ trợ từ phía khách hàng.
 export class ChatCustomerController {
   constructor(private readonly chatService: SupportChatService) {}
 
-  // Tạo hoặc lấy cuộc hội thoại hiện tại của khách hàng (mỗi khách chỉ có 1 chat).
-  @ApiOperation({ summary: 'Tạo hoặc lấy cuộc hội thoại hỗ trợ.' })
+  // Tạo cuộc hội thoại mới hoặc lấy lại cuộc hội thoại hiện có của khách hàng.
+  @ApiOperation({ summary: 'Tạo hoặc lấy cuộc hội thoại hỗ trợ' })
   @ApiCreatedResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ChatDetailResponseDto) }),
   })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findOrCreateChat(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<ChatDetailResponseDto>> {
@@ -62,14 +62,14 @@ export class ChatCustomerController {
     );
   }
 
-  // Lấy cuộc hội thoại đang hoạt động của khách.
-  @ApiOperation({ summary: 'Lấy cuộc hội thoại hỗ trợ hiện tại.' })
+  // Truy xuất thông tin cuộc hội thoại đang hoạt động của khách hàng hiện tại.
+  @ApiOperation({ summary: 'Lấy cuộc hội thoại hỗ trợ hiện tại' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ChatDetailResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Chưa có cuộc hội thoại nào.' })
-  @Get('active')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get('active')
   async getActiveChat(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<ChatDetailResponseDto | null>> {
@@ -79,14 +79,16 @@ export class ChatCustomerController {
     );
   }
 
-  // Lấy lịch sử tin nhắn trong cuộc hội thoại với cursor pagination.
-  @ApiOperation({ summary: 'Lấy lịch sử tin nhắn.' })
+  // Lấy danh sách tin nhắn trong cuộc hội thoại của khách hàng với phân trang cursor.
+  @ApiOperation({ summary: 'Lấy lịch sử tin nhắn' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(MessagesListResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy cuộc hội thoại.' })
-  @Get(':id/messages')
+  @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập cuộc hội thoại này.' })
+  @ApiBadRequestResponse({ description: 'Tham số không hợp lệ.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get(':id/messages')
   async getMessages(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: MessagesQueryDto,

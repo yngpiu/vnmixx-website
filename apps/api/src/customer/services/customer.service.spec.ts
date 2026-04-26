@@ -44,7 +44,7 @@ describe('CustomerService', () => {
 
   describe('findList', () => {
     it('should return paginated result', async () => {
-      const result = { data: [], total: 0, page: 1, limit: 10, totalPages: 0 };
+      const result = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
       customerRepo.findList.mockResolvedValue(result);
 
       const params = { page: 1, limit: 10 };
@@ -69,8 +69,21 @@ describe('CustomerService', () => {
   });
 
   describe('update', () => {
-    const auditContext = { ip: '127.0.0.1' };
+    const auditContext = { ipAddress: '127.0.0.1' };
     const dto = { isActive: true };
+
+    it('should throw NotFoundException and write failed audit log when customer does not exist', async () => {
+      customerRepo.findById.mockResolvedValueOnce(null);
+      await expect(service.update(1, dto, auditContext)).rejects.toThrow(NotFoundException);
+      expect(auditLogService.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'customer.update',
+          status: AuditLogStatus.FAILED,
+          beforeData: null,
+          errorMessage: 'Không tìm thấy khách hàng',
+        }),
+      );
+    });
 
     it('should update and write audit log on success', async () => {
       const beforeData = { id: 1, isActive: false } as any;
@@ -133,19 +146,6 @@ describe('CustomerService', () => {
       );
     });
 
-    it('should write failed audit log when findById returns null during update failure', async () => {
-      customerRepo.findById.mockResolvedValueOnce(null);
-      customerRepo.update.mockRejectedValue(new Error('Update failed'));
-
-      await expect(service.update(1, dto, auditContext)).rejects.toThrow('Update failed');
-      expect(auditLogService.write).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: AuditLogStatus.FAILED,
-          beforeData: undefined,
-        }),
-      );
-    });
-
     it('should write failed audit log when a non-error is thrown during update', async () => {
       customerRepo.findById.mockResolvedValueOnce({ id: 1 } as any);
       customerRepo.update.mockRejectedValue('String error');
@@ -161,6 +161,19 @@ describe('CustomerService', () => {
   });
 
   describe('softDelete', () => {
+    it('should throw NotFoundException and write failed audit log when customer does not exist', async () => {
+      customerRepo.findById.mockResolvedValueOnce(null);
+      await expect(service.softDelete(1)).rejects.toThrow(NotFoundException);
+      expect(auditLogService.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'customer.delete',
+          status: AuditLogStatus.FAILED,
+          beforeData: null,
+          errorMessage: 'Không tìm thấy khách hàng',
+        }),
+      );
+    });
+
     it('should soft delete and write audit log on success', async () => {
       const beforeData = { id: 1 } as any;
       customerRepo.findById
@@ -194,8 +207,8 @@ describe('CustomerService', () => {
       );
     });
 
-    it('should throw NotFoundException if customer not found', async () => {
-      customerRepo.findById.mockResolvedValueOnce(null);
+    it('should throw NotFoundException if softDelete fails', async () => {
+      customerRepo.findById.mockResolvedValueOnce({ id: 1 } as any);
       customerRepo.softDelete.mockResolvedValue(false);
 
       await expect(service.softDelete(1)).rejects.toThrow(NotFoundException);
@@ -218,22 +231,15 @@ describe('CustomerService', () => {
         }),
       );
     });
-
-    it('should write failed audit log when findById returns null during softDelete failure', async () => {
-      customerRepo.findById.mockResolvedValueOnce(null);
-      customerRepo.softDelete.mockRejectedValue(new Error('Delete failed'));
-
-      await expect(service.softDelete(1)).rejects.toThrow('Delete failed');
-      expect(auditLogService.write).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: AuditLogStatus.FAILED,
-          beforeData: undefined,
-        }),
-      );
-    });
   });
 
   describe('restore', () => {
+    it('should throw NotFoundException early when beforeData is null', async () => {
+      customerRepo.findById.mockResolvedValueOnce(null);
+      await expect(service.restore(1)).rejects.toThrow(NotFoundException);
+      expect(auditLogService.write).not.toHaveBeenCalled();
+    });
+
     it('should restore and write audit log on success', async () => {
       const beforeData = { id: 1 } as any;
       const restored = { id: 1, deletedAt: null } as any;
@@ -251,23 +257,8 @@ describe('CustomerService', () => {
       );
     });
 
-    it('should restore and write audit log on success when beforeData is null', async () => {
-      const restored = { id: 1, deletedAt: null } as any;
-      customerRepo.findById.mockResolvedValueOnce(null);
-      customerRepo.restore.mockResolvedValue(restored);
-
-      const result = await service.restore(1);
-
-      expect(result).toBe(restored);
-      expect(auditLogService.write).toHaveBeenCalledWith(
-        expect.objectContaining({
-          beforeData: undefined,
-        }),
-      );
-    });
-
-    it('should throw NotFoundException if restoration fails', async () => {
-      customerRepo.findById.mockResolvedValueOnce(null);
+    it('should throw NotFoundException if restoration fails after existence check', async () => {
+      customerRepo.findById.mockResolvedValueOnce({ id: 1 } as any);
       customerRepo.restore.mockResolvedValue(null);
 
       await expect(service.restore(1)).rejects.toThrow(NotFoundException);
@@ -287,19 +278,6 @@ describe('CustomerService', () => {
         expect.objectContaining({
           status: AuditLogStatus.FAILED,
           action: 'customer.restore',
-        }),
-      );
-    });
-
-    it('should write failed audit log when findById returns null during restore failure', async () => {
-      customerRepo.findById.mockResolvedValueOnce(null);
-      customerRepo.restore.mockRejectedValue(new Error('Restore failed'));
-
-      await expect(service.restore(1)).rejects.toThrow('Restore failed');
-      expect(auditLogService.write).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: AuditLogStatus.FAILED,
-          beforeData: undefined,
         }),
       );
     });

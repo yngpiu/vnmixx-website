@@ -52,23 +52,22 @@ import {
 } from '../dto';
 import { ProductService } from '../services/product.service';
 
-@ApiTags('Products')
+@ApiTags('Sản phẩm (Quản trị)')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
 @ApiExtraModels(ProductAdminListResponseDto, ProductAdminDetailResponseDto)
 @Controller('admin/products')
-// Quản trị sản phẩm cho nhân viên và admin.
-// Quản lý toàn diện vòng đời sản phẩm, bao gồm biến thể (kho hàng) và hình ảnh.
+// Quản trị toàn diện vòng đời sản phẩm, bao gồm biến thể và hình ảnh.
 export class ProductAdminController {
   constructor(private readonly productService: ProductService) {}
 
   // ─── Product CRUD ──────────────────────────────────────────────────────────
 
-  // Liệt kê sản phẩm với các bộ lọc nâng cao phục vụ công tác quản lý kho và kinh doanh.
+  // Liệt kê danh sách sản phẩm với các bộ lọc nâng cao phục vụ quản lý kho.
   @ApiOperation({
-    summary: 'Liệt kê sản phẩm (quản trị)',
+    summary: 'Liệt kê sản phẩm',
     description:
       '`isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc tương ứng.',
   })
@@ -79,12 +78,12 @@ export class ProductAdminController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(
     @Query() query: ListAdminProductsQueryDto,
-  ): Promise<SuccessPayload<Awaited<ReturnType<ProductService['findAdminList']>>>> {
+  ): Promise<SuccessPayload<ProductAdminListResponseDto>> {
     return ok(await this.productService.findAdminList(query), 'Lấy danh sách sản phẩm thành công.');
   }
 
-  // Lấy đầy đủ thông tin sản phẩm để thực hiện chỉnh sửa hoặc kiểm tra chi tiết.
-  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm (quản trị)' })
+  // Lấy đầy đủ thông tin chi tiết của một sản phẩm để quản trị.
+  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductAdminDetailResponseDto) }),
   })
@@ -97,13 +96,13 @@ export class ProductAdminController {
     return ok(await this.productService.findAdminById(id), 'Lấy chi tiết sản phẩm thành công.');
   }
 
-  // Khởi tạo sản phẩm mới cùng các thông tin đi kèm để bắt đầu kinh doanh mặt hàng đó.
-  @ApiOperation({ summary: 'Tạo sản phẩm kèm biến thể, hình ảnh và thuộc tính' })
+  // Tạo một sản phẩm mới cùng với các biến thể và hình ảnh ban đầu.
+  @ApiOperation({ summary: 'Tạo sản phẩm mới' })
   @ApiCreatedResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductAdminDetailResponseDto) }),
   })
-  @ApiBadRequestResponse({ description: 'Xác thực dữ liệu yêu cầu thất bại.' })
-  @ApiConflictResponse({ description: 'Slug hoặc SKU sản phẩm đã được sử dụng.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu yêu cầu không hợp lệ.' })
+  @ApiConflictResponse({ description: 'Slug hoặc SKU sản phẩm đã tồn tại.' })
   @Post()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async create(
@@ -117,13 +116,13 @@ export class ProductAdminController {
     );
   }
 
-  // Cập nhật các thông tin cơ bản của sản phẩm khi có thay đổi từ phía nhà cung cấp hoặc marketing.
-  @ApiOperation({ summary: 'Cập nhật thông tin cơ bản sản phẩm' })
+  // Cập nhật các thông tin cơ bản của một sản phẩm hiện có.
+  @ApiOperation({ summary: 'Cập nhật thông tin sản phẩm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductAdminDetailResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
-  @ApiConflictResponse({ description: 'Slug sản phẩm đã được sử dụng.' })
+  @ApiConflictResponse({ description: 'Slug sản phẩm đã bị trùng.' })
   @Put(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
@@ -139,8 +138,8 @@ export class ProductAdminController {
     );
   }
 
-  // Tạm dừng kinh doanh sản phẩm bằng cách xóa mềm để giữ lại dữ liệu lịch sử.
-  @ApiOperation({ summary: 'Xóa mềm sản phẩm và các biến thể' })
+  // Thực hiện xóa mềm sản phẩm để tạm ngừng kinh doanh nhưng vẫn giữ lịch sử.
+  @ApiOperation({ summary: 'Xóa mềm sản phẩm' })
   @ApiOkResponse({
     description: 'Xóa sản phẩm thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa sản phẩm thành công.'),
@@ -158,8 +157,8 @@ export class ProductAdminController {
     return okNoData('Xóa sản phẩm thành công.');
   }
 
-  // Khôi phục lại sản phẩm đã xóa mềm khi muốn kinh doanh trở lại.
-  @ApiOperation({ summary: 'Khôi phục sản phẩm đã xóa mềm' })
+  // Khôi phục lại sản phẩm đã bị xóa mềm trước đó.
+  @ApiOperation({ summary: 'Khôi phục sản phẩm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductAdminDetailResponseDto) }),
   })
@@ -179,14 +178,14 @@ export class ProductAdminController {
 
   // ─── Variants ──────────────────────────────────────────────────────────────
 
-  // Thêm các lựa chọn mới (màu, size) cho sản phẩm hiện có.
-  @ApiOperation({ summary: 'Thêm biến thể cho sản phẩm' })
+  // Thêm một biến thể mới (kích thước/màu sắc) cho sản phẩm.
+  @ApiOperation({ summary: 'Thêm biến thể mới' })
   @ApiCreatedResponse({
     description: 'Tạo biến thể thành công.',
     schema: buildNullDataSuccessResponseSchema('Tạo biến thể thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
-  @ApiConflictResponse({ description: 'SKU biến thể hoặc tổ hợp màu-kích thước đã được sử dụng.' })
+  @ApiConflictResponse({ description: 'SKU hoặc tổ hợp biến thể đã tồn tại.' })
   @Post(':id/variants')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
@@ -200,13 +199,13 @@ export class ProductAdminController {
     return okNoData('Tạo biến thể thành công.');
   }
 
-  // Quản lý tồn kho và giá bán chi tiết cho từng biến thể cụ thể.
-  @ApiOperation({ summary: 'Cập nhật biến thể (giá, tồn kho, trạng thái)' })
+  // Cập nhật giá bán hoặc số lượng tồn kho của một biến thể.
+  @ApiOperation({ summary: 'Cập nhật biến thể' })
   @ApiOkResponse({
     description: 'Cập nhật biến thể thành công.',
     schema: buildNullDataSuccessResponseSchema('Cập nhật biến thể thành công.'),
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc biến thể.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy biến thể.' })
   @Put(':id/variants/:variantId')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
@@ -226,13 +225,13 @@ export class ProductAdminController {
     return okNoData('Cập nhật biến thể thành công.');
   }
 
-  // Loại bỏ một biến thể không còn được sản xuất hoặc kinh doanh.
+  // Xóa mềm một biến thể của sản phẩm.
   @ApiOperation({ summary: 'Xóa mềm biến thể' })
   @ApiOkResponse({
     description: 'Xóa biến thể thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa biến thể thành công.'),
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc biến thể.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy biến thể.' })
   @Delete(':id/variants/:variantId')
   @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
@@ -252,8 +251,8 @@ export class ProductAdminController {
 
   // ─── Images ────────────────────────────────────────────────────────────────
 
-  // Cập nhật hình ảnh minh họa mới cho sản phẩm.
-  @ApiOperation({ summary: 'Thêm hình ảnh cho sản phẩm' })
+  // Thêm hình ảnh minh họa mới cho sản phẩm.
+  @ApiOperation({ summary: 'Thêm hình ảnh mới' })
   @ApiCreatedResponse({
     description: 'Thêm hình ảnh sản phẩm thành công.',
     schema: buildNullDataSuccessResponseSchema('Thêm hình ảnh sản phẩm thành công.'),
@@ -272,13 +271,13 @@ export class ProductAdminController {
     return okNoData('Thêm hình ảnh sản phẩm thành công.');
   }
 
-  // Thay đổi thông tin ảnh hoặc thứ tự hiển thị để tối ưu hóa trải nghiệm khách hàng.
+  // Cập nhật thông tin mô tả hoặc thứ tự hiển thị của hình ảnh.
   @ApiOperation({ summary: 'Cập nhật hình ảnh' })
   @ApiOkResponse({
     description: 'Cập nhật hình ảnh sản phẩm thành công.',
     schema: buildNullDataSuccessResponseSchema('Cập nhật hình ảnh sản phẩm thành công.'),
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc hình ảnh.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy hình ảnh.' })
   @Put(':id/images/:imageId')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
@@ -298,13 +297,13 @@ export class ProductAdminController {
     return okNoData('Cập nhật hình ảnh sản phẩm thành công.');
   }
 
-  // Loại bỏ hình ảnh cũ hoặc không còn phù hợp.
+  // Xóa vĩnh viễn một hình ảnh khỏi sản phẩm.
   @ApiOperation({ summary: 'Xóa hình ảnh' })
   @ApiOkResponse({
     description: 'Xóa hình ảnh sản phẩm thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa hình ảnh sản phẩm thành công.'),
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm hoặc hình ảnh.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy hình ảnh.' })
   @Delete(':id/images/:imageId')
   @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })

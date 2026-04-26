@@ -19,7 +19,7 @@ export interface ProductAdminListItemView {
   slug: string;
   thumbnail: string | null;
   isActive: boolean;
-  category: { id: number; name: string } | null;
+  category: { id: number; name: string; slug: string } | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -112,19 +112,13 @@ function categoryWhereMatchesSlugTree(slug: string): Prisma.CategoryWhereInput {
  * và quản lý các quan hệ (Variants, Images, Categories).
  */
 @Injectable()
+// Repository Prisma cho các thao tác dữ liệu liên quan đến sản phẩm.
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   // ─── Public ─────────────────────────────────────────────────────────────────
 
-  /**
-   * Truy vấn danh sách sản phẩm cho khách hàng.
-   * Logic:
-   * 1. Lọc theo trạng thái active và chưa bị xóa.
-   * 2. Lọc theo cây danh mục (hỗ trợ slug của danh mục cha/ông).
-   * 3. Lọc theo biến thể (màu sắc, kích thước, khoảng giá).
-   * 4. Tính toán minPrice/maxPrice dựa trên các biến thể hợp lệ.
-   */
+  // Tìm kiếm danh sách sản phẩm công khai với các bộ lọc và phân trang.
   async findPublicList(params: {
     page: number;
     limit: number;
@@ -163,6 +157,7 @@ export class ProductRepository {
       where.variants = { some: variantFilter };
     }
 
+    // Thực hiện truy vấn đếm tổng số và lấy dữ liệu trong một transaction.
     const [total, products] = await this.prisma.$transaction([
       this.prisma.product.count({ where }),
       this.prisma.product.findMany({
@@ -204,6 +199,7 @@ export class ProductRepository {
     };
   }
 
+  // Tìm kiếm chi tiết sản phẩm công khai theo slug.
   async findBySlug(slug: string): Promise<ProductDetailView | null> {
     return this.prisma.product
       .findFirst({
@@ -232,6 +228,7 @@ export class ProductRepository {
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
 
+  // Xây dựng đối tượng orderBy cho truy vấn danh sách admin.
   private buildAdminListOrderBy(
     sortBy?: string,
     sortOrder?: 'asc' | 'desc',
@@ -257,6 +254,7 @@ export class ProductRepository {
     }
   }
 
+  // Truy vấn danh sách sản phẩm cho giao diện quản trị với đầy đủ thông tin bộ lọc.
   async findAdminList(params: {
     page: number;
     limit: number;
@@ -278,6 +276,7 @@ export class ProductRepository {
       ...(isActive !== undefined && { isActive }),
     };
 
+    // Đếm tổng số và lấy dữ liệu sản phẩm admin trong một transaction.
     const [total, products] = await this.prisma.$transaction([
       this.prisma.product.count({ where }),
       this.prisma.product.findMany({
@@ -295,6 +294,14 @@ export class ProductRepository {
           updatedAt: true,
           deletedAt: true,
           _count: { select: { variants: true } },
+          productCategories: {
+            take: 1,
+            select: {
+              category: {
+                select: { id: true, name: true, slug: true },
+              },
+            },
+          },
           variants: {
             where: { deletedAt: null },
             select: { onHand: true },
@@ -303,9 +310,10 @@ export class ProductRepository {
       }),
     ]);
 
-    const data = products.map(({ variants, ...rest }) => {
+    const data = products.map(({ variants, productCategories, ...rest }) => {
       const totalStock = variants.reduce((sum, v) => sum + v.onHand, 0);
-      return { ...rest, category: null, totalStock };
+      const category = productCategories?.[0]?.category ?? null;
+      return { ...rest, category, totalStock };
     });
 
     return {
@@ -314,6 +322,7 @@ export class ProductRepository {
     };
   }
 
+  // Lấy chi tiết sản phẩm cho giao diện quản trị theo ID.
   async findAdminById(id: number): Promise<ProductAdminDetailView | null> {
     return this.prisma.product
       .findUnique({
@@ -355,12 +364,14 @@ export class ProductRepository {
       ) as unknown as Promise<ProductAdminDetailView | null>;
   }
 
-  /** Xóa toàn bộ liên kết danh mục và ghi lại danh sách mới trong bảng nối. */
+  // Đồng bộ hóa danh mục của sản phẩm bằng cách xóa cũ và thêm mới.
   async syncProductCategories(productId: number, categoryIds: number[]): Promise<void> {
     const unique = [...new Set(categoryIds)].filter((id) => id >= 1);
     await this.prisma.$transaction(async (tx) => {
+      // Xóa tất cả các liên kết danh mục hiện tại.
       await tx.productCategory.deleteMany({ where: { productId } });
       if (unique.length > 0) {
+        // Thêm các liên kết danh mục mới.
         await tx.productCategory.createMany({
           data: unique.map((categoryId) => ({ productId, categoryId })),
           skipDuplicates: true,
@@ -371,6 +382,7 @@ export class ProductRepository {
 
   // ─── Create (transaction) ──────────────────────────────────────────────────
 
+  // Tạo mới một sản phẩm đầy đủ bao gồm biến thể, hình ảnh và danh mục trong một transaction.
   async createFull(data: {
     name: string;
     slug: string;
@@ -393,6 +405,7 @@ export class ProductRepository {
     }[];
   }): Promise<ProductAdminDetailView> {
     const product = await this.prisma.$transaction(async (tx) => {
+      // 1. Tạo bản ghi sản phẩm cơ bản.
       const created = await tx.product.create({
         data: {
           name: data.name,
@@ -403,6 +416,7 @@ export class ProductRepository {
         },
       });
 
+      // 2. Tạo các biến thể sản phẩm.
       if (data.variants.length > 0) {
         await tx.productVariant.createMany({
           data: data.variants.map((v) => ({
@@ -418,6 +432,7 @@ export class ProductRepository {
         });
       }
 
+      // 3. Tạo các hình ảnh sản phẩm.
       if (data.images.length > 0) {
         await tx.productImage.createMany({
           data: data.images.map((img) => ({
@@ -430,6 +445,7 @@ export class ProductRepository {
         });
       }
 
+      // 4. Tạo các liên kết danh mục.
       const uniqueCatIds = [...new Set(data.categoryIds)].filter((id) => id >= 1);
       if (uniqueCatIds.length > 0) {
         await tx.productCategory.createMany({
@@ -449,6 +465,7 @@ export class ProductRepository {
 
   // ─── Update basic info ─────────────────────────────────────────────────────
 
+  // Cập nhật thông tin cơ bản của sản phẩm.
   async updateBasicInfo(
     id: number,
     data: {
@@ -459,16 +476,20 @@ export class ProductRepository {
       isActive?: boolean;
     },
   ): Promise<ProductAdminDetailView> {
+    // Thực hiện cập nhật thông tin sản phẩm theo ID.
     await this.prisma.product.update({ where: { id }, data });
     return this.findAdminById(id) as Promise<ProductAdminDetailView>;
   }
 
   // ─── Soft-delete / Restore ─────────────────────────────────────────────────
 
+  // Xóa mềm sản phẩm và tất cả các biến thể của nó.
   async softDelete(id: number): Promise<void> {
     const now = new Date();
     await this.prisma.$transaction([
+      // Cập nhật ngày xóa cho sản phẩm.
       this.prisma.product.update({ where: { id }, data: { deletedAt: now } }),
+      // Cập nhật ngày xóa cho tất cả biến thể chưa bị xóa.
       this.prisma.productVariant.updateMany({
         where: { productId: id, deletedAt: null },
         data: { deletedAt: now },
@@ -476,9 +497,12 @@ export class ProductRepository {
     ]);
   }
 
+  // Khôi phục sản phẩm và các biến thể đã bị xóa mềm.
   async restore(id: number): Promise<ProductAdminDetailView> {
     await this.prisma.$transaction([
+      // Xóa ngày xóa của sản phẩm.
       this.prisma.product.update({ where: { id }, data: { deletedAt: null } }),
+      // Xóa ngày xóa của tất cả biến thể.
       this.prisma.productVariant.updateMany({
         where: { productId: id },
         data: { deletedAt: null },
@@ -489,6 +513,7 @@ export class ProductRepository {
 
   // ─── Variants ──────────────────────────────────────────────────────────────
 
+  // Tạo mới một biến thể cho sản phẩm.
   async createVariant(
     productId: number,
     data: {
@@ -499,6 +524,7 @@ export class ProductRepository {
       onHand: number;
     },
   ) {
+    // Thêm bản ghi biến thể mới vào database.
     return this.prisma.productVariant.create({
       data: {
         productId,
@@ -520,6 +546,7 @@ export class ProductRepository {
     });
   }
 
+  // Tìm kiếm thông tin cơ bản của biến thể theo ID.
   async findVariantById(variantId: number) {
     return this.prisma.productVariant.findUnique({
       where: { id: variantId },
@@ -532,10 +559,12 @@ export class ProductRepository {
     });
   }
 
+  // Cập nhật thông tin của một biến thể.
   async updateVariant(
     variantId: number,
     data: { price?: number; onHand?: number; isActive?: boolean },
   ) {
+    // Cập nhật các trường dữ liệu được yêu cầu cho biến thể.
     return this.prisma.productVariant.update({
       where: { id: variantId },
       data,
@@ -549,7 +578,9 @@ export class ProductRepository {
     });
   }
 
+  // Xóa mềm một biến thể.
   async softDeleteVariant(variantId: number): Promise<void> {
+    // Cập nhật ngày xóa cho biến thể cụ thể.
     await this.prisma.productVariant.update({
       where: { id: variantId },
       data: { deletedAt: new Date() },
@@ -558,10 +589,12 @@ export class ProductRepository {
 
   // ─── Images ────────────────────────────────────────────────────────────────
 
+  // Thêm mới một hình ảnh cho sản phẩm.
   async createImage(
     productId: number,
     data: { url: string; colorId?: number | null; altText?: string | null; sortOrder?: number },
   ) {
+    // Tạo bản ghi hình ảnh mới gắn với sản phẩm.
     return this.prisma.productImage.create({
       data: {
         productId,
@@ -574,6 +607,7 @@ export class ProductRepository {
     });
   }
 
+  // Tìm kiếm thông tin cơ bản của hình ảnh theo ID.
   async findImageById(imageId: number) {
     return this.prisma.productImage.findUnique({
       where: { id: imageId },
@@ -581,10 +615,12 @@ export class ProductRepository {
     });
   }
 
+  // Cập nhật thông tin của một hình ảnh.
   async updateImage(
     imageId: number,
     data: { colorId?: number | null; altText?: string | null; sortOrder?: number },
   ) {
+    // Thay đổi các thuộc tính của hình ảnh.
     return this.prisma.productImage.update({
       where: { id: imageId },
       data,
@@ -592,12 +628,15 @@ export class ProductRepository {
     });
   }
 
+  // Xóa vĩnh viễn một hình ảnh khỏi database.
   async deleteImage(imageId: number): Promise<void> {
+    // Thực hiện lệnh xóa bản ghi hình ảnh.
     await this.prisma.productImage.delete({ where: { id: imageId } });
   }
 
   // ─── Validation helpers ────────────────────────────────────────────────────
 
+  // Kiểm tra SKU đã tồn tại trong hệ thống hay chưa.
   async skuExists(sku: string, excludeId?: number): Promise<boolean> {
     const count = await this.prisma.productVariant.count({
       where: { sku, ...(excludeId && { id: { not: excludeId } }) },
@@ -605,6 +644,7 @@ export class ProductRepository {
     return count > 0;
   }
 
+  // Kiểm tra danh sách ID màu sắc có tồn tại đầy đủ không.
   async colorsExist(ids: number[]): Promise<boolean> {
     if (ids.length === 0) return true;
     const unique = [...new Set(ids)];
@@ -612,6 +652,7 @@ export class ProductRepository {
     return count === unique.length;
   }
 
+  // Kiểm tra danh sách ID kích thước có tồn tại đầy đủ không.
   async sizesExist(ids: number[]): Promise<boolean> {
     if (ids.length === 0) return true;
     const unique = [...new Set(ids)];
@@ -619,6 +660,7 @@ export class ProductRepository {
     return count === unique.length;
   }
 
+  // Kiểm tra danh mục có tồn tại và chưa bị xóa hay không.
   async categoryExists(id: number): Promise<boolean> {
     const count = await this.prisma.category.count({
       where: { id, deletedAt: null },
@@ -626,6 +668,7 @@ export class ProductRepository {
     return count > 0;
   }
 
+  // Kiểm tra xem một danh mục có phải là danh mục lá (không có con) hay không.
   async isLeafCategory(id: number): Promise<boolean> {
     const childCount = await this.prisma.category.count({
       where: { parentId: id, deletedAt: null },
@@ -635,6 +678,7 @@ export class ProductRepository {
 
   // ─── Private helpers ──────────────────────────────────────────────────────
 
+  // Xác định thứ tự sắp xếp cho danh sách sản phẩm công khai.
   private getPublicSortOrder(sort?: string): Prisma.ProductOrderByWithRelationInput[] {
     switch (sort) {
       case 'price_asc':

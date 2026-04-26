@@ -100,11 +100,11 @@ describe('CategoryService', () => {
 
   describe('findBySlug', () => {
     it('should return category from repository via redis getOrSet', async () => {
-      repository.findBySlug.mockResolvedValue(mockCategory);
+      repository.findBySlug.mockResolvedValue({ ...mockCategory, children: [] });
 
       const result = await service.findBySlug('test-category');
 
-      expect(result).toEqual(mockCategory);
+      expect(result).toEqual({ ...mockCategory, children: [] });
       expect(repository.findBySlug).toHaveBeenCalledWith('test-category');
     });
 

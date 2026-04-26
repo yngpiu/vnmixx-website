@@ -30,9 +30,11 @@ const ADDRESS_SELECT = {
 } as const;
 
 @Injectable()
+// Repository Prisma cho các thao tác liên quan đến sổ địa chỉ của khách hàng.
 export class AddressRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Lấy danh sách địa chỉ của khách hàng, ưu tiên địa chỉ mặc định và ngày tạo mới nhất.
   async findAllByCustomerId(customerId: number): Promise<AddressView[]> {
     return this.prisma.address.findMany({
       where: { customerId },
@@ -41,6 +43,7 @@ export class AddressRepository {
     }) as unknown as Promise<AddressView[]>;
   }
 
+  // Tìm một địa chỉ theo ID và ID khách hàng.
   async findById(id: number, customerId: number): Promise<AddressView | null> {
     return this.prisma.address.findFirst({
       where: { id, customerId },
@@ -48,6 +51,7 @@ export class AddressRepository {
     }) as unknown as Promise<AddressView | null>;
   }
 
+  // Tạo địa chỉ mới cho khách hàng.
   async create(data: {
     customerId: number;
     fullName: string;
@@ -65,6 +69,7 @@ export class AddressRepository {
     }) as unknown as Promise<AddressView>;
   }
 
+  // Cập nhật thông tin địa chỉ theo ID.
   async update(
     id: number,
     data: {
@@ -84,6 +89,7 @@ export class AddressRepository {
     }) as unknown as Promise<AddressView>;
   }
 
+  // Bỏ đánh dấu mặc định cho tất cả địa chỉ của một khách hàng.
   async clearDefault(customerId: number): Promise<void> {
     await this.prisma.address.updateMany({
       where: { customerId, isDefault: true },
@@ -91,6 +97,7 @@ export class AddressRepository {
     });
   }
 
+  // Đặt một địa chỉ làm mặc định theo ID.
   async setDefault(id: number): Promise<void> {
     await this.prisma.address.update({
       where: { id },
@@ -98,6 +105,7 @@ export class AddressRepository {
     });
   }
 
+  // Đếm tổng số địa chỉ hiện có của khách hàng.
   async countByCustomerId(customerId: number): Promise<number> {
     return this.prisma.address.count({
       where: { customerId },

@@ -1,25 +1,30 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ReviewVisibility } from '../../generated/prisma/client';
-import { PrismaService } from '../prisma/services/prisma.service';
+import { ReviewVisibility } from '../../../generated/prisma/client';
+import { PrismaService } from '../../prisma/services/prisma.service';
+import { ReviewRepository } from '../repositories/review.repository';
 import { ReviewService } from './review.service';
 
 describe('ReviewService', () => {
   let service: ReviewService;
+  let repo: any;
   let prisma: any;
 
   beforeEach(async () => {
+    repo = {
+      findByProductAndCustomer: jest.fn(),
+      create: jest.fn(),
+      countReviews: jest.fn(),
+      findAdminReviews: jest.fn(),
+      findById: jest.fn(),
+      exists: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
     prisma = {
       product: {
         findUnique: jest.fn(),
-      },
-      productReview: {
-        findUnique: jest.fn(),
-        create: jest.fn(),
-        count: jest.fn(),
-        findMany: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
       },
       orderItem: {
         count: jest.fn(),
@@ -29,6 +34,10 @@ describe('ReviewService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReviewService,
+        {
+          provide: ReviewRepository,
+          useValue: repo,
+        },
         {
           provide: PrismaService,
           useValue: prisma,
@@ -79,7 +88,7 @@ describe('ReviewService', () => {
         deletedAt: null,
         isActive: true,
       });
-      prisma.productReview.findUnique.mockResolvedValue({ id: 1 });
+      repo.findByProductAndCustomer.mockResolvedValue({ id: 1 });
 
       await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
         ConflictException,
@@ -92,7 +101,7 @@ describe('ReviewService', () => {
         deletedAt: null,
         isActive: true,
       });
-      prisma.productReview.findUnique.mockResolvedValue(null);
+      repo.findByProductAndCustomer.mockResolvedValue(null);
       prisma.orderItem.count.mockResolvedValue(0);
 
       await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
@@ -106,28 +115,20 @@ describe('ReviewService', () => {
         deletedAt: null,
         isActive: true,
       });
-      prisma.productReview.findUnique.mockResolvedValue(null);
+      repo.findByProductAndCustomer.mockResolvedValue(null);
       prisma.orderItem.count.mockResolvedValue(1);
       const dtoWithOptionals = { ...dto, title: undefined, content: undefined };
-      const createdReview = {
-        id: 1,
-        ...dtoWithOptionals,
-        title: null,
-        content: null,
-        status: ReviewVisibility.VISIBLE,
-      };
-      prisma.productReview.create.mockResolvedValue(createdReview);
 
-      const result = await service.createProductReview(
-        customerId,
-        productId,
-        dtoWithOptionals as any,
-      );
+      await service.createProductReview(customerId, productId, dtoWithOptionals as any);
 
-      expect(result.title).toBeNull();
-      expect(prisma.productReview.create).toHaveBeenCalledWith(
+      expect(repo.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ title: null, content: null }),
+          productId,
+          customerId,
+          rating: dto.rating,
+          title: null,
+          content: null,
+          status: ReviewVisibility.VISIBLE,
         }),
       );
     });
@@ -136,8 +137,8 @@ describe('ReviewService', () => {
   describe('getAdminReviews', () => {
     it('should return paginated reviews with default values', async () => {
       const query = {};
-      prisma.productReview.count.mockResolvedValue(1);
-      prisma.productReview.findMany.mockResolvedValue([
+      repo.countReviews.mockResolvedValue(1);
+      repo.findAdminReviews.mockResolvedValue([
         {
           id: 1,
           rating: 5,
@@ -159,12 +160,12 @@ describe('ReviewService', () => {
 
     it('should handle "all" visibility and no keyword', async () => {
       const query = { visibility: 'all' as any };
-      prisma.productReview.count.mockResolvedValue(0);
-      prisma.productReview.findMany.mockResolvedValue([]);
+      repo.countReviews.mockResolvedValue(0);
+      repo.findAdminReviews.mockResolvedValue([]);
 
       await service.getAdminReviews(query);
 
-      expect(prisma.productReview.count).toHaveBeenCalledWith({ where: {} });
+      expect(repo.countReviews).toHaveBeenCalledWith({});
     });
 
     it('should handle search keyword and filters', async () => {
@@ -175,18 +176,16 @@ describe('ReviewService', () => {
         visibility: 'hidden' as any,
         customerId: 10,
       };
-      prisma.productReview.count.mockResolvedValue(0);
-      prisma.productReview.findMany.mockResolvedValue([]);
+      repo.countReviews.mockResolvedValue(0);
+      repo.findAdminReviews.mockResolvedValue([]);
 
       await service.getAdminReviews(query);
 
-      expect(prisma.productReview.count).toHaveBeenCalledWith(
+      expect(repo.countReviews).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            customerId: 10,
-            status: ReviewVisibility.HIDDEN,
-            OR: expect.any(Array),
-          }),
+          customerId: 10,
+          status: ReviewVisibility.HIDDEN,
+          OR: expect.any(Array),
         }),
       );
     });
@@ -194,7 +193,7 @@ describe('ReviewService', () => {
 
   describe('getAdminReviewDetail', () => {
     it('should throw NotFoundException if review not found', async () => {
-      prisma.productReview.findUnique.mockResolvedValue(null);
+      repo.findById.mockResolvedValue(null);
       await expect(service.getAdminReviewDetail(1)).rejects.toThrow(NotFoundException);
     });
 
@@ -212,7 +211,7 @@ describe('ReviewService', () => {
         product: { name: 'P' },
         customer: { fullName: 'Cust', email: 'E' },
       };
-      prisma.productReview.findUnique.mockResolvedValue(reviewDetail);
+      repo.findById.mockResolvedValue(reviewDetail);
 
       const result = await service.getAdminReviewDetail(1);
 
@@ -224,8 +223,8 @@ describe('ReviewService', () => {
 
   describe('updateAdminReviewStatus', () => {
     it('should update status and return detail', async () => {
-      prisma.productReview.findUnique.mockResolvedValueOnce({ id: 1 }); // for existence check
-      prisma.productReview.update.mockResolvedValue({});
+      repo.exists.mockResolvedValue(true);
+      repo.update.mockResolvedValue({});
 
       // for getAdminReviewDetail which is called after update
       const reviewDetail = {
@@ -241,19 +240,16 @@ describe('ReviewService', () => {
         product: { name: 'P' },
         customer: { fullName: 'Cust', email: 'E' },
       };
-      prisma.productReview.findUnique.mockResolvedValueOnce(reviewDetail);
+      repo.findById.mockResolvedValue(reviewDetail);
 
       const result = await service.updateAdminReviewStatus(1, ReviewVisibility.HIDDEN);
 
-      expect(prisma.productReview.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: { status: ReviewVisibility.HIDDEN },
-      });
+      expect(repo.update).toHaveBeenCalledWith(1, { status: ReviewVisibility.HIDDEN });
       expect(result.status).toBe(ReviewVisibility.HIDDEN);
     });
 
     it('should throw NotFoundException if review not found when updating', async () => {
-      prisma.productReview.findUnique.mockResolvedValue(null);
+      repo.exists.mockResolvedValue(false);
       await expect(service.updateAdminReviewStatus(1, ReviewVisibility.HIDDEN)).rejects.toThrow(
         NotFoundException,
       );
@@ -262,16 +258,16 @@ describe('ReviewService', () => {
 
   describe('deleteAdminReview', () => {
     it('should delete review successfully', async () => {
-      prisma.productReview.findUnique.mockResolvedValue({ id: 1 });
-      prisma.productReview.delete.mockResolvedValue({});
+      repo.exists.mockResolvedValue(true);
+      repo.delete.mockResolvedValue({});
 
       await service.deleteAdminReview(1);
 
-      expect(prisma.productReview.delete).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(repo.delete).toHaveBeenCalledWith(1);
     });
 
     it('should throw NotFoundException if review not found when deleting', async () => {
-      prisma.productReview.findUnique.mockResolvedValue(null);
+      repo.exists.mockResolvedValue(false);
       await expect(service.deleteAdminReview(1)).rejects.toThrow(NotFoundException);
     });
   });

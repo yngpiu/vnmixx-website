@@ -29,7 +29,7 @@ export class CustomerListItemResponseDto {
   deletedAt: Date | null;
 }
 
-class PaginationMeta {
+class PaginationMetaDto {
   @ApiProperty({ example: 1 })
   page: number;
 
@@ -47,8 +47,8 @@ export class CustomerListResponseDto {
   @ApiProperty({ type: [CustomerListItemResponseDto] })
   data: CustomerListItemResponseDto[];
 
-  @ApiProperty({ type: PaginationMeta })
-  meta: PaginationMeta;
+  @ApiProperty({ type: PaginationMetaDto })
+  meta: PaginationMetaDto;
 }
 
 export class CustomerDetailResponseDto extends CustomerListItemResponseDto {

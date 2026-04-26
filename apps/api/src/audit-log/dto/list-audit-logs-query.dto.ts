@@ -54,6 +54,7 @@ export class ListAuditLogsQueryDto {
     type: [Number],
     isArray: true,
     description: 'Lọc theo nhiều nhân viên (lặp query: actorEmployeeIds=1&actorEmployeeIds=2).',
+    example: [1, 2],
   })
   @Transform(({ value }) => toOptionalUniqueIntArray(value))
   @IsArray()
@@ -92,6 +93,7 @@ export class ListAuditLogsQueryDto {
     isArray: true,
     description:
       'Lọc theo nhiều mã hành động (lặp query: actions=employee.create&actions=role.update).',
+    example: ['employee.create', 'role.update'],
   })
   @Transform(({ value }) => toOptionalUniqueStringArray(value))
   @IsArray()
@@ -105,6 +107,7 @@ export class ListAuditLogsQueryDto {
     isArray: true,
     description:
       'Lọc theo nhiều loại tài nguyên (lặp query: resourceTypes=order&resourceTypes=product).',
+    example: ['order', 'product'],
   })
   @Transform(({ value }) => toOptionalUniqueStringArray(value))
   @IsArray()
@@ -126,7 +129,7 @@ export class ListAuditLogsQueryDto {
   @IsOptional()
   resourceId?: string;
 
-  @ApiPropertyOptional({ enum: AuditLogStatus })
+  @ApiPropertyOptional({ enum: AuditLogStatus, example: AuditLogStatus.SUCCESS })
   @IsEnum(AuditLogStatus)
   @IsOptional()
   status?: AuditLogStatus;

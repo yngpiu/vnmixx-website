@@ -85,7 +85,7 @@ describe('ColorService', () => {
   describe('findList', () => {
     it('should return paginated list', async () => {
       const paginated = { items: [mockColor], total: 1, page: 1, limit: 10, totalPages: 1 };
-      repository.findList.mockResolvedValue(paginated);
+      repository.findList.mockResolvedValue(paginated as any);
       const result = await service.findList({ page: 1, limit: 10 });
       expect(result).toEqual(paginated);
     });

@@ -34,13 +34,14 @@ export interface AuditLogWriteInput {
 // AuditLogService: Dịch vụ ghi nhật ký hoạt động của nhân viên trên hệ thống.
 // Vai trò: Lưu vết mọi thay đổi quan trọng để phục vụ kiểm tra và bảo mật.
 @Injectable()
+// Dịch vụ xử lý logic nghiệp vụ cho nhật ký hoạt động (Audit Log).
 export class AuditLogService {
   private readonly logger = new Logger(AuditLogService.name);
 
   constructor(private readonly auditLogRepository: AuditLogRepository) {}
 
-  // Ghi một bản ghi nhật ký mới.
-  // Logic: Tự động lọc các thông tin nhạy cảm (password, token) trước khi lưu vào DB để đảm bảo an toàn.
+  // Ghi nhận một hành động mới vào hệ thống.
+  // Quy trình: Khử trùng dữ liệu nhạy cảm -> Lưu vào DB -> Xử lý lỗi nếu có.
   async write(input: AuditLogWriteInput): Promise<void> {
     try {
       // 1. Thực hiện tạo bản ghi nhật ký mới trong cơ sở dữ liệu
@@ -59,11 +60,11 @@ export class AuditLogService {
         errorMessage: input.errorMessage,
       });
     } catch (error) {
-      // 2. Ghi lỗi vào console nếu không thể lưu log vào DB
+      // 2. Ghi lỗi vào console nếu không thể lưu log vào DB để phục vụ giám sát
       this.logger.error(
         `Failed to write audit log for ${input.action}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
-      // Nếu thao tác chính đã thất bại (status FAILED) thì không ném lỗi ra ngoài để tránh làm treo ứng dụng
+      // 3. Nếu hành động chính đã thất bại thì không ném lỗi log để tránh chặn quy trình chính
       if (input.status === AuditLogStatus.FAILED) {
         return;
       }
@@ -71,7 +72,8 @@ export class AuditLogService {
     }
   }
 
-  // Lấy danh sách nhật ký hoạt động có phân trang và bộ lọc.
+  // Truy vấn danh sách nhật ký hoạt động với các tiêu chí lọc.
+  // Dữ liệu audit log mang tính biến động cao nên không áp dụng cache Redis.
   async findList(
     input: ListAuditLogsInput,
   ): Promise<PaginatedAuditLogsResult<AuditLogListItemView>> {

@@ -33,37 +33,52 @@ import {
   okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
-import { AddCartItemDto, CartItemResponseDto, CartResponseDto, UpdateCartItemDto } from '../dto';
+import {
+  AddCartItemDto,
+  CartItemColorDto,
+  CartItemResponseDto,
+  CartItemSizeDto,
+  CartItemVariantDto,
+  CartResponseDto,
+  UpdateCartItemDto,
+} from '../dto';
 import { CartService } from '../services/cart.service';
 
-// Quản lý giỏ hàng cá nhân cho khách hàng.
-// Cung cấp các công cụ để khách hàng tùy chỉnh danh sách sản phẩm dự định mua.
 @ApiTags('Cart')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('CUSTOMER')
-@ApiExtraModels(CartResponseDto, CartItemResponseDto)
+@ApiExtraModels(
+  CartResponseDto,
+  CartItemResponseDto,
+  CartItemVariantDto,
+  CartItemColorDto,
+  CartItemSizeDto,
+)
 @Controller('me/cart')
+// API quản lý giỏ hàng dành cho khách hàng đã đăng nhập.
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
-  // Truy xuất nội dung giỏ hàng hiện tại của khách hàng.
+  // Lấy toàn bộ thông tin giỏ hàng và các sản phẩm bên trong.
   @ApiOperation({ summary: 'Lấy giỏ hàng của khách hàng hiện tại' })
-  @ApiOkResponse({ schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CartResponseDto) }) })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CartResponseDto) }),
+  })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async getCart(@CurrentUser() user: AuthenticatedUser): Promise<SuccessPayload<CartResponseDto>> {
     return ok(await this.cartService.getCart(user.id), 'Lấy giỏ hàng thành công.');
   }
 
-  // Thêm sản phẩm mới hoặc tăng số lượng sản phẩm hiện có trong giỏ hàng.
+  // Thêm một biến thể sản phẩm vào giỏ hàng với số lượng chỉ định.
   @ApiOperation({ summary: 'Thêm sản phẩm vào giỏ hàng' })
   @ApiCreatedResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CartItemResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy biến thể sản phẩm.' })
-  @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ hoặc tồn kho không đủ.' })
   @Post('items')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async addItem(
@@ -76,13 +91,13 @@ export class CartController {
     );
   }
 
-  // Điều chỉnh số lượng sản phẩm trong giỏ hàng để phù hợp với nhu cầu thực tế.
+  // Thay đổi số lượng của một sản phẩm đã có trong giỏ hàng.
   @ApiOperation({ summary: 'Cập nhật số lượng sản phẩm trong giỏ hàng' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CartItemResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy mục giỏ hàng.' })
-  @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ hoặc tồn kho không đủ.' })
   @Patch('items/:itemId')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async updateItem(
@@ -96,7 +111,7 @@ export class CartController {
     );
   }
 
-  // Loại bỏ một sản phẩm cụ thể khỏi giỏ hàng.
+  // Xóa bỏ một mục sản phẩm cụ thể khỏi giỏ hàng.
   @ApiOperation({ summary: 'Xoá sản phẩm khỏi giỏ hàng' })
   @ApiOkResponse({
     description: 'Xóa sản phẩm khỏi giỏ hàng thành công.',
@@ -114,7 +129,7 @@ export class CartController {
     return okNoData('Xóa sản phẩm khỏi giỏ hàng thành công.');
   }
 
-  // Xóa sạch toàn bộ sản phẩm để làm mới giỏ hàng.
+  // Làm sạch toàn bộ giỏ hàng của khách hàng.
   @ApiOperation({ summary: 'Xoá toàn bộ giỏ hàng' })
   @ApiOkResponse({
     description: 'Xóa toàn bộ giỏ hàng thành công.',

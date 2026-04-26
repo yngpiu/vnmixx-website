@@ -1,15 +1,20 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ChatSenderType } from '../../../generated/prisma/client';
-import type {
+import {
   ChatDetailResponseDto,
   ChatListResponseDto,
   ChatMessageResponseDto,
   ChatSummaryResponseDto,
   MessagesListResponseDto,
-} from '../dto/chat-response.dto';
-import type { ListChatsQueryDto } from '../dto/list-chats-query.dto';
-import type { MessagesQueryDto } from '../dto/messages-query.dto';
-import { SupportChatRepository } from '../repositories/support-chat.repository';
+} from '../dto';
+import { ListChatsQueryDto } from '../dto/list-chats-query.dto';
+import { MessagesQueryDto } from '../dto/messages-query.dto';
+import {
+  ChatDetailView,
+  ChatSummaryView,
+  MessageView,
+  SupportChatRepository,
+} from '../repositories/support-chat.repository';
 
 interface SendMessageInput {
   readonly chatId: number;
@@ -18,108 +23,81 @@ interface SendMessageInput {
   readonly content: string;
 }
 
-type ChatDetailRow = {
-  id: number;
-  customerId: number;
-  createdAt: Date;
-  customer: { fullName: string };
-  assignments: { employee: { id: number; fullName: string }; assignedAt: Date }[];
-};
-
-type ChatListRow = {
-  id: number;
-  customerId: number;
-  createdAt: Date;
-  customer: { fullName: string };
-  assignments: { employee: { fullName: string } }[];
-  messages: { content: string; createdAt: Date }[];
-};
-
-type MessageRow = {
-  id: number;
-  chatId: number;
-  senderType: ChatSenderType;
-  senderCustomerId: number | null;
-  senderEmployeeId: number | null;
-  content: string;
-  createdAt: Date;
-};
-
-/**
- * SupportChatService: Xử lý nghiệp vụ chat hỗ trợ khách hàng.
- * Quản lý tạo/lấy cuộc hội thoại, gửi tin nhắn, phân công nhân viên và truy vấn dữ liệu.
- */
 @Injectable()
+// Xử lý luồng nghiệp vụ liên quan đến chat hỗ trợ khách hàng.
 export class SupportChatService {
   constructor(private readonly repository: SupportChatRepository) {}
 
-  /**
-   * Tìm hoặc tạo cuộc hội thoại cho khách hàng.
-   * Mỗi khách chỉ có tối đa 1 cuộc chat (unique constraint trên customerId).
-   */
+  // Tìm cuộc hội thoại hiện có hoặc tạo mới nếu khách hàng chưa có chat.
   async findOrCreateChat(customerId: number): Promise<ChatDetailResponseDto> {
     const existing = await this.repository.findByCustomerId(customerId);
-    if (existing) return this.mapChatDetail(existing as ChatDetailRow);
+    if (existing) return this.mapChatDetail(existing);
+
     const created = await this.repository.create(customerId);
-    return this.mapChatDetail(created as ChatDetailRow);
+    return this.mapChatDetail(created);
   }
 
-  /**
-   * Lấy cuộc hội thoại hiện tại của khách hàng.
-   */
+  // Lấy thông tin cuộc hội thoại của một khách hàng cụ thể.
   async findChatByCustomer(customerId: number): Promise<ChatDetailResponseDto | null> {
     const chat = await this.repository.findByCustomerId(customerId);
     if (!chat) return null;
-    return this.mapChatDetail(chat as ChatDetailRow);
+
+    return this.mapChatDetail(chat);
   }
 
-  /**
-   * Lưu tin nhắn mới vào cuộc hội thoại.
-   */
+  // Lưu tin nhắn mới và trả về dữ liệu tin nhắn kèm tên người gửi.
   async sendMessage(input: SendMessageInput): Promise<ChatMessageResponseDto> {
     const isExists = await this.repository.existsById(input.chatId);
-    if (!isExists) throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${input.chatId}`);
+    if (!isExists) {
+      throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${input.chatId}`);
+    }
+
     const message = await this.repository.createMessage(input);
     const senderName = await this.resolveSenderName(input.senderType, input.senderId);
-    return this.mapMessage(message as MessageRow, senderName);
+
+    return this.mapMessage(message, senderName);
   }
 
-  /**
-   * Phân công nhân viên vào cuộc hội thoại.
-   */
+  // Phân công nhân viên vào hỗ trợ cuộc hội thoại.
   async assignEmployee(chatId: number, employeeId: number): Promise<ChatDetailResponseDto> {
     const isExists = await this.repository.existsById(chatId);
-    if (!isExists) throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+    if (!isExists) {
+      throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+    }
+
     const existing = await this.repository.findAssignment(chatId, employeeId);
-    if (existing) throw new ConflictException('Bạn đã được phân công vào cuộc hội thoại này.');
+    if (existing) {
+      throw new ConflictException('Bạn đã được phân công vào cuộc hội thoại này.');
+    }
+
     await this.repository.createAssignment(chatId, employeeId);
     return this.getChatDetail(chatId);
   }
 
-  /**
-   * Lấy chi tiết cuộc hội thoại theo ID.
-   */
+  // Lấy chi tiết cuộc hội thoại bao gồm các nhân viên đã được phân công.
   async getChatDetail(chatId: number): Promise<ChatDetailResponseDto> {
     const chat = await this.repository.findById(chatId);
-    if (!chat) throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
-    return this.mapChatDetail(chat as ChatDetailRow);
+    if (!chat) {
+      throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+    }
+
+    return this.mapChatDetail(chat);
   }
 
-  /**
-   * Lấy lịch sử tin nhắn với cursor-based pagination.
-   */
+  // Lấy danh sách tin nhắn cũ hơn cursor để phục vụ infinite scroll.
   async getMessages(chatId: number, query: MessagesQueryDto): Promise<MessagesListResponseDto> {
     const limit = query.limit ?? 30;
     const isExists = await this.repository.existsById(chatId);
-    if (!isExists) throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
-    const messages = (await this.repository.findMessages(
-      chatId,
-      query.cursor,
-      limit + 1,
-    )) as MessageRow[];
+    if (!isExists) {
+      throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+    }
+
+    const messages = await this.repository.findMessages(chatId, query.cursor, limit + 1);
     const hasMore = messages.length > limit;
     const items = hasMore ? messages.slice(0, limit) : messages;
+
     const senderNames = await this.resolveSenderNames(items);
+
     return {
       items: items.map((msg) =>
         this.mapMessage(msg, senderNames.get(this.buildSenderKey(msg)) ?? null),
@@ -129,9 +107,7 @@ export class SupportChatService {
     };
   }
 
-  /**
-   * Lấy danh sách tất cả cuộc hội thoại (Admin) với phân trang.
-   */
+  // Lấy danh sách các cuộc hội thoại cho trang quản trị với phân trang.
   async getAdminChats(
     query: ListChatsQueryDto,
     currentEmployeeId: number,
@@ -144,9 +120,11 @@ export class SupportChatService {
       this.repository.count(filterEmployeeId),
       this.repository.findMany((page - 1) * pageSize, pageSize, filterEmployeeId),
     ]);
+
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
     return {
-      items: (chats as ChatListRow[]).map((chat) => this.mapChatSummary(chat)),
+      items: chats.map((chat) => this.mapChatSummary(chat)),
       total,
       page,
       pageSize,
@@ -154,25 +132,21 @@ export class SupportChatService {
     };
   }
 
-  /**
-   * Kiểm tra nhân viên có được phân công vào cuộc hội thoại hay không.
-   */
+  // Kiểm tra xem nhân viên đã được phân công vào chat chưa.
   async isEmployeeAssigned(chatId: number, employeeId: number): Promise<boolean> {
     const assignment = await this.repository.findAssignment(chatId, employeeId);
     return assignment !== null;
   }
 
-  /**
-   * Kiểm tra khách hàng có sở hữu cuộc hội thoại hay không.
-   */
+  // Kiểm tra xem khách hàng có phải chủ sở hữu của cuộc hội thoại không.
   async isCustomerOwner(chatId: number, customerId: number): Promise<boolean> {
     const chat = await this.repository.findByCustomerId(customerId);
     return chat?.id === chatId;
   }
 
-  // ─── Private helpers ───────────────────────────────────────────────
+  // ─── Các hàm hỗ trợ ánh xạ dữ liệu (Mapping) ──────────────────────────
 
-  private mapChatDetail(chat: ChatDetailRow): ChatDetailResponseDto {
+  private mapChatDetail(chat: ChatDetailView): ChatDetailResponseDto {
     return {
       id: chat.id,
       customerId: chat.customerId,
@@ -186,7 +160,7 @@ export class SupportChatService {
     };
   }
 
-  private mapChatSummary(chat: ChatListRow): ChatSummaryResponseDto {
+  private mapChatSummary(chat: ChatSummaryView): ChatSummaryResponseDto {
     const lastMessage = chat.messages[0] ?? null;
     return {
       id: chat.id,
@@ -199,7 +173,7 @@ export class SupportChatService {
     };
   }
 
-  private mapMessage(msg: MessageRow, senderName: string | null): ChatMessageResponseDto {
+  private mapMessage(msg: MessageView, senderName: string | null): ChatMessageResponseDto {
     return {
       id: msg.id,
       chatId: msg.chatId,
@@ -224,9 +198,10 @@ export class SupportChatService {
     return rows[0]?.fullName ?? null;
   }
 
-  private async resolveSenderNames(messages: MessageRow[]): Promise<Map<string, string>> {
+  private async resolveSenderNames(messages: MessageView[]): Promise<Map<string, string>> {
     const customerIds = new Set<number>();
     const employeeIds = new Set<number>();
+
     for (const msg of messages) {
       if (msg.senderType === ChatSenderType.CUSTOMER && msg.senderCustomerId) {
         customerIds.add(msg.senderCustomerId);
@@ -235,19 +210,27 @@ export class SupportChatService {
         employeeIds.add(msg.senderEmployeeId);
       }
     }
+
     const nameMap = new Map<string, string>();
+
     if (customerIds.size > 0) {
       const customers = await this.repository.findCustomerNames([...customerIds]);
-      for (const c of customers) nameMap.set(`CUSTOMER:${c.id}`, c.fullName);
+      for (const c of customers) {
+        nameMap.set(`CUSTOMER:${c.id}`, c.fullName);
+      }
     }
+
     if (employeeIds.size > 0) {
       const employees = await this.repository.findEmployeeNames([...employeeIds]);
-      for (const e of employees) nameMap.set(`EMPLOYEE:${e.id}`, e.fullName);
+      for (const e of employees) {
+        nameMap.set(`EMPLOYEE:${e.id}`, e.fullName);
+      }
     }
+
     return nameMap;
   }
 
-  private buildSenderKey(msg: MessageRow): string {
+  private buildSenderKey(msg: MessageView): string {
     const id =
       msg.senderType === ChatSenderType.CUSTOMER ? msg.senderCustomerId : msg.senderEmployeeId;
     return `${msg.senderType}:${id}`;

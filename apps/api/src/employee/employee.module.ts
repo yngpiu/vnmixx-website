@@ -11,4 +11,5 @@ import { EmployeeService } from './services/employee.service';
   controllers: [EmployeeAdminController],
   providers: [EmployeeService, EmployeeRepository],
 })
+// Module quản lý nhân viên - Kết nối controller, service và repository.
 export class EmployeeModule {}

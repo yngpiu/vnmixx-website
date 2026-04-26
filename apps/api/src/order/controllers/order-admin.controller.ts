@@ -29,8 +29,6 @@ import {
 } from '../dto';
 import { OrderAdminService } from '../services/order-admin.service';
 
-// Tiếp nhận các yêu cầu quản lý đơn hàng từ phía nhân viên.
-// Cung cấp các công cụ vận hành: xác nhận đơn, tạo vận đơn GHN, và xử lý các tình huống hủy đơn/thanh toán.
 @ApiTags('Orders (Admin)')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -38,6 +36,8 @@ import { OrderAdminService } from '../services/order-admin.service';
 @RequireUserType('EMPLOYEE')
 @ApiExtraModels(OrderAdminListResponseDto, OrderAdminDetailResponseDto)
 @Controller('admin/orders')
+// Tiếp nhận các yêu cầu quản lý đơn hàng từ phía nhân viên.
+// Cung cấp các công cụ vận hành: xác nhận đơn, tạo vận đơn GHN, và xử lý các tình huống hủy đơn/thanh toán.
 export class OrderAdminController {
   constructor(private readonly orderAdminService: OrderAdminService) {}
 
@@ -46,8 +46,8 @@ export class OrderAdminController {
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderAdminListResponseDto) }),
   })
-  @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get()
   async findAll(
     @Query() query: ListAdminOrdersQueryDto,
   ): Promise<SuccessPayload<OrderAdminListResponseDto>> {
@@ -63,8 +63,8 @@ export class OrderAdminController {
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderAdminDetailResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
-  @Get(':orderCode')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get(':orderCode')
   async findByCode(
     @Param('orderCode') orderCode: string,
   ): Promise<SuccessPayload<OrderAdminDetailResponseDto>> {
@@ -81,8 +81,8 @@ export class OrderAdminController {
   })
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép xác nhận.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
-  @Patch(':orderCode/confirm')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Patch(':orderCode/confirm')
   async confirmOrder(
     @Param('orderCode') orderCode: string,
     @Body() body: ConfirmOrderShipmentDto,
@@ -106,8 +106,8 @@ export class OrderAdminController {
   })
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép hủy.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
-  @Patch(':orderCode/cancel')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Patch(':orderCode/cancel')
   async cancelOrder(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -126,8 +126,8 @@ export class OrderAdminController {
   })
   @ApiBadRequestResponse({ description: 'Đơn hàng không phải chuyển khoản hoặc đã xác nhận.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
-  @Patch(':orderCode/confirm-payment')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Patch(':orderCode/confirm-payment')
   async confirmPayment(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,

@@ -1,10 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
-/**
- * CreateSizeDto: DTO tạo mới kích thước.
- * Vai trò: Validate dữ liệu đầu vào khi thêm một kích thước mới (ví dụ: S, M, L).
- */
+// CreateSizeDto: DTO tạo mới kích thước.
+// Vai trò: Validate dữ liệu đầu vào khi thêm một kích thước mới (ví dụ: S, M, L).
 export class CreateSizeDto {
   @ApiProperty({ example: 'M', maxLength: 10 })
   @IsString({ message: 'Nhãn kích thước phải là chuỗi ký tự' })

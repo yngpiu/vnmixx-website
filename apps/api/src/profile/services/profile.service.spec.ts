@@ -84,7 +84,7 @@ describe('ProfileService', () => {
       const updated = { id: 1, ...dto } as any;
       customerRepo.update.mockResolvedValue(updated);
 
-      const result = await service.updateCustomerProfile(1, dto);
+      const result = await service.updateCustomerProfile(1, dto as any);
 
       expect(result).toBe(updated);
       expect(customerRepo.update).toHaveBeenCalledWith(1, {
@@ -133,7 +133,7 @@ describe('ProfileService', () => {
   });
 
   describe('updateEmployeeProfile', () => {
-    const auditContext = { ip: '127.0.0.1' };
+    const auditContext = { ipAddress: '127.0.0.1' };
 
     it('should update profile and write audit log on success', async () => {
       const dto = { fullName: 'New Name', avatarUrl: 'url', phoneNumber: '123' };

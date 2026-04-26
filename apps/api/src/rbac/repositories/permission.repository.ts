@@ -7,6 +7,12 @@ export interface PermissionView {
   description: string | null;
 }
 
+const PERMISSION_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+} as const;
+
 @Injectable()
 // Repository truy xuất dữ liệu quyền từ bảng permission.
 export class PermissionRepository {
@@ -16,7 +22,7 @@ export class PermissionRepository {
   async findAll(): Promise<PermissionView[]> {
     return this.prisma.permission.findMany({
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, description: true },
+      select: PERMISSION_SELECT,
     });
   }
 

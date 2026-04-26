@@ -5,6 +5,7 @@ import { AuditLogStatus, EmployeeStatus, Prisma } from '../../../generated/prism
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { EmployeeAuthzCacheService } from '../../auth/services/employee-authz-cache.service';
 import { RoleRepository } from '../../rbac/repositories/role.repository';
+import { RedisService } from '../../redis/services/redis.service';
 import { EmployeeRepository } from '../repositories/employee.repository';
 import { EmployeeService } from './employee.service';
 
@@ -16,6 +17,7 @@ describe('EmployeeService', () => {
   let roleRepo: jest.Mocked<RoleRepository>;
   let employeeAuthzCache: jest.Mocked<EmployeeAuthzCacheService>;
   let auditLogService: jest.Mocked<AuditLogService>;
+  let redis: jest.Mocked<RedisService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -50,6 +52,13 @@ describe('EmployeeService', () => {
             write: jest.fn(),
           },
         },
+        {
+          provide: RedisService,
+          useValue: {
+            getOrSet: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -58,6 +67,7 @@ describe('EmployeeService', () => {
     roleRepo = module.get(RoleRepository);
     employeeAuthzCache = module.get(EmployeeAuthzCacheService);
     auditLogService = module.get(AuditLogService);
+    redis = module.get(RedisService);
 
     jest.clearAllMocks();
   });
@@ -68,7 +78,7 @@ describe('EmployeeService', () => {
 
   describe('findList', () => {
     it('should return paginated list', async () => {
-      const result = { data: [], total: 0, page: 1, limit: 10, totalPages: 0 };
+      const result = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
       employeeRepo.findList.mockResolvedValue(result);
 
       expect(await service.findList({ page: 1, limit: 10 })).toBe(result);
@@ -76,14 +86,17 @@ describe('EmployeeService', () => {
   });
 
   describe('findById', () => {
-    it('should return employee if found', async () => {
+    it('should return employee if found (via cache)', async () => {
       const employee = { id: 1 } as any;
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValue(employee);
 
       expect(await service.findById(1)).toBe(employee);
+      expect(redis.getOrSet).toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if not found', async () => {
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValue(null);
 
       await expect(service.findById(1)).rejects.toThrow(NotFoundException);
@@ -173,7 +186,11 @@ describe('EmployeeService', () => {
     it('should update employee and invalidate cache', async () => {
       const beforeData = { id, status: EmployeeStatus.INACTIVE } as any;
       const afterData = { id, status: EmployeeStatus.ACTIVE } as any;
+
+      // Mock findById to use cache
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValueOnce(beforeData).mockResolvedValueOnce(afterData);
+
       roleRepo.findById.mockResolvedValue({ id: 2 } as any);
       employeeRepo.update.mockResolvedValue(afterData);
 
@@ -181,18 +198,21 @@ describe('EmployeeService', () => {
 
       expect(result).toBe(afterData);
       expect(employeeAuthzCache.invalidate).toHaveBeenCalledWith(id);
+      expect(redis.del).toHaveBeenCalled();
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ status: AuditLogStatus.SUCCESS }),
       );
     });
 
     it('should throw BadRequestException if no update data provided', async () => {
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValue({ id } as any);
 
       await expect(service.update(id, {})).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if new role does not exist', async () => {
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValue({ id } as any);
       roleRepo.findById.mockResolvedValue(null);
 
@@ -203,6 +223,7 @@ describe('EmployeeService', () => {
   describe('softDelete', () => {
     it('should soft delete and invalidate cache', async () => {
       const id = 2;
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById
         .mockResolvedValueOnce({ id } as any)
         .mockResolvedValueOnce({ id, deletedAt: new Date() } as any);
@@ -212,9 +233,11 @@ describe('EmployeeService', () => {
 
       expect(employeeRepo.softDelete).toHaveBeenCalledWith(id);
       expect(employeeAuthzCache.invalidate).toHaveBeenCalledWith(id);
+      expect(redis.del).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if deleting super admin (ID 1)', async () => {
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValue({ id: 1 } as any);
 
       await expect(service.softDelete(1)).rejects.toThrow(
@@ -224,6 +247,7 @@ describe('EmployeeService', () => {
 
     it('should throw BadRequestException if deleting self', async () => {
       const id = 2;
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValue({ id } as any);
 
       await expect(service.softDelete(id, {}, id)).rejects.toThrow(
@@ -233,6 +257,7 @@ describe('EmployeeService', () => {
 
     it('should throw NotFoundException if employee to delete not found', async () => {
       const id = 2;
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValue({ id } as any);
       employeeRepo.softDelete.mockResolvedValue(false);
 
@@ -244,6 +269,7 @@ describe('EmployeeService', () => {
     it('should restore employee and invalidate cache', async () => {
       const id = 2;
       const restored = { id, deletedAt: null } as any;
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValueOnce({ id } as any);
       employeeRepo.restore.mockResolvedValue(restored);
 
@@ -251,10 +277,12 @@ describe('EmployeeService', () => {
 
       expect(result).toBe(restored);
       expect(employeeAuthzCache.invalidate).toHaveBeenCalledWith(id);
+      expect(redis.del).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if restoration fails', async () => {
       const id = 2;
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
       employeeRepo.findById.mockResolvedValueOnce({ id } as any);
       employeeRepo.restore.mockResolvedValue(null);
 

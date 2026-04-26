@@ -1,1 +1,1 @@
-export { WishlistItemResponseDto } from './wishlist-response.dto';
+export * from './wishlist-response.dto';

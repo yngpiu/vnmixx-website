@@ -38,6 +38,19 @@ const DETAIL_SELECT = {
   },
 } as const;
 
+const ROLE_LIST_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: { select: { rolePermissions: true } },
+} as const;
+
+const EMPLOYEE_ID_SELECT = {
+  id: true,
+} as const;
+
 function toDetailView(row: {
   id: number;
   name: string;
@@ -102,14 +115,7 @@ export class RoleRepository {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: this.buildListOrderBy(sortBy, sortOrder),
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-          _count: { select: { rolePermissions: true } },
-        },
+        select: ROLE_LIST_SELECT,
       }),
     ]);
 
@@ -202,7 +208,7 @@ export class RoleRepository {
   async findEmployeeIdsByRoleId(roleId: number): Promise<number[]> {
     const rows = await this.prisma.employee.findMany({
       where: { roleId },
-      select: { id: true },
+      select: EMPLOYEE_ID_SELECT,
     });
     return rows.map((r) => r.id);
   }

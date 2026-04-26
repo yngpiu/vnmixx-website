@@ -23,70 +23,70 @@ import {
   ApiUnauthorizedResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
-import { RequireUserType } from '../auth/decorators';
+import { RequireUserType } from '../../auth/decorators';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
   okNoData,
   type SuccessPayload,
-} from '../common/utils/response.util';
+} from '../../common/utils/response.util';
 import {
   AdminReviewDetailResponseDto,
   AdminReviewsListResponseDto,
   ListAdminReviewsQueryDto,
   UpdateReviewVisibilityDto,
-} from './dto/admin-review.dto';
-import { ReviewService } from './review.service';
+} from '../dto';
+import { ReviewService } from '../services/review.service';
 
-// Tiếp nhận các yêu cầu quản lý đánh giá từ phía nhân viên.
-// Cho phép liệt kê, xem chi tiết, ẩn/hiện hoặc xóa các đánh giá sản phẩm trên hệ thống để đảm bảo chất lượng nội dung hiển thị.
 @ApiTags('Reviews (Admin)')
 @ApiBearerAuth('access-token')
-@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
-@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
-@RequireUserType('EMPLOYEE')
 @ApiExtraModels(AdminReviewsListResponseDto, AdminReviewDetailResponseDto)
 @Controller('admin/reviews')
-export class ReviewsAdminController {
+@RequireUserType('EMPLOYEE')
+@ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
+@ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
+// Controller quản lý đánh giá sản phẩm dành cho quản trị viên.
+// Cho phép duyệt danh sách, xem chi tiết, cập nhật trạng thái hoặc xóa đánh giá.
+export class AdminReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
-  // Lấy danh sách đánh giá toàn hệ thống để kiểm duyệt nội dung.
-  @ApiOperation({ summary: 'Danh sách review có phân trang và bộ lọc.' })
+  // Lấy danh sách đánh giá có phân trang và lọc theo điều kiện.
+  @ApiOperation({ summary: 'Danh sách review có phân trang và bộ lọc' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AdminReviewsListResponseDto) }),
   })
-  @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get()
   async getReviews(
     @Query() query: ListAdminReviewsQueryDto,
   ): Promise<SuccessPayload<AdminReviewsListResponseDto>> {
     return ok(await this.reviewService.getAdminReviews(query), 'Lấy danh sách review thành công.');
   }
 
-  // Xem chi tiết đánh giá để hiểu rõ phản hồi của khách hàng.
-  @ApiOperation({ summary: 'Chi tiết review.' })
+  // Lấy thông tin chi tiết một đánh giá cụ thể.
+  @ApiOperation({ summary: 'Chi tiết review' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AdminReviewDetailResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
-  @Get(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get(':id')
   async getReviewDetail(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<SuccessPayload<AdminReviewDetailResponseDto>> {
     return ok(await this.reviewService.getAdminReviewDetail(id), 'Lấy chi tiết review thành công.');
   }
 
-  // Thay đổi trạng thái hiển thị (Ẩn/Hiện) khi review vi phạm chính sách hoặc đã được xử lý.
-  @ApiOperation({ summary: 'Cập nhật trạng thái review (ẩn/hiện).' })
+  // Cập nhật trạng thái hiển thị (VISIBLE/HIDDEN) của đánh giá.
+  @ApiOperation({ summary: 'Cập nhật trạng thái review (ẩn/hiện)' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AdminReviewDetailResponseDto) }),
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
-  @Patch(':id/visibility')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Patch(':id/visibility')
   async updateVisibility(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateReviewVisibilityDto,
@@ -97,16 +97,16 @@ export class ReviewsAdminController {
     );
   }
 
-  // Xóa vĩnh viễn đánh giá trong trường hợp nội dung không phù hợp hoặc là spam.
-  @ApiOperation({ summary: 'Xóa review.' })
+  // Xóa vĩnh viễn một đánh giá khỏi hệ thống.
+  @ApiOperation({ summary: 'Xóa review' })
   @ApiOkResponse({
     description: 'Xóa review thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa review thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async deleteReview(@Param('id', ParseIntPipe) id: number): Promise<SuccessPayload<null>> {
     await this.reviewService.deleteAdminReview(id);
     return okNoData('Xóa review thành công.');

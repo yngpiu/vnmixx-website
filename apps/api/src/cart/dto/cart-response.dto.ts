@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 /**
  * CartItemColorDto: DTO đại diện cho thông tin màu sắc của sản phẩm trong giỏ hàng.
  */
-class CartItemColorDto {
+export class CartItemColorDto {
   @ApiProperty({ example: 1 })
   id: number;
 
@@ -17,7 +17,7 @@ class CartItemColorDto {
 /**
  * CartItemSizeDto: DTO đại diện cho thông tin kích thước của sản phẩm trong giỏ hàng.
  */
-class CartItemSizeDto {
+export class CartItemSizeDto {
   @ApiProperty({ example: 1 })
   id: number;
 
@@ -28,7 +28,7 @@ class CartItemSizeDto {
 /**
  * CartItemProductDto: DTO đại diện cho thông tin cơ bản của sản phẩm cha trong giỏ hàng.
  */
-class CartItemProductDto {
+export class CartItemProductDto {
   @ApiProperty({ example: 1 })
   id: number;
 
@@ -46,7 +46,7 @@ class CartItemProductDto {
  * CartItemVariantDto: DTO đại diện cho thông tin biến thể cụ thể của sản phẩm trong giỏ hàng.
  * Bao gồm thông tin về SKU, giá, và trạng thái tồn kho (onHand, reserved).
  */
-class CartItemVariantDto {
+export class CartItemVariantDto {
   @ApiProperty({ example: 1 })
   id: number;
 
@@ -83,10 +83,10 @@ export class CartItemResponseDto {
   @ApiProperty({ example: 2 })
   quantity: number;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   updatedAt: Date;
 
   @ApiProperty({ type: CartItemVariantDto })
@@ -101,10 +101,10 @@ export class CartResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   updatedAt: Date;
 
   @ApiProperty({ type: [CartItemResponseDto] })

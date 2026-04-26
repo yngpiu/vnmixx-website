@@ -130,11 +130,10 @@ export class SizeService {
 
   // Xóa kích thước khỏi hệ thống.
   async remove(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
-    const beforeData = await this.repository.findById(id);
-    try {
-      // 1. Xác minh sự tồn tại của bản ghi.
-      await this.findByIdOrFail(id);
+    // 1. Xác minh sự tồn tại của bản ghi.
+    const beforeData = await this.findByIdOrFail(id);
 
+    try {
       // 2. Kiểm tra ràng buộc dữ liệu: Không xóa nếu đang có sản phẩm sử dụng kích thước này.
       if (await this.repository.hasVariants(id)) {
         throw new ConflictException('Không thể xóa kích thước đang được biến thể sản phẩm sử dụng');
@@ -149,7 +148,7 @@ export class SizeService {
         resourceType: 'size',
         resourceId: String(id),
         status: AuditLogStatus.SUCCESS,
-        beforeData: beforeData ?? undefined,
+        beforeData,
       });
     } catch (error) {
       await this.auditLogService.write({
@@ -158,7 +157,7 @@ export class SizeService {
         resourceType: 'size',
         resourceId: String(id),
         status: AuditLogStatus.FAILED,
-        beforeData: beforeData ?? undefined,
+        beforeData,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;

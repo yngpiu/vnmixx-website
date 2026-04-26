@@ -319,6 +319,7 @@ export class OrderRepository {
     while (exists) {
       const rand = Math.random().toString(36).substring(2, 7).toUpperCase();
       code = `VNM${datePart}${rand}`;
+      // Đếm số lượng đơn hàng có mã trùng lặp để đảm bảo tính duy nhất.
       const count = await this.prisma.order.count({ where: { orderCode: code } });
       exists = count > 0;
     }
@@ -335,6 +336,7 @@ export class OrderRepository {
     const where: Prisma.OrderWhereInput = { customerId };
     if (params.status) where.status = params.status;
 
+    // Thực hiện truy vấn đồng thời danh sách đơn hàng và tổng số lượng để phân trang.
     const [rows, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
@@ -357,6 +359,7 @@ export class OrderRepository {
     const where: Prisma.OrderWhereInput = { orderCode };
     if (customerId) where.customerId = customerId;
 
+    // Lấy thông tin chi tiết đơn hàng kèm danh sách sản phẩm và lịch sử thanh toán.
     const row = await this.prisma.order.findFirst({
       where,
       select: ORDER_DETAIL_SELECT,
@@ -377,6 +380,7 @@ export class OrderRepository {
    * Tìm chi tiết đơn hàng theo mã phục vụ giao diện quản trị (Admin).
    */
   async findAdminByOrderCode(orderCode: string): Promise<OrderAdminDetailView | null> {
+    // Truy vấn chi tiết đơn hàng kèm thông tin khách hàng dành cho quản trị viên.
     const row = await this.prisma.order.findUnique({
       where: { orderCode },
       select: ORDER_ADMIN_DETAIL_SELECT,
@@ -393,10 +397,14 @@ export class OrderRepository {
     };
   }
 
+  /**
+   * Truy vấn trạng thái thanh toán hiện tại của đơn hàng.
+   */
   async findMyPaymentStatus(
     customerId: number,
     orderCode: string,
   ): Promise<OrderPaymentStatusView | null> {
+    // Lấy thông tin thanh toán mới nhất để kiểm tra trạng thái QR hoặc COD.
     const row = await this.prisma.order.findFirst({
       where: { customerId, orderCode },
       select: {
@@ -453,6 +461,7 @@ export class OrderRepository {
       ];
     }
 
+    // Thực hiện truy vấn danh sách đơn hàng kèm thông tin khách hàng và tổng số lượng.
     const [rows, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
@@ -468,7 +477,11 @@ export class OrderRepository {
     return { data, total };
   }
 
+  /**
+   * Lấy địa chỉ cụ thể của khách hàng theo ID.
+   */
   async findAddressByIdAndCustomer(addressId: number, customerId: number) {
+    // Truy vấn địa chỉ kèm thông tin định danh của GHN (tỉnh/huyện/xã).
     return this.prisma.address.findFirst({
       where: { id: addressId, customerId },
       include: {
@@ -479,7 +492,11 @@ export class OrderRepository {
     });
   }
 
+  /**
+   * Lấy thông tin giỏ hàng và các sản phẩm bên trong của khách hàng.
+   */
   async findCartWithItems(customerId: number) {
+    // Truy vấn giỏ hàng kèm thông tin chi tiết về sản phẩm, màu sắc và kích thước.
     return this.prisma.cart.findUnique({
       where: { customerId },
       include: {

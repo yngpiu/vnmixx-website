@@ -54,9 +54,11 @@ import { CategoryService } from '../services/category.service';
 @RequireUserType('EMPLOYEE')
 @ApiExtraModels(CategoryAdminResponseDto)
 @Controller('admin/categories')
+// API quản trị danh mục sản phẩm dành cho nhân viên.
 export class CategoryAdminController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  // Liệt kê danh sách danh mục với các bộ lọc tùy chọn.
   @ApiOperation({
     summary: 'Liệt kê danh mục',
     description:
@@ -82,6 +84,7 @@ export class CategoryAdminController {
     );
   }
 
+  // Tạo mới một danh mục sản phẩm.
   @ApiOperation({ summary: 'Tạo danh mục mới' })
   @ApiCreatedResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CategoryAdminResponseDto) }),
@@ -101,6 +104,7 @@ export class CategoryAdminController {
     );
   }
 
+  // Cập nhật thông tin danh mục theo ID.
   @ApiOperation({ summary: 'Cập nhật danh mục' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CategoryAdminResponseDto) }),
@@ -122,6 +126,7 @@ export class CategoryAdminController {
     );
   }
 
+  // Xóa mềm một danh mục, chỉ thành công nếu không có danh mục con đang hoạt động.
   @ApiOperation({ summary: 'Xóa danh mục' })
   @ApiOkResponse({
     description: 'Xóa danh mục thành công.',
@@ -134,10 +139,6 @@ export class CategoryAdminController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  /**
-   * Xóa mềm một danh mục.
-   * Chỉ thành công nếu danh mục đó không có danh mục con nào đang hoạt động.
-   */
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -147,6 +148,7 @@ export class CategoryAdminController {
     return okNoData('Xóa danh mục thành công.');
   }
 
+  // Khôi phục một danh mục đã bị xóa mềm.
   @ApiOperation({ summary: 'Khôi phục danh mục đã xóa' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CategoryAdminResponseDto) }),

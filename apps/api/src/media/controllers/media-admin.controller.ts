@@ -21,6 +21,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
@@ -28,6 +29,7 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
@@ -40,7 +42,14 @@ import {
   okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
-import { CreateFolderDto, ListMediaQueryDto, MoveMediaDto, UploadMediaDto } from '../dto';
+import {
+  CreateFolderDto,
+  ListMediaQueryDto,
+  MediaListResponseDto,
+  MediaResponseDto,
+  MoveMediaDto,
+  UploadMediaDto,
+} from '../dto';
 import { MediaService, type UploadedFileInput } from '../services/media.service';
 
 // Giới hạn kích thước tệp tải lên tối đa: 50 MB
@@ -58,6 +67,7 @@ function isAllowedMimeType(mimeType: string): boolean {
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
+@ApiExtraModels(MediaResponseDto, MediaListResponseDto)
 @Controller('admin/media')
 // Controller cung cấp các endpoint quản trị media dành cho nhân viên/admin
 // Bao gồm các thao tác: liệt kê, upload, tạo thư mục, di chuyển và xóa file/thư mục
@@ -67,13 +77,13 @@ export class MediaAdminController {
   @ApiOperation({ summary: 'Liệt kê media files (phân trang, tìm kiếm, lọc)' })
   @ApiOkResponse({
     description: 'Danh sách media files.',
-    schema: buildSuccessResponseSchema({ type: 'object', additionalProperties: true }),
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(MediaListResponseDto) }),
   })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async listMedia(
     @Query() query: ListMediaQueryDto,
-  ): Promise<SuccessPayload<Awaited<ReturnType<MediaService['listMedia']>>>> {
+  ): Promise<SuccessPayload<MediaListResponseDto>> {
     return ok(await this.mediaService.listMedia(query), 'Lấy danh sách media thành công.');
   }
 
@@ -88,6 +98,13 @@ export class MediaAdminController {
         folder: { type: 'string', description: 'Thư mục đích (tuỳ chọn)' },
       },
     },
+  })
+  @ApiOkResponse({
+    description: 'Danh sách tệp đã tải lên.',
+    schema: buildSuccessResponseSchema({
+      type: 'array',
+      items: { $ref: getSchemaPath(MediaResponseDto) },
+    }),
   })
   @UseInterceptors(
     FilesInterceptor('files', MAX_FILES_COUNT, {
@@ -106,7 +123,7 @@ export class MediaAdminController {
     @Body() dto: UploadMediaDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<Awaited<ReturnType<MediaService['uploadFiles']>>>> {
+  ): Promise<SuccessPayload<MediaResponseDto[]>> {
     if (!files || files.length === 0) {
       throw new BadRequestException('Chỉ hỗ trợ upload ảnh hoặc video.');
     }

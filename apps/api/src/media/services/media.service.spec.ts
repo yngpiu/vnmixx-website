@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuditLogStatus } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { R2Service } from '../../r2/services/r2.service';
+import { RedisService } from '../../redis/services/redis.service';
 import { MediaRepository } from '../repositories/media.repository';
 import { MediaService, type UploadedFileInput } from './media.service';
 
@@ -37,6 +38,11 @@ describe('MediaService', () => {
     write: jest.fn(),
   };
 
+  const mockRedisService = {
+    getOrSet: jest.fn().mockImplementation((_key, _ttl, factory) => factory()),
+    del: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,6 +50,7 @@ describe('MediaService', () => {
         { provide: MediaRepository, useValue: mockMediaRepository },
         { provide: R2Service, useValue: mockR2Service },
         { provide: AuditLogService, useValue: mockAuditLogService },
+        { provide: RedisService, useValue: mockRedisService },
       ],
     }).compile();
 
@@ -187,8 +194,8 @@ describe('MediaService', () => {
   });
 
   describe('deleteFolder', () => {
-    it('should throw NotFoundException for root folder', async () => {
-      await expect(service.deleteFolder('')).rejects.toThrow(NotFoundException);
+    it('should throw BadRequestException for root folder', async () => {
+      await expect(service.deleteFolder('')).rejects.toThrow(BadRequestException);
     });
 
     it('should delete all files in folder from R2 and DB', async () => {

@@ -19,14 +19,15 @@ import { ProductService } from '../services/product.service';
 
 // Cung cấp các API công khai cho khách hàng truy cập dữ liệu sản phẩm.
 // Được tối ưu hóa qua cơ chế Cache để giảm tải cho database và tăng tốc độ phản hồi.
-@ApiTags('Products')
+@ApiTags('Sản phẩm')
 @ApiExtraModels(ProductListResponseDto, ProductDetailResponseDto)
 @Controller('products')
+// API công khai để khách hàng tra cứu và xem chi tiết sản phẩm.
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  // Liệt kê sản phẩm cho khách hàng với khả năng lọc linh hoạt (danh mục, màu, size, giá).
-  @ApiOperation({ summary: 'Liệt kê sản phẩm có phân trang và bộ lọc' })
+  // Liệt kê danh sách sản phẩm với bộ lọc và phân trang, sử dụng cache để tối ưu hiệu năng.
+  @ApiOperation({ summary: 'Liệt kê danh sách sản phẩm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductListResponseDto) }),
   })
@@ -42,7 +43,7 @@ export class ProductController {
     );
   }
 
-  // Lấy chi tiết sản phẩm qua Slug để phục vụ hiển thị trên trang chi tiết sản phẩm.
+  // Truy vấn chi tiết một sản phẩm dựa trên đường dẫn thân thiện (slug).
   @ApiOperation({ summary: 'Lấy chi tiết sản phẩm theo slug' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductDetailResponseDto) }),

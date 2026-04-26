@@ -74,10 +74,16 @@ class ProductVariantDto {
   @ApiProperty({ example: 5, description: 'Số lượng đang giữ cho đơn chưa hoàn tất' })
   reserved: number;
 
-  @ApiProperty({ type: VariantColorDto })
+  @ApiProperty({
+    type: VariantColorDto,
+    example: { id: 1, name: 'Trắng', hexCode: '#FFFFFF' },
+  })
   color: VariantColorDto;
 
-  @ApiProperty({ type: VariantSizeDto })
+  @ApiProperty({
+    type: VariantSizeDto,
+    example: { id: 1, label: 'M', sortOrder: 2 },
+  })
   size: VariantSizeDto;
 }
 
@@ -85,13 +91,13 @@ class ProductVariantAdminDto extends ProductVariantDto {
   @ApiProperty({ example: true })
   isActive: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   updatedAt: Date;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ example: null, nullable: true })
   deletedAt: Date | null;
 }
 
@@ -195,13 +201,13 @@ export class ProductAdminListItemResponseDto {
   @ApiProperty({ example: 200 })
   totalStock: number;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   updatedAt: Date;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ example: null, nullable: true })
   deletedAt: Date | null;
 }
 
@@ -213,10 +219,8 @@ export class ProductAdminListResponseDto {
   meta: PaginationMetaDto;
 }
 
-/**
- * ProductAdminDetailResponseDto: Chi tiết sản phẩm đầy đủ dành cho admin.
- * Bao gồm toàn bộ thông tin quản trị: SKU, giá nhập, tồn kho chi tiết, trạng thái xóa mềm.
- */
+// ProductAdminDetailResponseDto: Chi tiết sản phẩm đầy đủ dành cho admin.
+// Bao gồm toàn bộ thông tin quản trị: SKU, giá nhập, tồn kho chi tiết, trạng thái xóa mềm.
 export class ProductAdminDetailResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -252,12 +256,12 @@ export class ProductAdminDetailResponseDto {
   @ApiProperty({ type: [ProductImageDto] })
   images: ProductImageDto[];
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   updatedAt: Date;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ example: null, nullable: true })
   deletedAt: Date | null;
 }

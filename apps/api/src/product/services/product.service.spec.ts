@@ -3,18 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuditLogStatus } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { RedisService } from '../../redis/services/redis.service';
-import {
-  CreateProductDto,
-  ListAdminProductsQueryDto,
-  ListProductsQueryDto,
-  PaginatedResult,
-  ProductAdminListItemResponseDto,
-} from '../dto';
-import {
-  ProductAdminDetailView,
-  ProductListItemView,
-  ProductRepository,
-} from '../repositories/product.repository';
+import { CreateProductDto, ListAdminProductsQueryDto, ListProductsQueryDto } from '../dto';
+import { ProductAdminDetailView, ProductRepository } from '../repositories/product.repository';
 import { ProductCacheService } from './product-cache.service';
 import { ProductImageService } from './product-image.service';
 import { ProductVariantService } from './product-variant.service';
@@ -126,9 +116,7 @@ describe('ProductService', () => {
 
   describe('findPublicList', () => {
     it('should call repository via redis getOrSet', async () => {
-      const result: PaginatedResult<
-        ProductListItemView & { minPrice: number | null; maxPrice: number | null }
-      > = {
+      const result = {
         data: [],
         meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
       };
@@ -162,9 +150,7 @@ describe('ProductService', () => {
 
   describe('findAdminList', () => {
     it('should return admin list with totalStock', async () => {
-      const adminResult: PaginatedResult<
-        ProductAdminListItemResponseDto & { totalStock: number; _count: { variants: number } }
-      > = {
+      const adminResult = {
         data: [{ ...mockProduct, _count: { variants: 5 }, totalStock: 100 } as any],
         meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
       };

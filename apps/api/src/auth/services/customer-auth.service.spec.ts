@@ -9,7 +9,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { MailService } from '../../mail/services/mail.service';
 import { RedisService } from '../../redis/services/redis.service';
-import { ChangePasswordDto, LoginDto, RegisterDto, VerifyCustomerOtpDto } from '../dto';
+import {
+  ChangePasswordDto,
+  GenderInput,
+  LoginDto,
+  RegisterDto,
+  VerifyCustomerOtpDto,
+} from '../dto';
 import { CustomerRepository } from '../repositories/customer.repository';
 import { CustomerAuthService } from './customer-auth.service';
 import { OtpService } from './otp.service';
@@ -107,7 +113,7 @@ describe('CustomerAuthService', () => {
       fullName: 'Test User',
       phoneNumber: '0123456789',
       dob: '1990-01-01',
-      gender: 'MALE' as const,
+      gender: GenderInput.MALE,
     };
 
     it('should register a customer successfully', async () => {

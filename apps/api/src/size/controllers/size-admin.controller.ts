@@ -67,6 +67,7 @@ export class SizeAdminController {
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(SizeListResponseDto) }),
   })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findList(@Query() query: ListSizesQueryDto): Promise<SuccessPayload<SizeListResponseDto>> {

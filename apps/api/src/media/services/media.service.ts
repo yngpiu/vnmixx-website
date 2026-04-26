@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AuditLogStatus, type MediaFile as MediaFileRow } from '../../../generated/prisma/client';
+import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { R2Service } from '../../r2/services/r2.service';
 import type { CreateFolderDto, ListMediaQueryDto, MoveMediaDto, UploadMediaDto } from '../dto';
-import { MediaRepository } from '../repositories/media.repository';
+import { MediaRepository, type MediaFileView } from '../repositories/media.repository';
 
 // Chuẩn hóa đường dẫn thư mục - loại bỏ gạch chéo ở đầu và cuối
 function normalizeFolder(raw: string | undefined | null): string {
@@ -47,22 +47,26 @@ export type UploadedFileInput = {
   size: number;
 };
 
-// Service quản lý logic nghiệp vụ cho tệp tin (MediaFile) và thư mục (MediaFolder)
-// Xử lý các thao tác upload, di chuyển, xóa và tích hợp với lưu trữ đám mây R2
+import { RedisService } from '../../redis/services/redis.service';
+import { MEDIA_CACHE_KEYS, MEDIA_CACHE_TTL } from '../media.cache';
+
+// Service quản lý logic nghiệp vụ cho tệp tin (MediaFile) và thư mục (MediaFolder).
+// Xử lý các thao tác upload, di chuyển, xóa và tích hợp với lưu trữ đám mây R2.
 @Injectable()
 export class MediaService {
   constructor(
     private readonly repo: MediaRepository,
     private readonly r2: R2Service,
     private readonly auditLogService: AuditLogService,
+    private readonly redis: RedisService,
   ) {}
 
-  // Gắn thêm URL công khai từ biến môi trường vào kết quả trả về
-  private withPublicUrl<T extends MediaFileRow>(row: T): T & { url: string } {
+  // Gắn thêm URL công khai từ Cloudflare R2 vào kết quả trả về.
+  private withPublicUrl<T extends MediaFileView>(row: T): T & { url: string } {
     return { ...row, url: this.r2.getPublicUrl(row.key) };
   }
 
-  // Lấy danh sách media có phân trang và lọc theo nhiều tiêu chí
+  // Lấy danh sách media có phân trang và lọc theo nhiều tiêu chí.
   async listMedia(query: ListMediaQueryDto) {
     const folder = query.folder !== undefined ? normalizeFolder(query.folder) : undefined;
     const result = await this.repo.findMany({
@@ -80,7 +84,7 @@ export class MediaService {
     };
   }
 
-  // Xử lý upload một tệp tin đơn lẻ lên R2 và lưu DB
+  // Xử lý upload một tệp tin đơn lẻ lên R2 và lưu vào Database.
   async uploadFile(
     file: UploadedFileInput,
     dto: UploadMediaDto,
@@ -88,7 +92,7 @@ export class MediaService {
     auditContext: AuditRequestContext = {},
   ) {
     try {
-      // 1. Kiểm tra định dạng và dung lượng tệp tin trước khi xử lý
+      // 1. Kiểm tra định dạng và dung lượng tệp tin trước khi xử lý.
       if (!isAllowedMediaMimeType(file.mimetype)) {
         throw new BadRequestException('Chỉ hỗ trợ upload ảnh hoặc video.');
       }
@@ -100,14 +104,14 @@ export class MediaService {
       }
       const folder = normalizeFolder(dto.folder);
 
-      // 2. Đảm bảo cấu trúc thư mục logic tồn tại trong Database
+      // 2. Đảm bảo cấu trúc thư mục logic tồn tại trong Database.
       const folderId = await this.repo.ensureFolderHierarchy(folder);
       const key = generateObjectKey(folder, file.originalname);
 
-      // 3. Upload tệp vật lý lên Cloudflare R2 để lưu trữ lâu dài
+      // 3. Upload tệp vật lý lên Cloudflare R2.
       await this.r2.uploadFile(key, file.buffer, file.mimetype);
 
-      // 4. Lưu thông tin meta-data của tệp vào Database để quản lý
+      // 4. Lưu thông tin bản ghi vào Database.
       const row = await this.repo.create({
         key,
         fileName: file.originalname,
@@ -118,7 +122,10 @@ export class MediaService {
         uploadedBy: employeeId,
       });
 
-      // 5. Ghi Audit Log để theo dõi vết upload của nhân viên
+      // 5. Xóa cache danh sách thư mục vì có thể đã tạo thư mục mới.
+      await this.redis.del(MEDIA_CACHE_KEYS.FOLDERS);
+
+      // 6. Ghi Audit Log hành động upload.
       const result = this.withPublicUrl(row);
       await this.auditLogService.write({
         ...auditContext,
@@ -146,7 +153,7 @@ export class MediaService {
     }
   }
 
-  // Upload đồng thời nhiều tệp tin để tối ưu thời gian phản hồi
+  // Upload đồng thời nhiều tệp tin.
   async uploadFiles(
     files: UploadedFileInput[],
     dto: UploadMediaDto,
@@ -159,20 +166,20 @@ export class MediaService {
     return results;
   }
 
-  // Xóa media: xóa tệp vật lý trên R2 trước khi xóa bản ghi DB
+  // Xóa một file media: xóa trên R2 trước khi xóa bản ghi DB.
   async deleteMedia(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const media = await this.repo.findById(id);
     if (!media) {
-      throw new NotFoundException('Không tìm thấy file media.');
+      throw new NotFoundException(`Không tìm thấy file media #${id}`);
     }
     try {
-      // 1. Xóa tệp vật lý trên Cloudflare R2
+      // 1. Xóa tệp vật lý trên Cloudflare R2.
       await this.r2.deleteFile(media.key);
 
-      // 2. Xóa bản ghi thông tin trong Database
+      // 2. Xóa bản ghi trong Database.
       await this.repo.deleteById(id);
 
-      // 3. Ghi Audit Log thành công
+      // 3. Ghi Audit Log hành động xóa.
       await this.auditLogService.write({
         ...auditContext,
         action: 'media.delete',
@@ -195,12 +202,14 @@ export class MediaService {
     }
   }
 
-  // Lấy danh sách tất cả các đường dẫn thư mục hiện có phục vụ cây thư mục
+  // Lấy danh sách tất cả thư mục hiện có với cơ chế cache.
   async listFolders(): Promise<string[]> {
-    return this.repo.findAllFolders();
+    return this.redis.getOrSet(MEDIA_CACHE_KEYS.FOLDERS, MEDIA_CACHE_TTL.FOLDERS, () =>
+      this.repo.findAllFolders(),
+    );
   }
 
-  // Tạo một thư mục mới (logic) trong DB
+  // Tạo một thư mục mới (logic) trong hệ thống.
   async createFolder(
     dto: CreateFolderDto,
     auditContext: AuditRequestContext = {},
@@ -208,6 +217,10 @@ export class MediaService {
     try {
       const folder = normalizeFolder(dto.path);
       await this.repo.createFolder(folder);
+
+      // Xóa cache danh sách thư mục.
+      await this.redis.del(MEDIA_CACHE_KEYS.FOLDERS);
+
       const result = { path: folder };
       await this.auditLogService.write({
         ...auditContext,
@@ -231,24 +244,26 @@ export class MediaService {
     }
   }
 
-  // Di chuyển tệp tin sang thư mục khác
+  // Di chuyển tệp tin sang thư mục khác.
   async moveMedia(id: number, dto: MoveMediaDto, auditContext: AuditRequestContext = {}) {
     const media = await this.repo.findById(id);
     if (!media) {
-      throw new NotFoundException('Không tìm thấy file media.');
+      throw new NotFoundException(`Không tìm thấy file media #${id}`);
     }
     const beforeData = { id: media.id, folder: media.folder, key: media.key };
     try {
-      // 1. Đảm bảo cấu trúc thư mục đích đã tồn tại
+      // 1. Đảm bảo thư mục đích tồn tại.
       const targetFolder = normalizeFolder(dto.targetFolder);
       const targetFolderId = await this.repo.ensureFolderHierarchy(targetFolder);
 
-      // 2. Cập nhật đường dẫn logic trong DB.
-      // Không thay đổi Key của đối tượng trên R2 để tránh việc phải copy/xóa tệp vật lý tốn kém tài nguyên.
+      // 2. Cập nhật đường dẫn trong Database.
       const updated = await this.repo.updateFolder(id, targetFolder, media.key, targetFolderId);
-      const result = this.withPublicUrl(updated);
 
-      // 3. Ghi Audit Log thành công
+      // 3. Xóa cache danh sách thư mục.
+      await this.redis.del(MEDIA_CACHE_KEYS.FOLDERS);
+
+      // 4. Ghi Audit Log hành động di chuyển.
+      const result = this.withPublicUrl(updated);
       await this.auditLogService.write({
         ...auditContext,
         action: 'media.move',
@@ -274,32 +289,33 @@ export class MediaService {
     }
   }
 
-  // Xóa toàn bộ thư mục và tất cả nội dung bên trong
+  // Xóa toàn bộ thư mục và tất cả nội dung bên trong.
   async deleteFolder(
     folderPath: string,
     auditContext: AuditRequestContext = {},
   ): Promise<{ deletedFiles: number; deletedFolders: number }> {
     const folder = normalizeFolder(folderPath);
     if (!folder) {
-      throw new NotFoundException('Không thể xóa thư mục gốc.');
+      throw new BadRequestException('Không thể xóa thư mục gốc.');
     }
     try {
-      // 1. Tìm tất cả các tệp tin thuộc thư mục này và các thư mục con
+      // 1. Tìm tất cả tệp tin thuộc thư mục này.
       const files = await this.repo.findByFolderPrefix(folder);
 
-      // 2. Thực hiện xóa hàng loạt các tệp vật lý trên R2
+      // 2. Xóa hàng loạt tệp vật lý trên Cloudflare R2.
       if (files.length > 0) {
         const keys = files.map((f) => f.key);
         await this.r2.deleteFiles(keys);
       }
 
-      // 3. Xóa các bản ghi tệp tin trong Database
+      // 3. Xóa tệp tin và thư mục trong Database.
       const deletedFiles = await this.repo.deleteByFolderPrefix(folder);
-
-      // 4. Xóa bản ghi thư mục trong Database
       const deletedFolders = await this.repo.deleteFolders(folder);
 
-      // 5. Ghi Audit Log thao tác xóa thư mục
+      // 4. Xóa cache danh sách thư mục.
+      await this.redis.del(MEDIA_CACHE_KEYS.FOLDERS);
+
+      // 5. Ghi Audit Log hành động xóa thư mục.
       const result = { deletedFiles, deletedFolders };
       await this.auditLogService.write({
         ...auditContext,
@@ -320,6 +336,7 @@ export class MediaService {
         status: AuditLogStatus.FAILED,
         beforeData: { path: folder },
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        // metadata is not supported in write method signature if I check audit-log-request.util.ts
       });
       throw error;
     }

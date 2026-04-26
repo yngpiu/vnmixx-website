@@ -1,6 +1,4 @@
-/**
- * DTO yêu cầu cập nhật hồ sơ Nhân viên.
- */
+// DTO yêu cầu cập nhật hồ sơ nhân viên.
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUrl, Matches, MaxLength } from 'class-validator';
 

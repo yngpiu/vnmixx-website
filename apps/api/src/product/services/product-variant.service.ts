@@ -12,11 +12,9 @@ import { CreateVariantDto, UpdateVariantDto } from '../dto';
 import { ProductRepository } from '../repositories/product.repository';
 import { ProductCacheService } from './product-cache.service';
 
-/**
- * ProductVariantService: Quản lý các biến thể của sản phẩm.
- * Mỗi biến thể là một tổ hợp duy nhất của Màu sắc (Color) và Kích thước (Size).
- * Chịu trách nhiệm về SKU, giá bán, và số lượng tồn kho (on-hand) cho từng biến thể.
- */
+// ProductVariantService: Quản lý các biến thể của sản phẩm.
+// Mỗi biến thể là một tổ hợp duy nhất của Màu sắc (Color) và Kích thước (Size).
+// Chịu trách nhiệm về SKU, giá bán, và số lượng tồn kho (on-hand) cho từng biến thể.
 @Injectable()
 export class ProductVariantService {
   constructor(
@@ -25,13 +23,11 @@ export class ProductVariantService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  /**
-   * Tạo biến thể mới cho một sản phẩm.
-   * Logic:
-   * 1. Kiểm tra tồn tại của màu sắc và kích thước.
-   * 2. Kiểm tra tính duy nhất của SKU trên toàn hệ thống.
-   * 3. Ràng buộc DB đảm bảo một sản phẩm không có 2 biến thể trùng (màu, kích thước).
-   */
+  // Tạo biến thể mới cho một sản phẩm.
+  // Logic:
+  // 1. Kiểm tra tồn tại của màu sắc và kích thước.
+  // 2. Kiểm tra tính duy nhất của SKU trên toàn hệ thống.
+  // 3. Ràng buộc DB đảm bảo một sản phẩm không có 2 biến thể trùng (màu, kích thước).
   async createVariant(
     productId: number,
     slug: string,
@@ -80,10 +76,8 @@ export class ProductVariantService {
     }
   }
 
-  /**
-   * Cập nhật thông tin biến thể (Giá, Tồn kho, Trạng thái).
-   * Không cho phép cập nhật Màu sắc/Kích thước sau khi đã tạo để đảm bảo tính toàn vẹn dữ liệu đơn hàng.
-   */
+  // Cập nhật thông tin biến thể (Giá, Tồn kho, Trạng thái).
+  // Không cho phép cập nhật Màu sắc/Kích thước sau khi đã tạo để đảm bảo tính toàn vẹn dữ liệu đơn hàng.
   async updateVariant(
     productId: number,
     slug: string,
@@ -132,9 +126,7 @@ export class ProductVariantService {
     }
   }
 
-  /**
-   * Xóa mềm biến thể.
-   */
+  // Xóa mềm biến thể.
   async softDeleteVariant(
     productId: number,
     slug: string,
@@ -173,9 +165,7 @@ export class ProductVariantService {
     }
   }
 
-  /**
-   * Kiểm tra trùng lặp tổ hợp (màu, kích thước) trong yêu cầu gửi lên.
-   */
+  // Kiểm tra trùng lặp tổ hợp (màu, kích thước) trong yêu cầu gửi lên.
   validateVariantCombos(variants: { colorId: number; sizeId: number }[]): void {
     const combos = new Set<string>();
     for (const v of variants) {
@@ -189,9 +179,7 @@ export class ProductVariantService {
     }
   }
 
-  /**
-   * Kiểm tra trùng lặp SKU trong danh sách gửi lên.
-   */
+  // Kiểm tra trùng lặp SKU trong danh sách gửi lên.
   validateSkuUniqueness(variants: { sku: string }[]): void {
     const skus = new Set<string>();
     for (const v of variants) {

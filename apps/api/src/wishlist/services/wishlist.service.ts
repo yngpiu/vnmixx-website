@@ -5,32 +5,38 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { isPrismaErrorCode } from '../../common/utils/prisma.util';
+import { RedisService } from '../../redis/services/redis.service';
 import { type WishlistItemView, WishlistRepository } from '../repositories/wishlist.repository';
+import { WISHLIST_CACHE_KEYS, WISHLIST_CACHE_TTL } from '../wishlist.cache';
 
-// Quản lý danh sách sản phẩm yêu thích của khách hàng.
-// Giúp lưu giữ các mặt hàng khách hàng quan tâm để thúc đẩy tỷ lệ chuyển đổi trong tương lai.
 @Injectable()
+// Xử lý logic nghiệp vụ cho danh sách yêu thích với chiến lược cache.
 export class WishlistService {
-  constructor(private readonly wishlistRepo: WishlistRepository) {}
+  constructor(
+    private readonly wishlistRepo: WishlistRepository,
+    private readonly redis: RedisService,
+  ) {}
 
-  // Lấy toàn bộ danh sách yêu thích để hiển thị cho khách hàng.
+  // Lấy danh sách yêu thích của khách hàng, ưu tiên lấy từ cache.
   async findAll(customerId: number): Promise<WishlistItemView[]> {
-    return this.wishlistRepo.findAllByCustomerId(customerId);
+    return this.redis.getOrSet(WISHLIST_CACHE_KEYS.LIST(customerId), WISHLIST_CACHE_TTL.LIST, () =>
+      this.wishlistRepo.findAllByCustomerId(customerId),
+    );
   }
 
-  // Thêm sản phẩm vào danh sách yêu thích.
+  // Thêm sản phẩm vào danh sách yêu thích và xoá cache liên quan.
   async add(customerId: number, productId: number): Promise<void> {
-    // 1. Kiểm tra sản phẩm có tồn tại trên hệ thống hay không.
+    // Kiểm tra sự tồn tại của sản phẩm trước khi thêm.
     const productExists = await this.wishlistRepo.productExists(productId);
     if (!productExists) {
       throw new NotFoundException(`Không tìm thấy sản phẩm #${productId}`);
     }
 
     try {
-      // 2. Lưu liên kết giữa khách hàng và sản phẩm vào database.
       await this.wishlistRepo.add(customerId, productId);
+      // Xoá cache để dữ liệu được cập nhật mới ở lần truy vấn sau.
+      await this.redis.del(WISHLIST_CACHE_KEYS.LIST(customerId));
     } catch (error) {
-      // Xử lý trường hợp sản phẩm đã tồn tại trong danh sách để tránh lỗi Duplicate Key.
       if (isPrismaErrorCode(error, 'P2002')) {
         throw new ConflictException('Sản phẩm đã có trong danh sách yêu thích.');
       }
@@ -41,13 +47,13 @@ export class WishlistService {
     }
   }
 
-  // Xoá sản phẩm khỏi danh sách yêu thích.
+  // Xoá sản phẩm khỏi danh sách yêu thích và cập nhật lại cache.
   async remove(customerId: number, productId: number): Promise<void> {
     try {
-      // Thực hiện xóa bản ghi liên kết trong database.
       await this.wishlistRepo.remove(customerId, productId);
+      // Xoá cache sau khi xoá thành công để đồng bộ dữ liệu.
+      await this.redis.del(WISHLIST_CACHE_KEYS.LIST(customerId));
     } catch (error) {
-      // Báo lỗi nếu sản phẩm chưa từng có trong danh sách yêu thích.
       if (isPrismaErrorCode(error, 'P2025')) {
         throw new NotFoundException('Sản phẩm không có trong danh sách yêu thích.');
       }

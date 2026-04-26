@@ -58,7 +58,11 @@ export class ListAdminReviewsQueryDto {
  * UpdateReviewVisibilityDto: DTO cập nhật trạng thái hiển thị của đánh giá.
  */
 export class UpdateReviewVisibilityDto {
-  @ApiProperty({ description: 'Trạng thái hiển thị review.', enum: ['VISIBLE', 'HIDDEN'] })
+  @ApiProperty({
+    description: 'Trạng thái hiển thị review.',
+    enum: ['VISIBLE', 'HIDDEN'],
+    example: 'VISIBLE',
+  })
   @IsString({ message: 'status phải là chuỗi.' })
   @IsIn(['VISIBLE', 'HIDDEN'], { message: 'status phải là VISIBLE hoặc HIDDEN.' })
   status!: 'VISIBLE' | 'HIDDEN';

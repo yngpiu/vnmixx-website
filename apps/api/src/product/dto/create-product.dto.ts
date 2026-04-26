@@ -70,10 +70,8 @@ export class CreateProductImageDto {
   sortOrder?: number;
 }
 
-/**
- * CreateProductDto: DTO chính để tạo một sản phẩm mới hoàn chỉnh.
- * Hỗ trợ tạo đồng thời thông tin cơ bản, danh sách biến thể, hình ảnh và gán danh mục.
- */
+// CreateProductDto: DTO chính để tạo một sản phẩm mới hoàn chỉnh.
+// Hỗ trợ tạo đồng thời thông tin cơ bản, danh sách biến thể, hình ảnh và gán danh mục.
 export class CreateProductDto {
   @ApiProperty({ example: 'Áo Basic Tee', maxLength: 255 })
   @IsString({ message: 'Tên sản phẩm phải là chuỗi ký tự' })
@@ -108,7 +106,7 @@ export class CreateProductDto {
   })
   @IsArray({ message: 'Danh sách ID danh mục phải là một mảng' })
   @ArrayMaxSize(40, { message: 'Không được gán quá 40 danh mục' })
-  @IsInt({ each: true, message: 'Mỗi ID danh mục phải là số nguyên' })
+  @IsInt({ each: true, message: 'Mỗi ID danh mục phải số nguyên' })
   @Min(1, { each: true, message: 'Mỗi ID danh mục phải lớn hơn hoặc bằng 1' })
   @ArrayUnique({ message: 'Các ID danh mục không được trùng lặp' })
   @IsOptional()
@@ -119,14 +117,35 @@ export class CreateProductDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiProperty({ type: [CreateProductVariantDto] })
+  @ApiProperty({
+    type: [CreateProductVariantDto],
+    example: [
+      {
+        colorId: 1,
+        sizeId: 1,
+        sku: 'BT-WHITE-S',
+        price: 299000,
+        onHand: 50,
+      },
+    ],
+  })
   @IsArray({ message: 'Danh sách biến thể phải là một mảng' })
   @ArrayMinSize(1, { message: 'Phải có ít nhất một biến thể' })
   @ValidateNested({ each: true })
   @Type(() => CreateProductVariantDto)
   variants: CreateProductVariantDto[];
 
-  @ApiPropertyOptional({ type: [CreateProductImageDto] })
+  @ApiPropertyOptional({
+    type: [CreateProductImageDto],
+    example: [
+      {
+        url: 'https://example.com/image.jpg',
+        colorId: 1,
+        altText: 'Trắng - mặt trước',
+        sortOrder: 0,
+      },
+    ],
+  })
   @IsArray({ message: 'Danh sách hình ảnh phải là một mảng' })
   @ValidateNested({ each: true })
   @Type(() => CreateProductImageDto)

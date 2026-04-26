@@ -15,8 +15,10 @@ import {
   isPrismaKnownRequestError,
 } from '../../common/utils/prisma.util';
 import { RoleRepository } from '../../rbac/repositories/role.repository';
+import { RedisService } from '../../redis/services/redis.service';
 import type { CreateEmployeeDto } from '../dto/create-employee.dto';
 import type { UpdateEmployeeDto } from '../dto/update-employee.dto';
+import { EMPLOYEE_CACHE_KEYS, EMPLOYEE_CACHE_TTL } from '../employee.cache';
 import {
   EmployeeRepository,
   type EmployeeDetailView,
@@ -26,14 +28,15 @@ import {
 
 const BCRYPT_ROUNDS = 10;
 
-// Service xử lý logic nghiệp vụ cho nhân viên - Quản lý tài khoản, mật khẩu và vai trò
 @Injectable()
+// Service xử lý logic nghiệp vụ cho nhân viên - Quản lý tài khoản, mật khẩu và vai trò
 export class EmployeeService {
   constructor(
     private readonly employeeRepo: EmployeeRepository,
     private readonly roleRepo: RoleRepository,
     private readonly employeeAuthzCache: EmployeeAuthzCacheService,
     private readonly auditLogService: AuditLogService,
+    private readonly redis: RedisService,
   ) {}
 
   // Lấy danh sách nhân viên có phân trang, tìm kiếm và lọc tiêu chí
@@ -50,9 +53,13 @@ export class EmployeeService {
     return this.employeeRepo.findList(params);
   }
 
-  // Tìm kiếm một nhân viên theo ID và báo lỗi nếu không tồn tại
+  // Tìm kiếm một nhân viên theo ID và báo lỗi nếu không tồn tại, có sử dụng cache
   async findById(id: number): Promise<EmployeeDetailView> {
-    const employee = await this.employeeRepo.findById(id);
+    const employee = await this.redis.getOrSet(
+      EMPLOYEE_CACHE_KEYS.DETAIL(id),
+      EMPLOYEE_CACHE_TTL.DETAIL,
+      () => this.employeeRepo.findById(id),
+    );
     if (!employee) throw new NotFoundException(`Không tìm thấy nhân viên #${id}`);
     return employee;
   }
@@ -130,8 +137,11 @@ export class EmployeeService {
       }
       // 4. Thực hiện cập nhật dữ liệu trong DB
       await this.employeeRepo.update(id, updateData);
-      // 5. Thu hồi cache phân quyền của nhân viên để áp dụng quyền mới ngay lập tức
-      await this.employeeAuthzCache.invalidate(id);
+      // 5. Thu hồi cache phân quyền và cache thông tin của nhân viên
+      await Promise.all([
+        this.employeeAuthzCache.invalidate(id),
+        this.redis.del(EMPLOYEE_CACHE_KEYS.DETAIL(id)),
+      ]);
       const afterData = await this.findById(id);
       // 6. Ghi nhận nhật ký cập nhật thành công kèm theo dữ liệu trước và sau khi đổi
       await this.auditLogService.write({
@@ -182,7 +192,10 @@ export class EmployeeService {
       const deleted = await this.employeeRepo.softDelete(id);
       if (!deleted) throw new NotFoundException(`Không tìm thấy nhân viên #${id} để xóa`);
       // 4. Thu hồi cache của nhân viên để ngăn chặn truy cập sau khi bị xóa
-      await this.employeeAuthzCache.invalidate(id);
+      await Promise.all([
+        this.employeeAuthzCache.invalidate(id),
+        this.redis.del(EMPLOYEE_CACHE_KEYS.DETAIL(id)),
+      ]);
       const afterData = await this.employeeRepo.findById(id);
       // 5. Ghi nhận nhật ký xóa thành công
       await this.auditLogService.write({
@@ -220,8 +233,11 @@ export class EmployeeService {
           `Nhân viên #${id} không ở trạng thái bị xóa hoặc không tồn tại`,
         );
       }
-      // 2. Thu hồi cache (nếu có) để hệ thống nhận diện lại nhân viên
-      await this.employeeAuthzCache.invalidate(id);
+      // 2. Thu hồi cache để hệ thống nhận diện lại nhân viên
+      await Promise.all([
+        this.employeeAuthzCache.invalidate(id),
+        this.redis.del(EMPLOYEE_CACHE_KEYS.DETAIL(id)),
+      ]);
       // 3. Ghi nhận nhật ký khôi phục thành công
       await this.auditLogService.write({
         ...auditContext,

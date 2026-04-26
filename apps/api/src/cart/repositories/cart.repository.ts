@@ -54,17 +54,12 @@ export interface CartView {
   items: CartItemView[];
 }
 
-/**
- * CartRepository: Thao tác cơ sở dữ liệu cho giỏ hàng.
- * Vai trò: Thực hiện các truy vấn Prisma liên quan đến Cart và CartItem.
- */
 @Injectable()
+// Repository Prisma cho các thao tác quản lý giỏ hàng của khách hàng.
 export class CartRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Tìm giỏ hàng theo ID khách hàng.
-   */
+  // Tìm giỏ hàng theo ID khách hàng.
   async findByCustomerId(customerId: number): Promise<CartView | null> {
     return this.prisma.cart.findUnique({
       where: { customerId },
@@ -72,9 +67,7 @@ export class CartRepository {
     }) as unknown as Promise<CartView | null>;
   }
 
-  /**
-   * Tìm hoặc tạo mới giỏ hàng cho khách hàng.
-   */
+  // Tìm hoặc tạo mới giỏ hàng cho khách hàng nếu chưa tồn tại.
   async findOrCreate(customerId: number): Promise<CartView> {
     const existing = await this.findByCustomerId(customerId);
     if (existing) return existing;
@@ -85,27 +78,21 @@ export class CartRepository {
     }) as unknown as Promise<CartView>;
   }
 
-  /**
-   * Tìm một mục trong giỏ hàng theo biến thể.
-   */
+  // Tìm một mục trong giỏ hàng dựa trên cartId và variantId.
   async findCartItemByVariant(cartId: number, variantId: number) {
     return this.prisma.cartItem.findUnique({
       where: { cartId_variantId: { cartId, variantId } },
     });
   }
 
-  /**
-   * Tìm một mục trong giỏ hàng theo ID mục và ID giỏ hàng (để bảo mật).
-   */
+  // Tìm một mục trong giỏ hàng theo ID và đảm bảo thuộc đúng giỏ hàng.
   async findCartItemById(itemId: number, cartId: number) {
     return this.prisma.cartItem.findFirst({
       where: { id: itemId, cartId },
     });
   }
 
-  /**
-   * Thêm sản phẩm vào giỏ hàng (Upsert: Nếu có rồi thì tăng số lượng, chưa có thì tạo mới).
-   */
+  // Thêm sản phẩm vào giỏ hàng hoặc tăng số lượng nếu đã tồn tại.
   async addItem(cartId: number, variantId: number, quantity: number): Promise<CartItemView> {
     return this.prisma.cartItem.upsert({
       where: { cartId_variantId: { cartId, variantId } },
@@ -115,9 +102,7 @@ export class CartRepository {
     }) as unknown as Promise<CartItemView>;
   }
 
-  /**
-   * Cập nhật số lượng của một mục trong giỏ hàng.
-   */
+  // Cập nhật số lượng mới cho một mục cụ thể trong giỏ hàng.
   async updateItemQuantity(itemId: number, quantity: number): Promise<CartItemView> {
     return this.prisma.cartItem.update({
       where: { id: itemId },
@@ -126,23 +111,17 @@ export class CartRepository {
     }) as unknown as Promise<CartItemView>;
   }
 
-  /**
-   * Xóa một mục khỏi giỏ hàng.
-   */
+  // Loại bỏ hoàn toàn một mục khỏi giỏ hàng.
   async removeItem(itemId: number): Promise<void> {
     await this.prisma.cartItem.delete({ where: { id: itemId } });
   }
 
-  /**
-   * Xóa toàn bộ sản phẩm của một giỏ hàng.
-   */
+  // Xóa tất cả các sản phẩm có trong giỏ hàng.
   async clearCart(cartId: number): Promise<void> {
     await this.prisma.cartItem.deleteMany({ where: { cartId } });
   }
 
-  /**
-   * Tìm thông tin biến thể sản phẩm để kiểm tra tồn kho.
-   */
+  // Lấy thông tin biến thể sản phẩm để kiểm tra tính khả dụng (tồn kho).
   async findVariant(variantId: number) {
     return this.prisma.productVariant.findFirst({
       where: { id: variantId, isActive: true, deletedAt: null },

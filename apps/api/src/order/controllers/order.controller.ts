@@ -29,8 +29,6 @@ import {
 } from '../dto';
 import { OrderService } from '../services/order.service';
 
-// Tiếp nhận các yêu cầu liên quan đến đơn hàng từ phía khách hàng.
-// Điều hướng yêu cầu đặt hàng, hủy đơn và xem lịch sử mua hàng cá nhân.
 @ApiTags('Orders')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -38,6 +36,8 @@ import { OrderService } from '../services/order.service';
 @ApiExtraModels(OrderDetailResponseDto, OrderListResponseDto, OrderPaymentStatusResponseDto)
 @RequireUserType('CUSTOMER')
 @Controller('me/orders')
+// Tiếp nhận các yêu cầu liên quan đến đơn hàng từ phía khách hàng.
+// Điều hướng yêu cầu đặt hàng, hủy đơn và xem lịch sử mua hàng cá nhân.
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
@@ -48,8 +48,8 @@ export class OrderController {
   })
   @ApiBadRequestResponse({ description: 'Giỏ hàng trống hoặc tồn kho không đủ.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
-  @Post()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Post()
   async placeOrder(
     @Body() dto: CreateOrderDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -62,8 +62,8 @@ export class OrderController {
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderListResponseDto) }),
   })
-  @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get()
   async findMyOrders(
     @Query() query: ListMyOrdersQueryDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -80,8 +80,8 @@ export class OrderController {
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderDetailResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
-  @Get(':orderCode')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get(':orderCode')
   async findMyOrder(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -92,19 +92,19 @@ export class OrderController {
     );
   }
 
+  // Kiểm tra trạng thái thanh toán mới nhất của một đơn hàng cụ thể.
   @ApiOperation({ summary: 'Lấy trạng thái thanh toán của đơn hàng' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderPaymentStatusResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
-  @Get(':orderCode/payment-status')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get(':orderCode/payment-status')
   async findMyPaymentStatus(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<OrderPaymentStatusResponseDto>> {
-    const paymentStatus: OrderPaymentStatusResponseDto =
-      await this.orderService.findMyPaymentStatus(user.id, orderCode);
+    const paymentStatus = await this.orderService.findMyPaymentStatus(user.id, orderCode);
 
     return ok(paymentStatus, 'Lấy trạng thái thanh toán thành công.');
   }
@@ -116,9 +116,9 @@ export class OrderController {
   })
   @ApiBadRequestResponse({ description: 'Đơn hàng không ở trạng thái cho phép hủy.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @HttpCode(HttpStatus.OK)
   @Post(':orderCode/cancel')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async cancelMyOrder(
     @Param('orderCode') orderCode: string,
     @CurrentUser() user: AuthenticatedUser,

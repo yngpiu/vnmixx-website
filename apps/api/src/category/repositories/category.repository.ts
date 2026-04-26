@@ -31,21 +31,21 @@ interface CategoryDepthView {
   parentId: number | null;
 }
 
-interface CategoryTreeNode {
+interface CategoryTreeNodeView {
   id: number;
   name: string;
   slug: string;
   isFeatured: boolean;
   isActive: boolean;
   sortOrder: number;
-  children: CategoryTreeNode[];
+  children: CategoryTreeNodeView[];
 }
 
 export type {
   CategoryAdminView,
   CategoryDepthView,
   CategoryParentView,
-  CategoryTreeNode,
+  CategoryTreeNodeView,
   CategoryView,
 };
 
@@ -74,12 +74,12 @@ const TREE_NODE_SELECT = {
 } as const;
 
 @Injectable()
+// Repository Prisma cho các thao tác đọc và ghi dữ liệu danh mục.
 export class CategoryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ─── Public (active only) ─────────────────────────────────────────────────
-
-  findActiveTree(): Promise<CategoryTreeNode[]> {
+  // Lấy cấu trúc cây các danh mục đang hoạt động (tối đa 3 cấp).
+  findActiveTree(): Promise<CategoryTreeNodeView[]> {
     return this.prisma.category.findMany({
       where: { parentId: null, deletedAt: null, isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -101,9 +101,10 @@ export class CategoryRepository {
           },
         },
       },
-    }) as unknown as Promise<CategoryTreeNode[]>;
+    }) as unknown as Promise<CategoryTreeNodeView[]>;
   }
 
+  // Lấy danh sách toàn bộ danh mục đang hoạt động dưới dạng phẳng.
   findAllActive(): Promise<CategoryView[]> {
     return this.prisma.category.findMany({
       where: { deletedAt: null, isActive: true },
@@ -114,9 +115,10 @@ export class CategoryRepository {
     });
   }
 
+  // Tìm danh mục theo slug và bao gồm các danh mục con trực tiếp.
   async findBySlug(
     slug: string,
-  ): Promise<(CategoryView & { children: CategoryTreeNode[] }) | null> {
+  ): Promise<(CategoryView & { children: CategoryTreeNodeView[] }) | null> {
     return this.prisma.category.findFirst({
       where: { slug, deletedAt: null, isActive: true },
       select: {
@@ -130,11 +132,10 @@ export class CategoryRepository {
           },
         },
       },
-    }) as unknown as Promise<(CategoryView & { children: CategoryTreeNode[] }) | null>;
+    }) as unknown as Promise<(CategoryView & { children: CategoryTreeNodeView[] }) | null>;
   }
 
-  // ─── Admin (all states) ───────────────────────────────────────────────────
-
+  // Lấy danh sách toàn bộ danh mục cho Admin, hỗ trợ lọc theo trạng thái hoạt động và đã xóa.
   async findAll(opts?: {
     isActive?: boolean;
     isSoftDeleted?: boolean;
@@ -156,6 +157,7 @@ export class CategoryRepository {
     });
   }
 
+  // Tìm danh mục theo ID, bao gồm cả danh mục đã xóa mềm.
   async findById(id: number): Promise<CategoryAdminView | null> {
     return this.prisma.category.findUnique({
       where: { id },
@@ -166,6 +168,7 @@ export class CategoryRepository {
     });
   }
 
+  // Lấy thông tin ID và parentId để phục vụ việc kiểm tra phân cấp danh mục.
   async findDepthChain(id: number): Promise<CategoryDepthView | null> {
     return this.prisma.category.findUnique({
       where: { id },
@@ -173,6 +176,7 @@ export class CategoryRepository {
     });
   }
 
+  // Tạo mới một danh mục trong cơ sở dữ liệu.
   async create(data: {
     name: string;
     slug: string;
@@ -190,6 +194,7 @@ export class CategoryRepository {
     });
   }
 
+  // Cập nhật thông tin danh mục theo ID.
   async update(
     id: number,
     data: {
@@ -211,10 +216,7 @@ export class CategoryRepository {
     });
   }
 
-  /**
-   * Cập nhật danh mục và đặt `isActive: false` cho mọi hậu duệ (theo từng cấp, trong một transaction).
-   * Dùng khi vô hiệu hóa cha để đồng bộ toàn bộ nhánh.
-   */
+  // Cập nhật danh mục và đặt isActive: false cho mọi hậu duệ (trong một transaction).
   async updateAndCascadeDeactivateDescendants(
     id: number,
     data: {
@@ -257,6 +259,7 @@ export class CategoryRepository {
     });
   }
 
+  // Thực hiện xóa mềm bằng cách cập nhật trường deletedAt.
   async softDelete(id: number): Promise<void> {
     await this.prisma.category.update({
       where: { id },
@@ -264,6 +267,7 @@ export class CategoryRepository {
     });
   }
 
+  // Khôi phục danh mục bằng cách đặt deletedAt thành null.
   async restore(id: number): Promise<CategoryAdminView> {
     return this.prisma.category.update({
       where: { id },
@@ -275,9 +279,7 @@ export class CategoryRepository {
     });
   }
 
-  /**
-   * Kiểm tra xem danh mục hiện tại có bất kỳ danh mục con nào đang hoạt động hay không.
-   */
+  // Kiểm tra xem danh mục hiện tại có bất kỳ danh mục con nào đang hoạt động hay không.
   async hasActiveChildren(id: number): Promise<boolean> {
     const count = await this.prisma.category.count({
       where: { parentId: id, deletedAt: null, isActive: true },

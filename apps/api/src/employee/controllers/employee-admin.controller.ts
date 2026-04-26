@@ -47,7 +47,6 @@ import {
 } from '../dto';
 import { EmployeeService } from '../services/employee.service';
 
-// Controller quản trị nhân viên hệ thống - Quản lý tài khoản, vai trò và trạng thái
 @ApiTags('Employees')
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
@@ -55,6 +54,7 @@ import { EmployeeService } from '../services/employee.service';
 @RequireUserType('EMPLOYEE')
 @ApiExtraModels(EmployeeListResponseDto, EmployeeDetailResponseDto)
 @Controller('admin/employees')
+// Controller quản trị nhân viên hệ thống - Quản lý tài khoản, vai trò và trạng thái
 export class EmployeeAdminController {
   constructor(private readonly employeeService: EmployeeService) {}
 
@@ -66,9 +66,9 @@ export class EmployeeAdminController {
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(EmployeeListResponseDto) }),
   })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @RequirePermissions('employee.read')
   @Get()
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(
     @Query() query: ListEmployeesQueryDto,
   ): Promise<SuccessPayload<EmployeeListResponseDto>> {
@@ -93,9 +93,9 @@ export class EmployeeAdminController {
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(EmployeeDetailResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @RequirePermissions('employee.read')
   @Get(':id')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findById(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<SuccessPayload<EmployeeDetailResponseDto>> {
@@ -109,9 +109,9 @@ export class EmployeeAdminController {
   })
   @ApiBadRequestResponse({ description: 'Dữ liệu không hợp lệ hoặc ID vai trò không tồn tại.' })
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại đã được sử dụng.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @RequirePermissions('employee.create')
   @Post()
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async create(
     @Body() dto: CreateEmployeeDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -134,9 +134,9 @@ export class EmployeeAdminController {
       'Dữ liệu không hợp lệ, ID vai trò không tồn tại, hoặc cố gắng sửa tài khoản hệ thống.',
   })
   @ApiConflictResponse({ description: 'Email hoặc số điện thoại mới đã được sử dụng.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @RequirePermissions('employee.update')
   @Patch(':id')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateEmployeeDto,
@@ -159,10 +159,10 @@ export class EmployeeAdminController {
   @ApiBadRequestResponse({
     description: 'Không được phép xóa tài khoản quản trị tối cao hoặc chính mình.',
   })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @RequirePermissions('employee.delete')
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -178,9 +178,10 @@ export class EmployeeAdminController {
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(EmployeeDetailResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy bản ghi nhân viên đang bị xóa mềm.' })
+  @ApiBadRequestResponse({ description: 'Nhân viên không ở trạng thái bị xóa hoặc không tồn tại.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @RequirePermissions('employee.update')
   @Patch(':id/restore')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async restore(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

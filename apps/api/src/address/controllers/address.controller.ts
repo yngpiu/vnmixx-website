@@ -44,31 +44,36 @@ import { AddressService } from '../services/address.service';
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('CUSTOMER')
 @Controller('me/addresses')
+// API quản lý sổ địa chỉ cá nhân của khách hàng.
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
+  // Lấy toàn bộ danh sách địa chỉ đã lưu của khách hàng hiện tại.
   @ApiOperation({ summary: 'Liệt kê tất cả địa chỉ của khách hàng hiện tại' })
   @ApiOkResponse({
+    description: 'Lấy danh sách địa chỉ thành công.',
     schema: buildSuccessResponseSchema({
       type: 'array',
       items: { $ref: getSchemaPath(AddressResponseDto) },
     }),
   })
-  @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get()
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<AddressResponseDto[]>> {
     return ok(await this.addressService.findAll(user.id), 'Lấy danh sách địa chỉ thành công.');
   }
 
+  // Lấy thông tin chi tiết của một địa chỉ cụ thể theo ID.
   @ApiOperation({ summary: 'Lấy địa chỉ theo ID' })
   @ApiOkResponse({
+    description: 'Lấy chi tiết địa chỉ thành công.',
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AddressResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
-  @Get(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -76,13 +81,17 @@ export class AddressController {
     return ok(await this.addressService.findById(id, user.id), 'Lấy chi tiết địa chỉ thành công.');
   }
 
+  // Thêm một địa chỉ mới vào sổ địa chỉ của khách hàng.
   @ApiOperation({ summary: 'Tạo địa chỉ mới' })
   @ApiCreatedResponse({
+    description: 'Tạo địa chỉ thành công.',
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AddressResponseDto) }),
   })
-  @ApiBadRequestResponse({ description: 'Phân cấp địa chỉ không hợp lệ.' })
-  @Post()
+  @ApiBadRequestResponse({
+    description: 'Thông tin đầu vào không hợp lệ hoặc phân cấp địa chỉ sai.',
+  })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Post()
   async create(
     @Body() dto: CreateAddressDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -90,14 +99,18 @@ export class AddressController {
     return ok(await this.addressService.create(user.id, dto), 'Tạo địa chỉ thành công.');
   }
 
+  // Cập nhật các thông tin của một địa chỉ hiện có.
   @ApiOperation({ summary: 'Cập nhật địa chỉ' })
   @ApiOkResponse({
+    description: 'Cập nhật địa chỉ thành công.',
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AddressResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
-  @ApiBadRequestResponse({ description: 'Phân cấp địa chỉ không hợp lệ.' })
-  @Put(':id')
+  @ApiBadRequestResponse({
+    description: 'Thông tin đầu vào không hợp lệ hoặc phân cấp địa chỉ sai.',
+  })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAddressDto,
@@ -106,15 +119,16 @@ export class AddressController {
     return ok(await this.addressService.update(id, user.id, dto), 'Cập nhật địa chỉ thành công.');
   }
 
+  // Xóa bỏ một địa chỉ khỏi sổ địa chỉ.
   @ApiOperation({ summary: 'Xóa địa chỉ (xóa cứng)' })
   @ApiOkResponse({
     description: 'Xóa địa chỉ thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa địa chỉ thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -123,13 +137,15 @@ export class AddressController {
     return okNoData('Xóa địa chỉ thành công.');
   }
 
+  // Chỉ định một địa chỉ là địa chỉ mặc định cho các đơn hàng sau này.
   @ApiOperation({ summary: 'Đặt địa chỉ làm mặc định' })
   @ApiOkResponse({
+    description: 'Đặt địa chỉ mặc định thành công.',
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AddressResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
-  @Patch(':id/set-default')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Patch(':id/set-default')
   async setDefault(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,

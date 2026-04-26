@@ -28,10 +28,10 @@ export class RoleResponseDto {
   @ApiProperty({ example: 12 })
   permissionCount: number;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2023-01-01T00:00:00Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2023-01-01T00:00:00Z' })
   updatedAt: Date;
 }
 
@@ -45,10 +45,10 @@ export class RoleDetailResponseDto {
   @ApiPropertyOptional({ example: 'Full access', nullable: true })
   description: string | null;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2023-01-01T00:00:00Z' })
   createdAt: Date;
 
-  @ApiProperty()
+  @ApiProperty({ example: '2023-01-01T00:00:00Z' })
   updatedAt: Date;
 
   @ApiProperty({ type: [PermissionResponseDto] })
