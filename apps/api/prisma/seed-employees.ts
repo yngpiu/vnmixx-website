@@ -97,6 +97,19 @@ export async function seedEmployees(): Promise<void> {
       }
     }
 
+    // Ensure the default super admin account always keeps full privileges.
+    const ownerRoleId = roleIdByName.get('Chủ cửa hàng');
+    if (ownerRoleId !== undefined) {
+      await prisma.employee.updateMany({
+        where: { email: 'vnmixx@gmail.com' },
+        data: {
+          roleId: ownerRoleId,
+          status: EmployeeStatus.ACTIVE,
+          deletedAt: null,
+        },
+      });
+    }
+
     const total = await prisma.employee.count({ where: { deletedAt: null } });
     console.log(
       `Seed employees done: created=${created}, updated=${updated}, active employees in DB=${total}`,

@@ -9,6 +9,7 @@ import { seedOrders } from './seed-orders';
 import { seedProductReviews } from './seed-product-reviews';
 import { seedProducts } from './seed-products';
 import { seedRbac } from './seed-rbac';
+import { seedSupportChats } from './seed-support-chat';
 import { seedWishlists } from './seed-wishlists';
 
 async function main() {
@@ -22,6 +23,7 @@ async function main() {
   await seedProducts();
   await seedEmployees();
   await seedCustomers();
+  await seedSupportChats();
 
   await seedAddresses();
   await seedWishlists();

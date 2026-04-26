@@ -18,6 +18,7 @@ export const dashboardRoutes = {
   overview: '/dashboard',
   analytics: '/analytics',
   reviews: '/reviews',
+  supportChats: '/support-chats',
   settings: '/settings',
 } as const;
 
@@ -49,6 +50,9 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
   }
   if (path === dashboardRoutes.reviews) {
     return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Đánh giá' }];
+  }
+  if (path === dashboardRoutes.supportChats) {
+    return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Tin nhắn hỗ trợ' }];
   }
   if (path === dashboardRoutes.settings) {
     return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Cài đặt cá nhân' }];
