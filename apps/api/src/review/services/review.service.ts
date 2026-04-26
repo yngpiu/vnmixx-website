@@ -28,6 +28,10 @@ export class ReviewService {
     productId: number,
     dto: CreateProductReviewDto,
   ): Promise<void> {
+    if (!Number.isInteger(dto.rating) || dto.rating < 1 || dto.rating > 5) {
+      throw new BadRequestException('rating phải nằm trong khoảng từ 1 đến 5.');
+    }
+
     // 1. Kiểm tra sản phẩm có tồn tại và đang hoạt động không.
     const product = await this.prisma.product.findUnique({
       where: { id: productId },

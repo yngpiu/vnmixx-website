@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ChatSenderType } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
@@ -167,6 +167,26 @@ export class SupportChatRepository {
 
   // Lưu tin nhắn mới vào cơ sở dữ liệu.
   async createMessage(data: CreateMessageData): Promise<MessageView> {
+    if (data.senderType === ChatSenderType.CUSTOMER) {
+      const customer = await this.prisma.customer.findUnique({
+        where: { id: data.senderId },
+        select: { id: true },
+      });
+      if (!customer) {
+        throw new NotFoundException(`Không tìm thấy khách hàng #${data.senderId}`);
+      }
+    } else if (data.senderType === ChatSenderType.EMPLOYEE) {
+      const employee = await this.prisma.employee.findUnique({
+        where: { id: data.senderId },
+        select: { id: true },
+      });
+      if (!employee) {
+        throw new NotFoundException(`Không tìm thấy nhân viên #${data.senderId}`);
+      }
+    } else {
+      throw new BadRequestException('senderType không hợp lệ.');
+    }
+
     return this.prisma.chatMessage.create({
       data: {
         chatId: data.chatId,

@@ -370,6 +370,17 @@ export class OrderService {
   private async validateAddressOrFail(customerId: number, addressId: number) {
     const address = await this.orderRepo.findAddressByIdAndCustomer(addressId, customerId);
     if (!address) throw new NotFoundException(`Không tìm thấy địa chỉ #${addressId}.`);
+
+    const hierarchyIsValid = await this.prisma.ward.count({
+      where: {
+        id: address.wardId,
+        districtId: address.districtId,
+        district: { cityId: address.cityId },
+      },
+    });
+    if (hierarchyIsValid === 0) {
+      throw new BadRequestException('Địa chỉ giao hàng không nhất quán theo cấp hành chính.');
+    }
     return address;
   }
 

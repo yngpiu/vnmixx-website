@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import type { RefreshToken } from 'generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
@@ -23,6 +23,13 @@ export class RefreshTokenRepository {
    * Tạo mới một bản ghi Refresh Token.
    */
   async create(data: CreateRefreshTokenData): Promise<RefreshToken> {
+    const hasCustomerOwner = data.customerId !== undefined;
+    const hasEmployeeOwner = data.employeeId !== undefined;
+    if (hasCustomerOwner === hasEmployeeOwner) {
+      throw new BadRequestException(
+        'Refresh token phải thuộc đúng một chủ sở hữu: customer hoặc employee.',
+      );
+    }
     return this.prisma.refreshToken.create({ data });
   }
 

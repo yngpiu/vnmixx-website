@@ -83,7 +83,13 @@ export class TokenService {
     if (!storedToken) {
       throw new UnauthorizedException('Mã làm mới không hợp lệ hoặc đã hết hạn');
     }
-    const isCustomer = storedToken.customerId !== null;
+    const hasCustomerOwner = storedToken.customerId !== null;
+    const hasEmployeeOwner = storedToken.employeeId !== null;
+    if (hasCustomerOwner === hasEmployeeOwner) {
+      this.logger.warn(`Invalid refresh token owner shape for token #${storedToken.id}`);
+      throw new UnauthorizedException('Mã làm mới không hợp lệ hoặc đã hết hạn');
+    }
+    const isCustomer = hasCustomerOwner;
     const ownerId = isCustomer ? storedToken.customerId! : storedToken.employeeId!;
     const ownerType: 'CUSTOMER' | 'EMPLOYEE' = isCustomer ? 'CUSTOMER' : 'EMPLOYEE';
 

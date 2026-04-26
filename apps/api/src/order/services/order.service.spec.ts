@@ -20,6 +20,9 @@ describe('OrderService', () => {
 
   const mockAddress = {
     id: 1,
+    cityId: 1,
+    districtId: 1,
+    wardId: 1,
     fullName: 'Test User',
     phoneNumber: '0123456789',
     addressLine: '123 Street',
@@ -68,6 +71,7 @@ describe('OrderService', () => {
             productVariant: { findUnique: jest.fn(), updateMany: jest.fn(), findMany: jest.fn() },
             stockMovement: { create: jest.fn() },
             cartItem: { deleteMany: jest.fn() },
+            ward: { count: jest.fn().mockResolvedValue(1) },
             $transaction: jest.fn(),
           },
         },
