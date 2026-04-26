@@ -9,152 +9,39 @@ import {
   listAdminChatMessages,
   listAdminChats,
 } from '@/modules/support-chat/api/support-chat';
+import { SupportChatImagePreviewDialog } from '@/modules/support-chat/components/support-chat/support-chat-image-preview-dialog';
+import { SupportChatListSidebar } from '@/modules/support-chat/components/support-chat/support-chat-list-sidebar';
 import { useSupportChatRealtime } from '@/modules/support-chat/hooks/use-support-chat-realtime';
 import type { ChatMessage, ChatSummary } from '@/modules/support-chat/types/support-chat';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
-import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
 import {
   ImageIcon,
   Loader2Icon,
   MessageCircleIcon,
-  SearchIcon,
   SendHorizonalIcon,
   UserRoundCheckIcon,
   XIcon,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-
-const CHAT_IMAGES_START = '[chat-images]';
-const CHAT_IMAGES_END = '[/chat-images]';
-const TIMESTAMP_BOUNDARY_MS = 5 * 60 * 1000;
-const SUPPORT_CHATS_LIST_QUERY = [
-  'admin',
-  'support-chats',
-  'list',
-  { page: 1, pageSize: 50 },
-] as const;
-const IMAGE_URL_PATTERN = /^(https?:\/\/|blob:|data:image\/)/i;
-
-type SupportChatsListCache = {
-  items: ChatSummary[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-};
-
-function buildMessagePayload(text: string, imageUrls: string[]): string {
-  const trimmed = text.trim();
-  if (imageUrls.length === 0) return trimmed;
-  return `${CHAT_IMAGES_START}\n${imageUrls.join('\n')}\n${CHAT_IMAGES_END}\n${trimmed}`.trim();
-}
-
-function parseMessagePayload(rawContent: string): { text: string; imageUrls: string[] } {
-  if (!rawContent.includes(CHAT_IMAGES_START)) {
-    return { text: rawContent, imageUrls: [] };
-  }
-  const start = rawContent.indexOf(CHAT_IMAGES_START);
-  const end = rawContent.indexOf(CHAT_IMAGES_END);
-  if (start === -1 || end === -1 || end <= start) {
-    return { text: rawContent, imageUrls: [] };
-  }
-  const imageBlock = rawContent
-    .slice(start + CHAT_IMAGES_START.length, end)
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => IMAGE_URL_PATTERN.test(line));
-  const text = rawContent.slice(end + CHAT_IMAGES_END.length).trim();
-  return { text, imageUrls: imageBlock };
-}
-
-function apiErrorMessage(error: unknown): string {
-  if (isAxiosError(error)) {
-    const responseData = error.response?.data as { message?: string | string[] } | undefined;
-    if (typeof responseData?.message === 'string') return responseData.message;
-    if (Array.isArray(responseData?.message)) return responseData.message.join(', ');
-  }
-  return error instanceof Error ? error.message : 'Đã xảy ra lỗi.';
-}
-
-function formatMessageTime(value: string): string {
-  return format(new Date(value), 'HH:mm', { locale: vi });
-}
-
-function formatMessageDate(value: string): string {
-  return format(new Date(value), 'dd/MM/yyyy', { locale: vi });
-}
-
-function formatBoundaryTimestamp(current: string, previous?: string): string {
-  const currentDate = new Date(current);
-  if (!previous) {
-    return format(currentDate, 'HH:mm dd/MM/yy', { locale: vi });
-  }
-  if (formatMessageDate(current) === formatMessageDate(previous)) {
-    return format(currentDate, 'HH:mm', { locale: vi });
-  }
-  return format(currentDate, 'HH:mm dd/MM/yy', { locale: vi });
-}
-
-function formatFullTooltipTime(value: string): string {
-  const date = new Date(value);
-  const today = new Date();
-  if (format(date, 'dd/MM/yyyy', { locale: vi }) === format(today, 'dd/MM/yyyy', { locale: vi })) {
-    return format(date, 'HH:mm', { locale: vi });
-  }
-  return format(date, 'HH:mm dd/MM/yy', { locale: vi });
-}
-
-function patchSupportChatListCache(
-  previous: SupportChatsListCache | undefined,
-  message: ChatMessage,
-): SupportChatsListCache | undefined {
-  if (!previous) return previous;
-  const parsed = parseMessagePayload(message.content);
-  const target = previous.items.find((item) => item.id === message.chatId);
-  if (!target) return previous;
-  const senderLabel =
-    message.senderType === 'EMPLOYEE' ? 'VNMIXX' : shortDisplayName(target.customerName);
-  const snippet =
-    parsed.text ||
-    (parsed.imageUrls.length > 0
-      ? `${senderLabel} đã gửi ${parsed.imageUrls.length} ảnh`
-      : 'Chưa có tin nhắn');
-  const patched: ChatSummary = {
-    ...target,
-    lastMessageContent: snippet,
-    lastMessageAt: message.createdAt,
-  };
-  return {
-    ...previous,
-    items: [patched, ...previous.items.filter((item) => item.id !== message.chatId)],
-  };
-}
-
-function senderInitial(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(-2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
-}
-
-function shortDisplayName(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/);
-  return parts[parts.length - 1] ?? fullName;
-}
+import {
+  SUPPORT_CHATS_LIST_QUERY,
+  TIMESTAMP_BOUNDARY_MS,
+  apiErrorMessage,
+  buildMessagePayload,
+  formatBoundaryTimestamp,
+  formatFullTooltipTime,
+  parseMessagePayload,
+  patchSupportChatListCache,
+  senderInitial,
+  type SupportChatsListCache,
+} from './support-chat.utils';
 
 export function SupportChatManagementView(): React.JSX.Element {
   const queryClient = useQueryClient();
@@ -459,75 +346,15 @@ export function SupportChatManagementView(): React.JSX.Element {
   return (
     <ListPage title="Tin nhắn hỗ trợ">
       <section className="grid h-[calc(100dvh-10.5rem)] min-h-[560px] gap-4 lg:grid-cols-[320px_1fr]">
-        <div className="flex min-h-0 flex-col rounded-xl border bg-card">
-          <div className="space-y-3 border-b p-4">
-            <label className="flex h-10 items-center rounded-md border border-input ps-2">
-              <SearchIcon size={15} className="me-2 stroke-slate-500" />
-              <span className="sr-only">Tìm hội thoại</span>
-              <input
-                type="text"
-                className="w-full flex-1 bg-transparent text-sm outline-none"
-                placeholder="Tìm theo tên khách hàng..."
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-              />
-            </label>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{filteredChats.length} hội thoại</span>
-              <Badge variant="secondary">Realtime</Badge>
-            </div>
-          </div>
-          <ScrollArea className="min-h-0 flex-1">
-            {chatsQuery.isLoading ? (
-              <div className="flex items-center justify-center py-8 text-muted-foreground">
-                <Loader2Icon className="size-4 animate-spin" />
-              </div>
-            ) : filteredChats.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Không có hội thoại phù hợp.
-              </p>
-            ) : (
-              <div className="p-2">
-                {filteredChats.map((chat) => {
-                  const isActive = selectedChatId === chat.id;
-                  const parsedLast = parseMessagePayload(chat.lastMessageContent ?? '');
-                  const lastSenderType = lastMessageSenderByChatId[chat.id];
-                  const senderLabel =
-                    lastSenderType === 'EMPLOYEE' ? 'VNMIXX' : shortDisplayName(chat.customerName);
-                  const snippet =
-                    parsedLast.text ||
-                    (parsedLast.imageUrls.length > 0
-                      ? `${senderLabel} đã gửi ${parsedLast.imageUrls.length} ảnh`
-                      : 'Chưa có tin nhắn');
-                  return (
-                    <button
-                      key={chat.id}
-                      type="button"
-                      className={cn(
-                        'mb-1 flex w-full items-start gap-3 rounded-lg px-3 py-2 text-left transition',
-                        isActive ? 'bg-muted' : 'hover:bg-muted/60',
-                      )}
-                      onClick={() => handleSelectChat(chat.id)}
-                    >
-                      <Avatar className="size-9">
-                        <AvatarFallback>{senderInitial(chat.customerName)}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-sm font-medium">{chat.customerName}</p>
-                          <span className="shrink-0 text-[11px] text-muted-foreground">
-                            {chat.lastMessageAt ? formatMessageTime(chat.lastMessageAt) : '--:--'}
-                          </span>
-                        </div>
-                        <p className="line-clamp-1 text-xs text-muted-foreground">{snippet}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </ScrollArea>
-        </div>
+        <SupportChatListSidebar
+          chats={filteredChats}
+          isLoading={chatsQuery.isLoading}
+          keyword={keyword}
+          onKeywordChange={setKeyword}
+          selectedChatId={selectedChatId}
+          lastMessageSenderByChatId={lastMessageSenderByChatId}
+          onSelectChat={handleSelectChat}
+        />
 
         <div className="flex min-h-0 flex-col rounded-xl border bg-card">
           {!selectedChatId || !selectedChatSummary ? (
@@ -825,34 +652,10 @@ export function SupportChatManagementView(): React.JSX.Element {
           )}
         </div>
       </section>
-      <Dialog
-        open={previewImageUrl !== null}
-        onOpenChange={(open) => !open && setPreviewImageUrl(null)}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="top-0 left-0 h-screen w-screen max-w-none translate-x-0 translate-y-0 rounded-none border-none bg-transparent p-0 shadow-none ring-0 sm:max-w-none"
-        >
-          <DialogTitle className="sr-only">Xem trước ảnh đính kèm</DialogTitle>
-          {previewImageUrl ? (
-            <div
-              className="flex h-full w-full items-center justify-center overflow-hidden p-2"
-              onClick={(event) => {
-                if (event.target === event.currentTarget) {
-                  setPreviewImageUrl(null);
-                }
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={previewImageUrl}
-                alt="Xem trước ảnh"
-                className="h-auto max-h-[96vh] w-auto max-w-[98vw] object-contain"
-              />
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <SupportChatImagePreviewDialog
+        previewImageUrl={previewImageUrl}
+        onClose={() => setPreviewImageUrl(null)}
+      />
     </ListPage>
   );
 }
