@@ -121,7 +121,7 @@ export const sidebarSections: SidebarSection[] = [
     ],
   },
   {
-    id: 'system',
+    id: 'system-admin',
     groupLabel: 'Hệ thống',
     items: [
       {

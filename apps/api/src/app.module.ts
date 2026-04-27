@@ -14,6 +14,7 @@ import { ColorModule } from './color/color.module';
 import { validateEnv } from './common/config/env.validation';
 import { CoreModule } from './core/core.module';
 import { CustomerModule } from './customer/customer.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { EmployeeModule } from './employee/employee.module';
 import { LocationModule } from './location/location.module';
 import { MailModule } from './mail/mail.module';
@@ -64,6 +65,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     SizeModule,
     ProductModule,
     CustomerModule,
+    DashboardModule,
     EmployeeModule,
     RbacModule,
     LocationModule,
