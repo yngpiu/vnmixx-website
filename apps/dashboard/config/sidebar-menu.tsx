@@ -74,7 +74,7 @@ export const sidebarSections: SidebarSection[] = [
       moduleNav('products', PackageIcon),
       moduleNav('categories', TagsIcon),
       moduleNav('customers', UsersIcon),
-      moduleNav('shipping', TruckIcon, { title: 'Kho hàng' }),
+      moduleNav('inventory', TruckIcon),
       {
         title: 'Ưu đãi',
         url: dashboardRoutes.analytics,

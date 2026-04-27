@@ -479,7 +479,7 @@ export function DashboardOverviewView() {
               className="mt-auto self-start px-0 text-sky-700 hover:text-sky-800"
               asChild
             >
-              <Link href="/products" className="inline-flex items-center gap-1">
+              <Link href="/inventory" className="inline-flex items-center gap-1">
                 Xem tất cả
                 <ArrowRightIcon className="size-4" />
               </Link>

@@ -74,6 +74,17 @@ enum StockMovementType {
   RETURN
 }
 
+enum InventoryVoucherType {
+  IMPORT
+  EXPORT
+}
+
+enum InventoryVoucherStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
 enum AuditLogStatus {
   SUCCESS
   FAILED
@@ -131,6 +142,7 @@ model Employee {
 
   role             Role             @relation(fields: [roleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   refreshTokens    RefreshToken[]
+  inventoryVouchers InventoryVoucher[]
   stockMovements   StockMovement[]
   mediaFiles       MediaFile[]
   auditLogsAsActor AuditLog[]       @relation("AuditLogActor")
@@ -356,7 +368,10 @@ model ProductVariant {
   colorId   Int       @map("color_id") @db.UnsignedInt
   sizeId    Int       @map("size_id") @db.UnsignedInt
   sku       String    @unique(map: "uk_variants_sku") @db.VarChar(50)
+  barcode   String?   @unique(map: "uk_variants_barcode") @db.VarChar(64)
+  unit      String    @default("pcs") @db.VarChar(20)
   price     Int       @db.UnsignedInt
+  defaultCost Int?    @map("default_cost") @db.UnsignedInt
   onHand    Int       @default(0) @map("on_hand") @db.UnsignedInt
   reserved  Int       @default(0) @db.UnsignedInt
   version   Int       @default(0) @db.UnsignedInt
@@ -369,6 +384,7 @@ model ProductVariant {
   color          Color           @relation(fields: [colorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   size           Size            @relation(fields: [sizeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   cartItems      CartItem[]
+  inventoryVoucherItems InventoryVoucherItem[]
   orderItems     OrderItem[]
   stockMovements StockMovement[]
 
@@ -377,6 +393,47 @@ model ProductVariant {
   @@index([colorId], map: "idx_variants_color")
   @@index([sizeId], map: "idx_variants_size")
   @@map("product_variants")
+}
+
+model InventoryVoucher {
+  id                 Int                    @id @default(autoincrement()) @db.UnsignedInt
+  code               String                 @unique(map: "uk_inventory_vouchers_code") @db.VarChar(30)
+  type               InventoryVoucherType
+  status             InventoryVoucherStatus @default(CONFIRMED)
+  issuedAt           DateTime               @map("issued_at") @db.Timestamp(0)
+  note               String?                @db.VarChar(500)
+  totalQuantity      Int                    @default(0) @map("total_quantity") @db.UnsignedInt
+  totalAmount        Int                    @default(0) @map("total_amount") @db.UnsignedInt
+  createdByEmployeeId Int                   @map("created_by_employee_id") @db.UnsignedInt
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  createdByEmployee Employee               @relation(fields: [createdByEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items             InventoryVoucherItem[]
+  stockMovements    StockMovement[]
+
+  @@index([type, issuedAt], map: "idx_inventory_vouchers_type_issued")
+  @@index([createdByEmployeeId], map: "idx_inventory_vouchers_created_by")
+  @@map("inventory_vouchers")
+}
+
+model InventoryVoucherItem {
+  id          Int      @id @default(autoincrement()) @db.UnsignedInt
+  voucherId   Int      @map("voucher_id") @db.UnsignedInt
+  variantId   Int      @map("variant_id") @db.UnsignedInt
+  quantity    Int      @db.UnsignedInt
+  unitPrice   Int      @map("unit_price") @db.UnsignedInt
+  lineAmount  Int      @map("line_amount") @db.UnsignedInt
+  note        String?  @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  voucher InventoryVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  variant ProductVariant   @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([voucherId, variantId], map: "uk_inventory_voucher_items_voucher_variant")
+  @@index([variantId], map: "idx_inventory_voucher_items_variant")
+  @@map("inventory_voucher_items")
 }
 
 model ProductImage {
@@ -606,6 +663,7 @@ model SepayTransaction {
 model StockMovement {
   id            Int               @id @default(autoincrement()) @db.UnsignedInt
   variantId     Int               @map("variant_id") @db.UnsignedInt
+  voucherId     Int?              @map("voucher_id") @db.UnsignedInt
   orderId       Int?              @map("order_id") @db.UnsignedInt
   orderItemId   Int?              @map("order_item_id") @db.UnsignedInt
   employeeId    Int?              @map("employee_id") @db.UnsignedInt
@@ -617,11 +675,13 @@ model StockMovement {
   createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamp(0)
 
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  voucher   InventoryVoucher? @relation(fields: [voucherId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   order     Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   orderItem OrderItem?     @relation("StockMovementOrderItem", fields: [orderItemId, orderId], references: [id, orderId], onDelete: SetNull, onUpdate: Cascade)
   employee  Employee?      @relation(fields: [employeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([variantId, createdAt], map: "idx_stock_movements_variant_created")
+  @@index([voucherId, createdAt], map: "idx_stock_movements_voucher_created")
   @@index([variantId, type, createdAt], map: "idx_stock_movements_variant_type_created")
   @@index([orderId], map: "idx_stock_movements_order")
   @@index([orderItemId], map: "idx_stock_movements_order_item")

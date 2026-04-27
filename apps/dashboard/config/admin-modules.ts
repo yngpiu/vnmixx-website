@@ -11,7 +11,7 @@ export const ADMIN_MODULE_SLUGS = [
   'sizes',
   'roles',
   'permissions',
-  'shipping',
+  'inventory',
 ] as const;
 
 export type AdminModuleSlug = (typeof ADMIN_MODULE_SLUGS)[number];
@@ -76,10 +76,10 @@ export const ADMIN_MODULES: Record<AdminModuleSlug, AdminModuleMeta> = {
     apiPath: 'admin/permissions',
     moduleName: 'RbacModule',
   },
-  shipping: {
-    title: 'Vận chuyển',
-    apiPath: 'shipping',
-    moduleName: 'ShippingModule',
+  inventory: {
+    title: 'Kho hàng',
+    apiPath: 'admin/inventory',
+    moduleName: 'DashboardModule',
   },
 };
 
