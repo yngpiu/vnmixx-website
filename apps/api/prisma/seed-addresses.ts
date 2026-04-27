@@ -1,6 +1,8 @@
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { AddressType, PrismaClient } from '../generated/prisma/client';
 
+const ADDRESS_CUSTOMER_LIMIT = Number(process.env.SEED_ADDRESS_CUSTOMER_COUNT ?? 350);
+
 async function wipeSeedAddresses(prisma: PrismaClient): Promise<void> {
   await prisma.address.deleteMany({});
 }
@@ -19,7 +21,8 @@ export async function seedAddresses(): Promise<void> {
 
     const customers = await prisma.customer.findMany({
       where: { deletedAt: null },
-      take: 100,
+      orderBy: { id: 'asc' },
+      take: ADDRESS_CUSTOMER_LIMIT,
     });
 
     const wards = await prisma.ward.findMany({

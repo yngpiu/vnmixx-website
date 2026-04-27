@@ -1,6 +1,7 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { Prisma, PrismaClient } from '../generated/prisma/client';
+import { resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const MEDIA_COUNT = Number(process.env.SEED_MEDIA_COUNT ?? 120);
 
@@ -51,8 +52,8 @@ export async function seedMedia(): Promise<void> {
     const uploaderIds = employees.map((e) => e.id);
 
     faker.seed(444);
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const asOf = resolveSeedAsOfDate();
+    const rangeStart = yearsBefore(asOf, 3);
 
     const files: Prisma.MediaFileCreateManyInput[] = [];
 
@@ -80,7 +81,7 @@ export async function seedMedia(): Promise<void> {
         width: isImage ? faker.helpers.arrayElement([800, 1024, 1200, 1920]) : null,
         height: isImage ? faker.helpers.arrayElement([600, 800, 1080]) : null,
         uploadedBy: uploaderIds.length > 0 ? faker.helpers.arrayElement(uploaderIds) : null,
-        createdAt: faker.date.between({ from: twoYearsAgo, to: new Date() }),
+        createdAt: faker.date.between({ from: rangeStart, to: asOf }),
       });
     }
 

@@ -259,7 +259,6 @@ CREATE TABLE `inventory_vouchers` (
     `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `code` VARCHAR(30) NOT NULL,
     `type` ENUM('IMPORT', 'EXPORT') NOT NULL,
-    `status` ENUM('DRAFT', 'CONFIRMED', 'CANCELLED') NOT NULL DEFAULT 'CONFIRMED',
     `issued_at` TIMESTAMP(0) NOT NULL,
     `note` VARCHAR(500) NULL,
     `total_quantity` INTEGER UNSIGNED NOT NULL DEFAULT 0,
@@ -311,6 +310,7 @@ CREATE TABLE `product_reviews` (
     `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `product_id` INTEGER UNSIGNED NOT NULL,
     `customer_id` INTEGER UNSIGNED NOT NULL,
+    `order_item_id` INTEGER UNSIGNED NULL,
     `rating` TINYINT UNSIGNED NOT NULL,
     `title` VARCHAR(120) NULL,
     `content` VARCHAR(1000) NULL,
@@ -322,7 +322,8 @@ CREATE TABLE `product_reviews` (
     INDEX `idx_product_reviews_product_rating`(`product_id`, `rating`),
     INDEX `idx_product_reviews_rating_created`(`rating`, `created_at`),
     INDEX `idx_product_reviews_status_created`(`status`, `created_at`),
-    UNIQUE INDEX `uk_product_reviews_product_customer`(`product_id`, `customer_id`),
+    INDEX `idx_product_reviews_order_item`(`order_item_id`),
+    UNIQUE INDEX `uk_product_reviews_product_customer_item`(`product_id`, `customer_id`, `order_item_id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -496,7 +497,7 @@ CREATE TABLE `sepay_transactions` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `stock_movements` (
+CREATE TABLE `inventory_movements` (
     `id` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
     `variant_id` INTEGER UNSIGNED NOT NULL,
     `voucher_id` INTEGER UNSIGNED NULL,
@@ -510,13 +511,13 @@ CREATE TABLE `stock_movements` (
     `note` VARCHAR(255) NULL,
     `created_at` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
 
-    INDEX `idx_stock_movements_variant_created`(`variant_id`, `created_at`),
-    INDEX `idx_stock_movements_voucher_created`(`voucher_id`, `created_at`),
-    INDEX `idx_stock_movements_variant_type_created`(`variant_id`, `type`, `created_at`),
-    INDEX `idx_stock_movements_order`(`order_id`),
-    INDEX `idx_stock_movements_order_item`(`order_item_id`),
-    INDEX `idx_stock_movements_employee`(`employee_id`),
-    INDEX `idx_stock_movements_type_created`(`type`, `created_at`),
+    INDEX `idx_inventory_movements_variant_created`(`variant_id`, `created_at`),
+    INDEX `idx_inventory_movements_voucher_created`(`voucher_id`, `created_at`),
+    INDEX `idx_inventory_movements_variant_type_created`(`variant_id`, `type`, `created_at`),
+    INDEX `idx_inventory_movements_order`(`order_id`),
+    INDEX `idx_inventory_movements_order_item`(`order_item_id`),
+    INDEX `idx_inventory_movements_employee`(`employee_id`),
+    INDEX `idx_inventory_movements_type_created`(`type`, `created_at`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -709,6 +710,9 @@ ALTER TABLE `order_items` ADD CONSTRAINT `order_items_order_id_fkey` FOREIGN KEY
 ALTER TABLE `order_items` ADD CONSTRAINT `order_items_variant_id_fkey` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `product_reviews` ADD CONSTRAINT `product_reviews_order_item_id_fkey` FOREIGN KEY (`order_item_id`) REFERENCES `order_items`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `order_status_histories` ADD CONSTRAINT `order_status_histories_order_id_fkey` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -721,19 +725,19 @@ ALTER TABLE `sepay_transactions` ADD CONSTRAINT `sepay_transactions_order_id_fke
 ALTER TABLE `sepay_transactions` ADD CONSTRAINT `sepay_transactions_payment_id_fkey` FOREIGN KEY (`payment_id`) REFERENCES `payments`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `stock_movements` ADD CONSTRAINT `stock_movements_variant_id_fkey` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `inventory_movements` ADD CONSTRAINT `inventory_movements_variant_id_fkey` FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `stock_movements` ADD CONSTRAINT `stock_movements_voucher_id_fkey` FOREIGN KEY (`voucher_id`) REFERENCES `inventory_vouchers`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `inventory_movements` ADD CONSTRAINT `inventory_movements_voucher_id_fkey` FOREIGN KEY (`voucher_id`) REFERENCES `inventory_vouchers`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `stock_movements` ADD CONSTRAINT `stock_movements_order_id_fkey` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `inventory_movements` ADD CONSTRAINT `inventory_movements_order_id_fkey` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `stock_movements` ADD CONSTRAINT `stock_movements_order_item_id_order_id_fkey` FOREIGN KEY (`order_item_id`, `order_id`) REFERENCES `order_items`(`id`, `order_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `inventory_movements` ADD CONSTRAINT `inventory_movements_order_item_id_order_id_fkey` FOREIGN KEY (`order_item_id`, `order_id`) REFERENCES `order_items`(`id`, `order_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `stock_movements` ADD CONSTRAINT `stock_movements_employee_id_fkey` FOREIGN KEY (`employee_id`) REFERENCES `employees`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `inventory_movements` ADD CONSTRAINT `inventory_movements_employee_id_fkey` FOREIGN KEY (`employee_id`) REFERENCES `employees`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `refresh_tokens` ADD CONSTRAINT `refresh_tokens_customer_id_fkey` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

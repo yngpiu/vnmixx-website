@@ -14,7 +14,10 @@ export function toListInventoryParams(
 ): ListInventoryParams {
   const statusRaw = getSingleFacetedValue(columnFilters, 'status');
   const status =
-    statusRaw === 'in_stock' || statusRaw === 'low_stock' || statusRaw === 'out_of_stock'
+    statusRaw === 'in_stock' ||
+    statusRaw === 'low_stock' ||
+    statusRaw === 'out_of_stock' ||
+    statusRaw === 'anomaly'
       ? statusRaw
       : undefined;
 

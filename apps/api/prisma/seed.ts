@@ -3,6 +3,7 @@ import { seedAuditLogs } from './seed-audit-logs';
 import { seedCategories } from './seed-categories';
 import { seedCustomers } from './seed-customers';
 import { seedEmployees } from './seed-employees';
+import { seedInventory } from './seed-inventory';
 import { seedLocations } from './seed-locations';
 import { seedMedia } from './seed-media';
 import { seedOrders } from './seed-orders';
@@ -29,6 +30,7 @@ async function main() {
   await seedWishlists();
   await seedOrders();
   await seedProductReviews();
+  await seedInventory();
   await seedAuditLogs();
 
   console.log('--- COMPREHENSIVE SEEDING COMPLETED ---');

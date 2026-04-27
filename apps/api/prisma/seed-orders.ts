@@ -8,34 +8,35 @@ import {
   Prisma,
   PrismaClient,
 } from '../generated/prisma/client';
+import {
+  clampDate,
+  resolveSeedAsOfDate,
+  seedWindowThirdBoundaries,
+  yearsBefore,
+} from './seed-date-range';
 
 const ORDER_COUNT = Number(process.env.SEED_ORDER_COUNT ?? 1000);
 
-function generateOrderDates(twoYearsAgo: Date): Date[] {
+/** Phân bổ ~3 năm: 20% năm cũ nhất, 30% năm giữa, 50% năm gần nhất (tính từ `rangeStart` đến `asOf`). */
+function generateOrderDates(rangeStart: Date, asOf: Date, count: number): Date[] {
   const dates: Date[] = [];
-  for (let i = 0; i < ORDER_COUNT; i++) {
+  const { y1, y2 } = seedWindowThirdBoundaries(rangeStart, asOf);
+  for (let i = 0; i < count; i++) {
     let date: Date;
     const r = faker.number.float({ min: 0, max: 1 });
     if (r < 0.2) {
-      date = faker.date.between({
-        from: twoYearsAgo,
-        to: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
-      });
+      date = faker.date.between({ from: rangeStart, to: y1 });
     } else if (r < 0.5) {
-      date = faker.date.between({
-        from: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
-        to: new Date(twoYearsAgo.getTime() + 547 * 24 * 60 * 60 * 1000),
-      });
+      date = faker.date.between({ from: y1, to: y2 });
     } else {
-      date = faker.date.between({
-        from: new Date(twoYearsAgo.getTime() + 547 * 24 * 60 * 60 * 1000),
-        to: new Date(),
-      });
+      date = faker.date.between({ from: y2, to: asOf });
     }
-
+    date = clampDate(date, rangeStart, asOf);
     if (faker.datatype.boolean({ probability: 0.3 })) {
-      const peakMonth = faker.helpers.arrayElement([0, 1, 10, 11]); // Jan, Feb (Tet), Nov, Dec
-      date.setMonth(peakMonth);
+      const peakMonth = faker.helpers.arrayElement([0, 1, 10, 11]);
+      const shifted = new Date(date);
+      shifted.setMonth(peakMonth);
+      date = clampDate(shifted, rangeStart, asOf);
     }
     dates.push(date);
   }
@@ -91,13 +92,15 @@ export async function seedOrders(): Promise<void> {
       include: { district: { include: { city: true } } },
     });
 
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const asOf = resolveSeedAsOfDate();
+    const rangeStart = yearsBefore(asOf, 3);
 
     faker.seed(321);
-    const sortedDates = generateOrderDates(twoYearsAgo);
+    const sortedDates = generateOrderDates(rangeStart, asOf, ORDER_COUNT);
 
-    console.log(`Seeding ${ORDER_COUNT} orders...`);
+    console.log(
+      `Seeding ${ORDER_COUNT} orders in [${rangeStart.toISOString()} … ${asOf.toISOString()}] (SEED_AS_OF=${process.env.SEED_AS_OF ?? 'default 2026-04-28'})...`,
+    );
 
     let orderSeq = 0;
     const BATCH_SIZE = 100;

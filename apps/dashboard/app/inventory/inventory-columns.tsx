@@ -21,6 +21,13 @@ type InventoryColumnActions = {
 };
 
 function statusBadge(status: InventoryListItem['status']) {
+  if (status === 'anomaly') {
+    return (
+      <Badge variant="destructive" className="font-medium">
+        Bất thường
+      </Badge>
+    );
+  }
   if (status === 'out_of_stock') {
     return <Badge variant="destructive">Hết hàng</Badge>;
   }

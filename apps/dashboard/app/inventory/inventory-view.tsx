@@ -368,7 +368,7 @@ export function InventoryView() {
             </Button>
             <Button type="button" variant="outline" onClick={() => setHistoryOpen(true)}>
               <HistoryIcon className="mr-2 size-4" />
-              Lịch sử movement
+              Lịch sử nhập/xuất kho
             </Button>
             <Button type="button" variant="outline" onClick={() => setVoucherHistoryOpen(true)}>
               <FileTextIcon className="mr-2 size-4" />

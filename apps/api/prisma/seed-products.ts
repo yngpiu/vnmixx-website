@@ -1,6 +1,7 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { Prisma, PrismaClient } from '../generated/prisma/client';
+import { resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const PRODUCT_COUNT = Number(process.env.SEED_PRODUCT_COUNT ?? 200);
 const SEED_SKU_PREFIX = 'VNMIXX-';
@@ -150,8 +151,8 @@ export async function seedProducts(): Promise<void> {
     const batchSize = 100;
     const runToken = Date.now().toString(36);
 
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const asOf = resolveSeedAsOfDate();
+    const rangeStart = yearsBefore(asOf, 3);
 
     for (let i = 0; i < PRODUCT_COUNT; i += batchSize) {
       const batchEnd = Math.min(i + batchSize, PRODUCT_COUNT);
@@ -160,7 +161,7 @@ export async function seedProducts(): Promise<void> {
         for (let j = i; j < batchEnd; j++) {
           const category = faker.helpers.arrayElement(leafCategories);
           const name = generateProductName(category.name);
-          const createdAt = faker.date.between({ from: twoYearsAgo, to: new Date() });
+          const createdAt = faker.date.between({ from: rangeStart, to: asOf });
           let product: { id: number };
           let slug = '';
           let attempt = 0;

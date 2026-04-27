@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   InventoryMovementType,
-  InventoryVoucherStatus,
   InventoryVoucherType,
   OrderStatus,
   Prisma,
@@ -713,7 +712,6 @@ export class DashboardAdminService {
     id: number;
     code: string;
     type: InventoryVoucherType;
-    status: InventoryVoucherStatus;
     issuedAt: Date;
     totalQuantity: number;
     totalAmount: number;
@@ -788,7 +786,6 @@ export class DashboardAdminService {
         data: {
           code,
           type: params.type,
-          status: InventoryVoucherStatus.CONFIRMED,
           issuedAt,
           note: params.note?.trim() || null,
           totalQuantity,
@@ -858,7 +855,6 @@ export class DashboardAdminService {
           id: true,
           code: true,
           type: true,
-          status: true,
           issuedAt: true,
           totalQuantity: true,
           totalAmount: true,
@@ -889,7 +885,6 @@ export class DashboardAdminService {
       id: voucher.id,
       code: voucher.code,
       type: voucher.type,
-      status: voucher.status,
       issuedAt: voucher.issuedAt,
       totalQuantity: voucher.totalQuantity,
       totalAmount: voucher.totalAmount,
@@ -912,13 +907,11 @@ export class DashboardAdminService {
     page?: number;
     limit?: number;
     type?: InventoryVoucherType;
-    status?: InventoryVoucherStatus;
   }): Promise<{
     data: Array<{
       id: number;
       code: string;
       type: InventoryVoucherType;
-      status: InventoryVoucherStatus;
       issuedAt: Date;
       totalQuantity: number;
       totalAmount: number;
@@ -932,7 +925,6 @@ export class DashboardAdminService {
     const limit = Math.min(Math.max(params.limit ?? DEFAULT_INVENTORY_PAGE_SIZE, 1), 50);
     const where: Prisma.InventoryVoucherWhereInput = {
       ...(params.type ? { type: params.type } : {}),
-      ...(params.status ? { status: params.status } : {}),
     };
     const [total, rows] = await Promise.all([
       this.prisma.inventoryVoucher.count({ where }),
@@ -945,7 +937,6 @@ export class DashboardAdminService {
           id: true,
           code: true,
           type: true,
-          status: true,
           issuedAt: true,
           totalQuantity: true,
           totalAmount: true,
@@ -960,7 +951,6 @@ export class DashboardAdminService {
         id: row.id,
         code: row.code,
         type: row.type,
-        status: row.status,
         issuedAt: row.issuedAt,
         totalQuantity: row.totalQuantity,
         totalAmount: row.totalAmount,
@@ -976,7 +966,6 @@ export class DashboardAdminService {
     id: number;
     code: string;
     type: InventoryVoucherType;
-    status: InventoryVoucherStatus;
     issuedAt: Date;
     totalQuantity: number;
     totalAmount: number;
@@ -999,7 +988,6 @@ export class DashboardAdminService {
         id: true,
         code: true,
         type: true,
-        status: true,
         issuedAt: true,
         totalQuantity: true,
         totalAmount: true,
@@ -1031,7 +1019,6 @@ export class DashboardAdminService {
       id: voucher.id,
       code: voucher.code,
       type: voucher.type,
-      status: voucher.status,
       issuedAt: voucher.issuedAt,
       totalQuantity: voucher.totalQuantity,
       totalAmount: voucher.totalAmount,

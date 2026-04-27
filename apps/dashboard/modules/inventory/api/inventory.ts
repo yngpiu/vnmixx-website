@@ -46,7 +46,6 @@ export async function listInventoryVouchers(
     page?: number;
     limit?: number;
     type?: 'IMPORT' | 'EXPORT';
-    status?: 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
   } = {},
 ): Promise<InventoryVoucherListResponse> {
   const { data } = await apiClient.get<InventoryVoucherListResponse>('/admin/inventory/vouchers', {

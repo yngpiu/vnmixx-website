@@ -1,6 +1,7 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { Prisma, PrismaClient } from '../generated/prisma/client';
+import { resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const WISHLIST_COUNT = 15000;
 
@@ -29,8 +30,8 @@ export async function seedWishlists(): Promise<void> {
 
     faker.seed(888);
 
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const asOf = resolveSeedAsOfDate();
+    const rangeStart = yearsBefore(asOf, 3);
 
     const wishlistsToCreate: Prisma.WishlistCreateManyInput[] = [];
     const seen = new Set<string>();
@@ -42,7 +43,7 @@ export async function seedWishlists(): Promise<void> {
 
       if (!seen.has(key)) {
         seen.add(key);
-        const createdAt = faker.date.between({ from: twoYearsAgo, to: new Date() });
+        const createdAt = faker.date.between({ from: rangeStart, to: asOf });
         wishlistsToCreate.push({
           customerId: customer.id,
           productId: product.id,

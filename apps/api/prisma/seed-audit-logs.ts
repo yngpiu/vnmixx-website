@@ -1,9 +1,10 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { AuditLogStatus, Prisma, PrismaClient } from '../generated/prisma/client';
+import { resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const SEED_REQUEST_ID_PREFIX = 'seed-audit-';
-const AUDIT_LOG_COUNT = Number(process.env.SEED_AUDIT_LOG_COUNT ?? 800);
+const AUDIT_LOG_COUNT = Number(process.env.SEED_AUDIT_LOG_COUNT ?? 1600);
 
 export async function seedAuditLogs(): Promise<void> {
   if (!process.env.DATABASE_URL) {
@@ -30,8 +31,9 @@ export async function seedAuditLogs(): Promise<void> {
 
     faker.seed(777);
 
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const asOf = resolveSeedAsOfDate();
+    const rangeStart = yearsBefore(asOf, 3);
+    const mid = new Date(rangeStart.getTime() + (asOf.getTime() - rangeStart.getTime()) / 2);
 
     const actions = [
       { action: 'product.update', type: 'product' },
@@ -53,15 +55,9 @@ export async function seedAuditLogs(): Promise<void> {
       let createdAt: Date;
       const r = faker.number.float({ min: 0, max: 1 });
       if (r < 0.3) {
-        createdAt = faker.date.between({
-          from: twoYearsAgo,
-          to: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
-        });
+        createdAt = faker.date.between({ from: rangeStart, to: mid });
       } else {
-        createdAt = faker.date.between({
-          from: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
-          to: new Date(),
-        });
+        createdAt = faker.date.between({ from: mid, to: asOf });
       }
 
       const isSuccess = faker.datatype.boolean({ probability: 0.95 });

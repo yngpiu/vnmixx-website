@@ -1,7 +1,7 @@
+import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { ChatSenderType, PrismaClient } from '../generated/prisma/client';
-
-const DEMO_CHAT_COUNT = 8;
+import { clampDate, resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const DEMO_MESSAGES = [
   'Xin chào shop, tôi muốn kiểm tra tình trạng đơn hàng gần nhất.',
@@ -9,6 +9,8 @@ const DEMO_MESSAGES = [
   'Mã đơn của tôi là VNM123456, tôi cần nhận trước thứ 6.',
   'Em đã ghi nhận, đơn đang ở trạng thái đang xử lý và sẽ giao trước thứ 6 ạ.',
 ];
+
+const DEMO_CHAT_COUNT = Number(process.env.SEED_SUPPORT_CHAT_COUNT ?? 48);
 
 export async function seedSupportChats(): Promise<void> {
   if (!process.env.DATABASE_URL) {
@@ -29,7 +31,7 @@ export async function seedSupportChats(): Promise<void> {
       prisma.employee.findMany({
         where: { deletedAt: null, status: 'ACTIVE' },
         orderBy: { id: 'asc' },
-        take: 5,
+        take: 8,
         select: { id: true },
       }),
     ]);
@@ -39,6 +41,18 @@ export async function seedSupportChats(): Promise<void> {
       return;
     }
 
+    const asOf = resolveSeedAsOfDate();
+    const rangeStart = yearsBefore(asOf, 3);
+    faker.seed(606);
+
+    const customerIds = customers.map((c) => c.id);
+    await prisma.chatMessage.deleteMany({
+      where: { chat: { customerId: { in: customerIds } } },
+    });
+    await prisma.chatAssignment.deleteMany({
+      where: { chat: { customerId: { in: customerIds } } },
+    });
+
     let seededChats = 0;
     let seededAssignments = 0;
     let seededMessages = 0;
@@ -47,10 +61,21 @@ export async function seedSupportChats(): Promise<void> {
       const customer = customers[index];
       const assignedEmployee = employees[index % employees.length];
 
+      const threadStart = clampDate(
+        faker.date.between({ from: rangeStart, to: asOf }),
+        rangeStart,
+        asOf,
+      );
+      const assignedAt = threadStart;
+
       const chat = await prisma.supportChat.upsert({
         where: { customerId: customer.id },
-        create: { customerId: customer.id },
-        update: {},
+        create: {
+          customerId: customer.id,
+          createdAt: threadStart,
+          updatedAt: threadStart,
+        },
+        update: { updatedAt: threadStart },
         select: { id: true },
       });
       seededChats += 1;
@@ -65,18 +90,19 @@ export async function seedSupportChats(): Promise<void> {
         create: {
           chatId: chat.id,
           employeeId: assignedEmployee.id,
+          assignedAt,
         },
-        update: {},
+        update: { assignedAt },
       });
       seededAssignments += 1;
 
-      const existingMessageCount = await prisma.chatMessage.count({
-        where: { chatId: chat.id },
-      });
-      if (existingMessageCount > 0) continue;
-
+      let messageAt = new Date(threadStart.getTime());
       for (let msgIndex = 0; msgIndex < DEMO_MESSAGES.length; msgIndex += 1) {
         const senderType = msgIndex % 2 === 0 ? ChatSenderType.CUSTOMER : ChatSenderType.EMPLOYEE;
+        messageAt = new Date(
+          messageAt.getTime() + faker.number.int({ min: 2, max: 180 }) * 60 * 1000,
+        );
+        const createdAt = clampDate(messageAt, rangeStart, asOf);
         await prisma.chatMessage.create({
           data: {
             chatId: chat.id,
@@ -84,14 +110,20 @@ export async function seedSupportChats(): Promise<void> {
             senderCustomerId: senderType === ChatSenderType.CUSTOMER ? customer.id : null,
             senderEmployeeId: senderType === ChatSenderType.EMPLOYEE ? assignedEmployee.id : null,
             content: DEMO_MESSAGES[msgIndex],
+            createdAt,
           },
         });
         seededMessages += 1;
       }
+
+      await prisma.supportChat.update({
+        where: { id: chat.id },
+        data: { updatedAt: messageAt },
+      });
     }
 
     console.log(
-      `Seed support chat done: chats=${seededChats}, assignments=${seededAssignments}, messages=${seededMessages}`,
+      `Seed support chat done: chats=${seededChats}, assignments=${seededAssignments}, messages=${seededMessages} (cửa sổ ~3 năm tới SEED_AS_OF).`,
     );
   } finally {
     await prisma.$disconnect();

@@ -117,7 +117,7 @@ export class InventoryAdminController {
     return ok(await this.dashboardService.exportStock(body, user.id), 'Xuất kho thành công.');
   }
 
-  @ApiOperation({ summary: 'Tạo và xác nhận phiếu nhập/xuất kho' })
+  @ApiOperation({ summary: 'Tạo phiếu nhập/xuất kho (áp dụng tồn ngay)' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(InventoryVoucherDetailResponseDto) }),
   })

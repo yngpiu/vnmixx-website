@@ -299,9 +299,6 @@ export class InventoryVoucherListItemDto {
   @ApiProperty({ enum: ['IMPORT', 'EXPORT'] })
   type: 'IMPORT' | 'EXPORT';
 
-  @ApiProperty({ enum: ['DRAFT', 'CONFIRMED', 'CANCELLED'] })
-  status: 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
-
   @ApiProperty()
   issuedAt: Date;
 
@@ -369,9 +366,6 @@ export class InventoryVoucherDetailResponseDto {
 
   @ApiProperty({ enum: ['IMPORT', 'EXPORT'] })
   type: 'IMPORT' | 'EXPORT';
-
-  @ApiProperty({ enum: ['DRAFT', 'CONFIRMED', 'CANCELLED'] })
-  status: 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
 
   @ApiProperty()
   issuedAt: Date;

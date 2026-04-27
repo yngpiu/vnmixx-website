@@ -275,9 +275,4 @@ export class ListInventoryVouchersQueryDto {
   @IsEnum(['IMPORT', 'EXPORT'] as const)
   @IsOptional()
   type?: 'IMPORT' | 'EXPORT';
-
-  @ApiPropertyOptional({ enum: ['DRAFT', 'CONFIRMED', 'CANCELLED'] })
-  @IsEnum(['DRAFT', 'CONFIRMED', 'CANCELLED'] as const)
-  @IsOptional()
-  status?: 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
 }

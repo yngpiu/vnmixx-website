@@ -80,12 +80,6 @@ enum InventoryVoucherType {
   EXPORT
 }
 
-enum InventoryVoucherStatus {
-  DRAFT
-  CONFIRMED
-  CANCELLED
-}
-
 enum AuditLogStatus {
   SUCCESS
   FAILED
@@ -401,7 +395,6 @@ model InventoryVoucher {
   id                 Int                    @id @default(autoincrement()) @db.UnsignedInt
   code               String                 @unique(map: "uk_inventory_vouchers_code") @db.VarChar(30)
   type               InventoryVoucherType
-  status             InventoryVoucherStatus @default(DRAFT)
   issuedAt           DateTime               @map("issued_at") @db.Timestamp(0)
   note               String?                @db.VarChar(500)
   totalQuantity      Int                    @default(0) @map("total_quantity") @db.UnsignedInt

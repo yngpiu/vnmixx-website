@@ -125,6 +125,7 @@ export function InventoryTable({ onImportStock, onExportStock }: InventoryTableP
               { label: 'Còn hàng', value: 'in_stock' },
               { label: 'Sắp hết', value: 'low_stock' },
               { label: 'Hết hàng', value: 'out_of_stock' },
+              { label: 'Bất thường', value: 'anomaly' },
             ],
           },
         ]}

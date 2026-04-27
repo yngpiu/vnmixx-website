@@ -1,4 +1,4 @@
-export type InventoryStockStatus = 'in_stock' | 'low_stock' | 'out_of_stock';
+export type InventoryStockStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'anomaly';
 
 export type InventoryListItem = {
   variantId: number;
@@ -80,7 +80,6 @@ export type InventoryTransactionBody = {
 };
 
 export type InventoryVoucherType = 'IMPORT' | 'EXPORT';
-export type InventoryVoucherStatus = 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
 
 export type CreateInventoryVoucherItemBody = {
   variantId: number;
@@ -112,7 +111,6 @@ export type InventoryVoucherDetail = {
   id: number;
   code: string;
   type: InventoryVoucherType;
-  status: InventoryVoucherStatus;
   issuedAt: string;
   totalQuantity: number;
   totalAmount: number;
@@ -125,7 +123,6 @@ export type InventoryVoucherListItem = {
   id: number;
   code: string;
   type: InventoryVoucherType;
-  status: InventoryVoucherStatus;
   issuedAt: string;
   totalQuantity: number;
   totalAmount: number;

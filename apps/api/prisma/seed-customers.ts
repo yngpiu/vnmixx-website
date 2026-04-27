@@ -2,6 +2,12 @@ import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { hash } from 'bcrypt';
 import { Gender, Prisma, PrismaClient } from '../generated/prisma/client';
+import {
+  clampDate,
+  resolveSeedAsOfDate,
+  seedWindowThirdBoundaries,
+  yearsBefore,
+} from './seed-date-range';
 
 const BCRYPT_ROUNDS = 10;
 const CUSTOMER_COUNT = Number(process.env.SEED_CUSTOMER_COUNT ?? 500);
@@ -30,8 +36,9 @@ export async function seedCustomers(): Promise<void> {
     const emails = new Set();
     const phones = new Set();
 
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const asOf = resolveSeedAsOfDate();
+    const rangeStart = yearsBefore(asOf, 3);
+    const { y1, y2 } = seedWindowThirdBoundaries(rangeStart, asOf);
 
     for (let i = 0; i < CUSTOMER_COUNT; i += 1) {
       const isMale = faker.datatype.boolean();
@@ -61,25 +68,18 @@ export async function seedCustomers(): Promise<void> {
       let createdAt: Date;
       const r = faker.number.float({ min: 0, max: 1 });
       if (r < 0.2) {
-        createdAt = faker.date.between({
-          from: twoYearsAgo,
-          to: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
-        });
+        createdAt = faker.date.between({ from: rangeStart, to: y1 });
       } else if (r < 0.5) {
-        createdAt = faker.date.between({
-          from: new Date(twoYearsAgo.getTime() + 365 * 24 * 60 * 60 * 1000),
-          to: new Date(twoYearsAgo.getTime() + 547 * 24 * 60 * 60 * 1000),
-        });
+        createdAt = faker.date.between({ from: y1, to: y2 });
       } else {
-        createdAt = faker.date.between({
-          from: new Date(twoYearsAgo.getTime() + 547 * 24 * 60 * 60 * 1000),
-          to: new Date(),
-        });
+        createdAt = faker.date.between({ from: y2, to: asOf });
       }
-
+      createdAt = clampDate(createdAt, rangeStart, asOf);
       if (faker.datatype.boolean({ probability: 0.3 })) {
         const peakMonth = faker.helpers.arrayElement([0, 10, 11]);
-        createdAt.setMonth(peakMonth);
+        const shifted = new Date(createdAt);
+        shifted.setMonth(peakMonth);
+        createdAt = clampDate(shifted, rangeStart, asOf);
       }
 
       const emailVerifiedAt = faker.datatype.boolean({ probability: 0.8 })
