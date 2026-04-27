@@ -2,18 +2,13 @@
 
 import type { ChatMessage, ChatSummary } from '@/modules/support-chat/types/support-chat';
 import { isAxiosError } from 'axios';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
 export const CHAT_IMAGES_START = '[chat-images]';
 export const CHAT_IMAGES_END = '[/chat-images]';
 export const TIMESTAMP_BOUNDARY_MS = 5 * 60 * 1000;
-export const SUPPORT_CHATS_LIST_QUERY = [
-  'admin',
-  'support-chats',
-  'list',
-  { page: 1, pageSize: 50 },
-] as const;
+export const SUPPORT_CHATS_LIST_QUERY = ['admin', 'support-chats', 'list'] as const;
 
 const IMAGE_URL_PATTERN = /^(https?:\/\/|blob:|data:image\/)/i;
 
@@ -59,29 +54,57 @@ export function apiErrorMessage(error: unknown): string {
 }
 
 export function formatMessageTime(value: string): string {
-  return format(new Date(value), 'HH:mm', { locale: vi });
-}
+  const date = new Date(value);
+  const diffMs = Date.now() - date.getTime();
+  const safeDiffMs = Number.isFinite(diffMs) ? Math.max(0, diffMs) : 0;
 
-function formatMessageDate(value: string): string {
-  return format(new Date(value), 'dd/MM/yyyy', { locale: vi });
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+  const weekMs = 7 * dayMs;
+  const yearMs = 52 * weekMs;
+
+  if (safeDiffMs < hourMs) {
+    const minutes = Math.max(1, Math.floor(safeDiffMs / minuteMs));
+    return `${minutes} phút`;
+  }
+  if (safeDiffMs < dayMs) {
+    const hours = Math.max(1, Math.floor(safeDiffMs / hourMs));
+    return `${hours} giờ`;
+  }
+  if (safeDiffMs < weekMs) {
+    const days = Math.max(1, Math.floor(safeDiffMs / dayMs));
+    return `${days} ngày`;
+  }
+  if (safeDiffMs < yearMs) {
+    const weeks = Math.max(1, Math.floor(safeDiffMs / weekMs));
+    return `${weeks} tuần`;
+  }
+
+  const years = Math.max(1, Math.floor(safeDiffMs / yearMs));
+  return `${years} năm`;
 }
 
 export function formatBoundaryTimestamp(current: string, previous?: string): string {
   const currentDate = new Date(current);
-  if (!previous) {
-    return format(currentDate, 'HH:mm dd/MM/yy', { locale: vi });
-  }
-  if (formatMessageDate(current) === formatMessageDate(previous)) {
+  if (isToday(currentDate)) {
     return format(currentDate, 'HH:mm', { locale: vi });
   }
+  if (isYesterday(currentDate)) {
+    return `Hôm qua ${format(currentDate, 'HH:mm', { locale: vi })}`;
+  }
+
+  void previous;
   return format(currentDate, 'HH:mm dd/MM/yy', { locale: vi });
 }
 
 export function formatFullTooltipTime(value: string): string {
   const date = new Date(value);
-  const today = new Date();
-  if (format(date, 'dd/MM/yyyy', { locale: vi }) === format(today, 'dd/MM/yyyy', { locale: vi })) {
+  if (isToday(date)) {
     return format(date, 'HH:mm', { locale: vi });
+  }
+  if (isYesterday(date)) {
+    return `Hôm qua ${format(date, 'HH:mm', { locale: vi })}`;
   }
   return format(date, 'HH:mm dd/MM/yy', { locale: vi });
 }

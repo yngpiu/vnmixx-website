@@ -28,6 +28,8 @@ import {
   UserRoundCheckIcon,
   XIcon,
 } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -44,9 +46,12 @@ import {
 } from './support-chat.utils';
 
 export function SupportChatManagementView(): React.JSX.Element {
+  const router = useRouter();
+  const params = useParams<{ customerId?: string }>();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const [keyword, setKeyword] = useState('');
+  const [assignedToMe, setAssignedToMe] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -58,18 +63,55 @@ export function SupportChatManagementView(): React.JSX.Element {
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
   const [scrollToBottomTick, setScrollToBottomTick] = useState(0);
   const [joinNonce, setJoinNonce] = useState(0);
+  const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const optimisticIdRef = useRef(-1);
   const optimisticImageUrlsRef = useRef(new Map<number, string[]>());
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const previousSelectedChatIdRef = useRef<number | null>(null);
 
   const canRead = user?.permissions.includes('support-chat.read') ?? false;
   const canAssign = user?.permissions.includes('support-chat.create') ?? false;
   const employeeId = user?.userType === 'EMPLOYEE' ? user.id : null;
+  const routeCustomerId = useMemo(() => {
+    const raw = params?.customerId;
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [params?.customerId]);
+  const normalizedKeyword = useMemo(() => keyword.trim(), [keyword]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedKeyword(normalizedKeyword);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [normalizedKeyword]);
+
+  const chatsListQueryKey = useMemo(
+    () =>
+      [
+        ...SUPPORT_CHATS_LIST_QUERY,
+        {
+          page: 1,
+          pageSize: 50,
+          assignedToMe: assignedToMe || undefined,
+          search: debouncedKeyword || undefined,
+        },
+      ] as const,
+    [assignedToMe, debouncedKeyword],
+  );
 
   const chatsQuery = useQuery({
-    queryKey: SUPPORT_CHATS_LIST_QUERY,
-    queryFn: () => listAdminChats({ page: 1, pageSize: 50 }),
+    queryKey: chatsListQueryKey,
+    queryFn: () =>
+      listAdminChats({
+        page: 1,
+        pageSize: 50,
+        assignedToMe: assignedToMe || undefined,
+        search: debouncedKeyword || undefined,
+      }),
     enabled: canRead,
     staleTime: 10_000,
   });
@@ -79,12 +121,7 @@ export function SupportChatManagementView(): React.JSX.Element {
     return chatsQuery.data?.items.find((item) => item.id === selectedChatId) ?? null;
   }, [chatsQuery.data?.items, selectedChatId]);
 
-  const filteredChats = useMemo(() => {
-    const source = chatsQuery.data?.items ?? [];
-    const normalized = keyword.trim().toLowerCase();
-    if (!normalized) return source;
-    return source.filter((item) => item.customerName.toLowerCase().includes(normalized));
-  }, [chatsQuery.data?.items, keyword]);
+  const filteredChats = useMemo(() => chatsQuery.data?.items ?? [], [chatsQuery.data?.items]);
 
   const detailQuery = useQuery({
     queryKey: ['admin', 'support-chats', 'detail', selectedChatId],
@@ -111,7 +148,7 @@ export function SupportChatManagementView(): React.JSX.Element {
 
   const refreshChatData = useCallback(async (): Promise<void> => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: SUPPORT_CHATS_LIST_QUERY, exact: true }),
+      queryClient.invalidateQueries({ queryKey: SUPPORT_CHATS_LIST_QUERY }),
       selectedChatId
         ? queryClient.invalidateQueries({
             queryKey: ['admin', 'support-chats', 'detail', selectedChatId],
@@ -131,7 +168,10 @@ export function SupportChatManagementView(): React.JSX.Element {
     onError: (error) => toast.error(apiErrorMessage(error)),
   });
   const uploadImagesMutation = useMutation({
-    mutationFn: (files: File[]) => uploadMedia(files, 'support-chats'),
+    mutationFn: (files: File[]) =>
+      uploadMedia(files, {
+        customerId: selectedChatSummary?.customerId,
+      }),
   });
 
   const onNewMessage = useCallback(
@@ -167,13 +207,12 @@ export function SupportChatManagementView(): React.JSX.Element {
         ...previous,
         [message.chatId]: message.senderType,
       }));
-      queryClient.setQueryData<SupportChatsListCache | undefined>(
-        SUPPORT_CHATS_LIST_QUERY,
-        (previous) => patchSupportChatListCache(previous, message),
+      queryClient.setQueryData<SupportChatsListCache | undefined>(chatsListQueryKey, (previous) =>
+        patchSupportChatListCache(previous, message),
       );
       setScrollToBottomTick((tick) => tick + 1);
     },
-    [employeeId, queryClient, selectedChatId],
+    [chatsListQueryKey, employeeId, queryClient, selectedChatId],
   );
 
   const onChatAssigned = useCallback(
@@ -231,6 +270,11 @@ export function SupportChatManagementView(): React.JSX.Element {
   );
 
   const handleSelectChat = (chatId: number): void => {
+    const selectedChat = chatsQuery.data?.items.find((chat) => chat.id === chatId);
+    if (selectedChat) {
+      const targetPath = `/support-chats/${selectedChat.customerId}`;
+      router.push(targetPath);
+    }
     setSelectedChatId(chatId);
     setRealtimeMessages([]);
     setOptimisticMessages([]);
@@ -238,6 +282,19 @@ export function SupportChatManagementView(): React.JSX.Element {
     setSelectedImages([]);
     setScrollToBottomTick((tick) => tick + 1);
   };
+
+  useEffect(() => {
+    if (!chatsQuery.data?.items || routeCustomerId === null) return;
+    const targetChat = chatsQuery.data.items.find((chat) => chat.customerId === routeCustomerId);
+    if (!targetChat) return;
+    if (selectedChatId === targetChat.id) return;
+    setSelectedChatId(targetChat.id);
+    setRealtimeMessages([]);
+    setOptimisticMessages([]);
+    setDraft('');
+    setSelectedImages([]);
+    setScrollToBottomTick((tick) => tick + 1);
+  }, [chatsQuery.data?.items, routeCustomerId, selectedChatId]);
 
   const pushOptimisticMessage = useCallback(
     (content: string): number | null => {
@@ -311,7 +368,12 @@ export function SupportChatManagementView(): React.JSX.Element {
 
   useEffect(() => {
     if (!selectedChatId) return;
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const isChatChanged = previousSelectedChatIdRef.current !== selectedChatId;
+    messagesEndRef.current?.scrollIntoView({
+      behavior: isChatChanged ? 'auto' : 'smooth',
+      block: 'end',
+    });
+    previousSelectedChatIdRef.current = selectedChatId;
   }, [messages.length, scrollToBottomTick, selectedChatId]);
   useEffect(() => {
     const optimisticUrls = new Set(
@@ -351,6 +413,8 @@ export function SupportChatManagementView(): React.JSX.Element {
           isLoading={chatsQuery.isLoading}
           keyword={keyword}
           onKeywordChange={setKeyword}
+          assignedToMe={assignedToMe}
+          onAssignedToMeChange={setAssignedToMe}
           selectedChatId={selectedChatId}
           lastMessageSenderByChatId={lastMessageSenderByChatId}
           onSelectChat={handleSelectChat}
@@ -372,14 +436,12 @@ export function SupportChatManagementView(): React.JSX.Element {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-semibold sm:text-base">
+                    <Link
+                      href={`/customers/${selectedChatSummary.customerId}`}
+                      className="text-sm font-semibold hover:underline sm:text-base"
+                    >
                       {selectedChatSummary.customerName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedChatIsAssigned
-                        ? 'Đã nhận chat'
-                        : 'Bạn cần nhận chat để gửi phản hồi'}
-                    </p>
+                    </Link>
                   </div>
                 </div>
                 {!selectedChatIsAssigned ? (

@@ -2,10 +2,10 @@
 
 import type { ChatSummary } from '@/modules/support-chat/types/support-chat';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
-import { Badge } from '@repo/ui/components/ui/badge';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
-import { Loader2Icon, SearchIcon } from 'lucide-react';
+import { CircleAlertIcon, Loader2Icon, SearchIcon } from 'lucide-react';
 import {
   formatMessageTime,
   parseMessagePayload,
@@ -18,6 +18,8 @@ type Props = {
   isLoading: boolean;
   keyword: string;
   onKeywordChange: (value: string) => void;
+  assignedToMe: boolean;
+  onAssignedToMeChange: (value: boolean) => void;
   selectedChatId: number | null;
   lastMessageSenderByChatId: Record<number, 'CUSTOMER' | 'EMPLOYEE'>;
   onSelectChat: (chatId: number) => void;
@@ -28,6 +30,8 @@ export function SupportChatListSidebar({
   isLoading,
   keyword,
   onKeywordChange,
+  assignedToMe,
+  onAssignedToMeChange,
   selectedChatId,
   lastMessageSenderByChatId,
   onSelectChat,
@@ -41,14 +45,50 @@ export function SupportChatListSidebar({
           <input
             type="text"
             className="w-full flex-1 bg-transparent text-sm outline-none"
-            placeholder="Tìm theo tên khách hàng..."
+            placeholder="Tìm kiếm..."
             value={keyword}
             onChange={(event) => onKeywordChange(event.target.value)}
           />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="me-2 inline-flex size-5 items-center justify-center text-muted-foreground hover:text-foreground"
+                aria-label="Hướng dẫn tìm kiếm"
+              >
+                <CircleAlertIcon className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>Tìm kiếm theo tên, số điện thoại hoặc email của khách hàng.</p>
+            </TooltipContent>
+          </Tooltip>
         </label>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{chats.length} hội thoại</span>
-          <Badge variant="secondary">Realtime</Badge>
+        <div className="inline-flex w-full rounded-md border border-input p-1">
+          <button
+            type="button"
+            className={cn(
+              'flex-1 rounded-sm px-2 py-1 text-xs transition-colors',
+              !assignedToMe
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+            onClick={() => onAssignedToMeChange(false)}
+          >
+            Tất cả
+          </button>
+          <button
+            type="button"
+            className={cn(
+              'flex-1 rounded-sm px-2 py-1 text-xs transition-colors',
+              assignedToMe
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+            onClick={() => onAssignedToMeChange(true)}
+          >
+            Chat của tôi
+          </button>
         </div>
       </div>
       <ScrollArea className="min-h-0 flex-1">

@@ -4,6 +4,8 @@ export type ChatSummary = {
   id: number;
   customerId: number;
   customerName: string;
+  customerEmail: string;
+  customerPhoneNumber: string;
   lastMessageContent: string | null;
   lastMessageAt: string | null;
   assignedEmployeeNames: string[];
@@ -39,6 +41,7 @@ export type AdminChatsQuery = {
   page?: number;
   pageSize?: number;
   assignedToMe?: boolean;
+  search?: string;
 };
 
 export type AdminChatsResponse = {

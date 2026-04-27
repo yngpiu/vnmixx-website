@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { parseOptionalBool } from '../../common/utils/query-bool.util';
 
 /**
@@ -32,4 +32,13 @@ export class ListChatsQueryDto {
   @Transform(parseOptionalBool)
   @IsBoolean({ message: 'assignedToMe phải là kiểu boolean.' })
   assignedToMe?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Từ khóa tìm kiếm theo tên, email hoặc số điện thoại khách hàng.',
+    example: '0901',
+  })
+  @IsOptional()
+  @IsString({ message: 'search phải là chuỗi ký tự.' })
+  @MaxLength(100, { message: 'search không được vượt quá 100 ký tự.' })
+  search?: string;
 }

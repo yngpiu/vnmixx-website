@@ -12,6 +12,17 @@ function normalizeFolder(raw: string | undefined | null): string {
   return raw.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
 }
 
+function resolveUploadFolder(dto: UploadMediaDto): string {
+  if (
+    typeof dto.customerId === 'number' &&
+    Number.isInteger(dto.customerId) &&
+    dto.customerId > 0
+  ) {
+    return `${dto.customerId}/image`;
+  }
+  return normalizeFolder(dto.folder);
+}
+
 // Tạo khóa (key) duy nhất cho tệp tin khi upload lên R2
 function generateObjectKey(folder: string, fileName: string): string {
   const timestamp = Date.now();
@@ -102,7 +113,7 @@ export class MediaService {
         }
         throw new BadRequestException('Video vượt quá giới hạn 50MB.');
       }
-      const folder = normalizeFolder(dto.folder);
+      const folder = resolveUploadFolder(dto);
 
       // 2. Đảm bảo cấu trúc thư mục logic tồn tại trong Database.
       const folderId = await this.repo.ensureFolderHierarchy(folder);
@@ -144,7 +155,7 @@ export class MediaService {
         status: AuditLogStatus.FAILED,
         afterData: {
           fileName: file.originalname,
-          folder: normalizeFolder(dto.folder),
+          folder: resolveUploadFolder(dto),
           mimeType: file.mimetype,
         },
         errorMessage: error instanceof Error ? error.message : 'Unknown error',

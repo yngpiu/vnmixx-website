@@ -115,10 +115,11 @@ export class SupportChatService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const filterEmployeeId = query.assignedToMe ? currentEmployeeId : undefined;
+    const search = query.search?.trim() || undefined;
 
     const [total, chats] = await Promise.all([
-      this.repository.count(filterEmployeeId),
-      this.repository.findMany((page - 1) * pageSize, pageSize, filterEmployeeId),
+      this.repository.count(filterEmployeeId, search),
+      this.repository.findMany((page - 1) * pageSize, pageSize, filterEmployeeId, search),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -166,6 +167,8 @@ export class SupportChatService {
       id: chat.id,
       customerId: chat.customerId,
       customerName: chat.customer.fullName,
+      customerEmail: chat.customer.email,
+      customerPhoneNumber: chat.customer.phoneNumber,
       lastMessageContent: lastMessage?.content ?? null,
       lastMessageAt: lastMessage?.createdAt ?? null,
       assignedEmployeeNames: chat.assignments.map((a) => a.employee.fullName),

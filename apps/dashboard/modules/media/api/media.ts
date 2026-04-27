@@ -1,6 +1,11 @@
 import { apiClient } from '@/lib/axios';
 import type { ListMediaParams, ListMediaResponse, MediaFile } from '@/modules/media/types/media';
 
+type UploadMediaOptions = {
+  folder?: string;
+  customerId?: number;
+};
+
 /** Fetch paginated media files. */
 export async function listMedia(params: ListMediaParams): Promise<ListMediaResponse> {
   const { data } = await apiClient.get<ListMediaResponse>('/admin/media', { params });
@@ -8,13 +13,21 @@ export async function listMedia(params: ListMediaParams): Promise<ListMediaRespo
 }
 
 /** Upload files to R2 via the API. */
-export async function uploadMedia(files: File[], folder?: string): Promise<MediaFile[]> {
+export async function uploadMedia(
+  files: File[],
+  folderOrOptions?: string | UploadMediaOptions,
+): Promise<MediaFile[]> {
   const formData = new FormData();
   for (const file of files) {
     formData.append('files', file);
   }
-  if (folder) {
-    formData.append('folder', folder);
+  const options =
+    typeof folderOrOptions === 'string' ? { folder: folderOrOptions } : folderOrOptions;
+  if (options?.folder) {
+    formData.append('folder', options.folder);
+  }
+  if (typeof options?.customerId === 'number') {
+    formData.append('customerId', String(options.customerId));
   }
   const { data } = await apiClient.post<MediaFile[]>('/admin/media/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

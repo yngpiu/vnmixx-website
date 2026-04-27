@@ -42,6 +42,12 @@ export class ChatSummaryResponseDto {
   @ApiProperty({ example: 'Trần Thị B' })
   customerName!: string;
 
+  @ApiProperty({ example: 'tranthib@example.com' })
+  customerEmail!: string;
+
+  @ApiProperty({ example: '0901234567' })
+  customerPhoneNumber!: string;
+
   @ApiProperty({ nullable: true, example: 'Hỗ trợ đơn hàng' })
   lastMessageContent!: string | null;
 

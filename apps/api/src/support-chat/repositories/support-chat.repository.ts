@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '../../../generated/prisma/client';
 import { ChatSenderType } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
@@ -23,7 +24,7 @@ export interface ChatSummaryView {
   id: number;
   customerId: number;
   createdAt: Date;
-  customer: { fullName: string };
+  customer: { fullName: string; email: string; phoneNumber: string };
   assignments: { employee: { fullName: string } }[];
   messages: { content: string; createdAt: Date }[];
 }
@@ -66,7 +67,7 @@ const CHAT_LIST_SELECT = {
   id: true,
   customerId: true,
   createdAt: true,
-  customer: { select: { fullName: true } },
+  customer: { select: { fullName: true, email: true, phoneNumber: true } },
   assignments: { select: { employee: { select: { fullName: true } } } },
   messages: {
     orderBy: { createdAt: 'desc' as const },
@@ -89,6 +90,27 @@ const MESSAGE_SELECT = {
 // Repository Prisma cho các thao tác dữ liệu chat hỗ trợ.
 export class SupportChatRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private buildChatListWhere(employeeId?: number, search?: string): Prisma.SupportChatWhereInput {
+    const normalizedSearch = search?.trim();
+    const where: Prisma.SupportChatWhereInput = {};
+
+    if (employeeId) {
+      where.assignments = { some: { employeeId } };
+    }
+
+    if (normalizedSearch) {
+      where.customer = {
+        OR: [
+          { fullName: { contains: normalizedSearch } },
+          { email: { contains: normalizedSearch } },
+          { phoneNumber: { contains: normalizedSearch } },
+        ],
+      };
+    }
+
+    return where;
+  }
 
   // Tìm cuộc hội thoại theo customerId.
   async findByCustomerId(customerId: number): Promise<ChatDetailView | null> {
@@ -124,8 +146,13 @@ export class SupportChatRepository {
   }
 
   // Lấy danh sách các cuộc hội thoại với phân trang và bộ lọc nhân viên.
-  async findMany(skip: number, take: number, employeeId?: number): Promise<ChatSummaryView[]> {
-    const where = employeeId ? { assignments: { some: { employeeId } } } : undefined;
+  async findMany(
+    skip: number,
+    take: number,
+    employeeId?: number,
+    search?: string,
+  ): Promise<ChatSummaryView[]> {
+    const where = this.buildChatListWhere(employeeId, search);
     return this.prisma.supportChat.findMany({
       where,
       orderBy: { updatedAt: 'desc' },
@@ -136,8 +163,8 @@ export class SupportChatRepository {
   }
 
   // Đếm tổng số cuộc hội thoại theo bộ lọc.
-  async count(employeeId?: number): Promise<number> {
-    const where = employeeId ? { assignments: { some: { employeeId } } } : undefined;
+  async count(employeeId?: number, search?: string): Promise<number> {
+    const where = this.buildChatListWhere(employeeId, search);
     return this.prisma.supportChat.count({ where });
   }
 

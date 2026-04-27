@@ -96,6 +96,10 @@ export class MediaAdminController {
       properties: {
         files: { type: 'array', items: { type: 'string', format: 'binary' } },
         folder: { type: 'string', description: 'Thư mục đích (tuỳ chọn)' },
+        customerId: {
+          type: 'number',
+          description: 'ID khách hàng (tuỳ chọn), hệ thống sẽ lưu theo <customerId>/image',
+        },
       },
     },
   })
