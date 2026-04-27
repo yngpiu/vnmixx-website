@@ -17,6 +17,7 @@ export interface AdminReviewDetailView {
   id: number;
   productId: number;
   customerId: number;
+  orderItemId: number | null;
   rating: number;
   title: string | null;
   content: string | null;
@@ -31,6 +32,7 @@ export interface ProductReviewSimpleView {
   id: number;
   productId: number;
   customerId: number;
+  orderItemId: number | null;
   rating: number;
   title: string | null;
   content: string | null;
@@ -54,6 +56,7 @@ const ADMIN_REVIEW_DETAIL_SELECT = {
   id: true,
   productId: true,
   customerId: true,
+  orderItemId: true,
   rating: true,
   title: true,
   content: true,
@@ -68,6 +71,7 @@ const PRODUCT_REVIEW_SIMPLE_SELECT = {
   id: true,
   productId: true,
   customerId: true,
+  orderItemId: true,
   rating: true,
   title: true,
   content: true,
@@ -141,13 +145,18 @@ export class ReviewRepository {
     });
   }
 
-  // Tìm đánh giá của một khách hàng cho một sản phẩm cụ thể.
-  async findByProductAndCustomer(productId: number, customerId: number) {
+  // Tìm đánh giá của một khách hàng theo từng dòng sản phẩm đã mua.
+  async findByProductCustomerAndOrderItem(
+    productId: number,
+    customerId: number,
+    orderItemId: number,
+  ) {
     return this.prisma.productReview.findUnique({
       where: {
-        productId_customerId: {
+        productId_customerId_orderItemId: {
           productId,
           customerId,
+          orderItemId,
         },
       },
       select: { id: true },

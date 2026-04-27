@@ -676,7 +676,7 @@ export class OrderService {
       }
 
       // 4. Lưu vết biến động kho
-      await tx.stockMovement.create({
+      await tx.inventoryMovement.create({
         data: {
           variantId: v.id,
           type: 'RESERVE',
@@ -730,7 +730,7 @@ export class OrderService {
       }
 
       // 3. Lưu vết biến động kho để đối soát
-      await tx.stockMovement.create({
+      await tx.inventoryMovement.create({
         data: {
           variantId: v.id,
           orderId,

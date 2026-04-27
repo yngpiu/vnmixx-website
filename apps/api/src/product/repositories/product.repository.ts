@@ -406,12 +406,14 @@ export class ProductRepository {
   }): Promise<ProductAdminDetailView> {
     const product = await this.prisma.$transaction(async (tx) => {
       // 1. Tạo bản ghi sản phẩm cơ bản.
+      const initialBasePrice = this.calculateMinPriceFromVariants(data.variants);
       const created = await tx.product.create({
         data: {
           name: data.name,
           slug: data.slug,
           description: data.description ?? null,
           thumbnail: data.thumbnail ?? null,
+          basePrice: initialBasePrice,
           isActive: data.isActive ?? true,
         },
       });
@@ -494,20 +496,22 @@ export class ProductRepository {
         where: { productId: id, deletedAt: null },
         data: { deletedAt: now },
       }),
+      this.prisma.product.update({ where: { id }, data: { basePrice: null } }),
     ]);
   }
 
   // Khôi phục sản phẩm và các biến thể đã bị xóa mềm.
   async restore(id: number): Promise<ProductAdminDetailView> {
-    await this.prisma.$transaction([
+    await this.prisma.$transaction(async (tx) => {
       // Xóa ngày xóa của sản phẩm.
-      this.prisma.product.update({ where: { id }, data: { deletedAt: null } }),
+      await tx.product.update({ where: { id }, data: { deletedAt: null } });
       // Xóa ngày xóa của tất cả biến thể.
-      this.prisma.productVariant.updateMany({
+      await tx.productVariant.updateMany({
         where: { productId: id },
         data: { deletedAt: null },
-      }),
-    ]);
+      });
+      await this.refreshProductBasePrice(id, tx);
+    });
     return this.findAdminById(id) as Promise<ProductAdminDetailView>;
   }
 
@@ -524,25 +528,29 @@ export class ProductRepository {
       onHand: number;
     },
   ) {
-    // Thêm bản ghi biến thể mới vào database.
-    return this.prisma.productVariant.create({
-      data: {
-        productId,
-        colorId: data.colorId,
-        sizeId: data.sizeId,
-        sku: data.sku,
-        price: data.price,
-        onHand: data.onHand,
-        reserved: 0,
-        version: 0,
-      },
-      select: {
-        ...VARIANT_PUBLIC_SELECT,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      // Thêm bản ghi biến thể mới vào database.
+      const createdVariant = await tx.productVariant.create({
+        data: {
+          productId,
+          colorId: data.colorId,
+          sizeId: data.sizeId,
+          sku: data.sku,
+          price: data.price,
+          onHand: data.onHand,
+          reserved: 0,
+          version: 0,
+        },
+        select: {
+          ...VARIANT_PUBLIC_SELECT,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+        },
+      });
+      await this.refreshProductBasePrice(productId, tx);
+      return createdVariant;
     });
   }
 
@@ -553,6 +561,7 @@ export class ProductRepository {
       select: {
         id: true,
         productId: true,
+        reserved: true,
         isActive: true,
         deletedAt: true,
       },
@@ -564,26 +573,38 @@ export class ProductRepository {
     variantId: number,
     data: { price?: number; onHand?: number; isActive?: boolean },
   ) {
-    // Cập nhật các trường dữ liệu được yêu cầu cho biến thể.
-    return this.prisma.productVariant.update({
-      where: { id: variantId },
-      data,
-      select: {
-        ...VARIANT_PUBLIC_SELECT,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const variantRecord = await tx.productVariant.findUniqueOrThrow({
+        where: { id: variantId },
+        select: { productId: true },
+      });
+      // Cập nhật các trường dữ liệu được yêu cầu cho biến thể.
+      const updatedVariant = await tx.productVariant.update({
+        where: { id: variantId },
+        data,
+        select: {
+          ...VARIANT_PUBLIC_SELECT,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+        },
+      });
+      await this.refreshProductBasePrice(variantRecord.productId, tx);
+      return updatedVariant;
     });
   }
 
   // Xóa mềm một biến thể.
   async softDeleteVariant(variantId: number): Promise<void> {
-    // Cập nhật ngày xóa cho biến thể cụ thể.
-    await this.prisma.productVariant.update({
-      where: { id: variantId },
-      data: { deletedAt: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      // Cập nhật ngày xóa cho biến thể cụ thể.
+      const deletedVariant = await tx.productVariant.update({
+        where: { id: variantId },
+        data: { deletedAt: new Date() },
+        select: { productId: true },
+      });
+      await this.refreshProductBasePrice(deletedVariant.productId, tx);
     });
   }
 
@@ -688,5 +709,32 @@ export class ProductRepository {
       default:
         return [{ createdAt: 'desc' }];
     }
+  }
+
+  private calculateMinPriceFromVariants(variants: { price: number }[]): number | null {
+    if (variants.length === 0) {
+      return null;
+    }
+    return variants.reduce(
+      (minPrice, variant) => Math.min(minPrice, variant.price),
+      variants[0].price,
+    );
+  }
+
+  private async refreshProductBasePrice(
+    productId: number,
+    tx: Prisma.TransactionClient = this.prisma,
+  ): Promise<void> {
+    const aggregateResult = await tx.productVariant.aggregate({
+      where: {
+        productId,
+        deletedAt: null,
+      },
+      _min: { price: true },
+    });
+    await tx.product.update({
+      where: { id: productId },
+      data: { basePrice: aggregateResult._min.price ?? null },
+    });
   }
 }

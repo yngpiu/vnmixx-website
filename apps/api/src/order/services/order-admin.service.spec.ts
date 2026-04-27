@@ -33,7 +33,7 @@ describe('OrderAdminService', () => {
       create: jest.Mock;
       createMany: jest.Mock;
     };
-    stockMovement: {
+    inventoryMovement: {
       create: jest.Mock;
     };
     $transaction: jest.Mock;
@@ -52,7 +52,7 @@ describe('OrderAdminService', () => {
       productVariant: { findUnique: jest.fn(), updateMany: jest.fn() },
       payment: { update: jest.fn(), updateMany: jest.fn() },
       orderStatusHistory: { create: jest.fn(), createMany: jest.fn() },
-      stockMovement: { create: jest.fn() },
+      inventoryMovement: { create: jest.fn() },
       $transaction: jest.fn((cb: (tx: typeof prisma) => unknown) => cb(prisma)),
     };
 
@@ -206,7 +206,7 @@ describe('OrderAdminService', () => {
           version: { increment: 1 },
         },
       });
-      expect(prisma.stockMovement.create).toHaveBeenCalledWith(
+      expect(prisma.inventoryMovement.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             type: 'EXPORT',

@@ -215,8 +215,8 @@ export class InventoryListItemDto {
   @ApiProperty()
   available: number;
 
-  @ApiProperty({ enum: ['in_stock', 'low_stock', 'out_of_stock'] })
-  status: 'in_stock' | 'low_stock' | 'out_of_stock';
+  @ApiProperty({ enum: ['in_stock', 'low_stock', 'out_of_stock', 'anomaly'] })
+  status: 'in_stock' | 'low_stock' | 'out_of_stock' | 'anomaly';
 
   @ApiProperty()
   updatedAt: Date;

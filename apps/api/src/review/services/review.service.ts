@@ -42,15 +42,20 @@ export class ReviewService {
       throw new NotFoundException(`Không tìm thấy sản phẩm #${productId}`);
     }
 
-    // 2. Kiểm tra xem khách hàng đã đánh giá sản phẩm này chưa.
-    const existingReview = await this.reviewRepo.findByProductAndCustomer(productId, customerId);
+    // 2. Kiểm tra xem khách hàng đã đánh giá đúng order item này chưa.
+    const existingReview = await this.reviewRepo.findByProductCustomerAndOrderItem(
+      productId,
+      customerId,
+      dto.orderItemId,
+    );
     if (existingReview) {
-      throw new ConflictException('Bạn đã review sản phẩm này.');
+      throw new ConflictException('Bạn đã review variant này trong lần mua này.');
     }
 
-    // 3. Kiểm tra điều kiện mua hàng: đã nhận hàng và thanh toán thành công.
-    const purchasedAndSettledCount = await this.prisma.orderItem.count({
+    // 3. Kiểm tra điều kiện mua hàng theo đúng order item: đúng khách, đúng sản phẩm, đã giao + thanh toán.
+    const purchasedOrderItem = await this.prisma.orderItem.findFirst({
       where: {
+        id: dto.orderItemId,
         variant: { productId },
         order: {
           customerId,
@@ -58,11 +63,12 @@ export class ReviewService {
           payments: { some: { status: 'SUCCESS' } },
         },
       },
+      select: { id: true },
     });
 
-    if (purchasedAndSettledCount === 0) {
+    if (!purchasedOrderItem) {
       throw new BadRequestException(
-        'Bạn chỉ có thể review sản phẩm đã nhận hàng và thanh toán thành công.',
+        'Bạn chỉ có thể review đúng variant đã nhận hàng và thanh toán thành công.',
       );
     }
 
@@ -70,8 +76,9 @@ export class ReviewService {
     await this.reviewRepo.create({
       productId,
       customerId,
+      orderItemId: dto.orderItemId,
       rating: dto.rating,
-      title: dto.title ?? null,
+      title: null,
       content: dto.content ?? null,
       status: ReviewVisibility.VISIBLE,
     });

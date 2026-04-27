@@ -39,7 +39,7 @@ export class CustomerReviewController {
     schema: buildNullDataSuccessResponseSchema('Tạo review thành công.'),
   })
   @ApiBadRequestResponse({ description: 'Chưa đủ điều kiện review hoặc dữ liệu không hợp lệ.' })
-  @ApiConflictResponse({ description: 'Bạn đã review sản phẩm này.' })
+  @ApiConflictResponse({ description: 'Bạn đã review variant này trong lần mua này.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Post()

@@ -1,12 +1,12 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import {
+  InventoryMovementType,
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
   Prisma,
   PrismaClient,
-  StockMovementType,
 } from '../generated/prisma/client';
 
 const ORDER_COUNT = Number(process.env.SEED_ORDER_COUNT ?? 1000);
@@ -43,7 +43,7 @@ function generateOrderDates(twoYearsAgo: Date): Date[] {
 }
 
 async function wipeSeedOrders(prisma: PrismaClient): Promise<void> {
-  await prisma.stockMovement.deleteMany({ where: { orderId: { not: null } } });
+  await prisma.inventoryMovement.deleteMany({ where: { orderId: { not: null } } });
   await prisma.sepayTransaction.deleteMany({});
   await prisma.payment.deleteMany({});
   await prisma.orderStatusHistory.deleteMany({});
@@ -383,12 +383,12 @@ export async function seedOrders(): Promise<void> {
               for (const item of order.items) {
                 const variant = variants.find((v) => v.id === item.variantId);
                 const onHandAfter = Math.max(0, (variant?.onHand ?? 100) - item.quantity);
-                await tx.stockMovement.create({
+                await tx.inventoryMovement.create({
                   data: {
                     variantId: item.variantId,
                     orderId: order.id,
                     orderItemId: item.id,
-                    type: StockMovementType.EXPORT,
+                    type: InventoryMovementType.EXPORT,
                     delta: -item.quantity,
                     onHandAfter,
                     reservedAfter: 0,

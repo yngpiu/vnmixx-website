@@ -69,7 +69,7 @@ describe('OrderService', () => {
             payment: { create: jest.fn() },
             orderStatusHistory: { create: jest.fn() },
             productVariant: { findUnique: jest.fn(), updateMany: jest.fn(), findMany: jest.fn() },
-            stockMovement: { create: jest.fn() },
+            inventoryMovement: { create: jest.fn() },
             cartItem: { deleteMany: jest.fn() },
             ward: { count: jest.fn().mockResolvedValue(1) },
             $transaction: jest.fn(),
@@ -167,7 +167,7 @@ describe('OrderService', () => {
         payment: { create: jest.fn().mockResolvedValue({ id: 99 }) },
         orderStatusHistory: { create: jest.fn() },
         cartItem: { deleteMany: jest.fn() },
-        stockMovement: { create: jest.fn() },
+        inventoryMovement: { create: jest.fn() },
       };
 
       prisma.$transaction.mockImplementation(async (cb) => cb(tx as any));
@@ -287,7 +287,7 @@ describe('OrderService', () => {
           findMany: jest.fn().mockResolvedValue([{ id: 1, onHand: 10, reserved: 5, version: 1 }]),
           updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         },
-        stockMovement: { create: jest.fn().mockResolvedValue({}) },
+        inventoryMovement: { create: jest.fn().mockResolvedValue({}) },
       };
 
       prisma.$transaction.mockImplementation(async (cb) => cb(tx as any));
@@ -311,7 +311,7 @@ describe('OrderService', () => {
       expect(tx.orderStatusHistory.create).toHaveBeenCalledWith({
         data: { orderId: 1, status: 'CANCELLED' },
       });
-      expect(tx.stockMovement.create).toHaveBeenCalled();
+      expect(tx.inventoryMovement.create).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if order is not cancellable', async () => {

@@ -92,6 +92,11 @@ export class ProductVariantService {
       if (variant.productId !== productId) {
         throw new BadRequestException(`Biến thể #${variantId} không thuộc sản phẩm #${productId}`);
       }
+      if (dto.onHand !== undefined && dto.onHand < variant.reserved) {
+        throw new BadRequestException(
+          `Không thể đặt tồn kho on-hand (${dto.onHand}) nhỏ hơn lượng đã giữ (${variant.reserved}).`,
+        );
+      }
 
       beforeData = variant;
       const result = await this.repository.updateVariant(variantId, {

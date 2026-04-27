@@ -129,10 +129,10 @@ export class InventoryListQueryDto {
   @IsOptional()
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['in_stock', 'low_stock', 'out_of_stock'] })
-  @IsEnum(['in_stock', 'low_stock', 'out_of_stock'] as const)
+  @ApiPropertyOptional({ enum: ['in_stock', 'low_stock', 'out_of_stock', 'anomaly'] })
+  @IsEnum(['in_stock', 'low_stock', 'out_of_stock', 'anomaly'] as const)
   @IsOptional()
-  status?: 'in_stock' | 'low_stock' | 'out_of_stock';
+  status?: 'in_stock' | 'low_stock' | 'out_of_stock' | 'anomaly';
 
   @ApiPropertyOptional({
     enum: ['productName', 'sku', 'onHand', 'reserved', 'available', 'updatedAt'],

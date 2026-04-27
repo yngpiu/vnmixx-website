@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  InventoryMovementType,
   InventoryVoucherStatus,
   InventoryVoucherType,
   OrderStatus,
   Prisma,
-  StockMovementType,
 } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
@@ -454,7 +454,7 @@ export class DashboardAdminService {
     page?: number;
     limit?: number;
     search?: string;
-    status?: 'in_stock' | 'low_stock' | 'out_of_stock';
+    status?: 'in_stock' | 'low_stock' | 'out_of_stock' | 'anomaly';
     sortBy?: 'productName' | 'sku' | 'onHand' | 'reserved' | 'available' | 'updatedAt';
     sortOrder?: 'asc' | 'desc';
   }): Promise<{
@@ -469,7 +469,7 @@ export class DashboardAdminService {
       onHand: number;
       reserved: number;
       available: number;
-      status: 'in_stock' | 'low_stock' | 'out_of_stock';
+      status: 'in_stock' | 'low_stock' | 'out_of_stock' | 'anomaly';
       updatedAt: Date;
     }>;
     meta: { page: number; limit: number; total: number; totalPages: number };
@@ -518,8 +518,15 @@ export class DashboardAdminService {
     const mapped = variants
       .map((variant) => {
         const available = Math.max(variant.onHand - variant.reserved, 0);
-        const status: 'in_stock' | 'low_stock' | 'out_of_stock' =
-          available <= 0 ? 'out_of_stock' : available < LOW_STOCK_LIMIT ? 'low_stock' : 'in_stock';
+        const hasAnomaly =
+          variant.onHand < 0 || variant.reserved < 0 || variant.reserved > variant.onHand;
+        const status: 'in_stock' | 'low_stock' | 'out_of_stock' | 'anomaly' = hasAnomaly
+          ? 'anomaly'
+          : available <= 0
+            ? 'out_of_stock'
+            : available < LOW_STOCK_LIMIT
+              ? 'low_stock'
+              : 'in_stock';
         return {
           variantId: variant.id,
           productId: variant.productId,
@@ -574,7 +581,7 @@ export class DashboardAdminService {
     page?: number;
     limit?: number;
     variantId?: number;
-    type?: StockMovementType;
+    type?: InventoryMovementType;
     voucherId?: number;
   }): Promise<{
     data: Array<{
@@ -582,7 +589,7 @@ export class DashboardAdminService {
       variantId: number;
       productName: string;
       sku: string;
-      type: StockMovementType;
+      type: InventoryMovementType;
       delta: number;
       onHandAfter: number;
       reservedAfter: number;
@@ -596,15 +603,15 @@ export class DashboardAdminService {
   }> {
     const page = Math.max(params.page ?? 1, 1);
     const limit = Math.min(Math.max(params.limit ?? DEFAULT_INVENTORY_PAGE_SIZE, 1), 50);
-    const where: Prisma.StockMovementWhereInput = {
+    const where: Prisma.InventoryMovementWhereInput = {
       ...(params.variantId ? { variantId: params.variantId } : {}),
       ...(params.type ? { type: params.type } : {}),
       ...(params.voucherId ? { voucherId: params.voucherId } : {}),
     };
 
     const [total, rows] = await Promise.all([
-      this.prisma.stockMovement.count({ where }),
-      this.prisma.stockMovement.findMany({
+      this.prisma.inventoryMovement.count({ where }),
+      this.prisma.inventoryMovement.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
@@ -747,8 +754,8 @@ export class DashboardAdminService {
     const issuedAt = params.issuedAt ? new Date(params.issuedAt) : new Date();
     const totalQuantity = params.items.reduce((sum, item) => sum + item.quantity, 0);
     const totalAmount = params.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-    const stockMovementType =
-      params.type === 'IMPORT' ? StockMovementType.IMPORT : StockMovementType.EXPORT;
+    const inventoryMovementType =
+      params.type === 'IMPORT' ? InventoryMovementType.IMPORT : InventoryMovementType.EXPORT;
 
     const voucher = await this.prisma.$transaction(async (tx) => {
       const variants = await tx.productVariant.findMany({
@@ -831,12 +838,12 @@ export class DashboardAdminService {
             note: item.note?.trim() || null,
           },
         });
-        await tx.stockMovement.create({
+        await tx.inventoryMovement.create({
           data: {
             variantId: variant.id,
             voucherId: created.id,
             employeeId,
-            type: stockMovementType,
+            type: inventoryMovementType,
             delta: params.type === 'IMPORT' ? item.quantity : -item.quantity,
             onHandAfter: nextOnHand,
             reservedAfter: variant.reserved,

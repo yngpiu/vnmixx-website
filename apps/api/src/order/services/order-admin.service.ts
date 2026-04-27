@@ -237,7 +237,7 @@ export class OrderAdminService {
             );
           }
 
-          await tx.stockMovement.create({
+          await tx.inventoryMovement.create({
             data: {
               variantId: variant.id,
               orderId: order.id,
@@ -390,7 +390,7 @@ export class OrderAdminService {
 
           // 5. Lưu vết biến động kho cho thao tác hoàn kho
           if (releaseQty > 0) {
-            await tx.stockMovement.create({
+            await tx.inventoryMovement.create({
               data: {
                 variantId: variant.id,
                 orderId: order.id,
@@ -407,7 +407,7 @@ export class OrderAdminService {
           }
 
           if (onHandIncrement > 0) {
-            await tx.stockMovement.create({
+            await tx.inventoryMovement.create({
               data: {
                 variantId: variant.id,
                 orderId: order.id,

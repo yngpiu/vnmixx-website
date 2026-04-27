@@ -12,7 +12,7 @@ describe('ReviewService', () => {
 
   beforeEach(async () => {
     repo = {
-      findByProductAndCustomer: jest.fn(),
+      findByProductCustomerAndOrderItem: jest.fn(),
       create: jest.fn(),
       countReviews: jest.fn(),
       findAdminReviews: jest.fn(),
@@ -27,7 +27,7 @@ describe('ReviewService', () => {
         findUnique: jest.fn(),
       },
       orderItem: {
-        count: jest.fn(),
+        findFirst: jest.fn(),
       },
     };
 
@@ -55,7 +55,7 @@ describe('ReviewService', () => {
   describe('createProductReview', () => {
     const customerId = 1;
     const productId = 100;
-    const dto = { rating: 5, title: 'Good', content: 'Great product' };
+    const dto = { orderItemId: 101, rating: 5, content: 'Great product' };
 
     it('should throw NotFoundException if product not found, deleted or inactive', async () => {
       prisma.product.findUnique.mockResolvedValue(null);
@@ -88,7 +88,7 @@ describe('ReviewService', () => {
         deletedAt: null,
         isActive: true,
       });
-      repo.findByProductAndCustomer.mockResolvedValue({ id: 1 });
+      repo.findByProductCustomerAndOrderItem.mockResolvedValue({ id: 1 });
 
       await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
         ConflictException,
@@ -101,8 +101,8 @@ describe('ReviewService', () => {
         deletedAt: null,
         isActive: true,
       });
-      repo.findByProductAndCustomer.mockResolvedValue(null);
-      prisma.orderItem.count.mockResolvedValue(0);
+      repo.findByProductCustomerAndOrderItem.mockResolvedValue(null);
+      prisma.orderItem.findFirst.mockResolvedValue(null);
 
       await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
         BadRequestException,
@@ -115,9 +115,9 @@ describe('ReviewService', () => {
         deletedAt: null,
         isActive: true,
       });
-      repo.findByProductAndCustomer.mockResolvedValue(null);
-      prisma.orderItem.count.mockResolvedValue(1);
-      const dtoWithOptionals = { ...dto, title: undefined, content: undefined };
+      repo.findByProductCustomerAndOrderItem.mockResolvedValue(null);
+      prisma.orderItem.findFirst.mockResolvedValue({ id: dto.orderItemId });
+      const dtoWithOptionals = { ...dto, content: undefined };
 
       await service.createProductReview(customerId, productId, dtoWithOptionals as any);
 
@@ -125,6 +125,7 @@ describe('ReviewService', () => {
         expect.objectContaining({
           productId,
           customerId,
+          orderItemId: dto.orderItemId,
           rating: dto.rating,
           title: null,
           content: null,

@@ -3,20 +3,22 @@ import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validato
 
 /**
  * CreateProductReviewDto: DTO gửi yêu cầu đánh giá sản phẩm từ khách hàng.
- * Vai trò: Validate điểm đánh giá (1-5 sao), tiêu đề và nội dung đánh giá.
+ * Vai trò: Validate điểm đánh giá (1-5 sao) và nội dung đánh giá.
  */
 export class CreateProductReviewDto {
+  @ApiProperty({
+    description: 'ID dòng sản phẩm trong đơn hàng đã mua để review theo từng variant.',
+    example: 1201,
+  })
+  @IsInt({ message: 'orderItemId phải là số nguyên.' })
+  @Min(1, { message: 'orderItemId tối thiểu là 1.' })
+  orderItemId!: number;
+
   @ApiProperty({ description: 'Điểm đánh giá từ 1 đến 5.', example: 5 })
   @IsInt({ message: 'rating phải là số nguyên.' })
   @Min(1, { message: 'rating tối thiểu là 1.' })
   @Max(5, { message: 'rating tối đa là 5.' })
   rating!: number;
-
-  @ApiPropertyOptional({ example: 'Sản phẩm tốt' })
-  @IsOptional()
-  @IsString({ message: 'title phải là chuỗi.' })
-  @MaxLength(120, { message: 'title tối đa 120 ký tự.' })
-  title?: string;
 
   @ApiPropertyOptional({ example: 'Nhận hàng nhanh, chất lượng ổn.' })
   @IsOptional()

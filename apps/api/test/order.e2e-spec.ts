@@ -144,7 +144,7 @@ describe('Order Flow (e2e)', () => {
 
   afterAll(async () => {
     if (prisma) {
-      await prisma.stockMovement.deleteMany({ where: { variantId } });
+      await prisma.inventoryMovement.deleteMany({ where: { variantId } });
       await prisma.orderItem.deleteMany({ where: { variantId } });
       await prisma.orderStatusHistory.deleteMany({ where: { order: { customerId } } });
       await prisma.payment.deleteMany({ where: { order: { customerId } } });
