@@ -59,6 +59,12 @@ enum EmployeeStatus {
   INACTIVE
 }
 
+enum CustomerStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  INACTIVE
+}
+
 enum RequiredNote {
   CHOTHUHANG
   CHOXEMHANGKHONGTHU
@@ -104,7 +110,7 @@ model Customer {
   gender          Gender?
   hashedPassword  String    @map("hashed_password") @db.VarChar(255)
   avatarUrl       String?   @map("avatar_url") @db.VarChar(500)
-  isActive        Boolean   @default(true) @map("is_active") @db.TinyInt
+  status          CustomerStatus @default(PENDING_VERIFICATION)
   emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamp(0)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)

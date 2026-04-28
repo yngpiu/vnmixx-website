@@ -4,7 +4,8 @@ import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-va
 
 import { TransformQueryOptionalBoolean } from '../../common/decorators/query-optional-bool.decorator';
 
-const CUSTOMER_SORT_BY = ['fullName', 'email', 'phoneNumber', 'isActive', 'createdAt'] as const;
+const CUSTOMER_SORT_BY = ['fullName', 'email', 'phoneNumber', 'status', 'createdAt'] as const;
+const CUSTOMER_STATUS_VALUES = ['PENDING_VERIFICATION', 'ACTIVE', 'INACTIVE'] as const;
 
 export class ListCustomersQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1 })
@@ -31,13 +32,12 @@ export class ListCustomersQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
-    example: true,
-    description: 'Không gửi = không lọc; true/false = chỉ hoạt động / chỉ vô hiệu.',
+    enum: CUSTOMER_STATUS_VALUES,
+    description: 'Không gửi = không lọc; gửi trạng thái để lọc chính xác vòng đời tài khoản.',
   })
-  @TransformQueryOptionalBoolean()
-  @IsBoolean({ message: 'Trạng thái hoạt động phải là kiểu boolean' })
+  @IsIn([...CUSTOMER_STATUS_VALUES], { message: 'Trạng thái khách hàng không hợp lệ' })
   @IsOptional()
-  isActive?: boolean;
+  status?: (typeof CUSTOMER_STATUS_VALUES)[number];
 
   @ApiPropertyOptional({
     example: false,

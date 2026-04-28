@@ -151,12 +151,13 @@ export function CustomersTable() {
           searchDebounceMs={350}
           filters={[
             {
-              columnId: 'isActive',
+              columnId: 'status',
               title: 'Trạng thái',
               selectionMode: 'single',
               options: [
                 { label: 'Đang hoạt động', value: 'active' },
                 { label: 'Vô hiệu hóa', value: 'inactive' },
+                { label: 'Chờ xác minh', value: 'pending' },
               ],
             },
             {

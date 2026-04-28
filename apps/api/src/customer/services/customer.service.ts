@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AuditLogStatus } from '../../../generated/prisma/client';
+import { AuditLogStatus, CustomerStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import type { UpdateCustomerDto } from '../dto/update-customer.dto';
@@ -24,7 +24,7 @@ export class CustomerService {
     page: number;
     limit: number;
     search?: string;
-    isActive?: boolean;
+    status?: CustomerStatus;
     isSoftDeleted?: boolean;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
@@ -39,7 +39,7 @@ export class CustomerService {
     return customer;
   }
 
-  // Cập nhật thông tin khách hàng (chủ yếu là trạng thái isActive).
+  // Cập nhật trạng thái vòng đời của khách hàng trong phạm vi quản trị.
   // Ghi Audit Log để theo dõi các thay đổi trạng thái tài khoản quan trọng.
   async update(
     id: number,
@@ -48,13 +48,21 @@ export class CustomerService {
   ): Promise<CustomerDetailView> {
     const beforeData = await this.customerRepo.findById(id);
     try {
-      // 1. Kiểm tra dữ liệu đầu vào: trạng thái hoạt động là thông tin bắt buộc
-      if (dto.isActive === undefined) {
-        throw new BadRequestException('Cần cung cấp trạng thái hoạt động');
+      if (!beforeData) {
+        throw new NotFoundException('Không tìm thấy khách hàng');
+      }
+      // 1. Kiểm tra dữ liệu đầu vào: chỉ chấp nhận trạng thái vận hành do admin điều chỉnh.
+      if (dto.status === undefined) {
+        throw new BadRequestException('Cần cung cấp trạng thái khách hàng');
+      }
+      if (dto.status === CustomerStatus.ACTIVE && !beforeData.emailVerifiedAt) {
+        throw new BadRequestException(
+          'Không thể kích hoạt khách hàng khi email chưa được xác thực',
+        );
       }
 
       // 2. Thực hiện cập nhật trạng thái của khách hàng trong DB
-      const updated = await this.customerRepo.update(id, { isActive: dto.isActive });
+      const updated = await this.customerRepo.update(id, { status: dto.status });
       if (!updated) throw new NotFoundException('Không tìm thấy khách hàng');
 
       // 3. Ghi lại nhật ký thay đổi trạng thái tài khoản để phục vụ công tác kiểm soát (Security Auditing)
@@ -84,7 +92,7 @@ export class CustomerService {
     }
   }
 
-  // Xử lý xóa mềm khách hàng: Đánh dấu `deletedAt` và đặt `isActive` về false.
+  // Xử lý xóa mềm khách hàng: Đánh dấu `deletedAt` và chuyển trạng thái sang INACTIVE.
   async softDelete(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
     const beforeData = await this.customerRepo.findById(id);
     try {

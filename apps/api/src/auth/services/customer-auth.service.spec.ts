@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
+import { CustomerStatus } from '../../../generated/prisma/client';
 import { MailService } from '../../mail/services/mail.service';
 import { RedisService } from '../../redis/services/redis.service';
 import {
@@ -55,7 +56,7 @@ describe('CustomerAuthService', () => {
     fullName: 'Test User',
     phoneNumber: '0123456789',
     hashedPassword: 'hashed-password',
-    isActive: true,
+    status: CustomerStatus.ACTIVE,
     emailVerifiedAt: new Date(),
     deletedAt: null,
   };
@@ -213,7 +214,10 @@ describe('CustomerAuthService', () => {
     });
 
     it('should throw UnauthorizedException if account inactive', async () => {
-      customerRepo.findByEmail.mockResolvedValue({ ...mockCustomer, isActive: false } as any);
+      customerRepo.findByEmail.mockResolvedValue({
+        ...mockCustomer,
+        status: CustomerStatus.INACTIVE,
+      } as any);
 
       const promise = service.loginCustomer(loginDto);
       await expect(promise).rejects.toThrow(UnauthorizedException);
@@ -224,7 +228,7 @@ describe('CustomerAuthService', () => {
       customerRepo.findByEmail.mockResolvedValue({
         ...mockCustomer,
         emailVerifiedAt: null,
-        isActive: false,
+        status: CustomerStatus.PENDING_VERIFICATION,
       } as any);
 
       const promise = service.loginCustomer(loginDto);

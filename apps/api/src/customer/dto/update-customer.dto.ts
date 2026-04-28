@@ -1,9 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsIn, IsOptional } from 'class-validator';
 
 export class UpdateCustomerDto {
-  @ApiPropertyOptional({ example: true, description: 'Kích hoạt hoặc vô hiệu hóa khách hàng' })
+  @ApiPropertyOptional({
+    enum: ['ACTIVE', 'INACTIVE'],
+    example: 'INACTIVE',
+    description: 'Trạng thái vận hành do admin quản lý. Không dùng cho trạng thái chờ xác thực.',
+  })
   @IsOptional()
-  @IsBoolean({ message: 'Trạng thái hoạt động phải là kiểu boolean' })
-  isActive?: boolean;
+  @IsIn(['ACTIVE', 'INACTIVE'], { message: 'Trạng thái khách hàng phải là ACTIVE hoặc INACTIVE' })
+  status?: 'ACTIVE' | 'INACTIVE';
 }

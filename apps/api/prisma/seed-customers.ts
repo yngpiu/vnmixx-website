@@ -1,7 +1,7 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { hash } from 'bcrypt';
-import { Gender, Prisma, PrismaClient } from '../generated/prisma/client';
+import { CustomerStatus, Gender, Prisma, PrismaClient } from '../generated/prisma/client';
 import {
   clampDate,
   resolveSeedAsOfDate,
@@ -85,6 +85,7 @@ export async function seedCustomers(): Promise<void> {
       const emailVerifiedAt = faker.datatype.boolean({ probability: 0.8 })
         ? new Date(createdAt.getTime() + faker.number.int({ min: 1000, max: 86400000 }))
         : null;
+      const status = emailVerifiedAt ? CustomerStatus.ACTIVE : CustomerStatus.PENDING_VERIFICATION;
       const avatarUrl = faker.datatype.boolean({ probability: 0.3 }) ? pravatarUrl(email) : null;
 
       customers.push({
@@ -95,7 +96,7 @@ export async function seedCustomers(): Promise<void> {
         gender,
         hashedPassword,
         avatarUrl,
-        isActive: true,
+        status,
         emailVerifiedAt,
         createdAt,
         updatedAt: createdAt,
@@ -112,7 +113,9 @@ export async function seedCustomers(): Promise<void> {
       created += batch.length;
     }
 
-    const total = await prisma.customer.count({ where: { deletedAt: null } });
+    const total = await prisma.customer.count({
+      where: { deletedAt: null, status: CustomerStatus.ACTIVE },
+    });
     console.log(`Seed customers done: created=${created}, active customers in DB=${total}`);
   } finally {
     await prisma.$disconnect();

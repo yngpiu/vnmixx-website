@@ -1,7 +1,7 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomUUID } from 'crypto';
-import { EmployeeStatus } from '../../../generated/prisma/client';
+import { CustomerStatus, EmployeeStatus } from '../../../generated/prisma/client';
 import { RedisService } from '../../redis/services/redis.service';
 import {
   BLACKLIST_PREFIX,
@@ -156,7 +156,7 @@ export class TokenService {
 
   private async refreshCustomerTokens(userId: number, meta: RequestMeta): Promise<TokenPair> {
     const customer = await this.customerRepo.findById(userId);
-    if (!customer || !customer.isActive || customer.deletedAt) {
+    if (!customer || customer.status !== CustomerStatus.ACTIVE || customer.deletedAt) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
     }
     return this.issueTokenPair(

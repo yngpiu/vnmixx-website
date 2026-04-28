@@ -55,14 +55,17 @@ export function EditCustomerDialog({
   });
 
   const detail = detailQuery.data;
+  const canToggleStatus = detail?.status === 'ACTIVE' || detail?.status === 'INACTIVE';
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
-      updateCustomer(id, { isActive }),
+    mutationFn: ({ id, status }: { id: number; status: 'ACTIVE' | 'INACTIVE' }) =>
+      updateCustomer(id, { status }),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['customers', 'list'] });
       void queryClient.invalidateQueries({ queryKey: ['customers', 'detail'] });
-      toast.success(variables.isActive ? 'Đã kích hoạt khách hàng.' : 'Đã vô hiệu hóa khách hàng.');
+      toast.success(
+        variables.status === 'ACTIVE' ? 'Đã kích hoạt khách hàng.' : 'Đã vô hiệu hóa khách hàng.',
+      );
       onOpenChange(false);
     },
     onError: (err) => {
@@ -99,13 +102,14 @@ export function EditCustomerDialog({
   const isPending =
     updateMutation.isPending || deleteMutation.isPending || restoreMutation.isPending;
   const isDeleted = Boolean(detail?.deletedAt);
-  const activeFormDisabled = isPending || isDeleted || detailQuery.isLoading;
+  const activeFormDisabled = isPending || isDeleted || detailQuery.isLoading || !canToggleStatus;
   const deleteFormDisabled = isPending || isDeleted || detailQuery.isLoading;
   const restoreFormDisabled = isPending || detailQuery.isLoading || !detail?.deletedAt;
 
   const submitToggleActive = () => {
     if (customerId == null || !detail || mode !== 'active') return;
-    updateMutation.mutate({ id: customerId, isActive: !detail.isActive });
+    const nextStatus: 'ACTIVE' | 'INACTIVE' = detail.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    updateMutation.mutate({ id: customerId, status: nextStatus });
   };
 
   const submitDelete = () => {
@@ -120,9 +124,11 @@ export function EditCustomerDialog({
 
   const title =
     mode === 'active'
-      ? detail?.isActive
+      ? detail?.status === 'ACTIVE'
         ? 'Vô hiệu hóa khách hàng'
-        : 'Kích hoạt khách hàng'
+        : detail?.status === 'INACTIVE'
+          ? 'Kích hoạt khách hàng'
+          : 'Quản lý trạng thái khách hàng'
       : mode === 'delete'
         ? 'Xóa khách hàng'
         : mode === 'restore'
@@ -176,9 +182,21 @@ export function EditCustomerDialog({
             <Card size="sm">
               <CardHeader>
                 <CardTitle>{detail.fullName}</CardTitle>
-                <CardDescription>{detail.email}</CardDescription>
+                <CardDescription>
+                  {detail.email}
+                  {detail.status === 'PENDING_VERIFICATION'
+                    ? ' • Tài khoản đang chờ xác minh email'
+                    : ''}
+                </CardDescription>
               </CardHeader>
             </Card>
+          ) : null}
+
+          {activeBlock && detail?.status === 'PENDING_VERIFICATION' ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              Khách hàng đang ở trạng thái chờ xác minh email, nên không thể đổi trực tiếp giữa kích
+              hoạt và vô hiệu hóa từ hộp thoại này.
+            </p>
           ) : null}
 
           {deleteBlock && detail ? (
@@ -225,11 +243,17 @@ export function EditCustomerDialog({
               </Button>
               <Button
                 type="button"
-                variant={detail.isActive ? 'destructive' : 'default'}
+                variant={detail.status === 'ACTIVE' ? 'destructive' : 'default'}
                 disabled={activeFormDisabled}
                 onClick={submitToggleActive}
               >
-                {isPending ? 'Đang xử lý…' : detail.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                {isPending
+                  ? 'Đang xử lý…'
+                  : detail.status === 'ACTIVE'
+                    ? 'Vô hiệu hóa'
+                    : detail.status === 'INACTIVE'
+                      ? 'Kích hoạt'
+                      : 'Không khả dụng'}
               </Button>
             </>
           ) : null}

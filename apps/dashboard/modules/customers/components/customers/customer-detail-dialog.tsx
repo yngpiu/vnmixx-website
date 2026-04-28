@@ -2,7 +2,7 @@
 
 import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/modules/common/utils/avatar';
 import { getCustomer } from '@/modules/customers/api/customers';
-import type { CustomerGender } from '@/modules/customers/types/customer';
+import type { CustomerGender, CustomerStatus } from '@/modules/customers/types/customer';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Button } from '@repo/ui/components/ui/button';
@@ -32,15 +32,28 @@ function genderLabel(g: CustomerGender | null): string {
   return '—';
 }
 
-function statusBadge(isActive: boolean) {
-  return isActive ? (
-    <Badge
-      variant="secondary"
-      className="border-transparent bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900/80"
-    >
-      Đang hoạt động
-    </Badge>
-  ) : (
+function statusBadge(status: CustomerStatus) {
+  if (status === 'ACTIVE') {
+    return (
+      <Badge
+        variant="secondary"
+        className="border-transparent bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900/80"
+      >
+        Đang hoạt động
+      </Badge>
+    );
+  }
+  if (status === 'PENDING_VERIFICATION') {
+    return (
+      <Badge
+        variant="secondary"
+        className="border-transparent bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900/80"
+      >
+        Chờ xác minh
+      </Badge>
+    );
+  }
+  return (
     <Badge
       variant="secondary"
       className="border-transparent bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900/80"
@@ -138,7 +151,7 @@ export function CustomerDetailDialog({
                 <dl className="flex flex-col gap-5">
                   <DetailRow label="Trạng thái">
                     <div className="flex flex-wrap items-center gap-2">
-                      {statusBadge(d.isActive)}
+                      {statusBadge(d.status)}
                       {d.deletedAt ? <Badge variant="destructive">Đã xóa</Badge> : null}
                     </div>
                   </DetailRow>

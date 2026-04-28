@@ -1,6 +1,6 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import { ChatSenderType, PrismaClient } from '../generated/prisma/client';
+import { ChatSenderType, CustomerStatus, PrismaClient } from '../generated/prisma/client';
 import { clampDate, resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const DEMO_MESSAGES = [
@@ -23,7 +23,7 @@ export async function seedSupportChats(): Promise<void> {
   try {
     const [customers, employees] = await Promise.all([
       prisma.customer.findMany({
-        where: { deletedAt: null, isActive: true },
+        where: { deletedAt: null, status: CustomerStatus.ACTIVE },
         orderBy: { id: 'asc' },
         take: DEMO_CHAT_COUNT,
         select: { id: true },

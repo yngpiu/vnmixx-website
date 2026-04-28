@@ -47,7 +47,7 @@ import { ReviewService } from '../services/review.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 // Controller quản lý đánh giá sản phẩm dành cho quản trị viên.
-// Cho phép duyệt danh sách, xem chi tiết, cập nhật trạng thái hoặc xóa đánh giá.
+// Cho phép duyệt danh sách, xem chi tiết và kiểm duyệt hiển thị đánh giá.
 export class AdminReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
@@ -103,18 +103,18 @@ export class AdminReviewController {
     );
   }
 
-  // Xóa vĩnh viễn một đánh giá khỏi hệ thống.
-  @ApiOperation({ summary: 'Xóa đánh giá sản phẩm' })
+  // Ẩn đánh giá khỏi giao diện khách hàng nhưng vẫn giữ bản ghi cho đối soát.
+  @ApiOperation({ summary: 'Ẩn đánh giá sản phẩm' })
   @ApiOkResponse({
-    description: 'Xóa đánh giá thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa đánh giá thành công.'),
+    description: 'Ẩn đánh giá thành công.',
+    schema: buildNullDataSuccessResponseSchema('Ẩn đánh giá thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đánh giá.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deleteReview(@Param('id', ParseIntPipe) id: number): Promise<SuccessPayload<null>> {
-    await this.reviewService.deleteAdminReview(id);
-    return okNoData('Xóa đánh giá thành công.');
+    await this.reviewService.hideAdminReview(id);
+    return okNoData('Ẩn đánh giá thành công.');
   }
 }

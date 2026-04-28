@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Customer } from 'generated/prisma/client';
+import { CustomerStatus, type Customer } from 'generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
 interface CreateCustomerData {
@@ -9,7 +9,7 @@ interface CreateCustomerData {
   hashedPassword: string;
   dob: Date | null;
   gender: 'MALE' | 'FEMALE' | 'OTHER' | null;
-  isActive?: boolean;
+  status?: CustomerStatus;
 }
 
 export interface CustomerAuthView {
@@ -17,7 +17,7 @@ export interface CustomerAuthView {
   email: string;
   fullName: string;
   hashedPassword: string;
-  isActive: boolean;
+  status: CustomerStatus;
   emailVerifiedAt: Date | null;
   deletedAt: Date | null;
 }
@@ -27,7 +27,7 @@ export interface CustomerValidationView {
   email: string;
   fullName: string;
   avatarUrl: string | null;
-  isActive: boolean;
+  status: CustomerStatus;
   deletedAt: Date | null;
 }
 
@@ -49,7 +49,7 @@ export class CustomerRepository {
         email: true,
         fullName: true,
         hashedPassword: true,
-        isActive: true,
+        status: true,
         emailVerifiedAt: true,
         deletedAt: true,
       },
@@ -65,7 +65,7 @@ export class CustomerRepository {
         email: true,
         fullName: true,
         avatarUrl: true,
-        isActive: true,
+        status: true,
         deletedAt: true,
       },
     });
@@ -116,7 +116,7 @@ export class CustomerRepository {
   async activateEmailById(id: number): Promise<boolean> {
     const { count } = await this.prisma.customer.updateMany({
       where: { id, deletedAt: null },
-      data: { isActive: true, emailVerifiedAt: new Date() },
+      data: { status: CustomerStatus.ACTIVE, emailVerifiedAt: new Date() },
     });
     return count === 1;
   }

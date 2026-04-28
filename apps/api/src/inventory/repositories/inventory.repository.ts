@@ -65,15 +65,16 @@ export class InventoryRepository {
   async findProductsForLowStockPanel(): Promise<LowStockProductRow[]> {
     return this.prisma.product.findMany({
       where: {
+        isActive: true,
         deletedAt: null,
-        variants: { some: { deletedAt: null } },
+        variants: { some: { deletedAt: null, isActive: true } },
       },
       select: {
         id: true,
         name: true,
         thumbnail: true,
         variants: {
-          where: { deletedAt: null },
+          where: { deletedAt: null, isActive: true },
           select: {
             sku: true,
             onHand: true,

@@ -19,8 +19,8 @@ export class CustomerListItemResponseDto {
   @ApiPropertyOptional({ enum: ['MALE', 'FEMALE', 'OTHER'], nullable: true })
   gender: string | null;
 
-  @ApiProperty({ example: true })
-  isActive: boolean;
+  @ApiProperty({ enum: ['PENDING_VERIFICATION', 'ACTIVE', 'INACTIVE'], example: 'ACTIVE' })
+  status: 'PENDING_VERIFICATION' | 'ACTIVE' | 'INACTIVE';
 
   @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
   createdAt: Date;

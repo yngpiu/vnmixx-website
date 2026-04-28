@@ -98,10 +98,11 @@ const IMAGE_SELECT = {
 function categoryWhereMatchesSlugTree(slug: string): Prisma.CategoryWhereInput {
   return {
     deletedAt: null,
+    isActive: true,
     OR: [
       { slug },
-      { parent: { slug, deletedAt: null } },
-      { parent: { parent: { slug, deletedAt: null } } },
+      { parent: { slug, deletedAt: null, isActive: true } },
+      { parent: { parent: { slug, deletedAt: null, isActive: true } } },
     ],
   };
 }
@@ -681,10 +682,10 @@ export class ProductRepository {
     return count === unique.length;
   }
 
-  // Kiểm tra danh mục có tồn tại và chưa bị xóa hay không.
+  // Kiểm tra danh mục có tồn tại, đang hoạt động và chưa bị xóa hay không.
   async categoryExists(id: number): Promise<boolean> {
     const count = await this.prisma.category.count({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, isActive: true },
     });
     return count > 0;
   }

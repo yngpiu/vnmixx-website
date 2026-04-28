@@ -13,8 +13,15 @@ export function toListCustomersParams(
   columnFilters: ColumnFiltersState,
   sorting: SortingState,
 ): ListCustomersParams {
-  const isActiveRaw = getSingleFacetedValue(columnFilters, 'isActive');
-  const isActive = isActiveRaw === 'active' ? true : isActiveRaw === 'inactive' ? false : undefined;
+  const statusRaw = getSingleFacetedValue(columnFilters, 'status');
+  const status =
+    statusRaw === 'active'
+      ? 'ACTIVE'
+      : statusRaw === 'inactive'
+        ? 'INACTIVE'
+        : statusRaw === 'pending'
+          ? 'PENDING_VERIFICATION'
+          : undefined;
 
   const delStatuses = (columnFilters.find((f) => f.id === 'deleted')?.value as string[]) ?? [];
   const isSoftDeleted = isSoftDeletedFromDeletedColumnFilter(delStatuses);
@@ -22,7 +29,7 @@ export function toListCustomersParams(
   return {
     ...getBaseListParams(pagination, sorting, CUSTOMER_TABLE_SORT_IDS),
     search: getSearchQuery(columnFilters, 'fullName'),
-    isActive,
+    ...(status !== undefined ? { status } : {}),
     ...(isSoftDeleted !== undefined ? { isSoftDeleted } : {}),
   };
 }

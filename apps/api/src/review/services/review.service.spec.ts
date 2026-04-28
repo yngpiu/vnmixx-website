@@ -257,19 +257,19 @@ describe('ReviewService', () => {
     });
   });
 
-  describe('deleteAdminReview', () => {
-    it('should delete review successfully', async () => {
+  describe('hideAdminReview', () => {
+    it('should hide review successfully', async () => {
       repo.exists.mockResolvedValue(true);
-      repo.delete.mockResolvedValue({});
+      repo.update.mockResolvedValue({});
 
-      await service.deleteAdminReview(1);
+      await service.hideAdminReview(1);
 
-      expect(repo.delete).toHaveBeenCalledWith(1);
+      expect(repo.update).toHaveBeenCalledWith(1, { status: ReviewVisibility.HIDDEN });
     });
 
-    it('should throw NotFoundException if review not found when deleting', async () => {
+    it('should throw NotFoundException if review not found when hiding', async () => {
       repo.exists.mockResolvedValue(false);
-      await expect(service.deleteAdminReview(1)).rejects.toThrow(NotFoundException);
+      await expect(service.hideAdminReview(1)).rejects.toThrow(NotFoundException);
     });
   });
 });

@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { AuditLogStatus } from '../../../generated/prisma/client';
+import { AuditLogStatus, CustomerStatus } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { CustomerRepository } from '../repositories/customer.repository';
 import { CustomerService } from './customer.service';
@@ -70,7 +70,7 @@ describe('CustomerService', () => {
 
   describe('update', () => {
     const auditContext = { ipAddress: '127.0.0.1' };
-    const dto = { isActive: true };
+    const dto = { status: CustomerStatus.ACTIVE };
 
     it('should throw NotFoundException and write failed audit log when customer does not exist', async () => {
       customerRepo.findById.mockResolvedValueOnce(null);
@@ -86,8 +86,12 @@ describe('CustomerService', () => {
     });
 
     it('should update and write audit log on success', async () => {
-      const beforeData = { id: 1, isActive: false } as any;
-      const afterData = { id: 1, isActive: true } as any;
+      const beforeData = {
+        id: 1,
+        status: CustomerStatus.INACTIVE,
+        emailVerifiedAt: new Date(),
+      } as any;
+      const afterData = { id: 1, status: CustomerStatus.ACTIVE } as any;
       customerRepo.findById.mockResolvedValueOnce(beforeData);
       customerRepo.update.mockResolvedValue(afterData);
 
@@ -104,8 +108,12 @@ describe('CustomerService', () => {
     });
 
     it('should update and write audit log on success without auditContext', async () => {
-      const beforeData = { id: 1, isActive: false } as any;
-      const afterData = { id: 1, isActive: true } as any;
+      const beforeData = {
+        id: 1,
+        status: CustomerStatus.INACTIVE,
+        emailVerifiedAt: new Date(),
+      } as any;
+      const afterData = { id: 1, status: CustomerStatus.ACTIVE } as any;
       customerRepo.findById.mockResolvedValueOnce(beforeData);
       customerRepo.update.mockResolvedValue(afterData);
 
@@ -114,7 +122,7 @@ describe('CustomerService', () => {
       expect(result).toBe(afterData);
     });
 
-    it('should throw BadRequestException if isActive is missing', async () => {
+    it('should throw BadRequestException if status is missing', async () => {
       const beforeData = { id: 1 } as any;
       customerRepo.findById.mockResolvedValueOnce(beforeData);
 
@@ -126,15 +134,28 @@ describe('CustomerService', () => {
       );
     });
 
+    it('should throw BadRequestException when activating an unverified customer', async () => {
+      customerRepo.findById.mockResolvedValueOnce({
+        id: 1,
+        status: CustomerStatus.PENDING_VERIFICATION,
+        emailVerifiedAt: null,
+      } as any);
+
+      await expect(service.update(1, dto, auditContext)).rejects.toThrow(BadRequestException);
+    });
+
     it('should throw NotFoundException if customer not found during update', async () => {
-      customerRepo.findById.mockResolvedValueOnce({ id: 1 } as any);
+      customerRepo.findById.mockResolvedValueOnce({
+        id: 1,
+        emailVerifiedAt: new Date(),
+      } as any);
       customerRepo.update.mockResolvedValue(null);
 
       await expect(service.update(1, dto, auditContext)).rejects.toThrow(NotFoundException);
     });
 
     it('should write failed audit log when an error occurs during update', async () => {
-      customerRepo.findById.mockResolvedValueOnce({ id: 1 } as any);
+      customerRepo.findById.mockResolvedValueOnce({ id: 1, emailVerifiedAt: new Date() } as any);
       customerRepo.update.mockRejectedValue(new Error('Update failed'));
 
       await expect(service.update(1, dto, auditContext)).rejects.toThrow('Update failed');
@@ -147,7 +168,7 @@ describe('CustomerService', () => {
     });
 
     it('should write failed audit log when a non-error is thrown during update', async () => {
-      customerRepo.findById.mockResolvedValueOnce({ id: 1 } as any);
+      customerRepo.findById.mockResolvedValueOnce({ id: 1, emailVerifiedAt: new Date() } as any);
       customerRepo.update.mockRejectedValue('String error');
 
       await expect(service.update(1, dto, auditContext)).rejects.toBe('String error');

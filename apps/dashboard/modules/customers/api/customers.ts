@@ -20,7 +20,7 @@ export async function getCustomer(id: number): Promise<CustomerDetail> {
 
 export async function updateCustomer(
   id: number,
-  body: { isActive: boolean },
+  body: { status: 'ACTIVE' | 'INACTIVE' },
 ): Promise<CustomerDetail> {
   const { data } = await apiClient.patch<CustomerDetail>(`/admin/customers/${id}`, body);
   return data;

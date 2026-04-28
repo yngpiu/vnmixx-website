@@ -58,8 +58,7 @@ export class CustomerAdminController {
   // Lấy danh sách khách hàng để theo dõi tăng trưởng và quản lý dữ liệu người dùng.
   @ApiOperation({
     summary: 'Lấy danh sách khách hàng',
-    description:
-      'Phân trang, tìm kiếm theo tên/email/SĐT. Lọc theo trạng thái `isActive` hoặc `isSoftDeleted`.',
+    description: 'Phân trang, tìm kiếm theo tên/email/SĐT. Lọc theo `status` hoặc `isSoftDeleted`.',
   })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerListResponseDto) }),
@@ -75,7 +74,7 @@ export class CustomerAdminController {
         page: query.page!,
         limit: query.limit!,
         search: query.search,
-        isActive: query.isActive,
+        status: query.status,
         isSoftDeleted: query.isSoftDeleted,
         sortBy: query.sortBy,
         sortOrder: query.sortOrder,
@@ -101,13 +100,14 @@ export class CustomerAdminController {
   // Điều chỉnh trạng thái hoạt động (khóa/mở khóa) tài khoản khách hàng.
   @ApiOperation({
     summary: 'Cập nhật khách hàng',
-    description: 'Chỉ cho phép đổi trạng thái hoạt động (kích hoạt / vô hiệu hóa).',
+    description: 'Chỉ cho phép đổi trạng thái vận hành của khách hàng giữa ACTIVE và INACTIVE.',
   })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerDetailResponseDto) }),
   })
   @ApiBadRequestResponse({
-    description: 'Thiếu trạng thái hoặc xác thực dữ liệu thất bại.',
+    description:
+      'Thiếu trạng thái, trạng thái không hợp lệ hoặc cố kích hoạt tài khoản chưa xác thực.',
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Patch(':id')

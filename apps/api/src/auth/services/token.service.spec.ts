@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EmployeeStatus } from '../../../generated/prisma/client';
+import { CustomerStatus, EmployeeStatus } from '../../../generated/prisma/client';
 import { RedisService } from '../../redis/services/redis.service';
 import { CustomerRepository } from '../repositories/customer.repository';
 import { EmployeeRepository } from '../repositories/employee.repository';
@@ -131,7 +131,7 @@ describe('TokenService', () => {
         id: 1,
         email: 'test@example.com',
         fullName: 'Test User',
-        isActive: true,
+        status: CustomerStatus.ACTIVE,
         deletedAt: null,
       } as any);
       jwtService.sign.mockReturnValue('new-access-token');
@@ -187,7 +187,7 @@ describe('TokenService', () => {
       refreshTokenRepo.consumeIfActive.mockResolvedValue(true);
       customerRepo.findById.mockResolvedValue({
         id: 1,
-        isActive: false,
+        status: CustomerStatus.INACTIVE,
       } as any);
 
       await expect(service.refreshTokens(mockRefreshToken, mockMeta)).rejects.toThrow(

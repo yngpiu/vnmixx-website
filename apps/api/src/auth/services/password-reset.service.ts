@@ -1,6 +1,7 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { createHash, randomUUID, timingSafeEqual } from 'crypto';
+import { CustomerStatus } from '../../../generated/prisma/client';
 import { MailService } from '../../mail/services/mail.service';
 import { RedisService } from '../../redis/services/redis.service';
 import {
@@ -51,7 +52,12 @@ export class PasswordResetService {
   async requestPasswordReset(dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
     const customer = await this.customerRepo.findByEmail(dto.email);
 
-    if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
+    if (
+      !customer ||
+      customer.deletedAt ||
+      customer.status !== CustomerStatus.ACTIVE ||
+      !customer.emailVerifiedAt
+    ) {
       return {
         message: 'Nếu email đã đăng ký và đã xác thực, mã đặt lại đã được gửi.',
         email: dto.email,
@@ -92,7 +98,12 @@ export class PasswordResetService {
   async verifyPasswordResetOtp(dto: ForgotPasswordVerifyOtpDto): Promise<ResetTokenResponseDto> {
     const customer = await this.customerRepo.findByEmail(dto.email);
 
-    if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
+    if (
+      !customer ||
+      customer.deletedAt ||
+      customer.status !== CustomerStatus.ACTIVE ||
+      !customer.emailVerifiedAt
+    ) {
       throw new BadRequestException('Mã đặt lại không hợp lệ hoặc đã hết hạn');
     }
 
@@ -139,7 +150,12 @@ export class PasswordResetService {
   async resetPassword(dto: ResetPasswordDto): Promise<{ customerId: number }> {
     const customer = await this.customerRepo.findByEmail(dto.email);
 
-    if (!customer || customer.deletedAt || !customer.isActive || !customer.emailVerifiedAt) {
+    if (
+      !customer ||
+      customer.deletedAt ||
+      customer.status !== CustomerStatus.ACTIVE ||
+      !customer.emailVerifiedAt
+    ) {
       throw new BadRequestException('Mã đặt lại không hợp lệ hoặc đã hết hạn');
     }
 

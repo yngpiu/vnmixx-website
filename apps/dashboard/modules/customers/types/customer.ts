@@ -1,4 +1,5 @@
 export type CustomerGender = 'MALE' | 'FEMALE' | 'OTHER';
+export type CustomerStatus = 'PENDING_VERIFICATION' | 'ACTIVE' | 'INACTIVE';
 
 export interface CustomerListItem {
   id: number;
@@ -7,7 +8,7 @@ export interface CustomerListItem {
   phoneNumber: string;
   avatarUrl: string | null;
   gender: CustomerGender | null;
-  isActive: boolean;
+  status: CustomerStatus;
   createdAt: string;
   deletedAt: string | null;
 }
@@ -28,7 +29,7 @@ export type ListCustomersParams = {
   page?: number;
   limit?: number;
   search?: string;
-  isActive?: boolean;
+  status?: CustomerStatus;
   isSoftDeleted?: boolean;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';

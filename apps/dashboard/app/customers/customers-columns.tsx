@@ -8,7 +8,11 @@ import {
 import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
 import { LongText } from '@/modules/common/components/long-text';
 import { employeeAvatarDisplayUrl, initialsFromFullName } from '@/modules/common/utils/avatar';
-import type { CustomerGender, CustomerListItem } from '@/modules/customers/types/customer';
+import type {
+  CustomerGender,
+  CustomerListItem,
+  CustomerStatus,
+} from '@/modules/customers/types/customer';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
@@ -26,6 +30,37 @@ function genderLabel(g: CustomerGender | null): string {
   if (g === 'FEMALE') return 'Nữ';
   if (g === 'OTHER') return 'Khác';
   return '—';
+}
+
+function customerStatusBadge(status: CustomerStatus) {
+  if (status === 'ACTIVE') {
+    return (
+      <Badge
+        variant="secondary"
+        className="border-transparent bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900/80"
+      >
+        Đang hoạt động
+      </Badge>
+    );
+  }
+  if (status === 'PENDING_VERIFICATION') {
+    return (
+      <Badge
+        variant="secondary"
+        className="border-transparent bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900/80"
+      >
+        Chờ xác minh
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant="secondary"
+      className="border-transparent bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900/80"
+    >
+      Vô hiệu hóa
+    </Badge>
+  );
 }
 
 export const customersColumns: ColumnDef<CustomerListItem>[] = [
@@ -120,34 +155,22 @@ export const customersColumns: ColumnDef<CustomerListItem>[] = [
     enableSorting: false,
   },
   {
-    accessorKey: 'isActive',
+    accessorKey: 'status',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
-    cell: ({ row }) =>
-      row.original.isActive ? (
-        <Badge
-          variant="secondary"
-          className="border-transparent bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950 dark:text-green-300 dark:hover:bg-green-900/80"
-        >
-          Đang hoạt động
-        </Badge>
-      ) : (
-        <Badge
-          variant="secondary"
-          className="border-transparent bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950 dark:text-red-300 dark:hover:bg-red-900/80"
-        >
-          Vô hiệu hóa
-        </Badge>
-      ),
+    cell: ({ row }) => customerStatusBadge(row.original.status),
     filterFn: (row, _id, value) => {
       const statuses = (value as string[]) ?? [];
-      if (statuses.length === 0 || statuses.length >= 2) {
+      if (statuses.length === 0 || statuses.length >= 3) {
         return true;
       }
       if (statuses.includes('active')) {
-        return row.original.isActive === true;
+        return row.original.status === 'ACTIVE';
       }
       if (statuses.includes('inactive')) {
-        return row.original.isActive === false;
+        return row.original.status === 'INACTIVE';
+      }
+      if (statuses.includes('pending')) {
+        return row.original.status === 'PENDING_VERIFICATION';
       }
       return true;
     },

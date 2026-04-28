@@ -31,7 +31,8 @@ export function CustomersRowActions({ row }: CustomersRowActionsProps) {
   const { openCustomerDetail, openToggleActive, openDeleteCustomer, openRestoreCustomer } =
     useCustomersTableActions();
   const isDeleted = Boolean(row.original.deletedAt);
-  const isActive = row.original.isActive;
+  const status = row.original.status;
+  const canToggleStatus = status === 'ACTIVE' || status === 'INACTIVE';
 
   return (
     <DropdownMenu modal={false}>
@@ -93,21 +94,25 @@ export function CustomersRowActions({ row }: CustomersRowActionsProps) {
                 <ScanEyeIcon className="size-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                openToggleActive(row.original);
-              }}
-            >
-              {isActive ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
-              <DropdownMenuShortcut>
-                {isActive ? (
-                  <UserRoundXIcon className="size-4" />
-                ) : (
-                  <UserRoundCheckIcon className="size-4" />
-                )}
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {canToggleStatus ? (
+              <>
+                <DropdownMenuItem
+                  onClick={() => {
+                    openToggleActive(row.original);
+                  }}
+                >
+                  {status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt lại'}
+                  <DropdownMenuShortcut>
+                    {status === 'ACTIVE' ? (
+                      <UserRoundXIcon className="size-4" />
+                    ) : (
+                      <UserRoundCheckIcon className="size-4" />
+                    )}
+                  </DropdownMenuShortcut>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={() => {

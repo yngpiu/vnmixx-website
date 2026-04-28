@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { CustomerStatus } from '../../../generated/prisma/client';
 import { MailService } from '../../mail/services/mail.service';
 import { RedisService } from '../../redis/services/redis.service';
 import { CustomerRepository } from '../repositories/customer.repository';
@@ -34,7 +35,7 @@ describe('PasswordResetService', () => {
     id: 1,
     email: 'test@example.com',
     fullName: 'Test User',
-    isActive: true,
+    status: CustomerStatus.ACTIVE,
     emailVerifiedAt: new Date(),
     deletedAt: null,
   };

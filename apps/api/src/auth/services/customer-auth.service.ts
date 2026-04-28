@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
+import { CustomerStatus } from '../../../generated/prisma/client';
 import {
   getPrismaErrorTargets,
   isPrismaErrorCode,
@@ -82,7 +83,7 @@ export class CustomerAuthService {
       hashedPassword,
       dob,
       gender: dto.gender ?? null,
-      isActive: false,
+      status: CustomerStatus.PENDING_VERIFICATION,
     });
     // 5. Cấp mã OTP và gửi email xác thực để hoàn tất đăng ký
     const otpMeta = await this.issueVerificationOtp(customer.id, customer.email);
@@ -103,7 +104,9 @@ export class CustomerAuthService {
     }
     // 2. Kiểm tra nếu email đã được xác thực trước đó
     if (customer.emailVerifiedAt) {
-      if (!customer.isActive) throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+      if (customer.status !== CustomerStatus.ACTIVE) {
+        throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+      }
       throw new BadRequestException('Email đã được xác thực');
     }
     const otpKey = this.getCustomerOtpKey(dto.email);
@@ -148,7 +151,9 @@ export class CustomerAuthService {
     }
     // 2. Đảm bảo email chưa được xác thực
     if (customer.emailVerifiedAt) {
-      if (!customer.isActive) throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+      if (customer.status !== CustomerStatus.ACTIVE) {
+        throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+      }
       throw new BadRequestException('Email đã được xác thực');
     }
     // 3. Kiểm tra thời gian chờ để ngăn chặn việc gửi lại quá thường xuyên
@@ -171,8 +176,10 @@ export class CustomerAuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
     }
     // 2. Kiểm tra trạng thái kích hoạt và xác thực của tài khoản
-    if (!customer.isActive) {
-      if (!customer.emailVerifiedAt) throw new UnauthorizedException('Email chưa được xác thực');
+    if (customer.status === CustomerStatus.PENDING_VERIFICATION || !customer.emailVerifiedAt) {
+      throw new UnauthorizedException('Email chưa được xác thực');
+    }
+    if (customer.status !== CustomerStatus.ACTIVE) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
     // 3. So sánh mật khẩu nhập vào với mật khẩu băm lưu trong DB để xác thực
@@ -247,7 +254,7 @@ export class CustomerAuthService {
     hashedPassword: string;
     dob: Date | null;
     gender: 'MALE' | 'FEMALE' | 'OTHER' | null;
-    isActive?: boolean;
+    status?: CustomerStatus;
   }) {
     try {
       return await this.customerRepo.create(data);

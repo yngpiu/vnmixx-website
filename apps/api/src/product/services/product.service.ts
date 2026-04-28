@@ -467,7 +467,9 @@ export class ProductService {
     for (const cid of categoryIds) {
       const exists = await this.repository.categoryExists(cid);
       if (!exists)
-        throw new BadRequestException(`Không tìm thấy danh mục #${cid} hoặc danh mục đã bị xóa`);
+        throw new BadRequestException(
+          `Không tìm thấy danh mục #${cid}, danh mục đã bị xóa hoặc đang bị vô hiệu hóa`,
+        );
       const isLeaf = await this.repository.isLeafCategory(cid);
       if (!isLeaf)
         throw new BadRequestException(

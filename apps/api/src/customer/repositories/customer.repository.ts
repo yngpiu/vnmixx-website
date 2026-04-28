@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '../../../generated/prisma/client';
+import { CustomerStatus, Prisma } from '../../../generated/prisma/client';
 import { softDeletedWhere } from '../../common/utils/prisma.util';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
@@ -10,7 +10,7 @@ export interface CustomerListItemView {
   phoneNumber: string;
   avatarUrl: string | null;
   gender: string | null;
-  isActive: boolean;
+  status: CustomerStatus;
   createdAt: Date;
   deletedAt: Date | null;
 }
@@ -34,7 +34,7 @@ const LIST_SELECT = {
   phoneNumber: true,
   avatarUrl: true,
   gender: true,
-  isActive: true,
+  status: true,
   createdAt: true,
   deletedAt: true,
 } as const;
@@ -66,8 +66,8 @@ export class CustomerRepository {
         return { email: dir };
       case 'phoneNumber':
         return { phoneNumber: dir };
-      case 'isActive':
-        return { isActive: dir };
+      case 'status':
+        return { status: dir };
       case 'createdAt':
         return { createdAt: dir };
       default:
@@ -81,16 +81,16 @@ export class CustomerRepository {
     page: number;
     limit: number;
     search?: string;
-    isActive?: boolean;
+    status?: CustomerStatus;
     isSoftDeleted?: boolean;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResult<CustomerListItemView>> {
-    const { page, limit, search, isActive, isSoftDeleted, sortBy, sortOrder } = params;
+    const { page, limit, search, status, isSoftDeleted, sortBy, sortOrder } = params;
 
     const where: Prisma.CustomerWhereInput = {
       ...softDeletedWhere(isSoftDeleted),
-      ...(isActive !== undefined && { isActive }),
+      ...(status !== undefined && { status }),
       ...(search && {
         OR: [
           { fullName: { contains: search } },
@@ -136,21 +136,21 @@ export class CustomerRepository {
   }
 
   // Thực hiện xóa mềm khách hàng.
-  // Đồng thời vô hiệu hóa trạng thái hoạt động của tài khoản.
+  // Đồng thời chuyển trạng thái tài khoản sang INACTIVE.
   async softDelete(id: number): Promise<boolean> {
     const { count } = await this.prisma.customer.updateMany({
       where: { id, deletedAt: null },
-      data: { deletedAt: new Date(), isActive: false },
+      data: { deletedAt: new Date(), status: CustomerStatus.INACTIVE },
     });
     return count > 0;
   }
 
   // Khôi phục tài khoản khách hàng từ trạng thái xóa mềm.
-  // Đồng thời kích hoạt lại trạng thái hoạt động của tài khoản.
+  // Sau khi khôi phục, tài khoản ở trạng thái INACTIVE để admin chủ động kích hoạt lại nếu cần.
   async restore(id: number): Promise<CustomerDetailView | null> {
     const { count } = await this.prisma.customer.updateMany({
       where: { id, NOT: { deletedAt: null } },
-      data: { deletedAt: null, isActive: true },
+      data: { deletedAt: null, status: CustomerStatus.INACTIVE },
     });
     if (count === 0) return null;
     return this.findById(id);

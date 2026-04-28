@@ -178,13 +178,13 @@ export class ReviewService {
     return this.getAdminReviewDetail(id);
   }
 
-  // Xóa vĩnh viễn một đánh giá.
-  async deleteAdminReview(id: number): Promise<void> {
+  // Ẩn đánh giá thay vì xóa cứng để giữ lịch sử moderation và dữ liệu báo cáo.
+  async hideAdminReview(id: number): Promise<void> {
     const exists = await this.reviewRepo.exists(id);
     if (!exists) {
       throw new NotFoundException('Không tìm thấy đánh giá.');
     }
 
-    await this.reviewRepo.delete(id);
+    await this.reviewRepo.update(id, { status: ReviewVisibility.HIDDEN });
   }
 }
