@@ -16,6 +16,7 @@ import { CoreModule } from './core/core.module';
 import { CustomerModule } from './customer/customer.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EmployeeModule } from './employee/employee.module';
+import { InventoryModule } from './inventory/inventory.module';
 import { LocationModule } from './location/location.module';
 import { MailModule } from './mail/mail.module';
 import { MediaModule } from './media/media.module';
@@ -66,6 +67,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     ProductModule,
     CustomerModule,
     DashboardModule,
+    InventoryModule,
     EmployeeModule,
     RbacModule,
     LocationModule,

@@ -1,0 +1,3 @@
+export const LOW_STOCK_LIMIT = 20;
+export const DEFAULT_LOW_STOCK_THRESHOLD = 20;
+export const DEFAULT_INVENTORY_PAGE_SIZE = 10;

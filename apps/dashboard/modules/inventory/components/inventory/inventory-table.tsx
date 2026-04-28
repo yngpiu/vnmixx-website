@@ -1,6 +1,5 @@
 'use client';
 
-import { createInventoryColumns } from '@/app/inventory/inventory-columns';
 import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
 import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
 import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
@@ -25,6 +24,7 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import { useEffect, useMemo, useState } from 'react';
+import { createInventoryColumns } from './inventory-columns';
 
 function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
   return (header.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};

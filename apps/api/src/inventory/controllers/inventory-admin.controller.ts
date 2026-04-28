@@ -30,7 +30,7 @@ import {
   InventoryVoucherListResponseDto,
   ListInventoryVouchersQueryDto,
 } from '../dto';
-import { DashboardAdminService } from '../services/dashboard-admin.service';
+import { InventoryAdminService } from '../services/inventory-admin.service';
 
 @ApiTags('Inventory (Admin)')
 @ApiBearerAuth('access-token')
@@ -46,7 +46,7 @@ import { DashboardAdminService } from '../services/dashboard-admin.service';
 )
 @Controller('admin/inventory')
 export class InventoryAdminController {
-  constructor(private readonly dashboardService: DashboardAdminService) {}
+  constructor(private readonly inventoryAdminService: InventoryAdminService) {}
 
   @ApiOperation({ summary: 'Lấy danh sách sản phẩm sắp hết hàng' })
   @ApiOkResponse({
@@ -58,7 +58,7 @@ export class InventoryAdminController {
     @Query() query: InventoryLowStockQueryDto,
   ): Promise<SuccessPayload<InventoryLowStockResponseDto>> {
     return ok(
-      await this.dashboardService.getLowStockProducts(query),
+      await this.inventoryAdminService.getLowStockProducts(query),
       'Lấy danh sách tồn kho sắp hết thành công.',
     );
   }
@@ -73,7 +73,7 @@ export class InventoryAdminController {
     @Query() query: InventoryListQueryDto,
   ): Promise<SuccessPayload<InventoryListResponseDto>> {
     return ok(
-      await this.dashboardService.listInventory(query),
+      await this.inventoryAdminService.listInventory(query),
       'Lấy danh sách kho hàng thành công.',
     );
   }
@@ -88,7 +88,7 @@ export class InventoryAdminController {
     @Query() query: InventoryMovementListQueryDto,
   ): Promise<SuccessPayload<InventoryMovementListResponseDto>> {
     return ok(
-      await this.dashboardService.listInventoryMovements(query),
+      await this.inventoryAdminService.listInventoryMovements(query),
       'Lấy lịch sử giao dịch kho thành công.',
     );
   }
@@ -102,7 +102,7 @@ export class InventoryAdminController {
     @Body() body: InventoryTransactionDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<{ ok: boolean }>> {
-    return ok(await this.dashboardService.importStock(body, user.id), 'Nhập kho thành công.');
+    return ok(await this.inventoryAdminService.importStock(body, user.id), 'Nhập kho thành công.');
   }
 
   @ApiOperation({ summary: 'Xuất hàng khỏi kho' })
@@ -114,7 +114,7 @@ export class InventoryAdminController {
     @Body() body: InventoryTransactionDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<{ ok: boolean }>> {
-    return ok(await this.dashboardService.exportStock(body, user.id), 'Xuất kho thành công.');
+    return ok(await this.inventoryAdminService.exportStock(body, user.id), 'Xuất kho thành công.');
   }
 
   @ApiOperation({ summary: 'Tạo phiếu nhập/xuất kho (áp dụng tồn ngay)' })
@@ -128,7 +128,7 @@ export class InventoryAdminController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<InventoryVoucherDetailResponseDto>> {
     return ok(
-      await this.dashboardService.createInventoryVoucher(body, user.id),
+      await this.inventoryAdminService.createInventoryVoucher(body, user.id),
       'Tạo phiếu kho thành công.',
     );
   }
@@ -143,7 +143,7 @@ export class InventoryAdminController {
     @Query() query: ListInventoryVouchersQueryDto,
   ): Promise<SuccessPayload<InventoryVoucherListResponseDto>> {
     return ok(
-      await this.dashboardService.listInventoryVouchers(query),
+      await this.inventoryAdminService.listInventoryVouchers(query),
       'Lấy danh sách phiếu kho thành công.',
     );
   }
@@ -158,7 +158,7 @@ export class InventoryAdminController {
     @Param('voucherId', ParseIntPipe) voucherId: number,
   ): Promise<SuccessPayload<InventoryVoucherDetailResponseDto>> {
     return ok(
-      await this.dashboardService.getInventoryVoucherDetail(voucherId),
+      await this.inventoryAdminService.getInventoryVoucherDetail(voucherId),
       'Lấy chi tiết phiếu kho thành công.',
     );
   }

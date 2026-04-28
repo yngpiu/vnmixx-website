@@ -1,10 +1,5 @@
 'use client';
 
-import {
-  InventoryVoucherLineItems,
-  type VoucherLineDraft,
-} from '@/app/inventory/inventory-voucher-line-items';
-import { InventoryVoucherSummary } from '@/app/inventory/inventory-voucher-summary';
 import type { InventoryListItem, InventoryVoucherType } from '@/modules/inventory/types/inventory';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -17,6 +12,8 @@ import {
 import { Input } from '@repo/ui/components/ui/input';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { useMemo } from 'react';
+import { InventoryVoucherLineItems, type VoucherLineDraft } from './inventory-voucher-line-items';
+import { InventoryVoucherSummary } from './inventory-voucher-summary';
 
 type InventoryVoucherDialogProps = {
   open: boolean;

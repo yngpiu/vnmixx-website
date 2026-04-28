@@ -1,8 +1,5 @@
 'use client';
 
-import { InventoryTable } from '@/app/inventory/inventory-table';
-import { InventoryVoucherDialog } from '@/app/inventory/inventory-voucher-dialog';
-import type { VoucherLineDraft } from '@/app/inventory/inventory-voucher-line-items';
 import { DataTablePagination } from '@/modules/common/components/data-table';
 import { ListPage } from '@/modules/common/components/list-page';
 import {
@@ -41,6 +38,9 @@ import { isAxiosError } from 'axios';
 import { ClockIcon, FileTextIcon, HistoryIcon, MinusIcon, PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { InventoryTable } from './inventory-table';
+import { InventoryVoucherDialog } from './inventory-voucher-dialog';
+import type { VoucherLineDraft } from './inventory-voucher-line-items';
 
 const DEFAULT_ISSUED_AT = () => {
   const now = new Date();
@@ -64,7 +64,7 @@ function actionLabel(type: InventoryVoucherType): string {
   return type === 'EXPORT' ? 'Phiếu xuất' : 'Phiếu nhập';
 }
 
-export function InventoryView() {
+export function InventoryManagementView() {
   const queryClient = useQueryClient();
   const [voucherOpen, setVoucherOpen] = useState(false);
   const [voucherType, setVoucherType] = useState<InventoryVoucherType>('IMPORT');

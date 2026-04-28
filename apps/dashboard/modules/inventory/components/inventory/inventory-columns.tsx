@@ -1,6 +1,5 @@
 'use client';
 
-import { InventoryRowActions } from '@/app/inventory/inventory-row-actions';
 import {
   DataTableColumnHeader,
   dataTableSttColumnDef,
@@ -9,6 +8,7 @@ import type { DataTableColumnMeta } from '@/modules/common/components/data-table
 import type { InventoryListItem } from '@/modules/inventory/types/inventory';
 import { Badge } from '@repo/ui/components/ui/badge';
 import type { ColumnDef } from '@tanstack/react-table';
+import { InventoryRowActions } from './inventory-row-actions';
 
 const updatedAtFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
