@@ -127,10 +127,10 @@ export class CategoryAdminController {
   }
 
   // Xóa mềm một danh mục, chỉ thành công nếu không có danh mục con đang hoạt động.
-  @ApiOperation({ summary: 'Xóa danh mục' })
+  @ApiOperation({ summary: 'Xóa mềm danh mục' })
   @ApiOkResponse({
-    description: 'Xóa danh mục thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa danh mục thành công.'),
+    description: 'Xóa mềm danh mục thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa mềm danh mục thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @ApiConflictResponse({
@@ -145,11 +145,11 @@ export class CategoryAdminController {
     @Req() request: Request,
   ): Promise<SuccessPayload<null>> {
     await this.categoryService.softDelete(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa danh mục thành công.');
+    return okNoData('Xóa mềm danh mục thành công.');
   }
 
   // Khôi phục một danh mục đã bị xóa mềm.
-  @ApiOperation({ summary: 'Khôi phục danh mục đã xóa' })
+  @ApiOperation({ summary: 'Khôi phục danh mục đã xóa mềm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CategoryAdminResponseDto) }),
   })

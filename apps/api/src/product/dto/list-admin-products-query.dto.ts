@@ -53,7 +53,7 @@ export class ListAdminProductsQueryDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa.',
+    description: 'Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa mềm.',
   })
   @TransformQueryOptionalBoolean()
   @IsBoolean({ message: 'Trạng thái xóa phải là kiểu boolean' })

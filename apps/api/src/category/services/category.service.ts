@@ -231,13 +231,15 @@ export class CategoryService {
       const category = await this.findById(id);
 
       if (!category.deletedAt) {
-        throw new BadRequestException('Danh mục chưa bị xóa');
+        throw new BadRequestException('Danh mục chưa bị xóa mềm');
       }
 
       if (category.parentId !== null) {
         const parent = await this.repository.findById(category.parentId);
         if (parent?.deletedAt) {
-          throw new BadRequestException('Không thể khôi phục danh mục có danh mục cha đã bị xóa');
+          throw new BadRequestException(
+            'Không thể khôi phục danh mục có danh mục cha đã bị xóa mềm',
+          );
         }
         if (parent && !parent.isActive) {
           throw new BadRequestException(

@@ -190,7 +190,7 @@ export class EmployeeService {
       }
       // 3. Thực hiện xóa mềm trong DB (đánh dấu trường deletedAt)
       const deleted = await this.employeeRepo.softDelete(id);
-      if (!deleted) throw new NotFoundException(`Không tìm thấy nhân viên #${id} để xóa`);
+      if (!deleted) throw new NotFoundException(`Không tìm thấy nhân viên #${id} để xóa mềm`);
       // 4. Thu hồi cache của nhân viên để ngăn chặn truy cập sau khi bị xóa
       await Promise.all([
         this.employeeAuthzCache.invalidate(id),

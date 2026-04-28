@@ -149,11 +149,11 @@ export class EmployeeAdminController {
     );
   }
 
-  // API xóa mềm nhân viên - Nhân viên sẽ bị vô hiệu hóa và không thể đăng nhập
+  // Xóa mềm nhân viên: nhân viên sẽ bị vô hiệu hóa và không thể đăng nhập.
   @ApiOperation({ summary: 'Xóa mềm nhân viên' })
   @ApiOkResponse({
-    description: 'Xóa nhân viên thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa nhân viên thành công.'),
+    description: 'Xóa mềm nhân viên thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa mềm nhân viên thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @ApiBadRequestResponse({
@@ -169,11 +169,11 @@ export class EmployeeAdminController {
     @Req() request: Request,
   ): Promise<SuccessPayload<null>> {
     await this.employeeService.softDelete(id, buildAuditRequestContext(request, user), user.id);
-    return okNoData('Xóa nhân viên thành công.');
+    return okNoData('Xóa mềm nhân viên thành công.');
   }
 
-  // API khôi phục nhân viên từ trạng thái đã xóa mềm về trạng thái hoạt động bình thường
-  @ApiOperation({ summary: 'Khôi phục nhân viên' })
+  // Khôi phục nhân viên từ trạng thái đã xóa mềm về trạng thái hoạt động bình thường.
+  @ApiOperation({ summary: 'Khôi phục nhân viên đã xóa mềm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(EmployeeDetailResponseDto) }),
   })

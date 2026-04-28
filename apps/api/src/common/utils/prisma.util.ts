@@ -5,7 +5,7 @@ export type SoftDeletedWhereClause =
   | { deletedAt: null }
   | { NOT: { deletedAt: null } };
 
-/** Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa. */
+/** Không gửi = không lọc; true = chỉ đã xóa mềm; false = chỉ chưa xóa mềm. */
 export function softDeletedWhere(isSoftDeleted?: boolean): SoftDeletedWhereClause {
   if (isSoftDeleted === undefined) return {};
   if (isSoftDeleted === true) return { NOT: { deletedAt: null } };

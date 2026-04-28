@@ -492,7 +492,7 @@ export class ProductRepository {
     await this.prisma.$transaction([
       // Cập nhật ngày xóa cho sản phẩm.
       this.prisma.product.update({ where: { id }, data: { deletedAt: now } }),
-      // Cập nhật ngày xóa cho tất cả biến thể chưa bị xóa.
+      // Cập nhật ngày xóa cho tất cả biến thể chưa bị xóa mềm.
       this.prisma.productVariant.updateMany({
         where: { productId: id, deletedAt: null },
         data: { deletedAt: now },

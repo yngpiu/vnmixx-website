@@ -126,7 +126,7 @@ export function ProductsTable() {
     mutationFn: (id: number) => deleteProduct(id),
     onSuccess: async () => {
       setDeleteTarget(null);
-      toast.success('Đã xóa sản phẩm.');
+      toast.success('Đã xóa mềm sản phẩm.');
       await invalidateProductsList();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -356,7 +356,7 @@ export function ProductsTable() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xóa sản phẩm?</AlertDialogTitle>
+            <AlertDialogTitle>Xóa mềm sản phẩm?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget
                 ? `Sản phẩm "${deleteTarget.name}" sẽ được xóa mềm và có thể khôi phục sau.`
@@ -375,7 +375,7 @@ export function ProductsTable() {
                 if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
               }}
             >
-              Xóa
+              Xóa mềm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

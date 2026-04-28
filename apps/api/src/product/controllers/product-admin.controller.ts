@@ -141,8 +141,8 @@ export class ProductAdminController {
   // Thực hiện xóa mềm sản phẩm để tạm ngừng kinh doanh nhưng vẫn giữ lịch sử.
   @ApiOperation({ summary: 'Xóa mềm sản phẩm' })
   @ApiOkResponse({
-    description: 'Xóa sản phẩm thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa sản phẩm thành công.'),
+    description: 'Xóa mềm sản phẩm thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa mềm sản phẩm thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Delete(':id')
@@ -154,11 +154,11 @@ export class ProductAdminController {
     @Req() request: Request,
   ): Promise<SuccessPayload<null>> {
     await this.productService.softDelete(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa sản phẩm thành công.');
+    return okNoData('Xóa mềm sản phẩm thành công.');
   }
 
   // Khôi phục lại sản phẩm đã bị xóa mềm trước đó.
-  @ApiOperation({ summary: 'Khôi phục sản phẩm' })
+  @ApiOperation({ summary: 'Khôi phục sản phẩm đã xóa mềm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductAdminDetailResponseDto) }),
   })
@@ -228,8 +228,8 @@ export class ProductAdminController {
   // Xóa mềm một biến thể của sản phẩm.
   @ApiOperation({ summary: 'Xóa mềm biến thể' })
   @ApiOkResponse({
-    description: 'Xóa biến thể thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa biến thể thành công.'),
+    description: 'Xóa mềm biến thể thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa mềm biến thể thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy biến thể.' })
   @Delete(':id/variants/:variantId')
@@ -246,7 +246,7 @@ export class ProductAdminController {
       variantId,
       buildAuditRequestContext(request, user),
     );
-    return okNoData('Xóa biến thể thành công.');
+    return okNoData('Xóa mềm biến thể thành công.');
   }
 
   // ─── Images ────────────────────────────────────────────────────────────────

@@ -124,11 +124,11 @@ export class CustomerAdminController {
     );
   }
 
-  // Xóa tài khoản khách hàng khi có yêu cầu hoặc vi phạm nghiêm trọng chính sách hệ thống.
+  // Xóa mềm tài khoản khách hàng khi có yêu cầu hoặc vi phạm nghiêm trọng chính sách hệ thống.
   @ApiOperation({ summary: 'Xóa mềm khách hàng' })
   @ApiOkResponse({
-    description: 'Xóa khách hàng thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa khách hàng thành công.'),
+    description: 'Xóa mềm khách hàng thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa mềm khách hàng thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Delete(':id')
@@ -140,15 +140,17 @@ export class CustomerAdminController {
     @Req() request: Request,
   ): Promise<SuccessPayload<null>> {
     await this.customerService.softDelete(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa khách hàng thành công.');
+    return okNoData('Xóa mềm khách hàng thành công.');
   }
 
-  // Khôi phục tài khoản khách hàng đã bị xóa trước đó.
+  // Khôi phục tài khoản khách hàng đã bị xóa mềm trước đó.
   @ApiOperation({ summary: 'Khôi phục khách hàng đã xóa mềm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CustomerDetailResponseDto) }),
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng hoặc khách hàng chưa bị xóa.' })
+  @ApiNotFoundResponse({
+    description: 'Không tìm thấy khách hàng hoặc khách hàng chưa bị xóa mềm.',
+  })
   @Patch(':id/restore')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async restore(

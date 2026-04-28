@@ -144,7 +144,7 @@ export function EditEmployeeDialog({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['employees', 'list'] });
       void queryClient.invalidateQueries({ queryKey: ['employees', 'detail'] });
-      toast.success('Đã xóa nhân viên.');
+      toast.success('Đã xóa mềm nhân viên.');
       onOpenChange(false);
     },
     onError: (err) => {
@@ -215,7 +215,7 @@ export function EditEmployeeDialog({
           ? `Vô hiệu hóa nhân viên #${employeeId}?`
           : `Kích hoạt nhân viên #${employeeId}?`
         : mode === 'delete'
-          ? `Xác nhận xoá nhân viên #${employeeId}?`
+          ? `Xác nhận xóa mềm nhân viên #${employeeId}?`
           : mode === 'restore'
             ? `Khôi phục nhân viên #${employeeId}?`
             : '';
@@ -262,8 +262,8 @@ export function EditEmployeeDialog({
 
           {deletedBlock ? (
             <p className="text-sm text-amber-700 dark:text-amber-400" role="status">
-              Nhân viên đã bị xóa — không thể thực hiện thao tác này. Dùng mục Khôi phục trên menu
-              hành động.
+              Nhân viên đã bị xóa mềm — không thể thực hiện thao tác này. Dùng mục Khôi phục trên
+              menu hành động.
             </p>
           ) : null}
 
@@ -375,7 +375,7 @@ export function EditEmployeeDialog({
 
           {restoreNotDeletedBlock ? (
             <p className="text-sm text-muted-foreground" role="status">
-              Nhân viên này chưa bị xóa.
+              Nhân viên này chưa bị xóa mềm.
             </p>
           ) : null}
         </div>

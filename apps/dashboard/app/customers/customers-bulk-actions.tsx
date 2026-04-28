@@ -52,12 +52,12 @@ export function CustomersBulkActions<TData>({ table }: CustomersBulkActionsProps
 
   const handleBulkDelete = () => {
     void toast.promise(sleep(1200), {
-      loading: 'Đang xóa…',
+      loading: 'Đang xóa mềm…',
       success: () => {
         table.resetRowSelection();
-        return `Đã xóa ${selected.length} khách hàng (demo — API sẽ nối sau).`;
+        return `Đã xóa mềm ${selected.length} khách hàng (demo — API sẽ nối sau).`;
       },
-      error: 'Lỗi xóa (demo).',
+      error: 'Lỗi xóa mềm (demo).',
     });
   };
 
@@ -128,14 +128,14 @@ export function CustomersBulkActions<TData>({ table }: CustomersBulkActionsProps
             type="button"
             onClick={handleBulkDelete}
             className="size-8"
-            aria-label="Xóa đã chọn"
+            aria-label="Xóa mềm đã chọn"
           >
             <Trash2Icon className="size-4" />
-            <span className="sr-only">Xóa</span>
+            <span className="sr-only">Xóa mềm</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Xóa (demo)</p>
+          <p>Xóa mềm (demo)</p>
         </TooltipContent>
       </Tooltip>
     </DataTableBulkActions>

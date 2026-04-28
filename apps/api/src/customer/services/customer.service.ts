@@ -136,7 +136,7 @@ export class CustomerService {
       // 1. Thực hiện khôi phục bản ghi đã xóa trong cơ sở dữ liệu
       const restored = await this.customerRepo.restore(id);
       if (!restored)
-        throw new NotFoundException('Không tìm thấy khách hàng hoặc bản ghi chưa bị xóa.');
+        throw new NotFoundException('Không tìm thấy khách hàng hoặc bản ghi chưa bị xóa mềm.');
 
       // 2. Ghi nhật ký khôi phục tài khoản thành công
       await this.auditLogService.write({

@@ -139,7 +139,7 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
   const deleteMutation = useMutation({
     mutationFn: (reviewId: number) => deleteAdminReview(reviewId),
     onSuccess: async () => {
-      toast.success('Đã xóa đánh giá.');
+      toast.success('Đã ẩn đánh giá.');
       await refreshList();
     },
     onError: (error) => toast.error(apiErrorMessage(error)),
@@ -189,13 +189,13 @@ export function CustomerReviewsSection({ customerId }: CustomerReviewsSectionPro
               className="text-destructive focus:text-destructive"
               disabled={isMutating}
               onSelect={() => {
-                if (window.confirm('Bạn chắc chắn muốn xóa đánh giá này?')) {
+                if (window.confirm('Bạn chắc chắn muốn ẩn đánh giá này?')) {
                   deleteMutation.mutate(review.id);
                 }
               }}
             >
               <Trash2Icon className="mr-2 size-4" />
-              Xóa
+              Ẩn
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

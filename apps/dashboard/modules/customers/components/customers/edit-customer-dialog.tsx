@@ -78,7 +78,7 @@ export function EditCustomerDialog({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['customers', 'list'] });
       void queryClient.invalidateQueries({ queryKey: ['customers', 'detail'] });
-      toast.success('Đã xóa khách hàng.');
+      toast.success('Đã xóa mềm khách hàng.');
       onOpenChange(false);
     },
     onError: (err) => {
@@ -130,7 +130,7 @@ export function EditCustomerDialog({
           ? 'Kích hoạt khách hàng'
           : 'Quản lý trạng thái khách hàng'
       : mode === 'delete'
-        ? 'Xóa khách hàng'
+        ? 'Xóa mềm khách hàng'
         : mode === 'restore'
           ? 'Khôi phục khách hàng'
           : '';
@@ -173,8 +173,8 @@ export function EditCustomerDialog({
 
           {deletedBlock ? (
             <p className="text-sm text-amber-700 dark:text-amber-400" role="status">
-              Khách hàng đã bị xóa — không thể thực hiện thao tác này. Dùng mục Khôi phục trên menu
-              hành động.
+              Khách hàng đã bị xóa mềm — không thể thực hiện thao tác này. Dùng mục Khôi phục trên
+              menu hành động.
             </p>
           ) : null}
 
@@ -219,7 +219,7 @@ export function EditCustomerDialog({
 
           {restoreNotDeletedBlock ? (
             <p className="text-sm text-muted-foreground" role="status">
-              Khách hàng này chưa bị xóa.
+              Khách hàng này chưa bị xóa mềm.
             </p>
           ) : null}
         </div>
@@ -274,7 +274,7 @@ export function EditCustomerDialog({
                 disabled={deleteFormDisabled}
                 onClick={submitDelete}
               >
-                {deleteMutation.isPending ? 'Đang xóa…' : 'Xóa'}
+                {deleteMutation.isPending ? 'Đang xóa mềm…' : 'Xóa mềm'}
               </Button>
             </>
           ) : null}

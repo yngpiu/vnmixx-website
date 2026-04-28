@@ -157,7 +157,7 @@ export class TokenService {
   private async refreshCustomerTokens(userId: number, meta: RequestMeta): Promise<TokenPair> {
     const customer = await this.customerRepo.findById(userId);
     if (!customer || customer.status !== CustomerStatus.ACTIVE || customer.deletedAt) {
-      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa mềm');
     }
     return this.issueTokenPair(
       { id: customer.id, email: customer.email, fullName: customer.fullName },
@@ -169,7 +169,7 @@ export class TokenService {
   private async refreshEmployeeTokens(userId: number, meta: RequestMeta): Promise<TokenPair> {
     const employee = await this.employeeRepo.findById(userId);
     if (!employee || employee.status !== EmployeeStatus.ACTIVE || employee.deletedAt) {
-      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa mềm');
     }
     return this.issueTokenPair(
       { id: employee.id, email: employee.email, fullName: employee.fullName },

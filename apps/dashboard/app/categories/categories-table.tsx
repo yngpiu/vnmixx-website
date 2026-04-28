@@ -222,7 +222,7 @@ export function CategoriesTable({ onOpenCreateChild }: CategoriesTableProps = {}
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteCategory(id),
     onSuccess: async () => {
-      toast.success('Đã xóa danh mục.');
+      toast.success('Đã xóa mềm danh mục.');
       setDeleteTarget(null);
       await invalidateCategories();
     },

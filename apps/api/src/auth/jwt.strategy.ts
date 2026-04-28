@@ -89,7 +89,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private async validateCustomer(payload: JwtPayload): Promise<AuthenticatedUser> {
     const customer = await this.customerRepo.findById(payload.sub);
     if (!customer || customer.status !== CustomerStatus.ACTIVE || customer.deletedAt) {
-      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa mềm');
     }
     return {
       id: customer.id,
@@ -111,7 +111,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private async validateEmployee(payload: JwtPayload): Promise<AuthenticatedUser> {
     const employee = await this.employeeRepo.findById(payload.sub);
     if (!employee || employee.status !== EmployeeStatus.ACTIVE || employee.deletedAt) {
-      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa');
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa hoặc đã bị xóa mềm');
     }
     // Lấy danh sách vai trò và quyền hạn từ Cache (hoặc DB nếu chưa có cache)
     const { roles, permissions } = await this.employeeAuthzCache.getRolesAndPermissions(
