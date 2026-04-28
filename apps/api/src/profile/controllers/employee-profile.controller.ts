@@ -17,6 +17,7 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import { TokenService } from '../../auth/services/token.service';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
@@ -35,9 +36,12 @@ import { ProfileService } from '../services/profile.service';
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @ApiExtraModels(EmployeeProfileResponseDto)
 @RequireUserType('EMPLOYEE')
-@Controller('admin/profile')
+@Controller('admin/me/profile')
 export class EmployeeProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(
+    private readonly profileService: ProfileService,
+    private readonly tokenService: TokenService,
+  ) {}
 
   // Lấy thông tin cá nhân của nhân viên đang đăng nhập.
   @ApiOperation({ summary: 'Lấy hồ sơ nhân viên hiện tại' })
@@ -87,8 +91,10 @@ export class EmployeeProfileController {
   // Thay đổi mật khẩu định kỳ hoặc khi nghi ngờ lộ thông tin để đảm bảo an toàn tài khoản.
   @ApiOperation({ summary: 'Đổi mật khẩu nhân viên hiện tại' })
   @ApiOkResponse({
-    description: 'Đổi mật khẩu nhân viên thành công.',
-    schema: buildNullDataSuccessResponseSchema('Đổi mật khẩu khách hàng thành công.'),
+    description: 'Đổi mật khẩu nhân viên thành công. Vui lòng đăng nhập lại.',
+    schema: buildNullDataSuccessResponseSchema(
+      'Đổi mật khẩu nhân viên thành công. Vui lòng đăng nhập lại.',
+    ),
   })
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
   @Put('change-password')
@@ -99,6 +105,7 @@ export class EmployeeProfileController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<null>> {
     await this.profileService.changeEmployeePassword(user.id, dto);
-    return okNoData('Đổi mật khẩu nhân viên thành công.');
+    await this.tokenService.logoutAll(user.id, 'EMPLOYEE', user.jti, user.exp);
+    return okNoData('Đổi mật khẩu nhân viên thành công. Vui lòng đăng nhập lại.');
   }
 }

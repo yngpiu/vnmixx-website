@@ -69,7 +69,7 @@ export class WishlistRepository {
     });
   }
 
-  // Xoá sản phẩm khỏi danh sách yêu thích.
+  // Xóa sản phẩm khỏi danh sách yêu thích.
   async remove(customerId: number, productId: number): Promise<void> {
     await this.prisma.wishlist.delete({
       where: { customerId_productId: { customerId, productId } },

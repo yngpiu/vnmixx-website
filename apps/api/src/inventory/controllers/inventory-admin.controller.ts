@@ -25,7 +25,6 @@ import {
   InventoryLowStockResponseDto,
   InventoryMovementListQueryDto,
   InventoryMovementListResponseDto,
-  InventoryTransactionDto,
   InventoryVoucherDetailResponseDto,
   InventoryVoucherListResponseDto,
   ListInventoryVouchersQueryDto,
@@ -91,30 +90,6 @@ export class InventoryAdminController {
       await this.inventoryAdminService.listInventoryMovements(query),
       'Lấy lịch sử giao dịch kho thành công.',
     );
-  }
-
-  @ApiOperation({ summary: 'Nhập hàng vào kho' })
-  @ApiOkResponse({
-    schema: buildSuccessResponseSchema({ type: 'object', properties: { ok: { type: 'boolean' } } }),
-  })
-  @Post('transactions/import')
-  async importStock(
-    @Body() body: InventoryTransactionDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<{ ok: boolean }>> {
-    return ok(await this.inventoryAdminService.importStock(body, user.id), 'Nhập kho thành công.');
-  }
-
-  @ApiOperation({ summary: 'Xuất hàng khỏi kho' })
-  @ApiOkResponse({
-    schema: buildSuccessResponseSchema({ type: 'object', properties: { ok: { type: 'boolean' } } }),
-  })
-  @Post('transactions/export')
-  async exportStock(
-    @Body() body: InventoryTransactionDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<{ ok: boolean }>> {
-    return ok(await this.inventoryAdminService.exportStock(body, user.id), 'Xuất kho thành công.');
   }
 
   @ApiOperation({ summary: 'Tạo phiếu nhập/xuất kho (áp dụng tồn ngay)' })

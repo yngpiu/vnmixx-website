@@ -12,7 +12,7 @@ interface AuthProviderProps {
 }
 
 /**
- * Đồng bộ token từ cookie vào Zustand, gọi GET /auth/me để có profile ở client
+ * Đồng bộ token từ cookie vào Zustand, gọi GET /admin/me/profile để có profile ở client
  * (footer sidebar, v.v.) kể cả sau F5.
  */
 export function AuthProvider({ accessToken, children }: AuthProviderProps) {
@@ -31,7 +31,7 @@ export function AuthProvider({ accessToken, children }: AuthProviderProps) {
     let cancelled = false;
     void (async () => {
       try {
-        const { data } = await apiClient.get<UserProfile>('/auth/me');
+        const { data } = await apiClient.get<UserProfile>('/admin/me/profile');
         if (!cancelled) {
           useAuthStore.getState().setUser(data);
         }

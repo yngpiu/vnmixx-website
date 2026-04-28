@@ -12,7 +12,7 @@ interface AuthState {
 interface AuthActions {
   /** Set only the access token (used by AuthProvider on mount). */
   setAccessToken: (accessToken: string) => void;
-  /** Cập nhật profile (sau GET /auth/me hoặc làm mới hồ sơ). */
+  /** Cập nhật profile (sau GET /admin/me/profile hoặc làm mới hồ sơ). */
   setUser: (user: UserProfile | null) => void;
   /** Set access token and user profile together (used after login). */
   setSession: (accessToken: string, user: UserProfile) => void;
@@ -25,7 +25,7 @@ type AuthStore = AuthState & AuthActions;
 /**
  * Client-side auth store.
  * Token comes from server cookie (via AuthProvider).
- * User profile is set after login hoặc khi AuthProvider gọi /auth/me.
+ * User profile is set after login hoặc khi AuthProvider gọi /admin/me/profile.
  * No persistence — server cookies are the source of truth.
  */
 export const useAuthStore = create<AuthStore>()(

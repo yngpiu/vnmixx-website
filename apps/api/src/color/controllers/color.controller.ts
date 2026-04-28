@@ -23,8 +23,8 @@ import { ColorService } from '../services/color.service';
 export class ColorController {
   constructor(private readonly colorService: ColorService) {}
 
-  // Liệt kê toàn bộ màu sắc hiện có để hiển thị trong các bộ lọc tìm kiếm của khách hàng.
-  @ApiOperation({ summary: 'Liệt kê tất cả màu sắc' })
+  // Lấy toàn bộ màu sắc hiện có để hiển thị trong các bộ lọc tìm kiếm của khách hàng.
+  @ApiOperation({ summary: 'Lấy danh sách màu sắc' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
       type: 'array',

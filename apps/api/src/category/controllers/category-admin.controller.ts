@@ -58,9 +58,9 @@ import { CategoryService } from '../services/category.service';
 export class CategoryAdminController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  // Liệt kê danh sách danh mục với các bộ lọc tùy chọn.
+  // Lấy danh sách danh mục với các bộ lọc tùy chọn.
   @ApiOperation({
-    summary: 'Liệt kê danh mục',
+    summary: 'Lấy danh sách danh mục',
     description:
       '`isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc (cùng quy ước danh sách admin khác).',
   })

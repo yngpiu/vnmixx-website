@@ -61,7 +61,7 @@ export class ColorAdminController {
 
   // Truy xuất danh sách màu sắc phục vụ trang quản trị.
   @ApiOperation({
-    summary: 'Liệt kê màu sắc (quản trị)',
+    summary: 'Lấy danh sách màu sắc',
     description: 'Phân trang, tìm theo tên hoặc HEX, sắp xếp.',
   })
   @ApiOkResponse({

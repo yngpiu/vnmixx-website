@@ -31,7 +31,7 @@ export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
 
   // Trả về toàn bộ quyền đang có trong hệ thống.
-  @ApiOperation({ summary: 'Liệt kê tất cả quyền' })
+  @ApiOperation({ summary: 'Lấy danh sách quyền' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
       type: 'array',

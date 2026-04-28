@@ -3,7 +3,6 @@ export {
   InventoryListQueryDto,
   InventoryLowStockQueryDto,
   InventoryMovementListQueryDto,
-  InventoryTransactionDto,
   InventoryVoucherItemDto,
   ListInventoryVouchersQueryDto,
 } from './inventory-query.dto';

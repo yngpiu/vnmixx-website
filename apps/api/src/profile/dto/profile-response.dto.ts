@@ -43,6 +43,15 @@ export class EmployeeProfileResponseDto {
   @ApiPropertyOptional({ example: 'https://cdn.example.com/avatar.jpg', nullable: true })
   avatarUrl: string | null;
 
+  @ApiProperty({ enum: ['EMPLOYEE'], example: 'EMPLOYEE' })
+  userType: 'EMPLOYEE';
+
+  @ApiProperty({ example: ['admin'] })
+  roles: string[];
+
+  @ApiProperty({ example: ['product.create'] })
+  permissions: string[];
+
   @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
   createdAt: Date;
 }

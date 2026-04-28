@@ -61,7 +61,7 @@ export class ChatAdminController {
   ) {}
 
   // Lấy danh sách các cuộc hội thoại hỗ trợ với tùy chọn phân trang và lọc theo nhân viên.
-  @ApiOperation({ summary: 'Danh sách cuộc hội thoại hỗ trợ (phân trang)' })
+  @ApiOperation({ summary: 'Lấy danh sách cuộc hội thoại hỗ trợ' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ChatListResponseDto) }),
   })
@@ -79,7 +79,7 @@ export class ChatAdminController {
   }
 
   // Lấy thông tin chi tiết của một cuộc hội thoại cụ thể dựa trên ID.
-  @ApiOperation({ summary: 'Chi tiết cuộc hội thoại' })
+  @ApiOperation({ summary: 'Lấy chi tiết cuộc hội thoại' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ChatDetailResponseDto) }),
   })
@@ -94,7 +94,7 @@ export class ChatAdminController {
   }
 
   // Lấy toàn bộ lịch sử tin nhắn của một cuộc hội thoại với phân trang cursor.
-  @ApiOperation({ summary: 'Lịch sử tin nhắn cuộc hội thoại' })
+  @ApiOperation({ summary: 'Lấy danh sách tin nhắn cuộc hội thoại' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(MessagesListResponseDto) }),
   })

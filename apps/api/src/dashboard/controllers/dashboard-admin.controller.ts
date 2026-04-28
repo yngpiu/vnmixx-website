@@ -50,7 +50,7 @@ import { DashboardAdminService } from '../services/dashboard-admin.service';
 export class DashboardAdminController {
   constructor(private readonly dashboardService: DashboardAdminService) {}
 
-  @ApiOperation({ summary: 'Lấy 4 KPI chính cho dashboard' })
+  @ApiOperation({ summary: 'Lấy danh sách KPI tổng quan' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(DashboardKpisResponseDto) }),
   })
@@ -62,7 +62,7 @@ export class DashboardAdminController {
     return ok(await this.dashboardService.getKpis(query), 'Lấy KPI dashboard thành công.');
   }
 
-  @ApiOperation({ summary: 'Lấy chuỗi dữ liệu doanh thu theo thời gian' })
+  @ApiOperation({ summary: 'Lấy dữ liệu xu hướng doanh thu' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(DashboardRevenueTrendResponseDto) }),
   })
@@ -94,7 +94,7 @@ export class DashboardAdminController {
     );
   }
 
-  @ApiOperation({ summary: 'Lấy danh sách sản phẩm bán chạy' })
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm bán chạy nhất' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(DashboardTopProductsResponseDto) }),
   })
@@ -123,7 +123,7 @@ export class DashboardAdminController {
     );
   }
 
-  @ApiOperation({ summary: 'Lấy dải chỉ số tổng hợp cuối dashboard' })
+  @ApiOperation({ summary: 'Lấy danh sách chỉ số tổng hợp' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(DashboardSummaryMetricsResponseDto) }),
   })
@@ -138,7 +138,7 @@ export class DashboardAdminController {
     );
   }
 
-  @ApiOperation({ summary: 'Lấy danh sách đơn hàng mới nhất cho widget' })
+  @ApiOperation({ summary: 'Lấy danh sách đơn hàng mới nhất' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(DashboardRecentOrdersResponseDto) }),
   })

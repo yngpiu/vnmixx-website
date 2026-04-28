@@ -60,7 +60,7 @@ export class RoleController {
 
   // Trả về danh sách vai trò có phân trang và lọc theo query.
   @ApiOperation({
-    summary: 'Liệt kê vai trò',
+    summary: 'Lấy danh sách vai trò',
     description: 'Danh sách phân trang; tìm theo tên hoặc mô tả qua tham số search.',
   })
   @ApiOkResponse({

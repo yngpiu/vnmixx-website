@@ -73,12 +73,6 @@ export type ListInventoryMovementsParams = {
   voucherId?: number;
 };
 
-export type InventoryTransactionBody = {
-  variantId: number;
-  quantity: number;
-  note?: string;
-};
-
 export type InventoryVoucherType = 'IMPORT' | 'EXPORT';
 
 export type CreateInventoryVoucherItemBody = {

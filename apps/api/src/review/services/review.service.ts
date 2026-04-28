@@ -49,7 +49,7 @@ export class ReviewService {
       dto.orderItemId,
     );
     if (existingReview) {
-      throw new ConflictException('Bạn đã review variant này trong lần mua này.');
+      throw new ConflictException('Bạn đã đánh giá biến thể này trong lần mua này.');
     }
 
     // 3. Kiểm tra điều kiện mua hàng theo đúng order item: đúng khách, đúng sản phẩm, đã giao + thanh toán.
@@ -68,11 +68,11 @@ export class ReviewService {
 
     if (!purchasedOrderItem) {
       throw new BadRequestException(
-        'Bạn chỉ có thể review đúng variant đã nhận hàng và thanh toán thành công.',
+        'Bạn chỉ có thể đánh giá đúng biến thể đã nhận hàng và thanh toán thành công.',
       );
     }
 
-    // 4. Thực hiện tạo review.
+    // 4. Thực hiện tạo đánh giá.
     await this.reviewRepo.create({
       productId,
       customerId,
@@ -144,7 +144,7 @@ export class ReviewService {
     const review = await this.reviewRepo.findById(id);
 
     if (!review) {
-      throw new NotFoundException('Không tìm thấy review.');
+      throw new NotFoundException('Không tìm thấy đánh giá.');
     }
 
     return {
@@ -170,7 +170,7 @@ export class ReviewService {
   ): Promise<AdminReviewDetailResponseDto> {
     const exists = await this.reviewRepo.exists(id);
     if (!exists) {
-      throw new NotFoundException('Không tìm thấy review.');
+      throw new NotFoundException('Không tìm thấy đánh giá.');
     }
 
     await this.reviewRepo.update(id, { status });
@@ -182,7 +182,7 @@ export class ReviewService {
   async deleteAdminReview(id: number): Promise<void> {
     const exists = await this.reviewRepo.exists(id);
     if (!exists) {
-      throw new NotFoundException('Không tìm thấy review.');
+      throw new NotFoundException('Không tìm thấy đánh giá.');
     }
 
     await this.reviewRepo.delete(id);

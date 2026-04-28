@@ -15,6 +15,7 @@ import {
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import type { AuthenticatedUser } from '../../auth/interfaces';
+import { TokenService } from '../../auth/services/token.service';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
@@ -33,9 +34,12 @@ import { ProfileService } from '../services/profile.service';
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @ApiExtraModels(CustomerProfileResponseDto)
 @RequireUserType('CUSTOMER')
-@Controller('profile')
+@Controller('me/profile')
 export class CustomerProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(
+    private readonly profileService: ProfileService,
+    private readonly tokenService: TokenService,
+  ) {}
 
   // Truy xuất thông tin cá nhân của khách hàng đang đăng nhập.
   @ApiOperation({ summary: 'Lấy hồ sơ khách hàng hiện tại' })
@@ -80,8 +84,10 @@ export class CustomerProfileController {
   // Đổi mật khẩu để tăng cường tính bảo mật cho tài khoản khách hàng.
   @ApiOperation({ summary: 'Đổi mật khẩu khách hàng hiện tại' })
   @ApiOkResponse({
-    description: 'Đổi mật khẩu khách hàng thành công.',
-    schema: buildNullDataSuccessResponseSchema('Đổi mật khẩu khách hàng thành công.'),
+    description: 'Đổi mật khẩu khách hàng thành công. Vui lòng đăng nhập lại.',
+    schema: buildNullDataSuccessResponseSchema(
+      'Đổi mật khẩu khách hàng thành công. Vui lòng đăng nhập lại.',
+    ),
   })
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
   @Put('change-password')
@@ -92,6 +98,7 @@ export class CustomerProfileController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<null>> {
     await this.profileService.changeCustomerPassword(user.id, dto);
-    return okNoData('Đổi mật khẩu khách hàng thành công.');
+    await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
+    return okNoData('Đổi mật khẩu khách hàng thành công. Vui lòng đăng nhập lại.');
   }
 }

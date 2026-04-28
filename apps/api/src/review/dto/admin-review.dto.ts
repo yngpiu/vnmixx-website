@@ -25,7 +25,7 @@ export class ListAdminReviewsQueryDto {
   pageSize?: number = 10;
 
   @ApiPropertyOptional({
-    description: 'Lọc theo hiển thị review.',
+    description: 'Lọc theo trạng thái hiển thị đánh giá.',
     enum: ['all', 'visible', 'hidden'],
     default: 'all',
   })
@@ -43,7 +43,7 @@ export class ListAdminReviewsQueryDto {
   keyword?: string;
 
   @ApiPropertyOptional({
-    description: 'Lọc review theo khách hàng.',
+    description: 'Lọc đánh giá theo khách hàng.',
     example: 21,
     minimum: 1,
   })
@@ -59,7 +59,7 @@ export class ListAdminReviewsQueryDto {
  */
 export class UpdateReviewVisibilityDto {
   @ApiProperty({
-    description: 'Trạng thái hiển thị review.',
+    description: 'Trạng thái hiển thị đánh giá.',
     enum: ['VISIBLE', 'HIDDEN'],
     example: 'VISIBLE',
   })

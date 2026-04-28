@@ -52,7 +52,7 @@ export class AdminReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
   // Lấy danh sách đánh giá có phân trang và lọc theo điều kiện.
-  @ApiOperation({ summary: 'Danh sách review có phân trang và bộ lọc' })
+  @ApiOperation({ summary: 'Lấy danh sách đánh giá sản phẩm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AdminReviewsListResponseDto) }),
   })
@@ -61,30 +61,36 @@ export class AdminReviewController {
   async getReviews(
     @Query() query: ListAdminReviewsQueryDto,
   ): Promise<SuccessPayload<AdminReviewsListResponseDto>> {
-    return ok(await this.reviewService.getAdminReviews(query), 'Lấy danh sách review thành công.');
+    return ok(
+      await this.reviewService.getAdminReviews(query),
+      'Lấy danh sách đánh giá thành công.',
+    );
   }
 
   // Lấy thông tin chi tiết một đánh giá cụ thể.
-  @ApiOperation({ summary: 'Chi tiết review' })
+  @ApiOperation({ summary: 'Lấy chi tiết đánh giá sản phẩm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AdminReviewDetailResponseDto) }),
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy đánh giá.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Get(':id')
   async getReviewDetail(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<SuccessPayload<AdminReviewDetailResponseDto>> {
-    return ok(await this.reviewService.getAdminReviewDetail(id), 'Lấy chi tiết review thành công.');
+    return ok(
+      await this.reviewService.getAdminReviewDetail(id),
+      'Lấy chi tiết đánh giá thành công.',
+    );
   }
 
   // Cập nhật trạng thái hiển thị (VISIBLE/HIDDEN) của đánh giá.
-  @ApiOperation({ summary: 'Cập nhật trạng thái review (ẩn/hiện)' })
+  @ApiOperation({ summary: 'Cập nhật trạng thái hiển thị đánh giá' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AdminReviewDetailResponseDto) }),
   })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy đánh giá.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Patch(':id/visibility')
   async updateVisibility(
@@ -93,22 +99,22 @@ export class AdminReviewController {
   ): Promise<SuccessPayload<AdminReviewDetailResponseDto>> {
     return ok(
       await this.reviewService.updateAdminReviewStatus(id, dto.status),
-      'Cập nhật trạng thái review thành công.',
+      'Cập nhật trạng thái đánh giá thành công.',
     );
   }
 
   // Xóa vĩnh viễn một đánh giá khỏi hệ thống.
-  @ApiOperation({ summary: 'Xóa review' })
+  @ApiOperation({ summary: 'Xóa đánh giá sản phẩm' })
   @ApiOkResponse({
-    description: 'Xóa review thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa review thành công.'),
+    description: 'Xóa đánh giá thành công.',
+    schema: buildNullDataSuccessResponseSchema('Xóa đánh giá thành công.'),
   })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy review.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy đánh giá.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deleteReview(@Param('id', ParseIntPipe) id: number): Promise<SuccessPayload<null>> {
     await this.reviewService.deleteAdminReview(id);
-    return okNoData('Xóa review thành công.');
+    return okNoData('Xóa đánh giá thành công.');
   }
 }

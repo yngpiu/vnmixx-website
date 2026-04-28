@@ -26,7 +26,7 @@ export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 
   // Trả về toàn bộ tỉnh/thành để bắt đầu luồng chọn địa chỉ.
-  @ApiOperation({ summary: 'Liệt kê tất cả tỉnh/thành phố' })
+  @ApiOperation({ summary: 'Lấy danh sách tỉnh/thành phố' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
       type: 'array',
@@ -44,7 +44,7 @@ export class LocationController {
   }
 
   // Trả về danh sách quận/huyện thuộc thành phố đã chọn.
-  @ApiOperation({ summary: 'Liệt kê quận/huyện theo thành phố' })
+  @ApiOperation({ summary: 'Lấy danh sách quận/huyện theo thành phố' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
       type: 'array',
@@ -66,7 +66,7 @@ export class LocationController {
   }
 
   // Trả về danh sách phường/xã thuộc quận/huyện đã chọn.
-  @ApiOperation({ summary: 'Liệt kê phường/xã theo quận/huyện' })
+  @ApiOperation({ summary: 'Lấy danh sách phường/xã theo quận/huyện' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
       type: 'array',

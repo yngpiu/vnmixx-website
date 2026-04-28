@@ -4,18 +4,18 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-/** Profile returned by GET /auth/me. */
+/** Employee profile returned by GET /admin/me/profile after dashboard login. */
 export interface UserProfile {
   id: number;
   email: string;
   fullName: string;
   avatarUrl?: string | null;
-  userType: 'CUSTOMER' | 'EMPLOYEE';
+  userType: 'EMPLOYEE';
   roles: string[];
   permissions: string[];
 }
 
-/** Credentials for POST /auth/admin/login. */
+/** Credentials for POST /admin/auth/login. */
 export interface LoginCredentials {
   email: string;
   password: string;

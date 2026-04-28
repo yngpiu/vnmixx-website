@@ -3,7 +3,6 @@ import type {
   CreateInventoryVoucherBody,
   InventoryListResponse,
   InventoryMovementsResponse,
-  InventoryTransactionBody,
   InventoryVoucherDetail,
   InventoryVoucherListResponse,
   ListInventoryMovementsParams,
@@ -24,14 +23,6 @@ export async function listInventoryMovements(
     params,
   });
   return data;
-}
-
-export async function importInventoryStock(body: InventoryTransactionBody): Promise<void> {
-  await apiClient.post('/admin/inventory/transactions/import', body);
-}
-
-export async function exportInventoryStock(body: InventoryTransactionBody): Promise<void> {
-  await apiClient.post('/admin/inventory/transactions/export', body);
 }
 
 export async function createInventoryVoucher(

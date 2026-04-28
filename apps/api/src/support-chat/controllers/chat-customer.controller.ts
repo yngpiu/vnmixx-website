@@ -40,13 +40,13 @@ import { SupportChatService } from '../services/support-chat.service';
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('CUSTOMER')
 @ApiExtraModels(ChatDetailResponseDto, MessagesListResponseDto)
-@Controller('customer/support-chat')
+@Controller('me/support-chats')
 // Controller xử lý các yêu cầu chat hỗ trợ từ phía khách hàng.
 export class ChatCustomerController {
   constructor(private readonly chatService: SupportChatService) {}
 
   // Tạo cuộc hội thoại mới hoặc lấy lại cuộc hội thoại hiện có của khách hàng.
-  @ApiOperation({ summary: 'Tạo hoặc lấy cuộc hội thoại hỗ trợ' })
+  @ApiOperation({ summary: 'Tạo hoặc lấy cuộc hội thoại hỗ trợ hiện tại' })
   @ApiCreatedResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ChatDetailResponseDto) }),
   })
@@ -80,7 +80,7 @@ export class ChatCustomerController {
   }
 
   // Lấy danh sách tin nhắn trong cuộc hội thoại của khách hàng với phân trang cursor.
-  @ApiOperation({ summary: 'Lấy lịch sử tin nhắn' })
+  @ApiOperation({ summary: 'Lấy danh sách tin nhắn cuộc hội thoại' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(MessagesListResponseDto) }),
   })

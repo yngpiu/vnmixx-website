@@ -1,9 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiBearerAuth,
   ApiExtraModels,
-  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
@@ -14,15 +12,12 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
-import { CurrentUser, Public, RequireUserType } from '../decorators';
-import { AuthResponseDto, ChangePasswordDto, LoginDto } from '../dto';
-import type { AuthenticatedUser } from '../interfaces';
+import { Public } from '../decorators';
+import { AuthResponseDto, LoginDto } from '../dto';
 import { EmployeeAuthService } from '../services/employee-auth.service';
 import { TokenService } from '../services/token.service';
 import { authBodyFromPair, extractRequestMeta } from '../utils';
@@ -30,7 +25,7 @@ import { authBodyFromPair, extractRequestMeta } from '../utils';
 @Throttle({ default: { ttl: 60_000, limit: 40 } })
 @ApiTags('Auth')
 @ApiExtraModels(AuthResponseDto)
-@Controller('auth/admin')
+@Controller('admin/auth')
 /**
  * Controller xử lý các yêu cầu xác thực dành cho Nhân viên và Quản trị viên (Admin API).
  * Cung cấp các chức năng: Đăng nhập hệ thống quản lý và Đổi mật khẩu nhân viên.
@@ -63,28 +58,5 @@ export class EmployeeAuthController {
     const { user } = await this.employeeAuth.loginEmployee(dto);
     const pair = await this.tokenService.issueTokenPair(user, 'EMPLOYEE', extractRequestMeta(req));
     return ok(authBodyFromPair(pair), 'Đăng nhập nhân viên thành công.');
-  }
-
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Đổi mật khẩu nhân viên và thu hồi toàn bộ phiên' })
-  @ApiOkResponse({
-    description: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.',
-    schema: buildNullDataSuccessResponseSchema('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'),
-  })
-  @ApiUnauthorizedResponse({ description: 'Mật khẩu hiện tại không chính xác.' })
-  @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ hoặc không tìm thấy nhân viên.' })
-  @RequireUserType('EMPLOYEE')
-  @Post('change-password')
-  @HttpCode(HttpStatus.OK)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @ApiForbiddenResponse({ description: 'Bạn không có quyền thực hiện hành động này.' })
-  /** Đổi mật khẩu nhân viên: Yêu cầu mật khẩu hiện tại và mật khẩu mới. */
-  async changePassword(
-    @Body() dto: ChangePasswordDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<null>> {
-    await this.employeeAuth.changePassword(user.id, dto);
-    await this.tokenService.logoutAll(user.id, 'EMPLOYEE', user.jti, user.exp);
-    return okNoData('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 }

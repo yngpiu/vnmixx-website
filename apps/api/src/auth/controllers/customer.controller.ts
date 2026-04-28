@@ -1,11 +1,9 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiExtraModels,
-  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
@@ -24,10 +22,9 @@ import {
   okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
-import { CurrentUser, Public, RequireUserType } from '../decorators';
+import { Public } from '../decorators';
 import {
   AuthResponseDto,
-  ChangePasswordDto,
   CustomerRegisterResponseDto,
   ForgotPasswordDto,
   ForgotPasswordResponseDto,
@@ -39,7 +36,6 @@ import {
   ResetTokenResponseDto,
   VerifyCustomerOtpDto,
 } from '../dto';
-import type { AuthenticatedUser } from '../interfaces';
 import { CustomerAuthService } from '../services/customer-auth.service';
 import { PasswordResetService } from '../services/password-reset.service';
 import { TokenService } from '../services/token.service';
@@ -148,29 +144,6 @@ export class CustomerAuthController {
       extractRequestMeta(req),
     );
     return ok(authBodyFromPair(pair), 'Đăng nhập khách hàng thành công.');
-  }
-
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Đổi mật khẩu khách hàng và thu hồi toàn bộ phiên' })
-  @ApiOkResponse({
-    schema: buildNullDataSuccessResponseSchema('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'),
-    description: 'Đổi mật khẩu thành công. Tất cả phiên đã bị thu hồi.',
-  })
-  @ApiUnauthorizedResponse({ description: 'Mật khẩu hiện tại không chính xác.' })
-  @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ hoặc không tìm thấy khách hàng.' })
-  @RequireUserType('CUSTOMER')
-  @Post('change-password')
-  @HttpCode(HttpStatus.OK)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @ApiForbiddenResponse({ description: 'Bạn không có quyền thực hiện hành động này.' })
-  /** Đổi mật khẩu cho người dùng đang đăng nhập và buộc đăng nhập lại trên mọi thiết bị. */
-  async changePassword(
-    @Body() dto: ChangePasswordDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<null>> {
-    await this.customerAuth.changePassword(user.id, dto);
-    await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
-    return okNoData('Đổi mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 5 } })

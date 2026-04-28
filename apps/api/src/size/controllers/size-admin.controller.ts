@@ -61,7 +61,7 @@ export class SizeAdminController {
 
   // Truy xuất danh sách kích thước phục vụ công tác quản lý của admin.
   @ApiOperation({
-    summary: 'Liệt kê kích thước (quản trị)',
+    summary: 'Lấy danh sách kích thước',
     description: 'Phân trang, tìm theo nhãn, sắp xếp.',
   })
   @ApiOkResponse({

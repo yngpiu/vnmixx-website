@@ -112,7 +112,7 @@ export class CartController {
   }
 
   // Xóa bỏ một mục sản phẩm cụ thể khỏi giỏ hàng.
-  @ApiOperation({ summary: 'Xoá sản phẩm khỏi giỏ hàng' })
+  @ApiOperation({ summary: 'Xóa sản phẩm khỏi giỏ hàng' })
   @ApiOkResponse({
     description: 'Xóa sản phẩm khỏi giỏ hàng thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa sản phẩm khỏi giỏ hàng thành công.'),
@@ -130,7 +130,7 @@ export class CartController {
   }
 
   // Làm sạch toàn bộ giỏ hàng của khách hàng.
-  @ApiOperation({ summary: 'Xoá toàn bộ giỏ hàng' })
+  @ApiOperation({ summary: 'Xóa toàn bộ giỏ hàng' })
   @ApiOkResponse({
     description: 'Xóa toàn bộ giỏ hàng thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa toàn bộ giỏ hàng thành công.'),

@@ -66,7 +66,7 @@ const MEDIA_FILE_SELECT = {
 export class MediaRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Tìm kiếm và liệt kê media files với các tiêu chí lọc và phân trang.
+  // Tìm kiếm và liệt kê tệp media với các tiêu chí lọc và phân trang.
   async findMany(args: MediaFileFindManyArgs) {
     const page = args.page ?? 1;
     const pageSize = args.pageSize ?? 24;
@@ -254,7 +254,7 @@ export class MediaRepository {
     return files.length;
   }
 
-  /** Find all media files whose folder matches a prefix (folder itself + subfolders). */
+  /** Tìm tất cả tệp media có thư mục khớp với tiền tố đã cho, gồm cả thư mục con. */
   // Tìm tất cả tệp media thuộc một thư mục hoặc các thư mục con của nó.
   async findByFolderPrefix(folderPath: string): Promise<MediaFileView[]> {
     return this.prisma.mediaFile.findMany({
@@ -276,7 +276,7 @@ export class MediaRepository {
     return result.count;
   }
 
-  /** Delete all media files whose folder matches a prefix. */
+  /** Xóa tất cả tệp media có thư mục khớp với tiền tố đã cho. */
   // Xóa tất cả tệp media thuộc một tiền tố đường dẫn thư mục.
   async deleteByFolderPrefix(folderPath: string): Promise<number> {
     const result = await this.prisma.mediaFile.deleteMany({

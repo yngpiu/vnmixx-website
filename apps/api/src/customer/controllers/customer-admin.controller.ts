@@ -55,9 +55,9 @@ import { CustomerService } from '../services/customer.service';
 export class CustomerAdminController {
   constructor(private readonly customerService: CustomerService) {}
 
-  // Liệt kê danh sách khách hàng để theo dõi sự tăng trưởng và quản lý dữ liệu người dùng.
+  // Lấy danh sách khách hàng để theo dõi tăng trưởng và quản lý dữ liệu người dùng.
   @ApiOperation({
-    summary: 'Liệt kê khách hàng',
+    summary: 'Lấy danh sách khách hàng',
     description:
       'Phân trang, tìm kiếm theo tên/email/SĐT. Lọc theo trạng thái `isActive` hoặc `isSoftDeleted`.',
   })

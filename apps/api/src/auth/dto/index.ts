@@ -9,4 +9,4 @@ export {
 export { LoginDto } from './login.dto';
 export { CustomerRegisterResponseDto, ResendCustomerOtpDto, VerifyCustomerOtpDto } from './otp.dto';
 export { GenderInput, RegisterDto } from './register.dto';
-export { AuthResponseDto, ProfileResponseDto } from './session.dto';
+export { AuthResponseDto } from './session.dto';

@@ -60,7 +60,7 @@ export class EmployeeAdminController {
 
   // API lấy danh sách nhân viên có phân trang, tìm kiếm và lọc theo vai trò/trạng thái
   @ApiOperation({
-    summary: 'Liệt kê nhân viên',
+    summary: 'Lấy danh sách nhân viên',
     description: 'Hỗ trợ phân trang, tìm kiếm theo tên/email/phone và lọc theo nhiều tiêu chí.',
   })
   @ApiOkResponse({

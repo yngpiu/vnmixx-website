@@ -34,7 +34,7 @@ export class SizeService {
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
 
-  // Liệt kê đầy đủ thông tin kích thước cho quản trị viên.
+  // Lấy đầy đủ thông tin kích thước cho quản trị viên.
   findAll(): Promise<SizeAdminView[]> {
     return this.repository.findAll();
   }

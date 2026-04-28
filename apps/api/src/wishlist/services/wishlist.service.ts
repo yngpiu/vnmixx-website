@@ -24,7 +24,7 @@ export class WishlistService {
     );
   }
 
-  // Thêm sản phẩm vào danh sách yêu thích và xoá cache liên quan.
+  // Thêm sản phẩm vào danh sách yêu thích và xóa cache liên quan.
   async add(customerId: number, productId: number): Promise<void> {
     // Kiểm tra sự tồn tại của sản phẩm trước khi thêm.
     const productExists = await this.wishlistRepo.productExists(productId);
@@ -34,7 +34,7 @@ export class WishlistService {
 
     try {
       await this.wishlistRepo.add(customerId, productId);
-      // Xoá cache để dữ liệu được cập nhật mới ở lần truy vấn sau.
+      // Xóa cache để dữ liệu được cập nhật mới ở lần truy vấn sau.
       await this.redis.del(WISHLIST_CACHE_KEYS.LIST(customerId));
     } catch (error) {
       if (isPrismaErrorCode(error, 'P2002')) {
@@ -47,11 +47,11 @@ export class WishlistService {
     }
   }
 
-  // Xoá sản phẩm khỏi danh sách yêu thích và cập nhật lại cache.
+  // Xóa sản phẩm khỏi danh sách yêu thích và cập nhật lại cache.
   async remove(customerId: number, productId: number): Promise<void> {
     try {
       await this.wishlistRepo.remove(customerId, productId);
-      // Xoá cache sau khi xoá thành công để đồng bộ dữ liệu.
+      // Xóa cache sau khi xóa thành công để đồng bộ dữ liệu.
       await this.redis.del(WISHLIST_CACHE_KEYS.LIST(customerId));
     } catch (error) {
       if (isPrismaErrorCode(error, 'P2025')) {

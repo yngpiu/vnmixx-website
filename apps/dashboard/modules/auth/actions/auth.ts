@@ -46,11 +46,11 @@ export async function loginAction(
 ): Promise<ActionResult<{ accessToken: string; user: UserProfile }>> {
   try {
     const authData = await serverApi.post<AuthResponse>(
-      '/auth/admin/login',
+      '/admin/auth/login',
       { email, password },
       { skipAuth: true },
     );
-    const user = await serverApi.get<UserProfile>('/auth/me', {
+    const user = await serverApi.get<UserProfile>('/admin/me/profile', {
       headers: { Authorization: `Bearer ${authData.accessToken}` },
       skipAuth: true,
     });

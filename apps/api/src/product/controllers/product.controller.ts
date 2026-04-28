@@ -26,8 +26,8 @@ import { ProductService } from '../services/product.service';
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  // Liệt kê danh sách sản phẩm với bộ lọc và phân trang, sử dụng cache để tối ưu hiệu năng.
-  @ApiOperation({ summary: 'Liệt kê danh sách sản phẩm' })
+  // Lấy danh sách sản phẩm với bộ lọc và phân trang, sử dụng cache để tối ưu hiệu năng.
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductListResponseDto) }),
   })

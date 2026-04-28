@@ -74,9 +74,9 @@ function isAllowedMimeType(mimeType: string): boolean {
 export class MediaAdminController {
   constructor(private readonly mediaService: MediaService) {}
 
-  @ApiOperation({ summary: 'Liệt kê media files (phân trang, tìm kiếm, lọc)' })
+  @ApiOperation({ summary: 'Lấy danh sách tệp media' })
   @ApiOkResponse({
-    description: 'Danh sách media files.',
+    description: 'Danh sách tệp media.',
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(MediaListResponseDto) }),
   })
   @Get()
@@ -87,7 +87,7 @@ export class MediaAdminController {
     return ok(await this.mediaService.listMedia(query), 'Lấy danh sách media thành công.');
   }
 
-  @ApiOperation({ summary: 'Upload file(s) lên R2' })
+  @ApiOperation({ summary: 'Tải tệp media lên R2' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'File(s) tải lên cùng thư mục đích tuỳ chọn.',
@@ -148,7 +148,7 @@ export class MediaAdminController {
     );
   }
 
-  @ApiOperation({ summary: 'Liệt kê tất cả thư mục' })
+  @ApiOperation({ summary: 'Lấy danh sách thư mục media' })
   @ApiOkResponse({
     description: 'Danh sách đường dẫn thư mục.',
     schema: buildSuccessResponseSchema({
@@ -162,7 +162,7 @@ export class MediaAdminController {
     return ok(await this.mediaService.listFolders(), 'Lấy danh sách thư mục thành công.');
   }
 
-  @ApiOperation({ summary: 'Tạo thư mục mới (ảo)' })
+  @ApiOperation({ summary: 'Tạo thư mục media' })
   @ApiOkResponse({
     description: 'Thư mục đã tạo.',
     schema: buildNullDataSuccessResponseSchema('Thư mục đã tạo.'),
@@ -198,7 +198,7 @@ export class MediaAdminController {
     return okNoData('Xóa thư mục thành công.');
   }
 
-  @ApiOperation({ summary: 'Di chuyển file sang thư mục khác' })
+  @ApiOperation({ summary: 'Di chuyển tệp media sang thư mục khác' })
   @ApiOkResponse({
     description: 'File đã được di chuyển.',
     schema: buildNullDataSuccessResponseSchema('File đã được di chuyển.'),
@@ -218,7 +218,7 @@ export class MediaAdminController {
     return okNoData('Di chuyển file thành công.');
   }
 
-  @ApiOperation({ summary: 'Xóa một file' })
+  @ApiOperation({ summary: 'Xóa tệp media' })
   @ApiOkResponse({
     description: 'Xóa file thành công.',
     schema: buildNullDataSuccessResponseSchema('Xóa file thành công.'),

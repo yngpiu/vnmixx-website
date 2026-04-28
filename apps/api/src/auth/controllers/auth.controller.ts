@@ -1,16 +1,7 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Req,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, HttpCode, HttpStatus, Post, Req, UnauthorizedException } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiExtraModels,
-  ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
@@ -27,14 +18,14 @@ import {
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import { CurrentUser, Public } from '../decorators';
-import { AuthResponseDto, ProfileResponseDto } from '../dto';
+import { AuthResponseDto } from '../dto';
 import type { AuthenticatedUser } from '../interfaces';
 import { TokenService } from '../services/token.service';
 import { authBodyFromPair, extractRequestMeta, readRefreshToken } from '../utils';
 
 // Controller xử lý các hoạt động xác thực chung như làm mới token, đăng xuất và lấy thông tin cá nhân.
 @ApiTags('Auth')
-@ApiExtraModels(AuthResponseDto, ProfileResponseDto)
+@ApiExtraModels(AuthResponseDto)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly tokenService: TokenService) {}
@@ -100,29 +91,5 @@ export class AuthController {
     // Thu hồi toàn bộ Refresh Token của người dùng và đánh dấu mốc thời gian Logout All
     await this.tokenService.logoutAll(user.id, user.userType, user.jti, user.exp);
     return okNoData('Tất cả phiên đã được chấm dứt.');
-  }
-
-  // Trả về thông tin chi tiết của người dùng đang đăng nhập dựa trên JWT.
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Lấy hồ sơ người dùng đang đăng nhập' })
-  @ApiOkResponse({
-    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProfileResponseDto) }),
-  })
-  @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập.' })
-  @Get('me')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  getProfile(@CurrentUser() user: AuthenticatedUser): SuccessPayload<ProfileResponseDto> {
-    return ok(
-      {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        avatarUrl: user.avatarUrl ?? null,
-        userType: user.userType,
-        roles: user.roles,
-        permissions: user.permissions,
-      },
-      'Lấy hồ sơ người dùng thành công.',
-    );
   }
 }

@@ -246,38 +246,6 @@ export class InventoryAdminService {
     };
   }
 
-  async importStock(
-    params: { variantId: number; quantity: number; note?: string },
-    employeeId: number,
-  ): Promise<{ ok: boolean }> {
-    await this.createInventoryVoucher(
-      {
-        code: await this.generateVoucherCode('IMPORT'),
-        type: 'IMPORT',
-        note: params.note,
-        items: [{ variantId: params.variantId, quantity: params.quantity, unitPrice: 0 }],
-      },
-      employeeId,
-    );
-    return { ok: true };
-  }
-
-  async exportStock(
-    params: { variantId: number; quantity: number; note?: string },
-    employeeId: number,
-  ): Promise<{ ok: boolean }> {
-    await this.createInventoryVoucher(
-      {
-        code: await this.generateVoucherCode('EXPORT'),
-        type: 'EXPORT',
-        note: params.note,
-        items: [{ variantId: params.variantId, quantity: params.quantity, unitPrice: 0 }],
-      },
-      employeeId,
-    );
-    return { ok: true };
-  }
-
   async createInventoryVoucher(
     params: {
       code: string;

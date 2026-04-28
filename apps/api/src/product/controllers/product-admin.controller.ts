@@ -65,9 +65,9 @@ export class ProductAdminController {
 
   // ─── Product CRUD ──────────────────────────────────────────────────────────
 
-  // Liệt kê danh sách sản phẩm với các bộ lọc nâng cao phục vụ quản lý kho.
+  // Lấy danh sách sản phẩm với các bộ lọc nâng cao phục vụ quản lý kho.
   @ApiOperation({
-    summary: 'Liệt kê sản phẩm',
+    summary: 'Lấy danh sách sản phẩm',
     description:
       '`isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc tương ứng.',
   })

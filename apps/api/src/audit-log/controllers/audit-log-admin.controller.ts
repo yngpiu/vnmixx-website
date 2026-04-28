@@ -32,7 +32,7 @@ export class AuditLogAdminController {
   constructor(private readonly auditLogService: AuditLogService) {}
 
   // Truy vấn danh sách lịch sử thay đổi dữ liệu của nhân viên kèm phân trang.
-  @ApiOperation({ summary: 'Liệt kê danh sách nhật ký hoạt động' })
+  @ApiOperation({ summary: 'Lấy danh sách nhật ký hoạt động' })
   @ApiOkResponse({
     description: 'Lấy danh sách nhật ký thành công.',
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AuditLogListResponseDto) }),

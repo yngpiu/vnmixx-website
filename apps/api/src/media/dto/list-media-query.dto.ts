@@ -13,7 +13,7 @@ export enum MediaSortOrder {
   DESC = 'desc',
 }
 
-// DTO định nghĩa các tham số truy vấn khi lấy danh sách media files
+// DTO định nghĩa các tham số truy vấn khi lấy danh sách tệp media.
 export class ListMediaQueryDto {
   @ApiPropertyOptional({ description: 'Lọc theo thư mục', example: 'products' })
   @IsOptional()
@@ -67,7 +67,7 @@ export class ListMediaQueryDto {
   pageSize?: number;
 
   @ApiPropertyOptional({
-    description: 'Liệt kê các sub-folder trực tiếp',
+    description: 'Bao gồm các thư mục con trực tiếp',
     default: false,
     example: false,
   })

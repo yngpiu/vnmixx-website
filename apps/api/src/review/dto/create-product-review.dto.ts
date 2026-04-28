@@ -7,7 +7,7 @@ import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validato
  */
 export class CreateProductReviewDto {
   @ApiProperty({
-    description: 'ID dòng sản phẩm trong đơn hàng đã mua để review theo từng variant.',
+    description: 'ID dòng sản phẩm trong đơn hàng đã mua để đánh giá theo từng biến thể.',
     example: 1201,
   })
   @IsInt({ message: 'orderItemId phải là số nguyên.' })

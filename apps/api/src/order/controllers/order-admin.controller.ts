@@ -42,7 +42,7 @@ export class OrderAdminController {
   constructor(private readonly orderAdminService: OrderAdminService) {}
 
   // Truy xuất danh sách đơn hàng toàn hệ thống để nhân viên xử lý theo luồng vận hành.
-  @ApiOperation({ summary: 'Liệt kê tất cả đơn hàng (quản trị)' })
+  @ApiOperation({ summary: 'Lấy danh sách đơn hàng' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderAdminListResponseDto) }),
   })
@@ -58,7 +58,7 @@ export class OrderAdminController {
   }
 
   // Lấy chi tiết đơn hàng kèm lịch sử tác động để phục vụ việc đối soát và chăm sóc khách hàng.
-  @ApiOperation({ summary: 'Lấy chi tiết đơn hàng (quản trị)' })
+  @ApiOperation({ summary: 'Lấy chi tiết đơn hàng' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderAdminDetailResponseDto) }),
   })
@@ -100,7 +100,7 @@ export class OrderAdminController {
   }
 
   // Hủy đơn hàng từ phía hệ thống khi phát hiện sai sót hoặc theo yêu cầu đặc biệt từ admin.
-  @ApiOperation({ summary: 'Hủy đơn hàng (admin)' })
+  @ApiOperation({ summary: 'Hủy đơn hàng' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderAdminDetailResponseDto) }),
   })

@@ -49,7 +49,7 @@ export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
   // Lấy toàn bộ danh sách địa chỉ đã lưu của khách hàng hiện tại.
-  @ApiOperation({ summary: 'Liệt kê tất cả địa chỉ của khách hàng hiện tại' })
+  @ApiOperation({ summary: 'Lấy danh sách địa chỉ của khách hàng hiện tại' })
   @ApiOkResponse({
     description: 'Lấy danh sách địa chỉ thành công.',
     schema: buildSuccessResponseSchema({

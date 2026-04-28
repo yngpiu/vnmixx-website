@@ -119,25 +119,6 @@ export class InventoryMovementListQueryDto {
   voucherId?: number;
 }
 
-export class InventoryTransactionDto {
-  @ApiProperty({ example: 120 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  variantId: number;
-
-  @ApiProperty({ example: 10 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  quantity: number;
-
-  @ApiPropertyOptional({ example: 'Nhập thêm từ nhà cung cấp' })
-  @IsString()
-  @IsOptional()
-  note?: string;
-}
-
 export class InventoryVoucherItemDto {
   @ApiProperty({ example: 120 })
   @Type(() => Number)

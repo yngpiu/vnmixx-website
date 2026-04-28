@@ -23,8 +23,8 @@ import { SizeService } from '../services/size.service';
 export class SizeController {
   constructor(private readonly sizeService: SizeService) {}
 
-  // Liệt kê toàn bộ kích thước để khách hàng lựa chọn khi mua sắm.
-  @ApiOperation({ summary: 'Liệt kê tất cả kích thước' })
+  // Lấy toàn bộ kích thước để khách hàng lựa chọn khi mua sắm.
+  @ApiOperation({ summary: 'Lấy danh sách kích thước' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
       type: 'array',

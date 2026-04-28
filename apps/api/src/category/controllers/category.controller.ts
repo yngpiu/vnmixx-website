@@ -25,8 +25,8 @@ import { CategoryService } from '../services/category.service';
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  // Liệt kê toàn bộ danh mục đang hoạt động dưới dạng phẳng để hiển thị trong menu hoặc các bộ lọc.
-  @ApiOperation({ summary: 'Liệt kê tất cả danh mục đang hoạt động (dạng phẳng)' })
+  // Lấy toàn bộ danh mục đang hoạt động dạng phẳng để hiển thị trong menu hoặc bộ lọc.
+  @ApiOperation({ summary: 'Lấy danh sách danh mục đang hoạt động dạng phẳng' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
       type: 'array',

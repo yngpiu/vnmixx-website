@@ -33,13 +33,13 @@ export class CustomerReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
   // Ghi nhận đánh giá của khách hàng cho một sản phẩm cụ thể.
-  @ApiOperation({ summary: 'Tạo review sản phẩm sau khi đã nhận hàng và thanh toán thành công' })
+  @ApiOperation({ summary: 'Tạo đánh giá sản phẩm sau khi đã nhận hàng và thanh toán thành công' })
   @ApiCreatedResponse({
-    description: 'Tạo review thành công.',
-    schema: buildNullDataSuccessResponseSchema('Tạo review thành công.'),
+    description: 'Tạo đánh giá thành công.',
+    schema: buildNullDataSuccessResponseSchema('Tạo đánh giá thành công.'),
   })
-  @ApiBadRequestResponse({ description: 'Chưa đủ điều kiện review hoặc dữ liệu không hợp lệ.' })
-  @ApiConflictResponse({ description: 'Bạn đã review variant này trong lần mua này.' })
+  @ApiBadRequestResponse({ description: 'Chưa đủ điều kiện đánh giá hoặc dữ liệu không hợp lệ.' })
+  @ApiConflictResponse({ description: 'Bạn đã đánh giá biến thể này trong lần mua này.' })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Post()
@@ -49,6 +49,6 @@ export class CustomerReviewController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SuccessPayload<null>> {
     await this.reviewService.createProductReview(user.id, productId, dto);
-    return okNoData('Tạo review thành công.');
+    return okNoData('Tạo đánh giá thành công.');
   }
 }
