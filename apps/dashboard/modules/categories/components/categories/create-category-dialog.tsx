@@ -3,6 +3,7 @@
 import { createCategory } from '@/modules/categories/api/categories';
 import type { CategoryAdminTreeNode } from '@/modules/categories/types/category';
 import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -16,23 +17,10 @@ import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Switch } from '@repo/ui/components/ui/switch';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 const CREATE_CATEGORY_FORM_ID = 'create-category-dialog-form';
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 function suggestSlugFromName(name: string): string {
   const base = name

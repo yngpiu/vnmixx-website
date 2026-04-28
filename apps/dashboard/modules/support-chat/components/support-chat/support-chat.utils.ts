@@ -1,9 +1,9 @@
 'use client';
 
 import type { ChatMessage, ChatSummary } from '@/modules/support-chat/types/support-chat';
-import { isAxiosError } from 'axios';
 import { format, isToday, isYesterday } from 'date-fns';
 import { vi } from 'date-fns/locale';
+export { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 
 export const CHAT_IMAGES_START = '[chat-images]';
 export const CHAT_IMAGES_END = '[/chat-images]';
@@ -42,15 +42,6 @@ export function parseMessagePayload(rawContent: string): { text: string; imageUr
     .filter((line) => IMAGE_URL_PATTERN.test(line));
   const text = rawContent.slice(end + CHAT_IMAGES_END.length).trim();
   return { text, imageUrls: imageBlock };
-}
-
-export function apiErrorMessage(error: unknown): string {
-  if (isAxiosError(error)) {
-    const responseData = error.response?.data as { message?: string | string[] } | undefined;
-    if (typeof responseData?.message === 'string') return responseData.message;
-    if (Array.isArray(responseData?.message)) return responseData.message.join(', ');
-  }
-  return error instanceof Error ? error.message : 'Đã xảy ra lỗi.';
 }
 
 export function formatMessageTime(value: string): string {

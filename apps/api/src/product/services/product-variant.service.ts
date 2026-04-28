@@ -131,45 +131,6 @@ export class ProductVariantService {
     }
   }
 
-  // Xóa mềm biến thể.
-  async softDeleteVariant(
-    productId: number,
-    slug: string,
-    variantId: number,
-    auditContext: AuditRequestContext = {},
-  ): Promise<void> {
-    let variant: Awaited<ReturnType<ProductRepository['findVariantById']>> | undefined;
-    try {
-      variant = await this.repository.findVariantById(variantId);
-      if (!variant) throw new NotFoundException(`Không tìm thấy biến thể #${variantId}`);
-      if (variant.productId !== productId) {
-        throw new BadRequestException(`Biến thể #${variantId} không thuộc sản phẩm #${productId}`);
-      }
-
-      await this.repository.softDeleteVariant(variantId);
-      await this.cacheService.invalidateProductCache(slug);
-      await this.auditLogService.write({
-        ...auditContext,
-        action: 'product.variant.delete',
-        resourceType: 'product',
-        resourceId: String(productId),
-        status: AuditLogStatus.SUCCESS,
-        beforeData: { productId, variantId, variant },
-      });
-    } catch (error) {
-      await this.auditLogService.write({
-        ...auditContext,
-        action: 'product.variant.delete',
-        resourceType: 'product',
-        resourceId: String(productId),
-        status: AuditLogStatus.FAILED,
-        beforeData: variant !== undefined ? { productId, variantId, variant } : undefined,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw error;
-    }
-  }
-
   // Kiểm tra trùng lặp tổ hợp (màu, kích thước) trong yêu cầu gửi lên.
   validateVariantCombos(variants: { colorId: number; sizeId: number }[]): void {
     const combos = new Set<string>();

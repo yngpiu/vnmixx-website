@@ -5,6 +5,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -22,7 +23,6 @@ import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import { EmployeeProfileResponseDto, UpdateEmployeeProfileDto } from '../dto';
@@ -90,7 +90,7 @@ export class EmployeeProfileController {
 
   // Thay đổi mật khẩu định kỳ hoặc khi nghi ngờ lộ thông tin để đảm bảo an toàn tài khoản.
   @ApiOperation({ summary: 'Đổi mật khẩu nhân viên hiện tại' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Đổi mật khẩu nhân viên thành công. Vui lòng đăng nhập lại.',
     schema: buildNullDataSuccessResponseSchema(
       'Đổi mật khẩu nhân viên thành công. Vui lòng đăng nhập lại.',
@@ -98,14 +98,13 @@ export class EmployeeProfileController {
   })
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
   @Put('change-password')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.profileService.changeEmployeePassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'EMPLOYEE', user.jti, user.exp);
-    return okNoData('Đổi mật khẩu nhân viên thành công. Vui lòng đăng nhập lại.');
   }
 }

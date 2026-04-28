@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { createEmployee } from '@/modules/employees/api/employees';
 import type { CreateEmployeePayload } from '@/modules/employees/types/employee';
 import { listRoles } from '@/modules/rbac/api/roles';
@@ -28,7 +29,6 @@ import {
 } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -63,18 +63,6 @@ const defaultFormValues: CreateEmployeeFormValues = {
   password: '',
   roleId: 0,
 };
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 type CreateEmployeeDialogProps = {
   open: boolean;

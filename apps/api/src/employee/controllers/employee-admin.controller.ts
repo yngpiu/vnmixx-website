@@ -20,6 +20,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -32,10 +33,8 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
@@ -151,9 +150,8 @@ export class EmployeeAdminController {
 
   // Xóa mềm nhân viên: nhân viên sẽ bị vô hiệu hóa và không thể đăng nhập.
   @ApiOperation({ summary: 'Xóa mềm nhân viên' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa mềm nhân viên thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa mềm nhân viên thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
   @ApiBadRequestResponse({
@@ -162,14 +160,13 @@ export class EmployeeAdminController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @RequirePermissions('employee.delete')
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.employeeService.softDelete(id, buildAuditRequestContext(request, user), user.id);
-    return okNoData('Xóa mềm nhân viên thành công.');
   }
 
   // Khôi phục nhân viên từ trạng thái đã xóa mềm về trạng thái hoạt động bình thường.

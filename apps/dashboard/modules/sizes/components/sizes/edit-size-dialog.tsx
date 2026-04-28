@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { listPublicSizes, updateSize } from '@/modules/sizes/api/sizes';
 import type { SizePublic } from '@/modules/sizes/types/size';
 import { Button } from '@repo/ui/components/ui/button';
@@ -13,23 +14,10 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 const EDIT_SIZE_FORM_ID = 'edit-size-dialog-form';
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 type EditSizeDialogProps = {
   sizeId: number | null;

@@ -7,6 +7,7 @@ import { categoryDisplayName } from '@/modules/categories/utils/category-display
 import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
 import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
 import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import {
   deleteProduct,
   listProducts,
@@ -42,7 +43,6 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -53,18 +53,6 @@ function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTa
 
 function cellMeta(cell: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
   return (cell.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};
-}
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
 }
 
 export function ProductsTable() {

@@ -43,7 +43,6 @@ describe('ProductVariantService', () => {
             createVariant: jest.fn(),
             findVariantById: jest.fn(),
             updateVariant: jest.fn(),
-            softDeleteVariant: jest.fn(),
           },
         },
         {
@@ -146,27 +145,6 @@ describe('ProductVariantService', () => {
         deletedAt: null,
       } as any);
       await expect(service.updateVariant(1, 'slug', 10, dto)).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('softDeleteVariant', () => {
-    it('should delete and log success', async () => {
-      repository.findVariantById.mockResolvedValue({
-        id: 10,
-        productId: 1,
-        isActive: true,
-        deletedAt: null,
-      } as any);
-
-      await service.softDeleteVariant(1, 'slug', 10);
-
-      expect(repository.softDeleteVariant).toHaveBeenCalledWith(10);
-      expect(auditLogService.write).toHaveBeenCalledWith(
-        expect.objectContaining({
-          action: 'product.variant.delete',
-          status: AuditLogStatus.SUCCESS,
-        }),
-      );
     });
   });
 

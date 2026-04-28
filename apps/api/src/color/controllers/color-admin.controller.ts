@@ -20,6 +20,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -32,10 +33,8 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
@@ -128,21 +127,19 @@ export class ColorAdminController {
 
   // Loại bỏ các màu sắc không còn được sử dụng để tối ưu danh mục.
   @ApiOperation({ summary: 'Xóa màu' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa màu sắc thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa màu sắc thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy màu sắc.' })
   @ApiConflictResponse({ description: 'Không thể xóa màu vì đang được sử dụng.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.colorService.remove(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa màu sắc thành công.');
   }
 }

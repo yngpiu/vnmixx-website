@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { getRole, listPermissions, updateRole } from '@/modules/rbac/api/rbac';
 import { PermissionCrudMatrix } from '@/modules/rbac/components/roles/permission-crud-matrix';
 import { RoleFormTabs } from '@/modules/rbac/components/roles/role-form-tabs';
@@ -15,21 +16,8 @@ import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 type RoleEditTab = 'meta' | 'perms';
 

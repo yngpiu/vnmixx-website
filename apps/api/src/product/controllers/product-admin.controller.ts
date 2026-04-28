@@ -21,6 +21,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -33,22 +34,16 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
-  CreateImageDto,
   CreateProductDto,
-  CreateVariantDto,
   ListAdminProductsQueryDto,
   ProductAdminDetailResponseDto,
   ProductAdminListResponseDto,
-  UpdateImageDto,
   UpdateProductDto,
-  UpdateVariantDto,
 } from '../dto';
 import { ProductService } from '../services/product.service';
 
@@ -116,7 +111,7 @@ export class ProductAdminController {
     );
   }
 
-  // Cập nhật các thông tin cơ bản của một sản phẩm hiện có.
+  // Cập nhật sản phẩm và thực hiện upsert biến thể/hình ảnh trong cùng một request.
   @ApiOperation({ summary: 'Cập nhật thông tin sản phẩm' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductAdminDetailResponseDto) }),
@@ -140,21 +135,19 @@ export class ProductAdminController {
 
   // Thực hiện xóa mềm sản phẩm để tạm ngừng kinh doanh nhưng vẫn giữ lịch sử.
   @ApiOperation({ summary: 'Xóa mềm sản phẩm' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa mềm sản phẩm thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa mềm sản phẩm thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.productService.softDelete(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa mềm sản phẩm thành công.');
   }
 
   // Khôi phục lại sản phẩm đã bị xóa mềm trước đó.
@@ -174,146 +167,5 @@ export class ProductAdminController {
       await this.productService.restore(id, buildAuditRequestContext(request, user)),
       'Khôi phục sản phẩm thành công.',
     );
-  }
-
-  // ─── Variants ──────────────────────────────────────────────────────────────
-
-  // Thêm một biến thể mới (kích thước/màu sắc) cho sản phẩm.
-  @ApiOperation({ summary: 'Thêm biến thể mới' })
-  @ApiCreatedResponse({
-    description: 'Tạo biến thể thành công.',
-    schema: buildNullDataSuccessResponseSchema('Tạo biến thể thành công.'),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
-  @ApiConflictResponse({ description: 'SKU hoặc tổ hợp biến thể đã tồn tại.' })
-  @Post(':id/variants')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  async createVariant(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateVariantDto,
-    @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
-    await this.productService.createVariant(id, dto, buildAuditRequestContext(request, user));
-    return okNoData('Tạo biến thể thành công.');
-  }
-
-  // Cập nhật giá bán hoặc số lượng tồn kho của một biến thể.
-  @ApiOperation({ summary: 'Cập nhật biến thể' })
-  @ApiOkResponse({
-    description: 'Cập nhật biến thể thành công.',
-    schema: buildNullDataSuccessResponseSchema('Cập nhật biến thể thành công.'),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy biến thể.' })
-  @Put(':id/variants/:variantId')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  async updateVariant(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('variantId', ParseIntPipe) variantId: number,
-    @Body() dto: UpdateVariantDto,
-    @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
-    await this.productService.updateVariant(
-      id,
-      variantId,
-      dto,
-      buildAuditRequestContext(request, user),
-    );
-    return okNoData('Cập nhật biến thể thành công.');
-  }
-
-  // Xóa mềm một biến thể của sản phẩm.
-  @ApiOperation({ summary: 'Xóa mềm biến thể' })
-  @ApiOkResponse({
-    description: 'Xóa mềm biến thể thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa mềm biến thể thành công.'),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy biến thể.' })
-  @Delete(':id/variants/:variantId')
-  @HttpCode(HttpStatus.OK)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async removeVariant(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('variantId', ParseIntPipe) variantId: number,
-    @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
-    await this.productService.softDeleteVariant(
-      id,
-      variantId,
-      buildAuditRequestContext(request, user),
-    );
-    return okNoData('Xóa mềm biến thể thành công.');
-  }
-
-  // ─── Images ────────────────────────────────────────────────────────────────
-
-  // Thêm hình ảnh minh họa mới cho sản phẩm.
-  @ApiOperation({ summary: 'Thêm hình ảnh mới' })
-  @ApiCreatedResponse({
-    description: 'Thêm hình ảnh sản phẩm thành công.',
-    schema: buildNullDataSuccessResponseSchema('Thêm hình ảnh sản phẩm thành công.'),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
-  @Post(':id/images')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  async createImage(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateImageDto,
-    @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
-    await this.productService.createImage(id, dto, buildAuditRequestContext(request, user));
-    return okNoData('Thêm hình ảnh sản phẩm thành công.');
-  }
-
-  // Cập nhật thông tin mô tả hoặc thứ tự hiển thị của hình ảnh.
-  @ApiOperation({ summary: 'Cập nhật hình ảnh' })
-  @ApiOkResponse({
-    description: 'Cập nhật hình ảnh sản phẩm thành công.',
-    schema: buildNullDataSuccessResponseSchema('Cập nhật hình ảnh sản phẩm thành công.'),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy hình ảnh.' })
-  @Put(':id/images/:imageId')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  async updateImage(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('imageId', ParseIntPipe) imageId: number,
-    @Body() dto: UpdateImageDto,
-    @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
-    await this.productService.updateImage(
-      id,
-      imageId,
-      dto,
-      buildAuditRequestContext(request, user),
-    );
-    return okNoData('Cập nhật hình ảnh sản phẩm thành công.');
-  }
-
-  // Xóa vĩnh viễn một hình ảnh khỏi sản phẩm.
-  @ApiOperation({ summary: 'Xóa hình ảnh' })
-  @ApiOkResponse({
-    description: 'Xóa hình ảnh sản phẩm thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa hình ảnh sản phẩm thành công.'),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy hình ảnh.' })
-  @Delete(':id/images/:imageId')
-  @HttpCode(HttpStatus.OK)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async removeImage(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('imageId', ParseIntPipe) imageId: number,
-    @CurrentUser() user: AuthenticatedUser,
-    @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
-    await this.productService.deleteImage(id, imageId, buildAuditRequestContext(request, user));
-    return okNoData('Xóa hình ảnh sản phẩm thành công.');
   }
 }

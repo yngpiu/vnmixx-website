@@ -1,4 +1,10 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  HttpStatus,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -11,11 +17,15 @@ export interface SuccessResponse<T> {
 
 @Injectable()
 // Chuẩn hóa response thành dạng success/data/message/meta cho toàn bộ API.
-export class TransformInterceptor<T> implements NestInterceptor<T, SuccessResponse<T>> {
+export class TransformInterceptor<T> implements NestInterceptor<T, SuccessResponse<T> | void> {
   // Bọc dữ liệu trả về; giữ nguyên nếu response đã theo format chuẩn.
-  intercept(_context: ExecutionContext, next: CallHandler): Observable<SuccessResponse<T>> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<SuccessResponse<T> | void> {
     return next.handle().pipe(
       map((data: unknown) => {
+        const response = context.switchToHttp().getResponse<{ statusCode?: number }>();
+        if (response?.statusCode === HttpStatus.NO_CONTENT) {
+          return;
+        }
         if (
           data &&
           typeof data === 'object' &&

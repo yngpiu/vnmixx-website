@@ -20,6 +20,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -32,10 +33,8 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
@@ -147,22 +146,20 @@ export class RoleController {
 
   // Xóa vai trò khi thỏa các điều kiện nghiệp vụ.
   @ApiOperation({ summary: 'Xóa vai trò' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa vai trò thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa vai trò thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy vai trò.' })
   @ApiBadRequestResponse({ description: 'Không được phép xóa vai trò hệ thống.' })
   @RequirePermissions('rbac.delete')
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.roleService.delete(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa vai trò thành công.');
   }
 }

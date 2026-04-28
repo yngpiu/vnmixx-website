@@ -113,6 +113,22 @@ export type UpdateProductBody = {
   categoryId?: number;
   categoryIds?: number[];
   isActive?: boolean;
+  variants?: {
+    id?: number;
+    colorId?: number;
+    sizeId?: number;
+    sku?: string;
+    price?: number;
+    onHand?: number;
+    isActive?: boolean;
+  }[];
+  images?: {
+    id?: number;
+    url?: string;
+    colorId?: number | null;
+    altText?: string | null;
+    sortOrder?: number;
+  }[];
 };
 
 export type ListProductsParams = {

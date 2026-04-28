@@ -5,6 +5,7 @@ import { adminModuleDetailPath } from '@/config/admin-modules';
 import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
 import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
 import { InlineErrorAlert } from '@/modules/common/components/inline-error-alert';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { deleteRole, listRoles } from '@/modules/rbac/api/rbac';
 import { RoleEditDialog } from '@/modules/rbac/components/roles/role-edit-dialog';
 import { useRolesListTableState } from '@/modules/rbac/hooks/use-roles-list-table-state';
@@ -31,22 +32,9 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { flexRender, getCoreRowModel, useReactTable, type OnChangeFn } from '@tanstack/react-table';
-import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 function headMeta(header: { column: { columnDef: { meta?: unknown } } }): DataTableColumnMeta {
   return (header.column.columnDef.meta as DataTableColumnMeta | undefined) ?? {};

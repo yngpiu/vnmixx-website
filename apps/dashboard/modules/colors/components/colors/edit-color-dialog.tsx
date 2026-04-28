@@ -2,6 +2,7 @@
 
 import { listPublicColors, updateColor } from '@/modules/colors/api/colors';
 import type { ColorPublic } from '@/modules/colors/types/color';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -13,7 +14,6 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -26,18 +26,6 @@ function normalizeHex(raw: string): string {
   if (t.startsWith('#')) return t.slice(0, 7).toUpperCase();
   if (/^[0-9A-Fa-f]{6}$/.test(t)) return `#${t.toUpperCase()}`;
   return t;
-}
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
 }
 
 type EditColorDialogProps = {
@@ -169,7 +157,7 @@ export function EditColorDialog({ colorId, open, onOpenChange }: EditColorDialog
                       }}
                       disabled={busy}
                       maxLength={7}
-                      className="max-w-[9rem] font-mono"
+                      className="max-w-36 font-mono"
                       spellCheck={false}
                     />
                     <span

@@ -17,6 +17,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -27,10 +28,8 @@ import {
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
@@ -113,33 +112,29 @@ export class CartController {
 
   // Xóa bỏ một mục sản phẩm cụ thể khỏi giỏ hàng.
   @ApiOperation({ summary: 'Xóa sản phẩm khỏi giỏ hàng' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa sản phẩm khỏi giỏ hàng thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa sản phẩm khỏi giỏ hàng thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy mục giỏ hàng.' })
   @Delete('items/:itemId')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async removeItem(
     @Param('itemId', ParseIntPipe) itemId: number,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.cartService.removeItem(user.id, itemId);
-    return okNoData('Xóa sản phẩm khỏi giỏ hàng thành công.');
   }
 
   // Làm sạch toàn bộ giỏ hàng của khách hàng.
   @ApiOperation({ summary: 'Xóa toàn bộ giỏ hàng' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa toàn bộ giỏ hàng thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa toàn bộ giỏ hàng thành công.'),
   })
   @Delete()
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async clearCart(@CurrentUser() user: AuthenticatedUser): Promise<SuccessPayload<null>> {
+  async clearCart(@CurrentUser() user: AuthenticatedUser): Promise<void> {
     await this.cartService.clearCart(user.id);
-    return okNoData('Xóa toàn bộ giỏ hàng thành công.');
   }
 }

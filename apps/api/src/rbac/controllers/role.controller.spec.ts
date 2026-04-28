@@ -122,9 +122,7 @@ describe('RoleController', () => {
       const result = await controller.remove(3, currentUser as never, request);
 
       expect(mockRoleService.delete).toHaveBeenCalledTimes(1);
-      expect(result).toEqual({
-        message: 'Xóa vai trò thành công.',
-      });
+      expect(result).toBeUndefined();
     });
   });
 });

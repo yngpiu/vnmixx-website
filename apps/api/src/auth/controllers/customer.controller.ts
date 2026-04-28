@@ -5,6 +5,7 @@ import {
   ApiCreatedResponse,
   ApiExtraModels,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -19,7 +20,6 @@ import {
   buildSuccessResponseSchema,
   errorResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import { Public } from '../decorators';
@@ -80,7 +80,7 @@ export class CustomerAuthController {
   }
 
   @ApiOperation({ summary: 'Xác thực OTP email khách hàng' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     schema: buildNullDataSuccessResponseSchema('Xác thực OTP thành công.'),
     description: 'Xác thực OTP thành công. Tài khoản đã được kích hoạt.',
   })
@@ -89,13 +89,12 @@ export class CustomerAuthController {
   })
   @Public()
   @Post('verify-otp')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Xác thực OTP: Nếu đúng, kích hoạt tài khoản thành công. */
-  async verifyOtp(@Body() dto: VerifyCustomerOtpDto): Promise<SuccessPayload<null>> {
+  async verifyOtp(@Body() dto: VerifyCustomerOtpDto): Promise<void> {
     await this.customerAuth.verifyCustomerOtp(dto);
-    return okNoData('Đăng ký tài khoản thành công. Vui lòng đăng nhập.');
   }
 
   @ApiOperation({ summary: 'Gửi lại OTP xác thực email khách hàng' })
@@ -191,7 +190,7 @@ export class CustomerAuthController {
   }
 
   @ApiOperation({ summary: 'Đặt lại mật khẩu khách hàng bằng mã đặt lại hợp lệ' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     schema: buildNullDataSuccessResponseSchema(
       'Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.',
     ),
@@ -200,12 +199,11 @@ export class CustomerAuthController {
   @ApiBadRequestResponse({ description: 'Mã đặt lại không hợp lệ hoặc đã hết hạn.' })
   @Public()
   @Post('forgot-password/reset')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   /** Bước 3 Quên mật khẩu: Cập nhật mật khẩu mới bằng Reset Token và hủy mọi phiên làm việc cũ. */
-  async resetPassword(@Body() dto: ResetPasswordDto): Promise<SuccessPayload<null>> {
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
     const { customerId } = await this.passwordReset.resetPassword(dto);
     await this.tokenService.revokeAllSessions(customerId, 'CUSTOMER');
-    return okNoData('Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.');
   }
 }

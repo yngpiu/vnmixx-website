@@ -3,6 +3,7 @@
 import { useLogout } from '@/modules/auth/hooks/use-auth';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { PageViewHeader } from '@/modules/common/components/page-view-header';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { uploadMedia } from '@/modules/media/api/media';
 import {
   changeMyPassword,
@@ -20,7 +21,6 @@ import {
   InputGroupInput,
 } from '@repo/ui/components/ui/input-group';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { EyeIcon, EyeOffIcon, KeyRoundIcon, UploadCloudIcon, UserIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
@@ -74,24 +74,6 @@ function extractInitials(name: string): string {
       .slice(0, 2)
       .toUpperCase() || '?'
   );
-}
-
-function toErrorMessage(error: unknown): string {
-  if (isAxiosError(error)) {
-    const payload = error.response?.data as { message?: unknown } | undefined;
-    const message = payload?.message;
-    if (Array.isArray(message)) {
-      return message.map(String).join(', ');
-    }
-    if (typeof message === 'string' && message.trim()) {
-      return message;
-    }
-    return error.message;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return 'Có lỗi xảy ra, vui lòng thử lại.';
 }
 
 export function SettingsView() {
@@ -176,7 +158,7 @@ export function SettingsView() {
       logout.mutate();
     },
     onError: (error) => {
-      toast.error(toErrorMessage(error));
+      toast.error(apiErrorMessage(error));
     },
   });
   const serverAvatarUrl = watch('avatarUrl');
@@ -268,7 +250,7 @@ export function SettingsView() {
         ...(nextAvatarUrl ? { avatarUrl: nextAvatarUrl } : {}),
       });
     } catch (error) {
-      toast.error(toErrorMessage(error));
+      toast.error(apiErrorMessage(error));
     }
   }
 

@@ -20,6 +20,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -32,10 +33,8 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
@@ -127,21 +126,19 @@ export class SizeAdminController {
 
   // Loại bỏ các kích thước không còn sử dụng để làm gọn danh mục.
   @ApiOperation({ summary: 'Xóa kích thước' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa kích thước thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa kích thước thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy kích thước.' })
   @ApiConflictResponse({ description: 'Không thể xóa kích thước vì đang được sử dụng.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.sizeService.remove(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa kích thước thành công.');
   }
 }

@@ -237,6 +237,61 @@ describe('ProductService', () => {
 
       expect(cacheService.deleteSlugCache).toHaveBeenCalledWith('new-slug');
     });
+
+    it('should upsert variants and images in update payload', async () => {
+      repository.findAdminById.mockResolvedValue(mockProduct);
+      repository.updateBasicInfo.mockResolvedValue(mockProduct);
+      variantService.updateVariant.mockResolvedValue({} as never);
+      variantService.createVariant.mockResolvedValue({} as never);
+      imageService.updateImage.mockResolvedValue({} as never);
+      imageService.createImage.mockResolvedValue({} as never);
+
+      await service.update(1, {
+        variants: [
+          { id: 10, price: 200000, onHand: 20, isActive: true },
+          { colorId: 1, sizeId: 2, sku: 'SKU-NEW', price: 300000, onHand: 5 },
+        ],
+        images: [
+          { id: 11, altText: 'New alt', sortOrder: 1 },
+          { url: 'https://example.com/new-image.jpg', colorId: 1, sortOrder: 0 },
+        ],
+      });
+
+      expect(variantService.validateVariantCombos).toHaveBeenCalled();
+      expect(variantService.validateSkuUniqueness).toHaveBeenCalled();
+      expect(variantService.updateVariant).toHaveBeenCalledWith(
+        1,
+        mockProduct.slug,
+        10,
+        expect.objectContaining({ price: 200000, onHand: 20, isActive: true }),
+      );
+      expect(variantService.createVariant).toHaveBeenCalledWith(
+        1,
+        mockProduct.slug,
+        expect.objectContaining({
+          colorId: 1,
+          sizeId: 2,
+          sku: 'SKU-NEW',
+          price: 300000,
+          onHand: 5,
+        }),
+      );
+      expect(imageService.updateImage).toHaveBeenCalledWith(
+        1,
+        mockProduct.slug,
+        11,
+        expect.objectContaining({ altText: 'New alt', sortOrder: 1 }),
+      );
+      expect(imageService.createImage).toHaveBeenCalledWith(
+        1,
+        mockProduct.slug,
+        expect.objectContaining({
+          url: 'https://example.com/new-image.jpg',
+          colorId: 1,
+          sortOrder: 0,
+        }),
+      );
+    });
   });
 
   describe('softDelete', () => {
@@ -269,20 +324,6 @@ describe('ProductService', () => {
       repository.findAdminById.mockResolvedValue(mockProduct);
 
       await expect(service.restore(1)).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('Delegated Methods', () => {
-    it('createVariant should delegate to variantService', async () => {
-      repository.findAdminById.mockResolvedValue(mockProduct);
-      await service.createVariant(1, {} as any);
-      expect(variantService.createVariant).toHaveBeenCalled();
-    });
-
-    it('createImage should delegate to imageService', async () => {
-      repository.findAdminById.mockResolvedValue(mockProduct);
-      await service.createImage(1, {} as any);
-      expect(imageService.createImage).toHaveBeenCalled();
     });
   });
 });

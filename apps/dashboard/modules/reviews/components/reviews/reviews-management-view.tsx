@@ -2,6 +2,7 @@
 
 import { DataTablePagination, DataTableToolbar } from '@/modules/common/components/data-table';
 import { ListPage } from '@/modules/common/components/list-page';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import {
   deleteAdminReview,
   getAdminReviewDetail,
@@ -45,7 +46,6 @@ import {
   type ColumnFiltersState,
   type PaginationState,
 } from '@tanstack/react-table';
-import { isAxiosError } from 'axios';
 import {
   EyeIcon,
   EyeOffIcon,
@@ -57,15 +57,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
-function apiErrorMessage(error: unknown): string {
-  if (isAxiosError(error)) {
-    const responseData = error.response?.data as { message?: string | string[] } | undefined;
-    if (typeof responseData?.message === 'string') return responseData.message;
-    if (Array.isArray(responseData?.message)) return responseData.message.join(', ');
-  }
-  return error instanceof Error ? error.message : 'Đã xảy ra lỗi.';
-}
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat('vi-VN', {

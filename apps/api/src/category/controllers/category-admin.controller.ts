@@ -21,6 +21,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -33,10 +34,8 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
@@ -128,24 +127,22 @@ export class CategoryAdminController {
 
   // Xóa mềm một danh mục, chỉ thành công nếu không có danh mục con đang hoạt động.
   @ApiOperation({ summary: 'Xóa mềm danh mục' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa mềm danh mục thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa mềm danh mục thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
   @ApiConflictResponse({
     description: 'Không thể xóa danh mục vì còn danh mục con đang hoạt động.',
   })
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.categoryService.softDelete(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa mềm danh mục thành công.');
   }
 
   // Khôi phục một danh mục đã bị xóa mềm.

@@ -4,6 +4,7 @@ import {
   DATA_TABLE_SEARCH_PLACEHOLDER,
   DataTableToolbarSearchInput,
 } from '@/modules/common/components/data-table';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { deleteFolder, deleteMedia, listFolders, listMedia } from '@/modules/media/api/media';
 import type { ListMediaParams, MediaFile } from '@/modules/media/types/media';
 import {
@@ -136,7 +137,7 @@ export function MediaLibrary() {
       queryClient.invalidateQueries({ queryKey: ['media'] });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Xóa tệp tin thất bại.');
+      toast.error(apiErrorMessage(err));
     },
   });
   const deleteFolderMutation = useMutation({
@@ -153,7 +154,7 @@ export function MediaLibrary() {
       queryClient.invalidateQueries({ queryKey: ['media-folders'] });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Xóa thư mục thất bại.');
+      toast.error(apiErrorMessage(err));
     },
   });
 

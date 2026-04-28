@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { formatVnd } from '@/modules/common/utils/format-vnd';
 import {
   cancelAdminOrder,
@@ -29,19 +30,9 @@ import {
   InputGroupText,
 } from '@repo/ui/components/ui/input-group';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { Loader2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const data = err.response?.data as { message?: string | string[] } | undefined;
-    if (typeof data?.message === 'string') return data.message;
-    if (Array.isArray(data?.message)) return data.message.join(', ');
-  }
-  return err instanceof Error ? err.message : 'Đã xảy ra lỗi.';
-}
 
 function canConfirmPayment(order: OrderAdminDetail): boolean {
   const payment = order.payments[0];

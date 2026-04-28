@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { createFolder } from '@/modules/media/api/media';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -34,7 +35,7 @@ export function CreateFolderDialog({ isOpen, onClose, parentFolder }: CreateFold
       onClose();
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Tạo thư mục thất bại.');
+      toast.error(apiErrorMessage(err));
     },
   });
   const handleClose = useCallback(() => {

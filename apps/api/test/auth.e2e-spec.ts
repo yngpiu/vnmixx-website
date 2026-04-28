@@ -136,7 +136,7 @@ describe('Authentication Flow (e2e)', () => {
         .post('/v1/auth/logout')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('x-refresh-token', refreshTokenCookie)
-        .expect(200);
+        .expect(204);
 
       await request(app.getHttpServer())
         .get('/v1/profile')

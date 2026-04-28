@@ -18,6 +18,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -28,10 +29,8 @@ import {
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import { AddressResponseDto, CreateAddressDto, UpdateAddressDto } from '../dto';
@@ -121,20 +120,18 @@ export class AddressController {
 
   // Xóa bỏ một địa chỉ khỏi sổ địa chỉ.
   @ApiOperation({ summary: 'Xóa địa chỉ (xóa cứng)' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa địa chỉ thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa địa chỉ thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.addressService.remove(id, user.id);
-    return okNoData('Xóa địa chỉ thành công.');
   }
 
   // Chỉ định một địa chỉ là địa chỉ mặc định cho các đơn hàng sau này.

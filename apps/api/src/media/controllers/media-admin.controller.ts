@@ -24,6 +24,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -175,27 +176,25 @@ export class MediaAdminController {
     @Body() dto: CreateFolderDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<SuccessPayload<never>> {
     await this.mediaService.createFolder(dto, buildAuditRequestContext(request, user));
     return okNoData('Tạo thư mục thành công.');
   }
 
   @ApiOperation({ summary: 'Xóa thư mục và toàn bộ nội dung bên trong' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Kết quả xóa thư mục.',
-    schema: buildNullDataSuccessResponseSchema('Kết quả xóa thư mục.'),
   })
   @Delete('folders')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   // Xóa thư mục sẽ xóa toàn bộ file bên trong trên R2 và DB
   async deleteFolder(
     @Query('path') path: string,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.mediaService.deleteFolder(path, buildAuditRequestContext(request, user));
-    return okNoData('Xóa thư mục thành công.');
   }
 
   @ApiOperation({ summary: 'Di chuyển tệp media sang thư mục khác' })
@@ -213,27 +212,25 @@ export class MediaAdminController {
     @Body() dto: MoveMediaDto,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<SuccessPayload<never>> {
     await this.mediaService.moveMedia(id, dto, buildAuditRequestContext(request, user));
     return okNoData('Di chuyển file thành công.');
   }
 
   @ApiOperation({ summary: 'Xóa tệp media' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa file thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa file thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   // Xóa một file media đơn lẻ
   async deleteMedia(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.mediaService.deleteMedia(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa file thành công.');
   }
 }

@@ -19,9 +19,7 @@ import {
   CreateVariantDto,
   ListAdminProductsQueryDto,
   ListProductsQueryDto,
-  UpdateImageDto,
   UpdateProductDto,
-  UpdateVariantDto,
 } from '../dto';
 import { PRODUCT_CACHE_KEYS, PRODUCT_CACHE_TTL } from '../product.cache';
 import {
@@ -241,6 +239,16 @@ export class ProductService {
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       });
 
+      // 3. Upsert biến thể nếu được gửi trong payload.
+      if (dto.variants !== undefined) {
+        await this.upsertProductVariants(id, existing.slug, dto.variants);
+      }
+
+      // 4. Upsert hình ảnh nếu được gửi trong payload.
+      if (dto.images !== undefined) {
+        await this.upsertProductImages(id, existing.slug, dto.images);
+      }
+
       // 3. Xóa Cache cũ và Cache Slug mới (nếu Slug thay đổi) để đảm bảo dữ liệu mới nhất
       await this.cacheService.invalidateProductCache(existing.slug);
       if (dto.slug && dto.slug !== existing.slug) {
@@ -340,73 +348,123 @@ export class ProductService {
     }
   }
 
-  // ─── Ủy thác cho ProductVariantService ───────────────────────────────────────
-
-  // Tạo mới biến thể cho sản phẩm
-  async createVariant(
-    productId: number,
-    dto: CreateVariantDto,
-    auditContext: AuditRequestContext = {},
-  ) {
-    const product = await this.findAdminByIdOrFail(productId);
-    return this.variantService.createVariant(productId, product.slug, dto, auditContext);
-  }
-
-  // Cập nhật thông tin biến thể
-  async updateVariant(
-    productId: number,
-    variantId: number,
-    dto: UpdateVariantDto,
-    auditContext: AuditRequestContext = {},
-  ) {
-    const product = await this.findAdminByIdOrFail(productId);
-    return this.variantService.updateVariant(productId, product.slug, variantId, dto, auditContext);
-  }
-
-  // Xóa mềm biến thể
-  async softDeleteVariant(
-    productId: number,
-    variantId: number,
-    auditContext: AuditRequestContext = {},
-  ): Promise<void> {
-    const product = await this.findAdminByIdOrFail(productId);
-    return this.variantService.softDeleteVariant(productId, product.slug, variantId, auditContext);
-  }
-
-  // ─── Ủy thác cho ProductImageService ─────────────────────────────────────────
-
-  // Thêm hình ảnh mới cho sản phẩm
-  async createImage(
-    productId: number,
-    dto: CreateImageDto,
-    auditContext: AuditRequestContext = {},
-  ) {
-    const product = await this.findAdminByIdOrFail(productId);
-    return this.imageService.createImage(productId, product.slug, dto, auditContext);
-  }
-
-  // Cập nhật thông tin hình ảnh
-  async updateImage(
-    productId: number,
-    imageId: number,
-    dto: UpdateImageDto,
-    auditContext: AuditRequestContext = {},
-  ) {
-    const product = await this.findAdminByIdOrFail(productId);
-    return this.imageService.updateImage(productId, product.slug, imageId, dto, auditContext);
-  }
-
-  // Xóa hình ảnh khỏi sản phẩm
-  async deleteImage(
-    productId: number,
-    imageId: number,
-    auditContext: AuditRequestContext = {},
-  ): Promise<void> {
-    const product = await this.findAdminByIdOrFail(productId);
-    return this.imageService.deleteImage(productId, product.slug, imageId, auditContext);
-  }
-
   // ─── Các hàm bổ trợ ─────────────────────────────────────────────────────────
+
+  private async upsertProductVariants(
+    productId: number,
+    slug: string,
+    variants: NonNullable<UpdateProductDto['variants']>,
+  ): Promise<void> {
+    this.variantService.validateVariantCombos(
+      variants.flatMap((variant) =>
+        variant.colorId !== undefined && variant.sizeId !== undefined
+          ? [{ colorId: variant.colorId, sizeId: variant.sizeId }]
+          : [],
+      ),
+    );
+    this.variantService.validateSkuUniqueness(
+      variants.flatMap((variant) => (variant.sku !== undefined ? [{ sku: variant.sku }] : [])),
+    );
+
+    for (const variant of variants) {
+      if (variant.id !== undefined) {
+        await this.updateExistingVariant(productId, slug, variant.id, variant);
+        continue;
+      }
+      const createdVariant = this.toCreateVariantPayload(variant);
+      await this.variantService.createVariant(productId, slug, createdVariant);
+    }
+  }
+
+  private async updateExistingVariant(
+    productId: number,
+    slug: string,
+    variantId: number,
+    variant: NonNullable<UpdateProductDto['variants']>[number],
+  ): Promise<void> {
+    const updatePayload = {
+      ...(variant.price !== undefined && { price: variant.price }),
+      ...(variant.onHand !== undefined && { onHand: variant.onHand }),
+      ...(variant.isActive !== undefined && { isActive: variant.isActive }),
+    };
+    if (Object.keys(updatePayload).length === 0) {
+      throw new BadRequestException(
+        `Biến thể #${variantId} thiếu dữ liệu cập nhật. Hãy gửi price, onHand hoặc isActive.`,
+      );
+    }
+    await this.variantService.updateVariant(productId, slug, variantId, updatePayload);
+  }
+
+  private toCreateVariantPayload(
+    variant: NonNullable<UpdateProductDto['variants']>[number],
+  ): CreateVariantDto {
+    if (
+      variant.colorId === undefined ||
+      variant.sizeId === undefined ||
+      variant.sku === undefined ||
+      variant.price === undefined ||
+      variant.onHand === undefined
+    ) {
+      throw new BadRequestException(
+        'Biến thể mới phải có đầy đủ colorId, sizeId, sku, price và onHand.',
+      );
+    }
+    return {
+      colorId: variant.colorId,
+      sizeId: variant.sizeId,
+      sku: variant.sku,
+      price: variant.price,
+      onHand: variant.onHand,
+    };
+  }
+
+  private async upsertProductImages(
+    productId: number,
+    slug: string,
+    images: NonNullable<UpdateProductDto['images']>,
+  ): Promise<void> {
+    for (const image of images) {
+      if (image.id !== undefined) {
+        await this.updateExistingImage(productId, slug, image.id, image);
+        continue;
+      }
+      const createdImage = this.toCreateImagePayload(image);
+      await this.imageService.createImage(productId, slug, createdImage);
+    }
+  }
+
+  private async updateExistingImage(
+    productId: number,
+    slug: string,
+    imageId: number,
+    image: NonNullable<UpdateProductDto['images']>[number],
+  ): Promise<void> {
+    const updatePayload = {
+      ...(image.colorId !== undefined && { colorId: image.colorId }),
+      ...(image.altText !== undefined && { altText: image.altText }),
+      ...(image.sortOrder !== undefined && { sortOrder: image.sortOrder }),
+    };
+    if (Object.keys(updatePayload).length === 0) {
+      throw new BadRequestException(
+        `Hình ảnh #${imageId} thiếu dữ liệu cập nhật. Hãy gửi colorId, altText hoặc sortOrder.`,
+      );
+    }
+    await this.imageService.updateImage(productId, slug, imageId, updatePayload);
+  }
+
+  private toCreateImagePayload(
+    image: NonNullable<UpdateProductDto['images']>[number],
+  ): CreateImageDto {
+    if (image.url === undefined) {
+      throw new BadRequestException('Hình ảnh mới phải có url.');
+    }
+    return {
+      url: image.url,
+      ...(typeof image.colorId === 'number' && { colorId: image.colorId }),
+      ...(typeof image.altText === 'string' && { altText: image.altText }),
+      ...(image.sortOrder !== undefined && { sortOrder: image.sortOrder }),
+    };
+  }
 
   // Tìm sản phẩm cho admin hoặc ném lỗi nếu không tồn tại
   private async findAdminByIdOrFail(id: number): Promise<ProductAdminDetailView> {

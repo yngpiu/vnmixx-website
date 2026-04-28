@@ -16,6 +16,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -85,20 +86,18 @@ export class WishlistController {
 
   // Loại bỏ sản phẩm khỏi danh sách yêu thích khi không còn nhu cầu.
   @ApiOperation({ summary: 'Xóa sản phẩm khỏi danh sách yêu thích' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa khỏi danh sách yêu thích thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa khỏi danh sách yêu thích thành công.'),
   })
   @ApiBadRequestResponse({ description: 'Yêu cầu không hợp lệ.' })
   @ApiNotFoundResponse({ description: 'Sản phẩm không có trong danh sách yêu thích.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':productId')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
     @Param('productId', ParseIntPipe) productId: number,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.wishlistService.remove(user.id, productId);
-    return okNoData('Xóa khỏi danh sách yêu thích thành công.');
   }
 }

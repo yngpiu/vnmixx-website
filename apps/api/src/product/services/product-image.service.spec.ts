@@ -33,7 +33,6 @@ describe('ProductImageService', () => {
             createImage: jest.fn(),
             findImageById: jest.fn(),
             updateImage: jest.fn(),
-            deleteImage: jest.fn(),
           },
         },
         {
@@ -103,19 +102,6 @@ describe('ProductImageService', () => {
     it('should throw BadRequestException if image belongs to another product', async () => {
       repository.findImageById.mockResolvedValue({ id: 100, productId: 99 } as any);
       await expect(service.updateImage(1, 'slug', 100, dto)).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('deleteImage', () => {
-    it('should delete and log success', async () => {
-      repository.findImageById.mockResolvedValue({ id: 100, productId: 1 } as any);
-
-      await service.deleteImage(1, 'slug', 100);
-
-      expect(repository.deleteImage).toHaveBeenCalledWith(100);
-      expect(auditLogService.write).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'product.image.delete', status: AuditLogStatus.SUCCESS }),
-      );
     });
   });
 

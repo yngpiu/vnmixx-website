@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import {
   deleteCustomer,
   getCustomer,
@@ -16,7 +17,6 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
 
 export type CustomerDialogMode = 'active' | 'delete' | 'restore';
@@ -27,18 +27,6 @@ type EditCustomerDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 export function EditCustomerDialog({
   customerId,

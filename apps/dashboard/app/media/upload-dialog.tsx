@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { uploadMedia } from '@/modules/media/api/media';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -97,7 +98,7 @@ export function UploadDialog({ isOpen, onClose, folder }: UploadDialogProps) {
       onClose();
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : 'Upload thất bại.');
+      toast.error(apiErrorMessage(err));
     },
   });
   const handleClose = useCallback(() => {

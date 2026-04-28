@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import {
   deleteEmployee,
   getEmployee,
@@ -27,7 +28,6 @@ import {
 } from '@repo/ui/components/ui/dialog';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -40,18 +40,6 @@ const editRolesSchema = z.object({
 });
 
 type EditRolesFormValues = z.infer<typeof editRolesSchema>;
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 export type EmployeeDialogMode = 'roles' | 'active' | 'delete' | 'restore';
 

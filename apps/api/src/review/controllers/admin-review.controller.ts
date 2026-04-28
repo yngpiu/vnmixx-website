@@ -16,6 +16,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -25,10 +26,8 @@ import {
 } from '@nestjs/swagger';
 import { RequireUserType } from '../../auth/decorators';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
@@ -105,16 +104,14 @@ export class AdminReviewController {
 
   // Ẩn đánh giá khỏi giao diện khách hàng nhưng vẫn giữ bản ghi cho đối soát.
   @ApiOperation({ summary: 'Ẩn đánh giá sản phẩm' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Ẩn đánh giá thành công.',
-    schema: buildNullDataSuccessResponseSchema('Ẩn đánh giá thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy đánh giá.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
-  async deleteReview(@Param('id', ParseIntPipe) id: number): Promise<SuccessPayload<null>> {
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteReview(@Param('id', ParseIntPipe) id: number): Promise<void> {
     await this.reviewService.hideAdminReview(id);
-    return okNoData('Ẩn đánh giá thành công.');
   }
 }

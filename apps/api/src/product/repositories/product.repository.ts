@@ -596,19 +596,6 @@ export class ProductRepository {
     });
   }
 
-  // Xóa mềm một biến thể.
-  async softDeleteVariant(variantId: number): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      // Cập nhật ngày xóa cho biến thể cụ thể.
-      const deletedVariant = await tx.productVariant.update({
-        where: { id: variantId },
-        data: { deletedAt: new Date() },
-        select: { productId: true },
-      });
-      await this.refreshProductBasePrice(deletedVariant.productId, tx);
-    });
-  }
-
   // ─── Images ────────────────────────────────────────────────────────────────
 
   // Thêm mới một hình ảnh cho sản phẩm.
@@ -648,12 +635,6 @@ export class ProductRepository {
       data,
       select: IMAGE_SELECT,
     });
-  }
-
-  // Xóa vĩnh viễn một hình ảnh khỏi database.
-  async deleteImage(imageId: number): Promise<void> {
-    // Thực hiện lệnh xóa bản ghi hình ảnh.
-    await this.prisma.productImage.delete({ where: { id: imageId } });
   }
 
   // ─── Validation helpers ────────────────────────────────────────────────────

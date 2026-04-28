@@ -5,6 +5,7 @@ import { CategoryTreeMultiSelect } from '@/modules/categories/components/categor
 import type { CategoryAdmin } from '@/modules/categories/types/category';
 import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
 import { BackButton } from '@/modules/common/components/back-button';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { getProductById, updateProduct } from '@/modules/products/api/products';
 import { Button } from '@repo/ui/components/ui/button';
 import { Field, FieldLabel } from '@repo/ui/components/ui/field';
@@ -13,7 +14,6 @@ import { Label } from '@repo/ui/components/ui/label';
 import { Separator } from '@repo/ui/components/ui/separator';
 import { Switch } from '@repo/ui/components/ui/switch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { FolderTreeIcon, PackageIcon, PencilIcon, XIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -24,18 +24,6 @@ import { toast } from 'sonner';
 type EditProductFormProps = {
   productId: number;
 };
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 function suggestSlugFromName(name: string): string {
   const base = name
@@ -134,6 +122,18 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         description: buildDescriptionPayload(description),
         categoryIds,
         isActive,
+        variants: (detailQuery.data?.variants ?? []).map((variant) => ({
+          id: variant.id,
+          price: variant.price,
+          onHand: variant.onHand,
+          isActive: variant.isActive,
+        })),
+        images: (detailQuery.data?.images ?? []).map((image) => ({
+          id: image.id,
+          colorId: image.colorId,
+          altText: image.altText,
+          sortOrder: image.sortOrder,
+        })),
       }),
     onSuccess: async () => {
       toast.success('Đã cập nhật sản phẩm.');

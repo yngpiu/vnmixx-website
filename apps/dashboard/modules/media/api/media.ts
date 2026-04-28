@@ -47,22 +47,15 @@ export async function listFolders(): Promise<string[]> {
 }
 
 /** Create a new virtual folder. */
-export async function createFolder(path: string): Promise<{ path: string }> {
-  const { data } = await apiClient.post<{ path: string }>('/admin/media/folders', { path });
-  return data;
+export async function createFolder(path: string): Promise<void> {
+  await apiClient.post('/admin/media/folders', { path });
 }
 
 /** Delete a folder and all nested content. */
-export async function deleteFolder(
-  path: string,
-): Promise<{ deletedFiles: number; deletedFolders: number }> {
-  const { data } = await apiClient.delete<{ deletedFiles: number; deletedFolders: number }>(
-    '/admin/media/folders',
-    {
-      params: { path },
-    },
-  );
-  return data;
+export async function deleteFolder(path: string): Promise<void> {
+  await apiClient.delete('/admin/media/folders', {
+    params: { path },
+  });
 }
 
 /** Move a media file to another folder. */

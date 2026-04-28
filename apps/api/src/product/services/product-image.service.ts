@@ -109,45 +109,6 @@ export class ProductImageService {
     }
   }
 
-  // Xóa hình ảnh khỏi hệ thống.
-  async deleteImage(
-    productId: number,
-    slug: string,
-    imageId: number,
-    auditContext: AuditRequestContext = {},
-  ): Promise<void> {
-    let image: Awaited<ReturnType<ProductRepository['findImageById']>> | undefined;
-    try {
-      image = await this.repository.findImageById(imageId);
-      if (!image) throw new NotFoundException(`Không tìm thấy hình ảnh #${imageId}`);
-      if (image.productId !== productId) {
-        throw new BadRequestException(`Hình ảnh #${imageId} không thuộc về sản phẩm #${productId}`);
-      }
-
-      await this.repository.deleteImage(imageId);
-      await this.cacheService.invalidateProductCache(slug);
-      await this.auditLogService.write({
-        ...auditContext,
-        action: 'product.image.delete',
-        resourceType: 'product',
-        resourceId: String(productId),
-        status: AuditLogStatus.SUCCESS,
-        beforeData: { productId, imageId, image },
-      });
-    } catch (error) {
-      await this.auditLogService.write({
-        ...auditContext,
-        action: 'product.image.delete',
-        resourceType: 'product',
-        resourceId: String(productId),
-        status: AuditLogStatus.FAILED,
-        beforeData: image !== undefined ? { productId, imageId, image } : undefined,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw error;
-    }
-  }
-
   // Logic xác định Thumbnail tự động:
   // Nếu không cung cấp requestedThumbnail, hệ thống sẽ lấy ảnh đầu tiên của màu sắc thuộc biến thể đầu tiên.
   resolveCreateThumbnail(params: {

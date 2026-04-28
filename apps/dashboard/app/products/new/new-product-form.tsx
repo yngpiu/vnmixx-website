@@ -6,6 +6,7 @@ import type { CategoryAdmin } from '@/modules/categories/types/category';
 import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
 import { listPublicColors } from '@/modules/colors/api/colors';
 import { BackButton } from '@/modules/common/components/back-button';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { createProduct } from '@/modules/products/api/products';
 import { ProductImagesColorColumns } from '@/modules/products/components/products/product-images-color-columns';
 import type {
@@ -36,7 +37,6 @@ import {
   TableRow,
 } from '@repo/ui/components/ui/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import {
   FolderTreeIcon,
   ImageIcon,
@@ -51,18 +51,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 function formatCategoryPath(leafId: number, byId: Map<number, CategoryAdmin>): string {
   const parts: string[] = [];

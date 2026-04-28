@@ -3,6 +3,7 @@ import {
   ApiBearerAuth,
   ApiExtraModels,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -11,10 +12,8 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import { CurrentUser, Public } from '../decorators';
@@ -59,20 +58,15 @@ export class AuthController {
   @ApiOperation({
     summary: 'Đăng xuất',
   })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Đăng xuất thành công.',
-    schema: buildNullDataSuccessResponseSchema('Đăng xuất thành công.'),
   })
   @Post('logout')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async logout(
-    @Req() req: Request,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<null>> {
+  async logout(@Req() req: Request, @CurrentUser() user: AuthenticatedUser): Promise<void> {
     // Thu hồi Refresh Token hiện tại và đưa Access Token vào Blacklist
     await this.tokenService.logout(readRefreshToken(req), user.jti, user.exp);
-    return okNoData('Đăng xuất thành công.');
   }
 
   // Đăng xuất khỏi tất cả các thiết bị/phiên làm việc của người dùng.
@@ -80,16 +74,14 @@ export class AuthController {
   @ApiOperation({
     summary: 'Đăng xuất tất cả thiết bị',
   })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Tất cả phiên đã được chấm dứt.',
-    schema: buildNullDataSuccessResponseSchema('Tất cả phiên đã được chấm dứt.'),
   })
   @Post('logout-all')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async logoutAll(@CurrentUser() user: AuthenticatedUser): Promise<SuccessPayload<null>> {
+  async logoutAll(@CurrentUser() user: AuthenticatedUser): Promise<void> {
     // Thu hồi toàn bộ Refresh Token của người dùng và đánh dấu mốc thời gian Logout All
     await this.tokenService.logoutAll(user.id, user.userType, user.jti, user.exp);
-    return okNoData('Tất cả phiên đã được chấm dứt.');
   }
 }

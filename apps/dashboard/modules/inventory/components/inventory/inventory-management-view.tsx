@@ -2,6 +2,7 @@
 
 import { DataTablePagination } from '@/modules/common/components/data-table';
 import { ListPage } from '@/modules/common/components/list-page';
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import {
   createInventoryVoucher,
   getInventoryVoucherDetail,
@@ -34,7 +35,6 @@ import {
   type ColumnDef,
   type PaginationState,
 } from '@tanstack/react-table';
-import { isAxiosError } from 'axios';
 import { ClockIcon, FileTextIcon, HistoryIcon, MinusIcon, PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -47,18 +47,6 @@ const DEFAULT_ISSUED_AT = () => {
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 16);
 };
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 function actionLabel(type: InventoryVoucherType): string {
   return type === 'EXPORT' ? 'Phiếu xuất' : 'Phiếu nhập';

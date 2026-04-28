@@ -17,6 +17,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -29,10 +30,8 @@ import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
-  buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import {
@@ -126,21 +125,19 @@ export class CustomerAdminController {
 
   // Xóa mềm tài khoản khách hàng khi có yêu cầu hoặc vi phạm nghiêm trọng chính sách hệ thống.
   @ApiOperation({ summary: 'Xóa mềm khách hàng' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Xóa mềm khách hàng thành công.',
-    schema: buildNullDataSuccessResponseSchema('Xóa mềm khách hàng thành công.'),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy khách hàng.' })
   @Delete(':id')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: Request,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.customerService.softDelete(id, buildAuditRequestContext(request, user));
-    return okNoData('Xóa mềm khách hàng thành công.');
   }
 
   // Khôi phục tài khoản khách hàng đã bị xóa mềm trước đó.

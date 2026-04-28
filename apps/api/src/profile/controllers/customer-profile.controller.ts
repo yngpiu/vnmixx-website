@@ -5,6 +5,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -20,7 +21,6 @@ import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
   ok,
-  okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import { CustomerProfileResponseDto, UpdateCustomerProfileDto } from '../dto';
@@ -83,7 +83,7 @@ export class CustomerProfileController {
 
   // Đổi mật khẩu để tăng cường tính bảo mật cho tài khoản khách hàng.
   @ApiOperation({ summary: 'Đổi mật khẩu khách hàng hiện tại' })
-  @ApiOkResponse({
+  @ApiNoContentResponse({
     description: 'Đổi mật khẩu khách hàng thành công. Vui lòng đăng nhập lại.',
     schema: buildNullDataSuccessResponseSchema(
       'Đổi mật khẩu khách hàng thành công. Vui lòng đăng nhập lại.',
@@ -91,14 +91,13 @@ export class CustomerProfileController {
   })
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
   @Put('change-password')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async changePassword(
     @Body() dto: ChangePasswordDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<null>> {
+  ): Promise<void> {
     await this.profileService.changeCustomerPassword(user.id, dto);
     await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
-    return okNoData('Đổi mật khẩu khách hàng thành công. Vui lòng đăng nhập lại.');
   }
 }

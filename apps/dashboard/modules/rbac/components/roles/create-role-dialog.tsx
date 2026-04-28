@@ -1,5 +1,6 @@
 'use client';
 
+import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { createRole, listPermissions } from '@/modules/rbac/api/rbac';
 import { PermissionCrudMatrix } from '@/modules/rbac/components/roles/permission-crud-matrix';
 import { RoleFormTabs } from '@/modules/rbac/components/roles/role-form-tabs';
@@ -16,7 +17,6 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@repo/ui/components/u
 import { Input } from '@repo/ui/components/ui/input';
 import { Textarea } from '@repo/ui/components/ui/textarea';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -36,18 +36,6 @@ const createRoleSchema = z.object({
     .optional(),
 });
 type CreateRoleFormValues = z.infer<typeof createRoleSchema>;
-
-function apiErrorMessage(err: unknown): string {
-  if (isAxiosError(err)) {
-    const body = err.response?.data as { message?: unknown };
-    const m = body?.message;
-    if (Array.isArray(m)) return m.join(', ');
-    if (typeof m === 'string') return m;
-    return err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Đã xảy ra lỗi.';
-}
 
 type CreateRoleDialogProps = {
   open: boolean;
