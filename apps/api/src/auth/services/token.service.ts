@@ -148,6 +148,20 @@ export class TokenService {
     await this.blacklistAccessToken(accessTokenJti, accessTokenExp);
   }
 
+  // Đăng xuất tất cả phiên khác, giữ nguyên phiên hiện tại.
+  async logoutOtherSessions(
+    userId: number,
+    userType: 'CUSTOMER' | 'EMPLOYEE',
+    currentRefreshToken: string | undefined,
+  ): Promise<void> {
+    if (!currentRefreshToken) {
+      await this.refreshTokenRepo.revokeAllByUser(userId, userType);
+      return;
+    }
+    const currentTokenHash = this.hashToken(currentRefreshToken);
+    await this.refreshTokenRepo.revokeAllByUserExceptTokenHash(userId, userType, currentTokenHash);
+  }
+
   // Thu hồi toàn bộ phiên đăng nhập (Dùng cho các trường hợp đặc biệt như Reset mật khẩu).
   async revokeAllSessions(userId: number, userType: 'CUSTOMER' | 'EMPLOYEE'): Promise<void> {
     await this.refreshTokenRepo.revokeAllByUser(userId, userType);

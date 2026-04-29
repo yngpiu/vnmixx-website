@@ -19,6 +19,7 @@ import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import { TokenService } from '../../auth/services/token.service';
+import { readRefreshToken } from '../../auth/utils';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
@@ -91,10 +92,8 @@ export class EmployeeProfileController {
   // Thay đổi mật khẩu định kỳ hoặc khi nghi ngờ lộ thông tin để đảm bảo an toàn tài khoản.
   @ApiOperation({ summary: 'Đổi mật khẩu nhân viên hiện tại' })
   @ApiNoContentResponse({
-    description: 'Đổi mật khẩu nhân viên thành công. Vui lòng đăng nhập lại.',
-    schema: buildNullDataSuccessResponseSchema(
-      'Đổi mật khẩu nhân viên thành công. Vui lòng đăng nhập lại.',
-    ),
+    description: 'Đổi mật khẩu nhân viên thành công.',
+    schema: buildNullDataSuccessResponseSchema('Đổi mật khẩu nhân viên thành công.'),
   })
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
   @Put('change-password')
@@ -102,9 +101,10 @@ export class EmployeeProfileController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async changePassword(
     @Body() dto: ChangePasswordDto,
+    @Req() request: Request,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     await this.profileService.changeEmployeePassword(user.id, dto);
-    await this.tokenService.logoutAll(user.id, 'EMPLOYEE', user.jti, user.exp);
+    await this.tokenService.logoutOtherSessions(user.id, 'EMPLOYEE', readRefreshToken(request));
   }
 }

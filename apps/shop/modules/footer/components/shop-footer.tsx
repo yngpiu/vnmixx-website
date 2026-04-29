@@ -90,18 +90,20 @@ const SOCIAL_LINKS: SocialLink[] = [
 
 export function ShopFooter(): React.JSX.Element {
   return (
-    <footer className="border-t border-[#e7e7e7] bg-[#f7f8f9]">
+    <footer className="border-t border-border bg-background">
       <div className="mx-auto w-full max-w-[1100px] px-4 pb-0 pt-10 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
-        <div className="grid grid-cols-1 gap-10 border-b border-[#e7e7e7] pb-8 lg:grid-cols-[290px_1fr] lg:gap-8">
+        <div className="grid grid-cols-1 gap-10 pb-8 lg:grid-cols-[290px_1fr] lg:gap-8">
           <div className="space-y-5">
             <div className="flex items-center gap-2">
-              <Image
-                src="/images/logo.png"
-                alt="VNMIXX"
-                width={113}
-                height={34}
-                style={{ width: 'auto', height: 'auto' }}
-              />
+              <Link href="/" className="relative block h-[35px] w-[117px]" aria-label="Trang chủ">
+                <Image
+                  src="/images/logo.png"
+                  alt="VNMIXX"
+                  fill
+                  sizes="117px"
+                  className="object-contain"
+                />
+              </Link>
             </div>
             <ul className="flex items-center gap-4">
               {SOCIAL_LINKS.map((socialLink) => (
@@ -127,7 +129,7 @@ export function ShopFooter(): React.JSX.Element {
               href="tel:02466623434"
               className="inline-flex h-10 items-center rounded-sm bg-[#1f1f1f] px-5 text-sm font-semibold uppercase tracking-[0.04em] text-white"
             >
-              Hotline: 0246 662 3434
+              Hotline: 0359 880 321
             </Link>
           </div>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -139,7 +141,7 @@ export function ShopFooter(): React.JSX.Element {
                 <ul className="space-y-2.5 pt-2 text-[14px] text-[#6a6a6a]">
                   {column.items.map((item) => (
                     <li key={item.label}>
-                      <Link href={item.href} className="hover:text-[#1f1f1f]">
+                      <Link href={item.href} className="hover:text-primary">
                         {item.label}
                       </Link>
                     </li>
@@ -149,6 +151,9 @@ export function ShopFooter(): React.JSX.Element {
             ))}
           </div>
         </div>
+      </div>
+      <div className="w-full border-t border-border" />
+      <div className="mx-auto w-full max-w-[1100px] px-4 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
         <div className="py-4 text-center text-[12px] text-[#8a8a8a]">
           ©VNMIXX All rights reserved
         </div>

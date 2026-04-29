@@ -4,6 +4,7 @@ import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { ShopHeader } from '@/modules/header/components/shop-header';
 import { QueryProvider } from '@/providers/query-provider';
 import '@/styles/globals.css';
+import { Toaster } from '@repo/ui/components/ui/sonner';
 import { montserrat } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
@@ -34,6 +35,7 @@ export default async function RootLayout({
             <ShopHeader />
             <div className="pb-16 md:pb-0">{children}</div>
             <ShopFooter />
+            <Toaster richColors closeButton position="top-center" theme="light" />
           </AuthProvider>
         </QueryProvider>
       </body>

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Put } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Put, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -13,10 +13,12 @@ import {
   ApiUnauthorizedResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { CurrentUser, RequireUserType } from '../../auth/decorators';
 import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import { TokenService } from '../../auth/services/token.service';
+import { readRefreshToken } from '../../auth/utils';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
@@ -84,10 +86,8 @@ export class CustomerProfileController {
   // Đổi mật khẩu để tăng cường tính bảo mật cho tài khoản khách hàng.
   @ApiOperation({ summary: 'Đổi mật khẩu khách hàng hiện tại' })
   @ApiNoContentResponse({
-    description: 'Đổi mật khẩu khách hàng thành công. Vui lòng đăng nhập lại.',
-    schema: buildNullDataSuccessResponseSchema(
-      'Đổi mật khẩu khách hàng thành công. Vui lòng đăng nhập lại.',
-    ),
+    description: 'Đổi mật khẩu khách hàng thành công.',
+    schema: buildNullDataSuccessResponseSchema('Đổi mật khẩu khách hàng thành công.'),
   })
   @ApiBadRequestResponse({ description: 'Mật khẩu cũ không đúng hoặc dữ liệu không hợp lệ.' })
   @Put('change-password')
@@ -95,9 +95,10 @@ export class CustomerProfileController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async changePassword(
     @Body() dto: ChangePasswordDto,
+    @Req() req: Request,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     await this.profileService.changeCustomerPassword(user.id, dto);
-    await this.tokenService.logoutAll(user.id, 'CUSTOMER', user.jti, user.exp);
+    await this.tokenService.logoutOtherSessions(user.id, 'CUSTOMER', readRefreshToken(req));
   }
 }

@@ -64,7 +64,7 @@ export function DesktopNav({ categoryTree, auxiliaryLinks }: DesktopNavProps): R
                 <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                   <Link
                     href={getCategoryHref(topLevelCategory.slug)}
-                    className="h-9 px-2.5 text-sm font-semibold uppercase tracking-wide xl:text-[15px]"
+                    className="h-9 px-2.5 text-sm font-semibold text-foreground uppercase tracking-wide xl:text-[15px]"
                   >
                     {topLevelCategory.name}
                   </Link>
@@ -74,7 +74,7 @@ export function DesktopNav({ categoryTree, auxiliaryLinks }: DesktopNavProps): R
           }
           return (
             <NavigationMenuItem key={topLevelCategory.id}>
-              <NavigationMenuTrigger className="h-9 px-2.5 text-sm font-semibold uppercase tracking-wide data-[state=open]:text-destructive xl:text-[15px]">
+              <NavigationMenuTrigger className="h-9 px-2.5 text-sm font-semibold text-foreground uppercase tracking-wide data-[state=open]:text-destructive xl:text-[15px]">
                 {topLevelCategory.name}
               </NavigationMenuTrigger>
               <NavigationMenuContent

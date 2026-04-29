@@ -10,9 +10,7 @@ import { serverApi, ServerApiError } from '@/lib/server-api';
 import type { AuthResponse, UserProfile } from '@/modules/auth/types/auth';
 import { cookies } from 'next/headers';
 
-type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; code?: string; meta?: unknown };
+type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 
 export type AuthFormState = {
   success: boolean;
@@ -44,21 +42,6 @@ function extractErrorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
 }
 
-function extractErrorCode(err: unknown): string | undefined {
-  if (!(err instanceof ServerApiError)) {
-    return undefined;
-  }
-  const body = err.body as { code?: string } | null;
-  return body?.code;
-}
-
-function extractErrorMeta(err: unknown): unknown {
-  if (!(err instanceof ServerApiError)) {
-    return undefined;
-  }
-  const body = err.body as { meta?: unknown } | null;
-  return body?.meta;
-}
 export async function loginAction(
   email: string,
   password: string,
@@ -86,12 +69,7 @@ export async function loginAction(
     );
     return { success: true, data: { accessToken: authData.accessToken, user } };
   } catch (err) {
-    return {
-      success: false,
-      error: extractErrorMessage(err),
-      code: extractErrorCode(err),
-      meta: extractErrorMeta(err),
-    };
+    return { success: false, error: extractErrorMessage(err) };
   }
 }
 
@@ -109,12 +87,7 @@ export async function registerAction(data: {
     });
     return { success: true, data: result };
   } catch (err) {
-    return {
-      success: false,
-      error: extractErrorMessage(err),
-      code: extractErrorCode(err),
-      meta: extractErrorMeta(err),
-    };
+    return { success: false, error: extractErrorMessage(err) };
   }
 }
 
@@ -200,12 +173,7 @@ export async function logoutAction(): Promise<ActionResult<null>> {
     cookieStore.delete(COOKIE_REFRESH_TOKEN);
     return { success: true, data: null };
   } catch (err) {
-    return {
-      success: false,
-      error: extractErrorMessage(err),
-      code: extractErrorCode(err),
-      meta: extractErrorMeta(err),
-    };
+    return { success: false, error: extractErrorMessage(err) };
   }
 }
 
@@ -217,12 +185,7 @@ export async function verifyOtpAction(data: {
     await serverApi.post<unknown>('/auth/verify-otp', data, { skipAuth: true });
     return { success: true, data: null };
   } catch (err) {
-    return {
-      success: false,
-      error: extractErrorMessage(err),
-      code: extractErrorCode(err),
-      meta: extractErrorMeta(err),
-    };
+    return { success: false, error: extractErrorMessage(err) };
   }
 }
 

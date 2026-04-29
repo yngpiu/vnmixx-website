@@ -1,12 +1,12 @@
 'use client';
 
-import { AuthActionError, useLogin } from '@/modules/auth/hooks/use-auth';
+import { useLogin } from '@/modules/auth/hooks/use-auth';
 import { LabeledInput } from '@/modules/common/components/labeled-input';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Field, FieldError } from '@repo/ui/components/ui/field';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -20,10 +20,6 @@ function normalizePhoneNumber(value: string): string {
 function isValidEmailOrPhone(value: string): boolean {
   const normalizedPhone = normalizePhoneNumber(value);
   if (phoneRegex.test(normalizedPhone)) return true;
-  return z.string().email().safeParse(value.trim()).success;
-}
-
-function isValidEmail(value: string): boolean {
   return z.string().email().safeParse(value.trim()).success;
 }
 
@@ -42,7 +38,6 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage(): React.JSX.Element {
   const loginMutation = useLogin();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [formError, setFormError] = useState<string | null>(null);
   const isVerifiedSuccess = searchParams.get('verified') === '1';
@@ -62,17 +57,6 @@ export default function LoginPage(): React.JSX.Element {
     try {
       await loginMutation.mutateAsync(values);
     } catch (err) {
-      if (err instanceof AuthActionError && err.code === 'AUTH_EMAIL_UNVERIFIED') {
-        const metaEmail =
-          typeof err.meta === 'object' && err.meta !== null && 'email' in err.meta
-            ? String((err.meta as { email?: unknown }).email ?? '')
-            : '';
-        const emailForOtp = isValidEmail(values.email) ? values.email.trim() : metaEmail.trim();
-        if (isValidEmail(emailForOtp)) {
-          router.push(`/otp?email=${encodeURIComponent(emailForOtp)}`);
-          return;
-        }
-      }
       const message = err instanceof Error ? err.message : 'Unknown error';
       setFormError(message);
     }

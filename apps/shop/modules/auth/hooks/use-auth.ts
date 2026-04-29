@@ -30,17 +30,6 @@ type CustomerRegisterResponse = {
   resendAfter?: number;
 };
 
-export class AuthActionError extends Error {
-  constructor(
-    message: string,
-    public readonly code?: string,
-    public readonly meta?: unknown,
-  ) {
-    super(message);
-    this.name = 'AuthActionError';
-  }
-}
-
 /**
  * Login mutation using Server Action.
  * On success: stores session in Zustand and redirects to home.
@@ -52,7 +41,7 @@ export function useLogin() {
     mutationFn: async ({ email, password }: LoginVariables) => {
       const result = await loginAction(email, password);
       if (!result.success) {
-        throw new AuthActionError(result.error, result.code, result.meta);
+        throw new Error(result.error);
       }
       return result.data;
     },
@@ -73,7 +62,7 @@ export function useRegister() {
     mutationFn: async (variables: RegisterVariables) => {
       const result = await registerAction(variables);
       if (!result.success) {
-        throw new AuthActionError(result.error, result.code, result.meta);
+        throw new Error(result.error);
       }
       return result.data as CustomerRegisterResponse;
     },
@@ -90,7 +79,7 @@ export function useVerifyOtp() {
     mutationFn: async (variables: VerifyOtpVariables) => {
       const result = await verifyOtpAction(variables);
       if (!result.success) {
-        throw new AuthActionError(result.error, result.code, result.meta);
+        throw new Error(result.error);
       }
       return true;
     },
@@ -102,7 +91,7 @@ export function useResendOtp() {
     mutationFn: async (variables: { email: string }) => {
       const result = await resendOtpAction(variables);
       if (!result.success) {
-        throw new AuthActionError(result.error, result.code, result.meta);
+        throw new Error(result.error);
       }
       return result.data as CustomerRegisterResponse;
     },

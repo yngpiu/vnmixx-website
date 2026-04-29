@@ -60,6 +60,9 @@ function executeLogoutRedirect(): void {
 function registerAuthInterceptors(): void {
   apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const { accessToken } = useAuthStore.getState();
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     if (accessToken && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }

@@ -85,4 +85,22 @@ export class RefreshTokenRepository {
       data: { revokedAt: new Date() },
     });
   }
+
+  /**
+   * Thu hồi tất cả Refresh Token của người dùng, ngoại trừ một token hiện tại.
+   */
+  async revokeAllByUserExceptTokenHash(
+    userId: number,
+    userType: 'CUSTOMER' | 'EMPLOYEE',
+    excludedTokenHash: string,
+  ): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        ...(userType === 'CUSTOMER' ? { customerId: userId } : { employeeId: userId }),
+        revokedAt: null,
+        NOT: { tokenHash: excludedTokenHash },
+      },
+      data: { revokedAt: new Date() },
+    });
+  }
 }

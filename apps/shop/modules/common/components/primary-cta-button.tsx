@@ -28,9 +28,9 @@ export function PrimaryCtaButton({
   const styles =
     ctaVariant === 'filled'
       ? // Default: filled (black). Hover: outline-only (border + black text).
-        'bg-primary text-primary-foreground border border-transparent hover:bg-transparent! hover:text-primary! hover:border-primary!'
+        'bg-primary text-primary-foreground border border-primary hover:bg-transparent! hover:text-primary! hover:border-primary!'
       : // Default: outline-only (border + black text). Hover: filled (black).
-        'bg-transparent text-primary border border-primary hover:bg-primary! hover:text-primary-foreground! hover:border-transparent! ';
+        'bg-transparent text-primary border border-primary hover:bg-primary! hover:text-primary-foreground! hover:border-primary! ';
 
   return (
     <Button
@@ -38,7 +38,7 @@ export function PrimaryCtaButton({
       variant="default"
       size={buttonProps.size ?? 'default'}
       className={cn(
-        'w-full h-auto! uppercase font-semibold px-[24px]! py-[12px]! text-[16px]! leading-[24px]! text-center',
+        'w-full h-[48px]! uppercase font-semibold px-[24px]! text-[16px]! leading-[24px]! text-center',
         baseRadius,
         styles,
         'transition-colors duration-150 ease-in-out',
