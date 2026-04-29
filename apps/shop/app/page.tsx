@@ -1,8 +1,14 @@
 import { getPublicBanners } from '@/modules/banner/api/banners';
 import { HomeBannerSlider } from '@/modules/banner/components/home-banner-slider';
+import { getNewArrivalProductsByCategory } from '@/modules/home/api/new-arrival-products';
+import { NewArrivalSection } from '@/modules/home/components/new-arrival-section';
 
 export default async function Page(): Promise<React.JSX.Element> {
   const banners = await getPublicBanners().catch(() => []);
+  const [womenProducts, menProducts] = await Promise.all([
+    getNewArrivalProductsByCategory('nu').catch(() => []),
+    getNewArrivalProductsByCategory('nam').catch(() => []),
+  ]);
   const bannerRadiusClassName =
     'rounded-tl-[16px] rounded-tr-none rounded-bl-none rounded-br-[16px]';
 
@@ -23,16 +29,7 @@ export default async function Page(): Promise<React.JSX.Element> {
           )}
         </div>
       </section>
-      <section className="pb-16">
-        <div className="mx-auto w-full max-w-[1100px] xl:max-w-[1280px] 2xl:max-w-[1440px]">
-          <div className="mx-auto max-w-xl text-center">
-            <h2 className="text-3xl font-semibold tracking-[0.2em] uppercase">New Arrival</h2>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Khu vực sản phẩm sẽ được triển khai tiếp ở bước sau.
-            </p>
-          </div>
-        </div>
-      </section>
+      <NewArrivalSection womenProducts={womenProducts} menProducts={menProducts} />
     </main>
   );
 }
