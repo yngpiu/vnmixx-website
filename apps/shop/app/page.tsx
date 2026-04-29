@@ -1,14 +1,20 @@
 import { getPublicBanners } from '@/modules/banner/api/banners';
 import { HomeBannerSlider } from '@/modules/banner/components/home-banner-slider';
-import { getNewArrivalProductsByCategory } from '@/modules/home/api/new-arrival-products';
-import { NewArrivalSection } from '@/modules/home/components/new-arrival-section';
+import {
+  getBestSellingProductsByCategory,
+  getNewArrivalProductsByCategory,
+} from '@/modules/home/api/new-arrival-products';
+import { HomeProductSections } from '@/modules/home/components/home-product-sections';
 
 export default async function Page(): Promise<React.JSX.Element> {
   const banners = await getPublicBanners().catch(() => []);
-  const [womenProducts, menProducts] = await Promise.all([
-    getNewArrivalProductsByCategory('nu').catch(() => []),
-    getNewArrivalProductsByCategory('nam').catch(() => []),
-  ]);
+  const [womenProducts, menProducts, bestSellingWomenProducts, bestSellingMenProducts] =
+    await Promise.all([
+      getNewArrivalProductsByCategory('nu').catch(() => []),
+      getNewArrivalProductsByCategory('nam').catch(() => []),
+      getBestSellingProductsByCategory('nu').catch(() => []),
+      getBestSellingProductsByCategory('nam').catch(() => []),
+    ]);
   const bannerRadiusClassName =
     'rounded-tl-[16px] rounded-tr-none rounded-bl-none rounded-br-[16px]';
 
@@ -29,7 +35,12 @@ export default async function Page(): Promise<React.JSX.Element> {
           )}
         </div>
       </section>
-      <NewArrivalSection womenProducts={womenProducts} menProducts={menProducts} />
+      <HomeProductSections
+        womenProducts={womenProducts}
+        menProducts={menProducts}
+        bestSellingWomenProducts={bestSellingWomenProducts}
+        bestSellingMenProducts={bestSellingMenProducts}
+      />
     </main>
   );
 }

@@ -21,7 +21,7 @@ export interface LabeledInputProps extends Omit<React.ComponentProps<'input'>, '
 }
 
 const LABELED_INPUT_CLASS_NAME =
-  'h-[48px] w-full box-border rounded-[4px] border border-[#E7E8E9] bg-white px-[15px] py-[15px] ' +
+  'h-10 md:h-12 w-full box-border rounded-[4px] border border-[#E7E8E9] bg-white px-[12px] md:px-[15px] py-[10px] md:py-[15px] ' +
   'text-[14px] leading-[16px] text-[#57585A] shadow-none placeholder:text-muted-foreground/70 ' +
   'focus-visible:ring-0 focus-visible:border-[#E7E8E9] disabled:bg-input/50 disabled:opacity-50';
 
@@ -48,7 +48,7 @@ export function LabeledInput({
         {label}
       </FieldLabel>
       {isPasswordInput ? (
-        <InputGroup className="h-[48px] rounded-[4px] border border-[#E7E8E9] bg-white">
+        <InputGroup className="h-10 md:h-12 rounded-[4px] border border-[#E7E8E9] bg-white">
           <InputGroupInput
             {...inputProps}
             id={resolvedId}
@@ -56,7 +56,7 @@ export function LabeledInput({
             name={name}
             aria-required={Boolean(required)}
             className={cn(
-              'h-full px-[15px] py-[15px] text-[14px] leading-[16px] text-[#57585A] placeholder:text-muted-foreground/70',
+              'h-full px-[12px] md:px-[15px] py-[10px] md:py-[15px] text-[14px] leading-[16px] text-[#57585A] placeholder:text-muted-foreground/70',
               inputProps.className,
               inputClassName,
             )}

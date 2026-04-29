@@ -56,9 +56,14 @@ export class ListProductsQueryDto {
   @IsOptional()
   maxPrice?: number;
 
-  @ApiPropertyOptional({ example: 'newest', enum: ['newest', 'price_asc', 'price_desc'] })
+  @ApiPropertyOptional({
+    example: 'newest',
+    enum: ['newest', 'price_asc', 'price_desc', 'best_selling'],
+  })
   @IsString({ message: 'Tiêu chí sắp xếp phải là chuỗi ký tự' })
-  @IsIn(['newest', 'price_asc', 'price_desc'], { message: 'Tiêu chí sắp xếp không hợp lệ' })
+  @IsIn(['newest', 'price_asc', 'price_desc', 'best_selling'], {
+    message: 'Tiêu chí sắp xếp không hợp lệ',
+  })
   @IsOptional()
   sort?: string = 'newest';
 }

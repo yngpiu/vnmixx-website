@@ -8,7 +8,7 @@ import { ChevronDownIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 const LABELED_DATE_TRIGGER_CLASS_NAME =
-  'h-[48px] w-full box-border rounded-[4px] border border-[#E7E8E9] bg-white px-[15px] py-[15px] ' +
+  'h-10 md:h-12 w-full box-border rounded-[4px] border border-[#E7E8E9] bg-white px-[12px] md:px-[15px] py-[10px] md:py-[15px] ' +
   'text-[14px] leading-[16px] text-[#57585A] shadow-none placeholder:text-muted-foreground/70 ' +
   'focus-visible:ring-0 focus-visible:border-[#E7E8E9] disabled:bg-input/50 disabled:opacity-50';
 

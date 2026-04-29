@@ -75,3 +75,9 @@
 button {
   cursor: pointer;
 }
+
+@media (max-width: 767px) {
+  body {
+    padding-inline: 1rem;
+  }
+}

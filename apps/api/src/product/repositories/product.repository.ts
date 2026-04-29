@@ -10,6 +10,7 @@ export interface ProductListItemView {
   name: string;
   slug: string;
   thumbnail: string | null;
+  colorHexCodes: string[];
   category: { id: number; name: string; slug: string } | null;
 }
 
@@ -133,6 +134,9 @@ export class ProductRepository {
   }): Promise<
     PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
   > {
+    if (params.sort === 'best_selling') {
+      return this.findPublicBestSellingList(params);
+    }
     const { page, limit, search, categorySlug, colorIds, sizeIds, minPrice, maxPrice, sort } =
       params;
 
@@ -173,7 +177,7 @@ export class ProductRepository {
           thumbnail: true,
           variants: {
             where: { isActive: true, deletedAt: null },
-            select: { price: true },
+            select: { price: true, color: { select: { hexCode: true } } },
           },
         },
       }),
@@ -183,7 +187,11 @@ export class ProductRepository {
       const prices = variants.map((v) => v.price);
       const minP = prices.length ? Math.min(...prices) : null;
       const maxP = prices.length ? Math.max(...prices) : null;
-      return { ...rest, category: null, minPrice: minP, maxPrice: maxP };
+      const colorHexCodes = [...new Set(variants.map((variant) => variant.color.hexCode))].slice(
+        0,
+        4,
+      );
+      return { ...rest, category: null, minPrice: minP, maxPrice: maxP, colorHexCodes };
     });
 
     let filtered = data;
@@ -196,6 +204,130 @@ export class ProductRepository {
 
     return {
       data: filtered,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  private async findPublicBestSellingList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    categorySlug?: string;
+    colorIds?: number[];
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+  }): Promise<
+    PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
+  > {
+    const { page, limit, search, categorySlug, colorIds, sizeIds, minPrice, maxPrice } = params;
+    const where: Prisma.ProductWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(search && { name: { contains: search } }),
+      ...(categorySlug && {
+        productCategories: {
+          some: { category: categoryWhereMatchesSlugTree(categorySlug) },
+        },
+      }),
+    };
+    const variantFilter: Prisma.ProductVariantWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(colorIds?.length && { colorId: { in: colorIds } }),
+      ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
+    };
+    if (colorIds?.length || sizeIds?.length || minPrice !== undefined || maxPrice !== undefined) {
+      where.variants = { some: variantFilter };
+    }
+    const products = await this.prisma.product.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        thumbnail: true,
+        createdAt: true,
+        variants: {
+          where: { isActive: true, deletedAt: null },
+          select: { price: true, color: { select: { hexCode: true } } },
+        },
+      },
+    });
+    const mappedProducts = products.map(
+      ({
+        variants,
+        ...rest
+      }): ProductListItemView & {
+        minPrice: number | null;
+        maxPrice: number | null;
+        createdAt: Date;
+      } => {
+        const prices = variants.map((variant) => variant.price);
+        const resolvedMinPrice = prices.length > 0 ? Math.min(...prices) : null;
+        const resolvedMaxPrice = prices.length > 0 ? Math.max(...prices) : null;
+        const colorHexCodes = [...new Set(variants.map((variant) => variant.color.hexCode))].slice(
+          0,
+          4,
+        );
+        return {
+          ...rest,
+          category: null,
+          minPrice: resolvedMinPrice,
+          maxPrice: resolvedMaxPrice,
+          colorHexCodes,
+        };
+      },
+    );
+    const priceFilteredProducts = mappedProducts.filter((product) => {
+      if (minPrice !== undefined && (product.maxPrice === null || product.maxPrice < minPrice)) {
+        return false;
+      }
+      if (maxPrice !== undefined && (product.minPrice === null || product.minPrice > maxPrice)) {
+        return false;
+      }
+      return true;
+    });
+    const productIds = priceFilteredProducts.map((product) => product.id);
+    const bestSellingRows =
+      productIds.length > 0
+        ? await this.prisma.$queryRaw<Array<{ productId: number; soldCount: bigint | number }>>(
+            Prisma.sql`
+              SELECT pv.product_id AS productId, COALESCE(SUM(oi.quantity), 0) AS soldCount
+              FROM order_items oi
+              INNER JOIN product_variants pv ON pv.id = oi.variant_id
+              INNER JOIN orders o ON o.id = oi.order_id
+              WHERE o.status = 'DELIVERED'
+                AND pv.product_id IN (${Prisma.join(productIds)})
+              GROUP BY pv.product_id
+            `,
+          )
+        : [];
+    const soldCountByProductId = new Map<number, number>(
+      bestSellingRows.map((row) => [row.productId, Number(row.soldCount)]),
+    );
+    const sortedProducts = priceFilteredProducts.slice().sort((leftProduct, rightProduct) => {
+      const leftSoldCount = soldCountByProductId.get(leftProduct.id) ?? 0;
+      const rightSoldCount = soldCountByProductId.get(rightProduct.id) ?? 0;
+      if (leftSoldCount !== rightSoldCount) {
+        return rightSoldCount - leftSoldCount;
+      }
+      return rightProduct.createdAt.getTime() - leftProduct.createdAt.getTime();
+    });
+    const total = sortedProducts.length;
+    const pagedProducts = sortedProducts.slice((page - 1) * limit, page * limit).map((product) => ({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      thumbnail: product.thumbnail,
+      colorHexCodes: product.colorHexCodes,
+      category: product.category,
+      minPrice: product.minPrice,
+      maxPrice: product.maxPrice,
+    }));
+    return {
+      data: pagedProducts,
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

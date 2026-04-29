@@ -67,8 +67,8 @@ export function LabeledInputSelect<TValue extends string = string>({
           aria-invalid={Boolean(invalid)}
           className={cn(
             // Override `@repo/ui` defaults so trigger matches our input.
-            'w-full h-[48px]! min-w-0 rounded-[4px] border border-[#E7E8E9] bg-white ' +
-              'px-[15px] py-[15px] text-[14px] leading-[16px] shadow-none ' +
+            'w-full h-10! md:h-12! min-w-0 rounded-[4px] border border-[#E7E8E9] bg-white ' +
+              'px-[12px] md:px-[15px] py-[10px] md:py-[15px] text-[14px] leading-[16px] shadow-none ' +
               'focus-visible:ring-0 focus-visible:border-[#E7E8E9] ' +
               'data-placeholder:text-[#8C8D90] data-placeholder:opacity-100!',
             triggerClassName,

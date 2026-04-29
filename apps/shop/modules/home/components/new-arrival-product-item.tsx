@@ -1,8 +1,11 @@
+'use client';
+
+import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
+import { Heart, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 
 type NewArrivalProductItemProps = {
-  categorySlug: string;
   product: NewArrivalProduct;
 };
 
@@ -15,14 +18,10 @@ function formatMoney(value: number | null): string {
   return `${moneyFormatter.format(value)}đ`;
 }
 
-export function NewArrivalProductItem({
-  categorySlug,
-  product,
-}: NewArrivalProductItemProps): React.JSX.Element {
-  const currentPrice = product.minPrice;
-  const oldPrice = product.maxPrice;
-  const hasDiscountPrice = currentPrice !== null && oldPrice !== null && oldPrice > currentPrice;
-  const productHref = `/danh-muc/${product.category?.slug ?? categorySlug}`;
+export function NewArrivalProductItem({ product }: NewArrivalProductItemProps): React.JSX.Element {
+  const productPrice = product.minPrice ?? product.maxPrice;
+  const productHref = `/san-pham/${product.slug}`;
+  const colorHexCodes = product.colorHexCodes ?? [];
 
   return (
     <article className="group">
@@ -32,22 +31,45 @@ export function NewArrivalProductItem({
           <img
             src={product.thumbnail ?? '/images/placeholder.jpg'}
             alt={product.name}
-            className="aspect-[3/4] w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            className="aspect-3/4 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
             loading="lazy"
           />
         </div>
       </Link>
       <div className="mt-3">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            {colorHexCodes.map((colorHexCode: string, index: number) => (
+              <span
+                key={`${product.id}-${colorHexCode}-${index}`}
+                className="h-4 w-4 rounded-full"
+                style={{ backgroundColor: colorHexCode }}
+                aria-hidden
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            className="text-muted-foreground transition hover:text-foreground"
+            aria-label="Yêu thích (chưa triển khai)"
+          >
+            <Heart className="h-5 w-5" />
+          </button>
+        </div>
         <Link href={productHref} className="block">
-          <h3 className="line-clamp-2 min-h-10 text-sm text-foreground">{product.name}</h3>
+          <h3 className="line-clamp-2 min-h-10 text-sm  text-foreground">{product.name}</h3>
         </Link>
-        <div className="mt-2 flex items-center gap-2 text-sm">
-          <span className="font-semibold text-foreground">{formatMoney(currentPrice)}</span>
-          {hasDiscountPrice ? (
-            <span className="text-xs text-muted-foreground line-through">
-              {formatMoney(oldPrice)}
-            </span>
-          ) : null}
+        <div className=" flex items-center justify-between gap-3">
+          <span className="text-base font-semibold text-foreground ">
+            {formatMoney(productPrice)}
+          </span>
+          <PrimaryCtaButton
+            ctaVariant="filled"
+            isIconOnly
+            aria-label="Thêm vào giỏ hàng (chưa triển khai)"
+          >
+            <ShoppingBag className="h-2 w-4" />
+          </PrimaryCtaButton>
         </div>
       </div>
     </article>

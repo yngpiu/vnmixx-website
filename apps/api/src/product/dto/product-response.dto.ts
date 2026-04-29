@@ -124,6 +124,9 @@ export class ProductListItemResponseDto {
 
   @ApiPropertyOptional({ type: CategoryBriefDto, nullable: true })
   category: CategoryBriefDto | null;
+
+  @ApiProperty({ type: [String], example: ['#FFFFFF', '#000000'] })
+  colorHexCodes: string[];
 }
 
 export class PaginationMetaDto {

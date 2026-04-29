@@ -5,6 +5,7 @@ export type NewArrivalProduct = {
   thumbnail: string | null;
   minPrice: number | null;
   maxPrice: number | null;
+  colorHexCodes: string[];
   category: {
     id: number;
     name: string;

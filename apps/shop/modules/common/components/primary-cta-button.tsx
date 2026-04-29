@@ -10,6 +10,7 @@ export type PrimaryCtaButtonProps = Omit<
   'className' | 'color' | 'variant'
 > & {
   ctaVariant?: PrimaryCtaButtonVariant;
+  isIconOnly?: boolean;
   className?: string;
 };
 
@@ -20,10 +21,15 @@ export type PrimaryCtaButtonProps = Omit<
  */
 export function PrimaryCtaButton({
   ctaVariant = 'filled',
+  isIconOnly = false,
   className,
   ...buttonProps
 }: PrimaryCtaButtonProps): React.JSX.Element {
   const baseRadius = 'rounded-tl-[16px]! rounded-tr-[0px]! rounded-bl-[0px]! rounded-br-[16px]!';
+  const iconOnlyStyles =
+    'h-8! w-8! md:h-9! md:w-9! rounded-tl-[12px]! rounded-tr-[0px]! rounded-bl-[0px]! rounded-br-[12px]! px-0! text-[0px]!';
+  const defaultStyles =
+    'w-full h-10! md:h-12! uppercase font-semibold px-[18px]! md:px-[24px]! text-[14px]! md:text-[16px]! leading-[20px]! md:leading-[24px]! text-center';
 
   const styles =
     ctaVariant === 'filled'
@@ -36,10 +42,10 @@ export function PrimaryCtaButton({
     <Button
       type={buttonProps.type ?? 'button'}
       variant="default"
-      size={buttonProps.size ?? 'default'}
+      size={buttonProps.size ?? (isIconOnly ? 'icon' : 'default')}
       className={cn(
-        'w-full h-[48px]! uppercase font-semibold px-[24px]! text-[16px]! leading-[24px]! text-center',
-        baseRadius,
+        isIconOnly ? iconOnlyStyles : defaultStyles,
+        !isIconOnly && baseRadius,
         styles,
         'transition-colors duration-150 ease-in-out',
         className,
