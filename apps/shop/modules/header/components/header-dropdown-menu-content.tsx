@@ -27,20 +27,23 @@ export function HeaderDropdownMenuContent({
   items,
 }: HeaderDropdownMenuContentProps): React.JSX.Element {
   return (
-    <DropdownMenuContent align="end" className="w-[340px] rounded-none p-0">
-      <div className="px-4 py-3 text-base font-semibold leading-4">{title}</div>
+    <DropdownMenuContent
+      align="end"
+      className="w-max min-w-0 max-w-[calc(100vw-1rem)] rounded-none p-0"
+    >
+      <div className="px-4 py-3 text-base leading-4 font-semibold whitespace-nowrap">{title}</div>
       <DropdownMenuSeparator className="my-0" />
       <div className="px-4 py-1">
         {items.map((item) => (
           <DropdownMenuItem
             key={item.label}
-            asChild={Boolean(item.href)}
-            className="text-muted-foreground h-auto rounded-none px-2 py-2 text-[14px] leading-4 font-semibold transition-colors hover:text-primary focus:text-primary data-highlighted:text-primary"
+            asChild
+            className="text-muted-foreground h-auto rounded-none px-2 py-2 text-[14px] leading-4 font-semibold whitespace-nowrap transition-colors hover:text-primary focus:text-primary data-highlighted:text-primary"
             onClick={item.href ? undefined : item.onClick}
             disabled={item.disabled}
           >
             {item.href ? (
-              <Link href={item.href}>
+              <Link href={item.href} className="flex w-full items-center">
                 <item.icon className="mr-2.5 size-4 stroke-[1.75]" />
                 <span>{item.label}</span>
               </Link>

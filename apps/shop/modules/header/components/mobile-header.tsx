@@ -20,14 +20,14 @@ export function MobileHeader(): React.JSX.Element {
       >
         <MenuIcon className="size-5 stroke-[1.75]" />
       </Button>
-      <Link href="/" aria-label="Trang chủ">
+      <Link href="/" aria-label="Trang chủ" className="relative block h-[31px] w-[108px]">
         <Image
           src="/images/logo.png"
           alt="IVY moda"
-          width={120}
-          height={34}
+          fill
+          sizes="108px"
           priority
-          className="h-auto w-[108px]"
+          className="object-contain"
         />
       </Link>
       <Button

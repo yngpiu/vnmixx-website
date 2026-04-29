@@ -1,16 +1,7 @@
-import {
-  MailIcon,
-  MessageCircleIcon,
-  MessageSquareIcon,
-  PackageSearchIcon,
-  PhoneCallIcon,
-} from 'lucide-react';
+import { MailIcon, MessageCircleIcon, PackageSearchIcon } from 'lucide-react';
 
 export const MOBILE_SUPPORT_MENU_ITEMS = [
-  { label: 'Hotline', icon: PhoneCallIcon },
-  { label: 'Live Chat', icon: MessageCircleIcon },
-  { label: 'Messenger', icon: MessageSquareIcon },
+  { label: 'Liên hệ', icon: MessageCircleIcon },
   { label: 'Email', icon: MailIcon },
   { label: 'Tra cứu đơn hàng', icon: PackageSearchIcon },
-  { label: 'Liên hệ', icon: MessageCircleIcon },
 ] as const;

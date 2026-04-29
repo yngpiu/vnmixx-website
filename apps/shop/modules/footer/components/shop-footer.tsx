@@ -33,13 +33,15 @@ export function ShopFooter(): React.JSX.Element {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           <div className="space-y-5 md:col-span-3">
             <div className="flex items-center gap-2">
-              <Image
-                src="/images/logo.png"
-                alt="IVY moda"
-                width={160}
-                height={48}
-                className="h-[34px] w-auto"
-              />
+              <div className="relative h-[34px] w-[113px]">
+                <Image
+                  src="/images/logo.png"
+                  alt="IVY moda"
+                  fill
+                  sizes="113px"
+                  className="object-contain"
+                />
+              </div>
             </div>
           </div>
 
