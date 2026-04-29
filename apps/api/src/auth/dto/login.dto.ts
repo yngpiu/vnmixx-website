@@ -9,23 +9,24 @@ function isPhoneNumber(value: string): boolean {
 }
 
 /**
- * DTO cho yêu cầu đăng nhập.
- * Dùng chung cho cả khách hàng (Customer) và nhân viên (Employee).
- * Với Customer, trường `email` có thể chứa `email` hoặc `phoneNumber`.
+ * DTO cho đăng nhập khách hàng (shop).
+ * Trường `email` có thể chứa `email` hoặc `phoneNumber`.
  */
 export class LoginDto {
   @ApiProperty({
     example: '0901234567',
     description: 'Email hoặc số điện thoại đã đăng ký',
   })
-  @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string'
-      ? value
-          .trim()
-          .replace(/[\s-().]/g, '')
-          .toLowerCase()
-      : value,
-  )
+  @Transform(({ value }: { value: unknown }) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    const trimmedValue = value.trim().toLowerCase();
+    if (trimmedValue.includes('@')) {
+      return trimmedValue;
+    }
+    return trimmedValue.replace(/[\s\-().]/g, '');
+  })
   @IsNotEmpty({ message: 'Email hoặc số điện thoại không được để trống' })
   @ValidateIf((_object: unknown, value: string) => !isPhoneNumber(value))
   @IsEmail({}, { message: 'Email hoặc số điện thoại không đúng định dạng' })

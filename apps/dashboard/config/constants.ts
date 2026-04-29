@@ -1,8 +1,8 @@
 /** Cookie name for access token on dashboard domain. */
-export const COOKIE_ACCESS_TOKEN = 'vnmixx_access';
+export const COOKIE_ACCESS_TOKEN = 'vnmixx_dashboard_access';
 
 /** Cookie name for refresh token on dashboard domain. */
-export const COOKIE_REFRESH_TOKEN = 'vnmixx_refresh';
+export const COOKIE_REFRESH_TOKEN = 'vnmixx_dashboard_refresh';
 
 /** API base URL for server-side calls. */
 const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';

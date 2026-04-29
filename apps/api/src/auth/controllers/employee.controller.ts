@@ -17,7 +17,7 @@ import {
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import { Public } from '../decorators';
-import { AuthResponseDto, LoginDto } from '../dto';
+import { AuthResponseDto, EmployeeLoginDto } from '../dto';
 import { EmployeeAuthService } from '../services/employee-auth.service';
 import { TokenService } from '../services/token.service';
 import { authBodyFromPair, extractRequestMeta } from '../utils';
@@ -52,7 +52,7 @@ export class EmployeeAuthController {
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   /** Đăng nhập nhân viên bằng email/mật khẩu và nhận token truy cập Dashboard. */
   async login(
-    @Body() dto: LoginDto,
+    @Body() dto: EmployeeLoginDto,
     @Req() req: Request,
   ): Promise<SuccessPayload<AuthResponseDto>> {
     const { user } = await this.employeeAuth.loginEmployee(dto);

@@ -1,4 +1,5 @@
 export { ChangePasswordDto } from './change-password.dto';
+export { EmployeeLoginDto } from './employee-login.dto';
 export {
   ForgotPasswordDto,
   ForgotPasswordResponseDto,

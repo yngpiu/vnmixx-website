@@ -14,6 +14,12 @@ interface AuthResponse {
 }
 
 const PUBLIC_PATHS = ['/login', '/signup', '/otp'];
+function isPublicPathname(pathname: string): boolean {
+  if (pathname === '/') {
+    return true;
+  }
+  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
 
 function decodeJwtExpiration(token: string): number | null {
   try {
@@ -53,7 +59,7 @@ async function tryRefresh(
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
-  const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublicPath = isPublicPathname(pathname);
   const accessToken = request.cookies.get(COOKIE_ACCESS_TOKEN)?.value;
   const refreshToken = request.cookies.get(COOKIE_REFRESH_TOKEN)?.value;
   const hasValidAccess = accessToken ? isTokenValid(accessToken) : false;

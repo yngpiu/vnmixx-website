@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { compare, hash } from 'bcrypt';
 import { EmployeeStatus } from '../../../generated/prisma/client';
 import { BCRYPT_SALT_ROUNDS } from '../constants';
-import type { ChangePasswordDto, LoginDto } from '../dto';
+import type { ChangePasswordDto, EmployeeLoginDto } from '../dto';
 import { EmployeeRepository } from '../repositories/employee.repository';
 
 interface EmployeeAuthIdentity {
@@ -24,7 +24,7 @@ export class EmployeeAuthService {
   // Đăng nhập nhân viên.
   // Logic: Kiểm tra email tồn tại -> Kiểm tra trạng thái ACTIVE -> So khớp mật khẩu băm.
   // Lưu ý: Vai trò (roles) và quyền (permissions) sẽ được xử lý qua JWT Guard ở mỗi request.
-  async loginEmployee(dto: LoginDto): Promise<EmployeeAuthResult> {
+  async loginEmployee(dto: EmployeeLoginDto): Promise<EmployeeAuthResult> {
     // 1. Tìm nhân viên theo email
     const employee = await this.employeeRepo.findByEmail(dto.email);
     if (!employee || employee.deletedAt) {
