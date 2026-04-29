@@ -29,9 +29,7 @@ export async function uploadMedia(
   if (typeof options?.customerId === 'number') {
     formData.append('customerId', String(options.customerId));
   }
-  const { data } = await apiClient.post<MediaFile[]>('/admin/media/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const { data } = await apiClient.post<MediaFile[]>('/admin/media/upload', formData);
   return data;
 }
 

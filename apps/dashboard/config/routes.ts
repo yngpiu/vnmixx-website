@@ -16,6 +16,7 @@ export const dashboardRoutes = {
   root: '/',
   /** Tổng quan (thống kê). */
   overview: '/dashboard',
+  media: '/media',
   analytics: '/analytics',
   reviews: '/reviews',
   supportChats: '/support-chats',
@@ -66,7 +67,7 @@ export function dashboardBreadcrumbs(pathname: string): DashboardBreadcrumbItem[
       { label: orderCodeSeg },
     ];
   }
-  if (path === '/media') {
+  if (path === dashboardRoutes.media) {
     return [{ label: 'Trang chủ', href: dashboardRoutes.overview }, { label: 'Bộ sưu tập' }];
   }
   if (path === '/audit-logs') {

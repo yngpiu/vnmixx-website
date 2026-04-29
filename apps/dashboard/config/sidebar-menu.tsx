@@ -4,8 +4,8 @@ import { ADMIN_MODULES, adminModulePath, type AdminModuleSlug } from '@/config/a
 import { dashboardRoutes } from '@/config/routes';
 import {
   BarChart3Icon,
-  ChartColumnIcon,
   ClipboardListIcon,
+  ImageIcon,
   LayoutDashboardIcon,
   MessageSquareIcon,
   PackageIcon,
@@ -72,6 +72,12 @@ export const sidebarSections: SidebarSection[] = [
     items: [
       moduleNav('orders', ShoppingCartIcon),
       moduleNav('products', PackageIcon),
+      moduleNav('banners', ImageIcon),
+      {
+        title: 'Bộ sưu tập',
+        url: dashboardRoutes.media,
+        icon: <ImageIcon className="size-4 shrink-0" />,
+      },
       moduleNav('categories', TagsIcon),
       moduleNav('customers', UsersIcon),
       moduleNav('inventory', TruckIcon),
@@ -94,32 +100,36 @@ export const sidebarSections: SidebarSection[] = [
       moduleNav('roles', ShieldIcon, { title: 'Vai trò' }),
     ],
   },
-  {
-    id: 'reports',
-    groupLabel: 'Báo cáo',
-    items: [
-      {
-        title: 'Doanh thu',
-        url: '/reports?type=revenue',
-        icon: <ChartColumnIcon className="size-4 shrink-0" />,
-      },
-      {
-        title: 'Sản phẩm',
-        url: '/reports?type=products',
-        icon: <PackageIcon className="size-4 shrink-0" />,
-      },
-      {
-        title: 'Khách hàng',
-        url: '/reports?type=customers',
-        icon: <UsersIcon className="size-4 shrink-0" />,
-      },
-      {
-        title: 'Tồn kho',
-        url: '/reports?type=inventory',
-        icon: <TruckIcon className="size-4 shrink-0" />,
-      },
-    ],
-  },
+  /*
+   * Reports section intentionally disabled.
+   * Uncomment when report routes are ready.
+   */
+  // {
+  //   id: 'reports',
+  //   groupLabel: 'Báo cáo',
+  //   items: [
+  //     {
+  //       title: 'Doanh thu',
+  //       url: '/reports?type=revenue',
+  //       icon: <ChartColumnIcon className="size-4 shrink-0" />,
+  //     },
+  //     {
+  //       title: 'Sản phẩm',
+  //       url: '/reports?type=products',
+  //       icon: <PackageIcon className="size-4 shrink-0" />,
+  //     },
+  //     {
+  //       title: 'Khách hàng',
+  //       url: '/reports?type=customers',
+  //       icon: <UsersIcon className="size-4 shrink-0" />,
+  //     },
+  //     {
+  //       title: 'Tồn kho',
+  //       url: '/reports?type=inventory',
+  //       icon: <TruckIcon className="size-4 shrink-0" />,
+  //     },
+  //   ],
+  // },
   {
     id: 'system-admin',
     groupLabel: 'Hệ thống',

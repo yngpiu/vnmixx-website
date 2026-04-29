@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { AuthModule } from './auth/auth.module';
+import { BannerModule } from './banner/banner.module';
 import { CartModule } from './cart/cart.module';
 import { CategoryModule } from './category/category.module';
 import { ColorModule } from './color/color.module';
@@ -59,6 +60,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     MailModule,
     AuditLogModule,
     AuthModule,
+    BannerModule,
     CartModule,
     ProfileModule,
     CategoryModule,

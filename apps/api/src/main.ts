@@ -13,6 +13,17 @@ const DEFAULT_DEV_CORS_ORIGINS = [
   'http://127.0.0.1:3001',
 ];
 
+function parseCorsOrigins(input: string): string[] {
+  return input
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+function isLocalDevOrigin(origin: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin.trim());
+}
+
 // Khởi tạo và cấu hình toàn bộ ứng dụng API.
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -33,15 +44,32 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Cấu hình CORS từ biến môi trường hoặc danh sách dev mặc định.
-  const corsOriginEnv = process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS;
-  const origin = corsOriginEnv
-    ? corsOriginEnv
-        .split(',')
-        .map((o) => o.trim())
-        .filter(Boolean)
-    : DEFAULT_DEV_CORS_ORIGINS;
+  const corsOriginEnv = process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS ?? '';
+  const configuredOrigins = corsOriginEnv ? parseCorsOrigins(corsOriginEnv) : [];
+  const isDevelopment = (process.env.NODE_ENV ?? 'development') !== 'production';
+  const origin = isDevelopment
+    ? [...new Set([...configuredOrigins, ...DEFAULT_DEV_CORS_ORIGINS])]
+    : configuredOrigins;
   app.enableCors({
-    origin,
+    origin: (
+      requestOrigin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Allow same-origin/server-side requests without Origin header.
+      if (!requestOrigin) {
+        callback(null, true);
+        return;
+      }
+      if (Array.isArray(origin) && origin.includes(requestOrigin)) {
+        callback(null, true);
+        return;
+      }
+      if (isDevelopment && isLocalDevOrigin(requestOrigin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${requestOrigin} is not allowed by CORS`), false);
+    },
     credentials: true,
   });
 

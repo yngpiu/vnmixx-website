@@ -72,6 +72,7 @@ describe('CustomerAuthService', () => {
             existsByPhone: jest.fn(),
             create: jest.fn(),
             findByEmail: jest.fn(),
+            findByPhone: jest.fn(),
             activateEmailById: jest.fn(),
             findHashedPasswordById: jest.fn(),
             updatePassword: jest.fn(),
@@ -206,6 +207,17 @@ describe('CustomerAuthService', () => {
       expect(result.id).toBe(mockCustomer.id);
     });
 
+    it('should login successfully with phone number', async () => {
+      const loginPhoneDto: LoginDto = { email: '0901234567', password: 'password123' };
+      customerRepo.findByPhone.mockResolvedValue(mockCustomer as any);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await service.loginCustomer(loginPhoneDto);
+
+      expect(result.id).toBe(mockCustomer.id);
+      expect(customerRepo.findByPhone).toHaveBeenCalledWith('0901234567');
+    });
+
     it('should throw UnauthorizedException for wrong password', async () => {
       customerRepo.findByEmail.mockResolvedValue(mockCustomer as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
@@ -218,6 +230,7 @@ describe('CustomerAuthService', () => {
         ...mockCustomer,
         status: CustomerStatus.INACTIVE,
       } as any);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const promise = service.loginCustomer(loginDto);
       await expect(promise).rejects.toThrow(UnauthorizedException);
@@ -230,6 +243,7 @@ describe('CustomerAuthService', () => {
         emailVerifiedAt: null,
         status: CustomerStatus.PENDING_VERIFICATION,
       } as any);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const promise = service.loginCustomer(loginDto);
       await expect(promise).rejects.toThrow(UnauthorizedException);

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { CustomerStatus } from '../../../generated/prisma/client';
+import { ERROR_CODES } from '../../common/constants/error-codes';
 import {
   getPrismaErrorTargets,
   isPrismaErrorCode,
@@ -52,6 +53,7 @@ export class CustomerAuthService {
   private readonly otpExpiration: number;
   private readonly otpResendCooldown: number;
   private readonly otpMaxAttempts: number;
+  private static readonly phoneRegex = /^(\+?84[35879]\d{8}|0[35879]\d{8})$/;
 
   constructor(
     private readonly customerRepo: CustomerRepository,
@@ -63,6 +65,10 @@ export class CustomerAuthService {
     this.otpExpiration = DEFAULT_OTP_EXPIRATION;
     this.otpResendCooldown = DEFAULT_OTP_RESEND_COOLDOWN;
     this.otpMaxAttempts = DEFAULT_OTP_MAX_ATTEMPTS;
+  }
+
+  private isPhoneNumberIdentifier(identifier: string): boolean {
+    return CustomerAuthService.phoneRegex.test(identifier);
   }
 
   // Đăng ký khách hàng mới.
@@ -168,24 +174,48 @@ export class CustomerAuthService {
   }
 
   // Đăng nhập khách hàng.
-  // Logic: Tìm theo email -> Kiểm tra trạng thái tài khoản (Active/Verified) -> So sánh mật khẩu băm.
+  // Logic: Tìm theo email/phone -> Kiểm tra trạng thái tài khoản (Active/Verified) -> So sánh mật khẩu băm.
   async loginCustomer(dto: LoginDto): Promise<CustomerAuthIdentity> {
-    // 1. Tìm thông tin khách hàng dựa trên email
-    const customer = await this.customerRepo.findByEmail(dto.email);
+    const identifier = dto.email;
+
+    // 1. Tìm thông tin khách hàng dựa trên email hoặc số điện thoại
+    const customer = this.isPhoneNumberIdentifier(identifier)
+      ? await this.findCustomerByPhone(identifier)
+      : await this.customerRepo.findByEmail(identifier);
     if (!customer || customer.deletedAt) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
+      throw new UnauthorizedException('Email hoặc số điện thoại hoặc mật khẩu không hợp lệ');
     }
-    // 2. Kiểm tra trạng thái kích hoạt và xác thực của tài khoản
+    // 2. So sánh mật khẩu nhập vào với mật khẩu băm lưu trong DB để xác thực
+    const isPasswordValid = await compare(dto.password, customer.hashedPassword);
+    if (!isPasswordValid) {
+      // Sai mật khẩu thì luôn trả về lỗi chung, kể cả với tài khoản chưa xác thực.
+      throw new UnauthorizedException('Email hoặc số điện thoại hoặc mật khẩu không hợp lệ');
+    }
+    // 3. Kiểm tra trạng thái kích hoạt và xác thực của tài khoản
     if (customer.status === CustomerStatus.PENDING_VERIFICATION || !customer.emailVerifiedAt) {
-      throw new UnauthorizedException('Email chưa được xác thực');
+      // Đúng mật khẩu nhưng email chưa được xác thực -> dùng code riêng để frontend chuyển sang verify OTP.
+      throw new UnauthorizedException({
+        message: 'Email chưa được xác thực',
+        code: ERROR_CODES.AUTH_EMAIL_UNVERIFIED,
+        meta: { email: customer.email },
+      });
     }
     if (customer.status !== CustomerStatus.ACTIVE) {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
-    // 3. So sánh mật khẩu nhập vào với mật khẩu băm lưu trong DB để xác thực
-    const isPasswordValid = await compare(dto.password, customer.hashedPassword);
-    if (!isPasswordValid) throw new UnauthorizedException('Email hoặc mật khẩu không hợp lệ');
     return { id: customer.id, email: customer.email, fullName: customer.fullName };
+  }
+
+  private async findCustomerByPhone(
+    phoneNumber: string,
+  ): Promise<ReturnType<CustomerRepository['findByPhone']>> {
+    const normalized = phoneNumber.trim();
+    const found = await this.customerRepo.findByPhone(normalized);
+    if (found) return found;
+
+    // Fallback: hệ thống có thể lưu có/không dấu '+'.
+    if (!normalized.startsWith('+')) return null;
+    return this.customerRepo.findByPhone(normalized.slice(1));
   }
 
   // Đổi mật khẩu cho khách hàng đã đăng nhập.

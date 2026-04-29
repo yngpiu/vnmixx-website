@@ -1,0 +1,49 @@
+'use client';
+
+import { useHeaderUiStore } from '@/modules/header/stores/header-ui-store';
+import { Button } from '@repo/ui/components/ui/button';
+import { MenuIcon, ShoppingBagIcon } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+
+export function MobileHeader(): React.JSX.Element {
+  const openMobileDrawer = useHeaderUiStore((state) => state.openMobileDrawer);
+  return (
+    <div className="flex h-14 items-center justify-between border-b px-4 md:hidden">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="text-muted-foreground size-9 rounded-full"
+        onClick={openMobileDrawer}
+        aria-label="Mở menu"
+      >
+        <MenuIcon className="size-5 stroke-[1.75]" />
+      </Button>
+      <Link href="/" aria-label="Trang chủ">
+        <Image
+          src="/images/logo.png"
+          alt="IVY moda"
+          width={120}
+          height={34}
+          priority
+          className="h-auto w-[108px]"
+        />
+      </Link>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="text-muted-foreground relative size-9 rounded-full"
+        asChild
+      >
+        <Link href="/cart" aria-label="Giỏ hàng">
+          <ShoppingBagIcon className="size-5 stroke-[1.75]" />
+          <span className="absolute top-1 right-1 flex size-3 items-center justify-center rounded-full bg-foreground text-[9px] text-background">
+            0
+          </span>
+        </Link>
+      </Button>
+    </div>
+  );
+}

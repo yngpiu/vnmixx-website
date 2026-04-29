@@ -289,6 +289,7 @@ model Category {
   name       String    @db.VarChar(100)
   slug       String    @unique(map: "uk_categories_slug") @db.VarChar(120)
   isFeatured Boolean   @default(false) @map("is_featured") @db.TinyInt
+  showInHeader Boolean @default(false) @map("show_in_header") @db.TinyInt
   isActive   Boolean   @default(true) @map("is_active") @db.TinyInt
   sortOrder  Int       @default(0) @map("sort_order") @db.SmallInt
   parentId   Int?      @map("parent_id") @db.UnsignedInt
@@ -299,9 +300,25 @@ model Category {
   parent            Category?         @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   children          Category[]        @relation("CategoryTree")
   productCategories ProductCategory[]
+  banner            Banner?
 
   @@index([parentId], map: "idx_categories_parent")
   @@map("categories")
+}
+
+model Banner {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  imageUrl  String   @map("image_url") @db.VarChar(500)
+  categoryId Int     @unique(map: "uk_banners_category") @map("category_id") @db.UnsignedInt
+  isActive  Boolean  @default(true) @map("is_active") @db.TinyInt
+  sortOrder Int      @default(0) @map("sort_order") @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([isActive, sortOrder], map: "idx_banners_active_sort")
+  @@map("banners")
 }
 
 model Color {

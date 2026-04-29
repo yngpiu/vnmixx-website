@@ -56,6 +56,22 @@ export class CustomerRepository {
     });
   }
 
+  /** Tìm khách hàng theo số điện thoại để phục vụ đăng nhập. */
+  async findByPhone(phoneNumber: string): Promise<CustomerAuthView | null> {
+    return this.prisma.customer.findUnique({
+      where: { phoneNumber },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        hashedPassword: true,
+        status: true,
+        emailVerifiedAt: true,
+        deletedAt: true,
+      },
+    });
+  }
+
   /** Tìm thông tin cơ bản của khách hàng theo ID để kiểm tra tính hợp lệ của token. */
   async findById(id: number): Promise<CustomerValidationView | null> {
     return this.prisma.customer.findUnique({

@@ -8,6 +8,7 @@ interface ErrorResponseBody {
   statusCode: number;
   code: string;
   message: string | string[];
+  meta?: unknown;
 }
 
 @Catch()
@@ -21,7 +22,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const { statusCode, message, code } = this.extractErrorInfo(exception);
+    const { statusCode, message, code, meta } = this.extractErrorInfo(exception);
 
     if (statusCode >= 500) {
       this.logger.error(
@@ -43,6 +44,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode,
       code,
       message,
+      ...(meta !== undefined ? { meta } : {}),
     };
 
     response.status(statusCode).json(body);
@@ -53,6 +55,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     statusCode: number;
     message: string | string[];
     code: string;
+    meta?: unknown;
   } {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -68,6 +71,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           statusCode: status,
           message: (res.message as string | string[]) ?? exception.message,
           code,
+          meta: res.meta,
         };
       }
 

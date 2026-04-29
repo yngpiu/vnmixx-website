@@ -14,6 +14,7 @@ interface CategoryView {
   name: string;
   slug: string;
   isFeatured: boolean;
+  showInHeader: boolean;
   isActive: boolean;
   sortOrder: number;
   parentId: number | null;
@@ -36,6 +37,7 @@ interface CategoryTreeNodeView {
   name: string;
   slug: string;
   isFeatured: boolean;
+  showInHeader: boolean;
   isActive: boolean;
   sortOrder: number;
   children: CategoryTreeNodeView[];
@@ -56,6 +58,7 @@ const CATEGORY_SELECT = {
   name: true,
   slug: true,
   isFeatured: true,
+  showInHeader: true,
   isActive: true,
   sortOrder: true,
   parentId: true,
@@ -69,6 +72,7 @@ const TREE_NODE_SELECT = {
   name: true,
   slug: true,
   isFeatured: true,
+  showInHeader: true,
   isActive: true,
   sortOrder: true,
 } as const;
@@ -181,6 +185,7 @@ export class CategoryRepository {
     name: string;
     slug: string;
     isFeatured: boolean;
+    showInHeader: boolean;
     isActive?: boolean;
     sortOrder: number;
     parentId?: number | null;
@@ -201,6 +206,7 @@ export class CategoryRepository {
       name?: string;
       slug?: string;
       isFeatured?: boolean;
+      showInHeader?: boolean;
       isActive?: boolean;
       sortOrder?: number;
       parentId?: number | null;
@@ -223,6 +229,7 @@ export class CategoryRepository {
       name?: string;
       slug?: string;
       isFeatured?: boolean;
+      showInHeader?: boolean;
       isActive?: boolean;
       sortOrder?: number;
       parentId?: number | null;

@@ -1,21 +1,36 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, Matches, MinLength, ValidateIf } from 'class-validator';
+
+const phoneRegex = /^(\+?84[35879]\d{8}|0[35879]\d{8})$/;
+
+function isPhoneNumber(value: string): boolean {
+  return phoneRegex.test(value);
+}
 
 /**
  * DTO cho yêu cầu đăng nhập.
  * Dùng chung cho cả khách hàng (Customer) và nhân viên (Employee).
+ * Với Customer, trường `email` có thể chứa `email` hoặc `phoneNumber`.
  */
 export class LoginDto {
   @ApiProperty({
-    example: 'customer@example.com',
-    description: 'Địa chỉ email đã đăng ký',
+    example: '0901234567',
+    description: 'Email hoặc số điện thoại đã đăng ký',
   })
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : value,
+    typeof value === 'string'
+      ? value
+          .trim()
+          .replace(/[\s-().]/g, '')
+          .toLowerCase()
+      : value,
   )
-  @IsEmail({}, { message: 'Địa chỉ email không đúng định dạng' })
-  @IsNotEmpty({ message: 'Email không được để trống' })
+  @IsNotEmpty({ message: 'Email hoặc số điện thoại không được để trống' })
+  @ValidateIf((_object: unknown, value: string) => !isPhoneNumber(value))
+  @IsEmail({}, { message: 'Email hoặc số điện thoại không đúng định dạng' })
+  @ValidateIf((_object: unknown, value: string) => isPhoneNumber(value))
+  @Matches(phoneRegex, { message: 'Email hoặc số điện thoại không đúng định dạng' })
   email: string;
 
   @ApiProperty({

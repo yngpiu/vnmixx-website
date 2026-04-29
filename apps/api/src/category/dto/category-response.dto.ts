@@ -24,6 +24,9 @@ export class CategoryResponseDto {
   @ApiProperty({ example: false })
   isFeatured: boolean;
 
+  @ApiProperty({ example: true, description: 'Có hiển thị ở menu header hay không' })
+  showInHeader: boolean;
+
   @ApiProperty({ example: true, description: 'Hiển thị / kinh doanh trên shop' })
   isActive: boolean;
 
@@ -57,6 +60,9 @@ export class CategoryTreeNodeDto {
 
   @ApiProperty({ example: false })
   isFeatured: boolean;
+
+  @ApiProperty({ example: true, description: 'Có hiển thị ở menu header hay không' })
+  showInHeader: boolean;
 
   @ApiProperty({ example: true, description: 'Hiển thị / kinh doanh trên shop' })
   isActive: boolean;

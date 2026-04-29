@@ -6,6 +6,7 @@ export const ADMIN_MODULE_SLUGS = [
   'employees',
   'support-chats',
   'products',
+  'banners',
   'categories',
   'colors',
   'sizes',
@@ -50,6 +51,11 @@ export const ADMIN_MODULES: Record<AdminModuleSlug, AdminModuleMeta> = {
     title: 'Sản phẩm',
     apiPath: 'admin/products',
     moduleName: 'ProductModule',
+  },
+  banners: {
+    title: 'Banner',
+    apiPath: 'admin/banners',
+    moduleName: 'BannerModule',
   },
   categories: {
     title: 'Danh mục',

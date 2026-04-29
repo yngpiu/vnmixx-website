@@ -1,6 +1,11 @@
-import '@repo/ui/index.css';
+import { COOKIE_ACCESS_TOKEN } from '@/config/constants';
+import { AuthProvider } from '@/modules/auth/providers/auth-provider';
+import { ShopHeader } from '@/modules/header/components/shop-header';
+import { QueryProvider } from '@/providers/query-provider';
+import '@/styles/globals.css';
 import { montserrat } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
   title: 'Shop',
@@ -13,10 +18,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}): Promise<React.JSX.Element> {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(COOKIE_ACCESS_TOKEN)?.value ?? null;
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={montserrat.className}>{children}</body>
+      <body className={montserrat.className}>
+        <QueryProvider>
+          <AuthProvider accessToken={accessToken}>
+            <ShopHeader />
+            <div className="pb-16 md:pb-0">{children}</div>
+          </AuthProvider>
+        </QueryProvider>
+      </body>
     </html>
   );
 }

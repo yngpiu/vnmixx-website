@@ -46,6 +46,11 @@ export class UpdateCategoryDto {
   @IsOptional()
   isActive?: boolean;
 
+  @ApiPropertyOptional({ example: false, description: 'Hiển thị ở menu header hay không' })
+  @IsBoolean({ message: 'Trạng thái hiển thị header phải là kiểu boolean' })
+  @IsOptional()
+  showInHeader?: boolean;
+
   @ApiPropertyOptional({ example: 0, description: 'Thứ tự hiển thị', minimum: 0 })
   @IsInt({ message: 'Thứ tự hiển thị phải là số nguyên' })
   @IsOptional()

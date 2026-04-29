@@ -131,7 +131,7 @@ export class CustomerAuthController {
   @HttpCode(HttpStatus.OK)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
-  /** Đăng nhập bằng email/mật khẩu và nhận cặp token truy cập. */
+  /** Đăng nhập bằng email hoặc số điện thoại/mật khẩu và nhận cặp token truy cập. */
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,

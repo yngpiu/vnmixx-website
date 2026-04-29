@@ -17,265 +17,50 @@ type CatL1 = {
 
 const FASHION_TREE: CatL1[] = [
   {
-    name: 'Áo nam',
+    name: 'Nam',
     children: [
       {
-        name: 'Áo thun nam',
-        children: ['Áo thun cổ tròn', 'Áo thun cổ bẻ polo', 'Áo thun tay dài'],
+        name: 'Áo',
+        children: ['Áo thun', 'Áo polo', 'Áo sơ mi', 'Áo len', 'Áo khoác'],
       },
       {
-        name: 'Áo sơ mi nam',
-        children: ['Sơ mi trắng công sở', 'Sơ mi kẻ caro', 'Sơ mi linen'],
+        name: 'Quần',
+        children: ['Quần dài', 'Quần jeans', 'Quần lửng/short'],
       },
     ],
   },
   {
-    name: 'Quần nam',
+    name: 'Nữ',
     children: [
       {
-        name: 'Quần jean nam',
-        children: ['Jean slim fit', 'Jean ống suông', { name: 'Jean rách gối', isActive: false }],
+        name: 'Áo',
+        children: ['Áo sơ mi', 'Áo thun', 'Áo croptop', 'Áo len', 'Đồ lót 50k -150k'],
       },
       {
-        name: 'Quần tây & Kaki',
-        children: ['Quần tây công sở', 'Quần kaki lửng', 'Quần chinos'],
-      },
-    ],
-  },
-  {
-    name: 'Áo nữ',
-    children: [
-      {
-        name: 'Áo thun & Tank top nữ',
-        children: ['Áo thun ôm body', 'Áo hai dây', 'Áo crop top'],
+        name: 'Áo khoác',
+        children: [
+          'Dạ lông cừu | SALE off 50%',
+          'Áo dạ/ măng tô',
+          'Áo vest/ blazer',
+          'Áo phao',
+          'Áo gile',
+        ],
       },
       {
-        name: 'Áo sơ mi & Blouse',
-        children: ['Blouse cổ bèo', 'Sơ mi oversize', 'Áo kiểu voan'],
-      },
-    ],
-  },
-  {
-    name: 'Quần & Chân váy nữ',
-    children: [
-      {
-        name: 'Quần jean & Legging',
-        children: ['Jean cạp cao', 'Jean baggy', 'Legging thể thao'],
+        name: 'Set bộ',
+        children: ['Set bộ công sở', 'Set bộ co-ords', 'Set bộ thun/ len'],
       },
       {
-        name: 'Quần short & Culottes',
-        children: ['Short kaki nữ', { name: 'Quần culottes', isActive: false }, 'Short jean'],
-      },
-    ],
-  },
-  {
-    name: 'Đầm & Váy',
-    children: [
-      {
-        name: 'Đầm dự tiệc',
-        children: ['Đầm maxi', 'Đầm body', 'Đầm xòe công chúa'],
+        name: 'Quần & Jumpsuit',
+        children: ['Quần dài', 'Quần jeans', 'Quần lửng/ short', 'Jumpsuit'],
       },
       {
         name: 'Chân váy',
-        children: ['Chân váy chữ A', 'Chân váy bút chì', 'Chân váy xếp ly'],
-      },
-    ],
-  },
-  {
-    name: 'Áo khoác & Vest',
-    children: [
-      {
-        name: 'Áo khoác mỏng',
-        children: ['Áo khoác gió', 'Áo hoodie', 'Áo cardigan'],
+        children: ['Chân váy bút chì', 'Chân váy chữ A', 'Chân váy jeans'],
       },
       {
-        name: 'Áo khoác ấm',
-        children: ['Áo phao', 'Áo trench coat', 'Blazer'],
-      },
-    ],
-  },
-  {
-    name: 'Đồ bộ & Đồ ngủ',
-    children: [
-      {
-        name: 'Đồ bộ mặc nhà',
-        children: ['Bộ cotton', { name: 'Bộ satin', isActive: false }, 'Bộ short tay ngắn'],
-      },
-      {
-        name: 'Đồ ngủ',
-        children: ['Pijama dài tay', 'Váy ngủ', 'Áo choàng tắm'],
-      },
-    ],
-  },
-  {
-    name: 'Đồ lót nam',
-    children: [
-      {
-        name: 'Quần lót nam',
-        children: ['Boxer', 'Brief', 'Quần lót thể thao'],
-      },
-      {
-        name: 'Áo lót nam',
-        children: ['Áo ba lỗ', 'Áo lót giữ nhiệt', 'Áo tank top'],
-      },
-    ],
-  },
-  {
-    name: 'Đồ lót nữ',
-    children: [
-      {
-        name: 'Bra & Áo ngực',
-        children: ['Áo bra không gọng', 'Áo bra thể thao', { name: 'Áo bra ren', isActive: false }],
-      },
-      {
-        name: 'Quần lót nữ',
-        children: ['Quần su', 'Quần ren', 'Quần lót seamless'],
-      },
-    ],
-  },
-  {
-    name: 'Giày nam',
-    children: [
-      {
-        name: 'Giày sneaker nam',
-        children: ['Sneaker trắng', { name: 'Sneaker chunky', isActive: false }, 'Sneaker chạy bộ'],
-      },
-      {
-        name: 'Giày da & Lười',
-        children: ['Giày tây buộc dây', 'Giày lười penny', 'Boot chelsea'],
-      },
-    ],
-  },
-  {
-    name: 'Giày nữ',
-    children: [
-      {
-        name: 'Giày cao gót',
-        isActive: false,
-        children: ['Gót nhọn', 'Gót vuông', 'Sandals cao gót'],
-      },
-      {
-        name: 'Giày bệt & Sneaker nữ',
-        children: ['Ballet flats', 'Sneaker nữ', 'Sandals quai hậu'],
-      },
-    ],
-  },
-  {
-    name: 'Túi xách & Balo',
-    children: [
-      {
-        name: 'Túi xách tay',
-        children: ['Túi tote', 'Túi bucket', 'Túi đeo chéo mini'],
-      },
-      {
-        name: 'Balo & Túi du lịch',
-        children: ['Balo laptop', 'Balo canvas', { name: 'Túi weekender', isActive: false }],
-      },
-    ],
-  },
-  {
-    name: 'Phụ kiện thời trang',
-    children: [
-      {
-        name: 'Mũ nón',
-        children: ['Mũ lưỡi trai', { name: 'Mũ bucket', isActive: false }, 'Nón rộng vành'],
-      },
-      {
-        name: 'Thắt lưng & Khăn',
-        isActive: false,
-        children: ['Thắt lưng da', 'Khăn choàng cổ', 'Tất cổ ngắn'],
-      },
-    ],
-  },
-  {
-    name: 'Đồ bơi & Đi biển',
-    isActive: false,
-    children: [
-      {
-        name: 'Đồ bơi nữ',
-        children: ['Bikini', 'Đồ bơi một mảnh', 'Áo choàng đi biển'],
-      },
-      {
-        name: 'Đồ bơi nam',
-        children: ['Quần bơi short', 'Quần bơi dài', 'Áo rashguard'],
-      },
-    ],
-  },
-  {
-    name: 'Thời trang bé trai',
-    children: [
-      {
-        name: 'Áo bé trai',
-        children: ['Áo thun in hình', 'Áo sơ mi bé', 'Áo khoác gió bé'],
-      },
-      {
-        name: 'Quần bé trai',
-        children: ['Quần short thun', 'Quần jean bé', 'Quần thể thao bé'],
-      },
-    ],
-  },
-  {
-    name: 'Thời trang bé gái',
-    children: [
-      {
-        name: 'Váy & Đầm bé gái',
-        children: ['Váy xòe bé', 'Đầm tiệc bé', 'Chân váy bé'],
-      },
-      {
-        name: 'Set đồ bé gái',
-        children: ['Set áo quần', 'Set váy + áo khoác', 'Bộ đồ ngủ bé'],
-      },
-    ],
-  },
-  {
-    name: 'Đồ thể thao nam',
-    children: [
-      {
-        name: 'Áo gym nam',
-        children: ['Áo tank gym', 'Áo compression', 'Áo thun dry-fit'],
-      },
-      {
-        name: 'Quần gym nam',
-        children: ['Quần jogger gym', 'Quần short tập', 'Quần legging nam'],
-      },
-    ],
-  },
-  {
-    name: 'Đồ thể thao nữ',
-    children: [
-      {
-        name: 'Áo tập nữ',
-        children: ['Áo bra tập', 'Áo crop gym', 'Áo dài tay yoga'],
-      },
-      {
-        name: 'Quần tập nữ',
-        children: ['Legging tập', 'Quần short gym', 'Quần jogger nữ'],
-      },
-    ],
-  },
-  {
-    name: 'Đồ công sở',
-    children: [
-      {
-        name: 'Vest & Comple',
-        children: ['Vest nam', 'Comple 2 mảnh', 'Áo ghi lê'],
-      },
-      {
-        name: 'Chân váy & Áo công sở nữ',
-        children: ['Chân váy bút chì công sở', 'Áo blouse công sở', 'Áo blazer nữ'],
-      },
-    ],
-  },
-  {
-    name: 'Denim & Streetwear',
-    children: [
-      {
-        name: 'Áo denim & Oversize',
-        children: ['Áo khoác jean', 'Áo hoodie oversize', 'Áo flannel'],
-      },
-      {
-        name: 'Quần street',
-        children: ['Jean wide leg', 'Quần cargo', 'Quần jogger nỉ'],
+        name: 'Đầm/ Áo dài',
+        children: ['Đầm công sở', 'Đầm voan hoa/ maxi', 'Đầm thun', 'Áo dài'],
       },
     ],
   },
@@ -346,8 +131,10 @@ export async function seedCategories(): Promise<void> {
     throw new Error('Thiếu DATABASE_URL (tạo apps/api/.env từ .env.example hoặc export biến).');
   }
 
-  if (FASHION_TREE.length !== 20) {
-    throw new Error(`FASHION_TREE phải có đúng 20 nhóm cấp 1, hiện có ${FASHION_TREE.length}.`);
+  if (FASHION_TREE.length !== 2) {
+    throw new Error(
+      `FASHION_TREE phải có đúng 2 nhóm cấp 1 (Nam/Nữ), hiện có ${FASHION_TREE.length}.`,
+    );
   }
 
   const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
@@ -377,6 +164,7 @@ export async function seedCategories(): Promise<void> {
           parentId: null,
           sortOrder: i,
           isFeatured: i < 4 && l1Active,
+          showInHeader: true,
           isActive: l1Active,
         },
         update: {
@@ -384,6 +172,7 @@ export async function seedCategories(): Promise<void> {
           parentId: null,
           sortOrder: i,
           isFeatured: i < 4 && l1Active,
+          showInHeader: true,
           isActive: l1Active,
           deletedAt: null,
         },
@@ -405,12 +194,14 @@ export async function seedCategories(): Promise<void> {
             parentId: cat1.id,
             sortOrder: j,
             isFeatured: false,
+            showInHeader: false,
             isActive: l2Active,
           },
           update: {
             name: l2.name,
             parentId: cat1.id,
             sortOrder: j,
+            showInHeader: false,
             isActive: l2Active,
             deletedAt: null,
           },
@@ -433,12 +224,14 @@ export async function seedCategories(): Promise<void> {
               parentId: cat2.id,
               sortOrder: k,
               isFeatured: false,
+              showInHeader: false,
               isActive: l3Active,
             },
             update: {
               name: nameL3,
               parentId: cat2.id,
               sortOrder: k,
+              showInHeader: false,
               isActive: l3Active,
               deletedAt: null,
             },
