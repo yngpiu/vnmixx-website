@@ -7,7 +7,6 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
   Put,
 } from '@nestjs/common';
@@ -132,24 +131,5 @@ export class AddressController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     await this.addressService.remove(id, user.id);
-  }
-
-  // Chỉ định một địa chỉ là địa chỉ mặc định cho các đơn hàng sau này.
-  @ApiOperation({ summary: 'Đặt địa chỉ làm mặc định' })
-  @ApiOkResponse({
-    description: 'Đặt địa chỉ mặc định thành công.',
-    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AddressResponseDto) }),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @Patch(':id/set-default')
-  async setDefault(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<AddressResponseDto>> {
-    return ok(
-      await this.addressService.setDefault(id, user.id),
-      'Đặt địa chỉ mặc định thành công.',
-    );
   }
 }

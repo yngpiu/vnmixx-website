@@ -6,7 +6,7 @@ import { type AddressView, AddressRepository } from '../repositories/address.rep
 
 @Injectable()
 // Service quản lý sổ địa chỉ của khách hàng
-// Xử lý các nghiệp vụ: Thêm mới, cập nhật, xóa và thiết lập địa chỉ mặc định
+// Xử lý các nghiệp vụ: Thêm mới, cập nhật và xóa địa chỉ
 export class AddressService {
   constructor(
     private readonly addressRepo: AddressRepository,
@@ -98,7 +98,7 @@ export class AddressService {
       await this.validateLocationHierarchy(cityId, districtId, wardId);
     }
 
-    return this.addressRepo.update(id, {
+    const updateData = {
       ...(dto.fullName !== undefined && { fullName: dto.fullName }),
       ...(dto.phoneNumber !== undefined && { phoneNumber: dto.phoneNumber }),
       ...(dto.cityId !== undefined && { cityId: dto.cityId }),
@@ -106,7 +106,24 @@ export class AddressService {
       ...(dto.wardId !== undefined && { wardId: dto.wardId }),
       ...(dto.addressLine !== undefined && { addressLine: dto.addressLine }),
       ...(dto.type !== undefined && { type: dto.type }),
-    });
+      ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
+    };
+
+    if (dto.isDefault) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.address.updateMany({
+          where: { customerId, isDefault: true },
+          data: { isDefault: false },
+        });
+        await tx.address.update({
+          where: { id },
+          data: updateData,
+        });
+      });
+      return this.findById(id, customerId);
+    }
+
+    return this.addressRepo.update(id, updateData);
   }
 
   // Xóa cứng địa chỉ và tự động chỉ định địa chỉ mặc định mới nếu địa chỉ bị xóa đang là mặc định
@@ -134,24 +151,6 @@ export class AddressService {
         }
       }
     });
-  }
-
-  // Thiết lập một địa chỉ cụ thể làm địa chỉ mặc định
-  async setDefault(id: number, customerId: number): Promise<AddressView> {
-    await this.findById(id, customerId);
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.address.updateMany({
-        where: { customerId, isDefault: true },
-        data: { isDefault: false },
-      });
-      await tx.address.update({
-        where: { id },
-        data: { isDefault: true },
-      });
-    });
-
-    return this.findById(id, customerId);
   }
 
   // Kiểm tra xem bộ ba Tỉnh/Thành, Quận/Huyện, Phường/Xã có nhất quán với nhau không

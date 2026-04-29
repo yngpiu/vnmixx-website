@@ -1,5 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateAddressDto {
   @ApiPropertyOptional({ example: 'Nguyễn Văn A', maxLength: 100 })
@@ -42,4 +50,9 @@ export class UpdateAddressDto {
   @IsEnum(['HOME', 'OFFICE'] as const, { message: 'Loại địa chỉ không hợp lệ' })
   @IsOptional()
   type?: 'HOME' | 'OFFICE';
+
+  @ApiPropertyOptional({ example: false })
+  @IsBoolean({ message: 'Trạng thái mặc định phải là kiểu boolean' })
+  @IsOptional()
+  isDefault?: boolean;
 }

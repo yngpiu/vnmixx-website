@@ -80,6 +80,7 @@ export class AddressRepository {
       wardId?: number;
       addressLine?: string;
       type?: 'HOME' | 'OFFICE';
+      isDefault?: boolean;
     },
   ): Promise<AddressView> {
     return this.prisma.address.update({
@@ -87,22 +88,6 @@ export class AddressRepository {
       data,
       select: ADDRESS_SELECT,
     }) as unknown as Promise<AddressView>;
-  }
-
-  // Bỏ đánh dấu mặc định cho tất cả địa chỉ của một khách hàng.
-  async clearDefault(customerId: number): Promise<void> {
-    await this.prisma.address.updateMany({
-      where: { customerId, isDefault: true },
-      data: { isDefault: false },
-    });
-  }
-
-  // Đặt một địa chỉ làm mặc định theo ID.
-  async setDefault(id: number): Promise<void> {
-    await this.prisma.address.update({
-      where: { id },
-      data: { isDefault: true },
-    });
   }
 
   // Đếm tổng số địa chỉ hiện có của khách hàng.

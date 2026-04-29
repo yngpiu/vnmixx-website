@@ -241,31 +241,4 @@ describe('AddressService', () => {
       });
     });
   });
-
-  describe('setDefault', () => {
-    it('should set new default address', async () => {
-      const address = { id: 1 } as unknown as AddressView;
-      addressRepo.findById.mockResolvedValue(address);
-      const tx = {
-        address: {
-          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-      };
-
-      prisma.$transaction.mockImplementation(async (cb) => cb(tx as unknown as PrismaService));
-
-      const result = await service.setDefault(1, 1);
-      expect(result).toBe(address);
-      expect(tx.address.updateMany).toHaveBeenCalledWith({
-        where: { customerId: 1, isDefault: true },
-        data: { isDefault: false },
-      });
-      expect(tx.address.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: { isDefault: true },
-      });
-      expect(addressRepo.findById).toHaveBeenCalledTimes(2);
-    });
-  });
 });

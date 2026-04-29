@@ -305,8 +305,8 @@ export default function AccountPage(): React.JSX.Element {
       </nav>
 
       <section className="mt-8 grid gap-8 md:grid-cols-[270px_minmax(0,1fr)] md:items-start">
-        <aside className="self-start border border-primary rounded-tl-[16px] rounded-tr-none rounded-bl-none rounded-br-[16px] p-4">
-          <div className="mb-3 border-b border-[#E7E8E9] pb-3 text-[20px] font-semibold text-foreground">
+        <aside className="self-start border border-border rounded-tl-[20px] rounded-tr-none rounded-bl-none rounded-br-[20px] p-4">
+          <div className="mb-3 border-b border-border pb-3 text-[20px] font-semibold text-foreground">
             {profileQuery.data.fullName}
           </div>
           <ul className="space-y-0.5">
@@ -332,7 +332,7 @@ export default function AccountPage(): React.JSX.Element {
         </aside>
 
         <div>
-          <h1 className="text-[36px] leading-[42px] font-semibold uppercase text-foreground">
+          <h1 className="text-[24px] leading-[30px] font-semibold uppercase text-foreground">
             Tài khoản của tôi
           </h1>
           <form
@@ -345,7 +345,7 @@ export default function AccountPage(): React.JSX.Element {
                 <div className="flex items-center gap-3">
                   <label
                     htmlFor="avatar-file"
-                    className="group relative block size-16 cursor-pointer overflow-hidden rounded-full border border-[#E7E8E9] bg-muted"
+                    className="group relative block size-16 cursor-pointer overflow-hidden rounded-full border border-border bg-muted"
                   >
                     <Avatar className="size-full ring-0">
                       <AvatarImage src={avatarUrl || undefined} alt="Ảnh đại diện" />

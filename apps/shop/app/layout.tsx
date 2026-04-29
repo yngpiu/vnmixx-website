@@ -29,11 +29,11 @@ export default async function RootLayout({
   const accessToken = cookieStore.get(COOKIE_ACCESS_TOKEN)?.value ?? null;
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={montserrat.className}>
+      <body className={`${montserrat.className} min-h-dvh flex flex-col`}>
         <QueryProvider>
           <AuthProvider accessToken={accessToken}>
             <ShopHeader />
-            <div className="pb-16 md:pb-0">{children}</div>
+            <div className="flex-1 pb-16 md:pb-0">{children}</div>
             <ShopFooter />
             <Toaster richColors closeButton position="top-center" theme="light" />
           </AuthProvider>
