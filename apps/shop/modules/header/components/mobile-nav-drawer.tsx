@@ -1,5 +1,6 @@
 'use client';
 
+import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { useHeaderUiStore } from '@/modules/header/stores/header-ui-store';
 import type { HeaderCategoryNode } from '@/modules/header/types/header';
 import { Button } from '@repo/ui/components/ui/button';
@@ -131,9 +132,9 @@ export function MobileNavDrawer({ categoryTree }: MobileNavDrawerProps): React.J
           </Button>
         </div>
         <div className="space-y-4 px-4 pb-8">
-          <div className="rounded-2xl bg-primary px-4 py-3 text-center text-base font-semibold text-primary-foreground">
-            Đăng nhập
-          </div>
+          <PrimaryCtaButton asChild>
+            <Link href="/login">Đăng nhập</Link>
+          </PrimaryCtaButton>
           <div className="space-y-1">
             {drawerCategories.map((category) => {
               return (

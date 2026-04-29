@@ -79,7 +79,7 @@ export function DesktopNav({ categoryTree, auxiliaryLinks }: DesktopNavProps): R
               </NavigationMenuTrigger>
               <NavigationMenuContent
                 className={cn(
-                  'mt-3 min-w-0 border border-border/50 bg-background p-5 shadow-none',
+                  'mt-3 min-w-0 rounded-none border border-border bg-background p-5 shadow-none group-data-[viewport=false]/navigation-menu:mt-3 group-data-[viewport=false]/navigation-menu:rounded-none group-data-[viewport=false]/navigation-menu:bg-background group-data-[viewport=false]/navigation-menu:shadow-none group-data-[viewport=false]/navigation-menu:ring-0',
                   dropdownLayoutClass.widthClassName,
                 )}
               >
