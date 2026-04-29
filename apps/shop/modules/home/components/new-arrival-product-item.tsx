@@ -2,6 +2,7 @@
 
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
+import { toast } from '@repo/ui/components/ui/sonner';
 import { Heart, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,6 +23,11 @@ export function NewArrivalProductItem({ product }: NewArrivalProductItemProps): 
   const productPrice = product.minPrice ?? product.maxPrice;
   const productHref = `/san-pham/${product.slug}`;
   const colorHexCodes = product.colorHexCodes ?? [];
+  const showLoginRequiredToast = (): void => {
+    toast.error('Bạn cần đăng nhập để thực hiện chức năng này', {
+      position: 'bottom-right',
+    });
+  };
 
   return (
     <article className="group">
@@ -52,6 +58,7 @@ export function NewArrivalProductItem({ product }: NewArrivalProductItemProps): 
             type="button"
             className="text-muted-foreground transition hover:text-foreground"
             aria-label="Yêu thích (chưa triển khai)"
+            onClick={showLoginRequiredToast}
           >
             <Heart className="h-5 w-5" />
           </button>
@@ -67,6 +74,7 @@ export function NewArrivalProductItem({ product }: NewArrivalProductItemProps): 
             ctaVariant="filled"
             isIconOnly
             aria-label="Thêm vào giỏ hàng (chưa triển khai)"
+            onClick={showLoginRequiredToast}
           >
             <ShoppingBag className="h-2 w-4" />
           </PrimaryCtaButton>

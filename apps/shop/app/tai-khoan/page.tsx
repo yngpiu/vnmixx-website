@@ -276,7 +276,7 @@ export default function AccountPage(): React.JSX.Element {
 
   if (profileQuery.isLoading) {
     return (
-      <main className="mx-auto w-full max-w-[1100px] px-6 pb-16 pt-8 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+      <main className="shop-shell-container pb-16 pt-8">
         <p className="text-sm text-muted-foreground">Đang tải thông tin tài khoản...</p>
       </main>
     );
@@ -284,7 +284,7 @@ export default function AccountPage(): React.JSX.Element {
 
   if (profileQuery.isError || !profileQuery.data) {
     return (
-      <main className="mx-auto w-full max-w-[1100px] px-6 pb-16 pt-8 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+      <main className="shop-shell-container pb-16 pt-8">
         <p className="text-sm text-destructive" role="alert">
           {profileQuery.error instanceof Error
             ? profileQuery.error.message
@@ -295,7 +295,7 @@ export default function AccountPage(): React.JSX.Element {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1100px] px-6 pb-16 pt-6 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+    <main className="shop-shell-container pb-16 pt-6">
       <nav className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Trang chủ

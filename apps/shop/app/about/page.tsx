@@ -1,6 +1,6 @@
 export default function AboutPage(): React.JSX.Element {
   return (
-    <main className="mx-auto w-full max-w-[1100px] px-6 pb-16 pt-10 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+    <main className="shop-shell-container pb-16 pt-10">
       <section className="max-w-3xl space-y-4">
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">Về VNMIXX</h1>
         <p className="text-base leading-7 text-muted-foreground">

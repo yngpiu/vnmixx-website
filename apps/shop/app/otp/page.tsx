@@ -114,7 +114,7 @@ export default function OtpPage(): React.JSX.Element {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-[1100px] px-6 pb-10 pt-12">
+      <main className="shop-shell-container pb-10 pt-12">
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="mx-auto w-full max-w-[460px] space-y-5"

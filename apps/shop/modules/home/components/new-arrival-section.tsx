@@ -49,7 +49,7 @@ export function NewArrivalSection({
 
   return (
     <section className="pb-16">
-      <div className="mx-auto w-full max-w-[1100px] xl:max-w-[1280px] 2xl:max-w-[1440px]">
+      <div className="shop-shell-container">
         <div className="mx-auto max-w-xl text-center">
           <h2
             suppressHydrationWarning

@@ -89,7 +89,7 @@ const SOCIAL_LINKS: SocialLink[] = [
 export function ShopFooter(): React.JSX.Element {
   return (
     <footer className="border-t border-border bg-background">
-      <div className="mx-auto w-full max-w-[1100px] px-4 pb-0 pt-10 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+      <div className="shop-shell-container pb-0 pt-10">
         <div className="grid grid-cols-1 gap-10 pb-8 lg:grid-cols-[290px_1fr] lg:gap-8">
           <div className="space-y-5">
             <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export function ShopFooter(): React.JSX.Element {
         </div>
       </div>
       <div className="w-full border-t border-border" />
-      <div className="mx-auto w-full max-w-[1100px] px-4 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+      <div className="shop-shell-container">
         <div className="py-4 text-center text-[12px] text-[#8a8a8a]">
           ©VNMIXX All rights reserved
         </div>

@@ -129,7 +129,7 @@ export default function SignupPage(): React.JSX.Element {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-[1100px] px-6 pb-10 pt-10">
+      <main className="shop-shell-container pb-10 pt-10">
         <h1 className="mb-0 text-center text-[20px] font-semibold leading-[30px] text-foreground uppercase">
           ĐĂNG KÝ
         </h1>

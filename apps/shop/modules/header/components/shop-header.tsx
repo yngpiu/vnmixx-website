@@ -31,7 +31,7 @@ export async function ShopHeader(): Promise<React.JSX.Element> {
     <header className="sticky top-0 z-40 bg-background">
       <MobileHeader />
       <div className="hidden md:block">
-        <div className="relative mx-auto flex h-[72px] w-full max-w-[1100px] items-center border-b xl:max-w-[1280px] 2xl:max-w-[1440px]">
+        <div className="shop-shell-container relative flex h-[72px] items-center border-b">
           <div className="min-w-0 flex-1">
             <DesktopNav categoryTree={desktopCategoryTree} auxiliaryLinks={auxiliaryLinks} />
           </div>

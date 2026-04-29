@@ -76,8 +76,34 @@ button {
   cursor: pointer;
 }
 
-@media (max-width: 767px) {
-  body {
-    padding-inline: 1rem;
+.shop-shell-container {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 1300px;
+  padding-inline: 14px;
+}
+
+@media (min-width: 768px) {
+  .shop-shell-container {
+    max-width: 750px;
+    padding-inline: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shop-shell-container {
+    max-width: 970px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .shop-shell-container {
+    max-width: 1140px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .shop-shell-container {
+    max-width: 1300px;
   }
 }

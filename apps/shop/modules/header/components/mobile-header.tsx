@@ -9,12 +9,12 @@ import Link from 'next/link';
 export function MobileHeader(): React.JSX.Element {
   const openMobileDrawer = useHeaderUiStore((state) => state.openMobileDrawer);
   return (
-    <div className="flex h-14 items-center justify-between border-b px-4 md:hidden">
+    <div className="shop-shell-container flex h-14 items-center justify-between border-b md:hidden">
       <Button
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="text-muted-foreground size-9 rounded-full"
+        className="text-muted-foreground size-9 -ml-2.5 rounded-full"
         onClick={openMobileDrawer}
         aria-label="Mở menu"
       >
@@ -34,7 +34,7 @@ export function MobileHeader(): React.JSX.Element {
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="text-muted-foreground relative size-9 rounded-full"
+        className="text-muted-foreground relative size-9 -mr-2.5 rounded-full"
         asChild
       >
         <Link href="/cart" aria-label="Giỏ hàng">

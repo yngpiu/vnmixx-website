@@ -21,7 +21,7 @@ export default async function Page(): Promise<React.JSX.Element> {
   return (
     <main className="min-h-svh">
       <section className="pb-8">
-        <div className="mx-auto w-full max-w-[1100px] xl:max-w-[1280px] 2xl:max-w-[1440px]">
+        <div className="shop-shell-container">
           {banners.length > 0 ? (
             <HomeBannerSlider banners={banners} />
           ) : (

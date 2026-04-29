@@ -33,12 +33,12 @@ export function NewArrivalProductsSlider({
   return (
     <Swiper
       modules={[Navigation]}
-      navigation={products.length > 4}
+      navigation={false}
       spaceBetween={16}
       slidesPerView={2}
       breakpoints={{
         640: { slidesPerView: 2, spaceBetween: 16 },
-        768: { slidesPerView: 3, spaceBetween: 18 },
+        768: { slidesPerView: 3, spaceBetween: 18, navigation: products.length > 4 },
         1024: { slidesPerView: 4, spaceBetween: 20 },
         1280: { slidesPerView: 5, spaceBetween: 20 },
       }}

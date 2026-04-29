@@ -33,9 +33,9 @@ export default async function RootLayout({
         <QueryProvider>
           <AuthProvider accessToken={accessToken}>
             <ShopHeader />
-            <div className="flex-1 pb-16 md:pb-0">{children}</div>
+            <main className="flex-1 pb-16 md:pb-0">{children}</main>
             <ShopFooter />
-            <Toaster richColors closeButton position="top-center" theme="light" />
+            <Toaster richColors closeButton position="bottom-right" theme="light" />
           </AuthProvider>
         </QueryProvider>
       </body>

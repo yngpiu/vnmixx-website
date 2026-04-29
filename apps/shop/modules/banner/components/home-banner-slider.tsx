@@ -37,7 +37,16 @@ export function HomeBannerSlider({ banners }: HomeBannerSliderProps): React.JSX.
             }
           : false
       }
-      navigation={banners.length > 1}
+      navigation={false}
+      breakpoints={
+        banners.length > 1
+          ? {
+              768: {
+                navigation: true,
+              },
+            }
+          : undefined
+      }
       pagination={{ clickable: true }}
       style={swiperColorVariables}
       className={`${bannerRadiusClassName} [&_.swiper-button-next]:hidden [&_.swiper-button-prev]:hidden md:[&_.swiper-button-next]:flex md:[&_.swiper-button-prev]:flex [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40`}

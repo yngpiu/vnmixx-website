@@ -294,7 +294,7 @@ export default function AccountAddressBookPage(): React.JSX.Element {
 
   if (addressListQuery.isLoading) {
     return (
-      <main className="mx-auto w-full max-w-[1100px] px-6 pb-16 pt-8 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+      <main className="shop-shell-container pb-16 pt-8">
         <p className="text-sm text-muted-foreground">Đang tải sổ địa chỉ...</p>
       </main>
     );
@@ -302,7 +302,7 @@ export default function AccountAddressBookPage(): React.JSX.Element {
 
   if (addressListQuery.isError) {
     return (
-      <main className="mx-auto w-full max-w-[1100px] px-6 pb-16 pt-8 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+      <main className="shop-shell-container pb-16 pt-8">
         <p className="text-sm text-destructive" role="alert">
           {addressListQuery.error instanceof Error
             ? addressListQuery.error.message
@@ -313,7 +313,7 @@ export default function AccountAddressBookPage(): React.JSX.Element {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1100px] px-6 pb-16 pt-6 md:px-0 xl:max-w-[1280px] 2xl:max-w-[1440px]">
+    <main className="shop-shell-container pb-16 pt-6">
       <nav className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Trang chủ

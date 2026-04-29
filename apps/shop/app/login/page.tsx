@@ -80,7 +80,7 @@ export default function LoginPage(): React.JSX.Element {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-[1100px] px-6 pb-10 pt-12">
+      <main className="shop-shell-container pb-10 pt-12">
         <section className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-0 md:relative">
           <div
             className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-border"
