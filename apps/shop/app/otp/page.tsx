@@ -2,7 +2,6 @@
 
 import { useResendOtp, useVerifyOtp } from '@/modules/auth/hooks/use-auth';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
-import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Field, FieldError } from '@repo/ui/components/ui/field';
 import { cn } from '@repo/ui/lib/utils';
@@ -181,8 +180,6 @@ export default function OtpPage(): React.JSX.Element {
           </PrimaryCtaButton>
         </form>
       </main>
-
-      <ShopFooter />
     </>
   );
 }

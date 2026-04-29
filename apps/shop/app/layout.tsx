@@ -1,5 +1,6 @@
 import { COOKIE_ACCESS_TOKEN } from '@/config/constants';
 import { AuthProvider } from '@/modules/auth/providers/auth-provider';
+import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { ShopHeader } from '@/modules/header/components/shop-header';
 import { QueryProvider } from '@/providers/query-provider';
 import '@/styles/globals.css';
@@ -32,6 +33,7 @@ export default async function RootLayout({
           <AuthProvider accessToken={accessToken}>
             <ShopHeader />
             <div className="pb-16 md:pb-0">{children}</div>
+            <ShopFooter />
           </AuthProvider>
         </QueryProvider>
       </body>

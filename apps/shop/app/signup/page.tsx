@@ -5,7 +5,6 @@ import { GenderSelect, type GenderValue } from '@/modules/auth/components/gender
 import { useRegister } from '@/modules/auth/hooks/use-auth';
 import { LabeledInput } from '@/modules/common/components/labeled-input';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
-import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Checkbox } from '@repo/ui/components/ui/checkbox';
 import { Field, FieldError } from '@repo/ui/components/ui/field';
@@ -303,8 +302,6 @@ export default function SignupPage(): React.JSX.Element {
           </div>
         </form>
       </main>
-
-      <ShopFooter />
     </>
   );
 }

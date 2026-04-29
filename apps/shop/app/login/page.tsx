@@ -3,7 +3,6 @@
 import { AuthActionError, useLogin } from '@/modules/auth/hooks/use-auth';
 import { LabeledInput } from '@/modules/common/components/labeled-input';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
-import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Field, FieldError } from '@repo/ui/components/ui/field';
 import Link from 'next/link';
@@ -199,8 +198,6 @@ export default function LoginPage(): React.JSX.Element {
           </div>
         </section>
       </main>
-
-      <ShopFooter />
     </>
   );
 }
