@@ -115,7 +115,7 @@ export function MobileNavDrawer({ categoryTree }: MobileNavDrawerProps): React.J
     <Sheet open={isMobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
       <SheetContent
         side="left"
-        className="h-svh w-screen max-w-none overflow-y-auto bg-muted p-0"
+        className="h-svh overflow-y-auto bg-muted p-0 data-[side=left]:w-full data-[side=left]:max-w-none sm:data-[side=left]:max-w-sm"
         showCloseButton={false}
       >
         <SheetTitle className="sr-only">Danh mục sản phẩm</SheetTitle>

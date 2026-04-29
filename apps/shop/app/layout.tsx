@@ -1,5 +1,6 @@
 import { COOKIE_ACCESS_TOKEN } from '@/config/constants';
 import { AuthProvider } from '@/modules/auth/providers/auth-provider';
+import { CartDrawer } from '@/modules/cart/components/cart-drawer';
 import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { ShopHeader } from '@/modules/header/components/shop-header';
 import { QueryProvider } from '@/providers/query-provider';
@@ -35,6 +36,7 @@ export default async function RootLayout({
             <ShopHeader />
             <main className="flex-1 pb-16 md:pb-0">{children}</main>
             <ShopFooter />
+            <CartDrawer />
             <Toaster richColors closeButton position="bottom-right" theme="light" />
           </AuthProvider>
         </QueryProvider>

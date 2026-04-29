@@ -21,7 +21,7 @@ function isPathMatched(pathname: string, paths: string[]): boolean {
 }
 
 function isPublicPathname(pathname: string): boolean {
-  return pathname === '/' || isPathMatched(pathname, PUBLIC_AUTH_PATHS);
+  return isPathMatched(pathname, PUBLIC_AUTH_PATHS);
 }
 
 function decodeJwtExpiration(token: string): number | null {

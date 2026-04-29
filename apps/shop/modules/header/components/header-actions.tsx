@@ -1,7 +1,10 @@
 'use client';
 
 import { useLogout } from '@/modules/auth/hooks/use-auth';
+import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
+import { useCartQuery } from '@/modules/cart/hooks/use-cart';
+import { useCartStore } from '@/modules/cart/stores/cart-store';
 import {
   HeaderDropdownMenuContent,
   type HeaderDropdownMenuItem,
@@ -11,15 +14,19 @@ import { MOBILE_SUPPORT_MENU_ITEMS } from '@/modules/header/constants/mobile-sup
 import { Button } from '@repo/ui/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger } from '@repo/ui/components/ui/dropdown-menu';
 import { HeadsetIcon, LogOutIcon, ShoppingBagIcon, UserRoundIcon } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
-const HEADER_ACTIONS = [{ label: 'Giỏ hàng', icon: ShoppingBagIcon, href: '/cart' }] as const;
 
 export function HeaderActions(): React.JSX.Element {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const isAuthSessionReady = useAuthSessionReady();
   const logoutMutation = useLogout();
+  const openCartDrawer = useCartStore((state) => state.openDrawer);
+  const cartQuery = useCartQuery({ enabled: Boolean(isAuthSessionReady && user) });
+  const totalQuantity = (cartQuery.data?.items ?? []).reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
 
   function navigateToLogin(): void {
     router.push('/login');
@@ -55,12 +62,12 @@ export function HeaderActions(): React.JSX.Element {
             size="icon-sm"
             className="size-9 rounded-full"
             aria-label="Tài khoản"
-            onClick={user ? undefined : navigateToLogin}
+            onClick={isAuthSessionReady ? (user ? undefined : navigateToLogin) : undefined}
           >
             <UserRoundIcon className="text-muted-foreground size-5 stroke-[1.75]" />
           </Button>
         </DropdownMenuTrigger>
-        {user ? (
+        {isAuthSessionReady && user ? (
           <HeaderDropdownMenuContent title="Tài khoản của tôi" items={accountMenuItems} />
         ) : null}
       </DropdownMenu>
@@ -77,19 +84,18 @@ export function HeaderActions(): React.JSX.Element {
         </DropdownMenuTrigger>
         <HeaderDropdownMenuContent title="Trợ giúp" items={supportMenuItems} />
       </DropdownMenu>
-      {HEADER_ACTIONS.map((action) => (
-        <Button
-          key={action.label}
-          variant="ghost"
-          size="icon-sm"
-          className="size-9 rounded-full"
-          asChild
-        >
-          <Link href={action.href} aria-label={action.label}>
-            <action.icon className="text-muted-foreground size-5 stroke-[1.75]" />
-          </Link>
-        </Button>
-      ))}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="relative size-9 rounded-full"
+        aria-label="Giỏ hàng"
+        onClick={openCartDrawer}
+      >
+        <ShoppingBagIcon className="text-muted-foreground size-5 stroke-[1.75]" />
+        <span className="absolute top-1 right-1 flex size-3 items-center justify-center rounded-full bg-foreground text-[9px] text-background">
+          {totalQuantity}
+        </span>
+      </Button>
     </div>
   );
 }

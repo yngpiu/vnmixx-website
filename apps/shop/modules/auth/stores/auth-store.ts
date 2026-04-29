@@ -5,6 +5,7 @@ import { devtools } from 'zustand/middleware';
 interface AuthState {
   accessToken: string | null;
   user: UserProfile | null;
+  isAuthInitialized: boolean;
 }
 
 interface AuthActions {
@@ -12,6 +13,7 @@ interface AuthActions {
   setUser: (user: UserProfile | null) => void;
   setSession: (accessToken: string, user: UserProfile) => void;
   clearSession: () => void;
+  setAuthInitialized: (isInitialized: boolean) => void;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -21,6 +23,7 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       accessToken: null,
       user: null,
+      isAuthInitialized: false,
       setAccessToken: (accessToken: string) =>
         set({ accessToken }, undefined, 'shop-auth/setAccessToken'),
       setUser: (user: UserProfile | null) => set({ user }, undefined, 'shop-auth/setUser'),
@@ -28,6 +31,8 @@ export const useAuthStore = create<AuthStore>()(
         set({ accessToken, user }, undefined, 'shop-auth/setSession'),
       clearSession: () =>
         set({ accessToken: null, user: null }, undefined, 'shop-auth/clearSession'),
+      setAuthInitialized: (isInitialized: boolean) =>
+        set({ isAuthInitialized: isInitialized }, undefined, 'shop-auth/setAuthInitialized'),
     }),
     {
       name: 'ShopAuthStore',
