@@ -77,10 +77,12 @@ export function useDebouncedCartQuantityUpdate() {
     });
   };
   useEffect(() => {
+    const pendingTimeoutByItem = pendingTimeoutByItemRef.current;
+    const pendingQuantityByItem = pendingQuantityByItemRef.current;
     return () => {
-      pendingTimeoutByItemRef.current.forEach((timeout) => clearTimeout(timeout));
-      pendingTimeoutByItemRef.current.clear();
-      pendingQuantityByItemRef.current.clear();
+      pendingTimeoutByItem.forEach((timeout) => clearTimeout(timeout));
+      pendingTimeoutByItem.clear();
+      pendingQuantityByItem.clear();
     };
   }, []);
   return {
