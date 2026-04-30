@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '@/config/constants';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import type { PaginatedProductsResult } from '@/modules/products/types/product-list';
+import type { ShopProductReviewsResult } from '@/modules/products/types/product-reviews';
 
 export type ShopColorOption = {
   id: number;
@@ -112,4 +113,26 @@ export async function fetchShopSizes(): Promise<ShopSizeOption[]> {
     cache: 'no-store',
   });
   return parseJsonResponse<ShopSizeOption[]>(response);
+}
+
+/**
+ * Public paginated reviews for a product (by slug).
+ */
+export async function fetchProductReviews(
+  slug: string,
+  params: { page: number; limit?: number },
+): Promise<ShopProductReviewsResult> {
+  const limit = params.limit ?? 10;
+  const searchParams = new URLSearchParams({
+    page: String(params.page),
+    limit: String(limit),
+  });
+  const response = await fetch(
+    `${API_BASE_URL}/products/${encodeURIComponent(slug)}/reviews?${searchParams.toString()}`,
+    {
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+    },
+  );
+  return parseJsonResponse<ShopProductReviewsResult>(response);
 }

@@ -57,7 +57,7 @@ function CategoryPageFallback(): React.JSX.Element {
       <Skeleton className="mb-8 h-5 w-full max-w-xl" />
       <div className="flex flex-col gap-8 lg:flex-row">
         <Skeleton className="h-[420px] w-full lg:w-[260px]" />
-        <div className="grid min-w-0 flex-1 grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, index) => (
             <div key={index} className="space-y-3">
               <Skeleton className="aspect-3/4 w-full" />

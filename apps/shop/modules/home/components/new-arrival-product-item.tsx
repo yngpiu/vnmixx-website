@@ -7,6 +7,7 @@ import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import type { ProductVariantOption } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
+import { ProductWishlistHeartButton } from '@/modules/wishlist/components/product-wishlist-heart-button';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -17,7 +18,7 @@ import {
 } from '@repo/ui/components/ui/dialog';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { useQuery } from '@tanstack/react-query';
-import { Heart, ShoppingBag } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -97,17 +98,6 @@ export function NewArrivalProductItem({
       null,
     [selectedSize, selectedVariantByColor],
   );
-  const showWishlistToast = (): void => {
-    if (!isAuthSessionReady) {
-      return;
-    }
-    const message = user
-      ? 'Tính năng yêu thích đang được phát triển.'
-      : 'Bạn cần đăng nhập để thực hiện chức năng này';
-    toast[user ? 'info' : 'error'](message, {
-      position: 'bottom-right',
-    });
-  };
   const openVariantPicker = (): void => {
     if (!isAuthSessionReady) {
       return;
@@ -167,14 +157,7 @@ export function NewArrivalProductItem({
               />
             ))}
           </div>
-          <button
-            type="button"
-            className="text-muted-foreground transition hover:text-foreground"
-            aria-label="Yêu thích (chưa triển khai)"
-            onClick={showWishlistToast}
-          >
-            <Heart className="h-5 w-5" />
-          </button>
+          <ProductWishlistHeartButton productId={product.id} layout="card" />
         </div>
         <Link href={productHref} className="block">
           <h3

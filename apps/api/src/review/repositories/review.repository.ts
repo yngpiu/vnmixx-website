@@ -28,6 +28,15 @@ export interface AdminReviewDetailView {
   customer: { fullName: string; email: string } | null;
 }
 
+export interface PublicProductReviewListItemView {
+  id: number;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  createdAt: Date;
+  customerFullName: string | null;
+}
+
 export interface ProductReviewSimpleView {
   id: number;
   productId: number;
@@ -113,6 +122,111 @@ export class ReviewRepository {
   // Đếm tổng số đánh giá theo điều kiện lọc.
   async countReviews(where: Prisma.ProductReviewWhereInput): Promise<number> {
     return this.prisma.productReview.count({ where });
+  }
+
+  /**
+   * Count of visible reviews per star rating (1–5) for storefront breakdown.
+   */
+  async countVisibleReviewsByStarRating(productId: number): Promise<{
+    star1: number;
+    star2: number;
+    star3: number;
+    star4: number;
+    star5: number;
+  }> {
+    const result = {
+      star1: 0,
+      star2: 0,
+      star3: 0,
+      star4: 0,
+      star5: 0,
+    };
+    const rows = await this.prisma.productReview.groupBy({
+      by: ['rating'],
+      where: { productId, status: ReviewVisibility.VISIBLE },
+      _count: { _all: true },
+    });
+    for (const row of rows) {
+      const count = row._count._all;
+      switch (row.rating) {
+        case 1:
+          result.star1 = count;
+          break;
+        case 2:
+          result.star2 = count;
+          break;
+        case 3:
+          result.star3 = count;
+          break;
+        case 4:
+          result.star4 = count;
+          break;
+        case 5:
+          result.star5 = count;
+          break;
+        default:
+          break;
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Visible reviews for storefront product page, newest first.
+   */
+  async findPublicVisibleReviewsByProductId(params: {
+    productId: number;
+    skip: number;
+    take: number;
+  }): Promise<PublicProductReviewListItemView[]> {
+    const rows = await this.prisma.productReview.findMany({
+      where: {
+        productId: params.productId,
+        status: ReviewVisibility.VISIBLE,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: params.skip,
+      take: params.take,
+      select: {
+        id: true,
+        rating: true,
+        title: true,
+        content: true,
+        createdAt: true,
+        customer: { select: { fullName: true } },
+      },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      rating: row.rating,
+      title: row.title,
+      content: row.content,
+      createdAt: row.createdAt,
+      customerFullName: row.customer?.fullName ?? null,
+    }));
+  }
+
+  async aggregateVisibleReviewStatsByProductId(
+    productId: number,
+  ): Promise<{ reviewCount: number; averageRating: number | null }> {
+    const where: Prisma.ProductReviewWhereInput = {
+      productId,
+      status: ReviewVisibility.VISIBLE,
+    };
+    const [aggregate, reviewCount] = await Promise.all([
+      this.prisma.productReview.aggregate({
+        where,
+        _avg: { rating: true },
+      }),
+      this.prisma.productReview.count({ where }),
+    ]);
+    if (reviewCount === 0) {
+      return { reviewCount: 0, averageRating: null };
+    }
+    const rawAvg = aggregate._avg.rating;
+    const averageRating =
+      rawAvg === null || rawAvg === undefined ? null : Number(Number(rawAvg).toFixed(1));
+    return { reviewCount, averageRating };
   }
 
   // Tìm kiếm chi tiết một đánh giá theo ID.

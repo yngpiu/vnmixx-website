@@ -82,7 +82,10 @@ export class ProductService {
       PRODUCT_CACHE_TTL.PRODUCT_DETAIL,
       async () => {
         const product = await this.repository.findBySlug(slug);
-        return product ? this.transformPublicDetail(product) : null;
+        if (!product) {
+          return null;
+        }
+        return this.transformPublicDetail(product);
       },
     );
     if (!cached) throw new NotFoundException(`Không tìm thấy sản phẩm "${slug}"`);

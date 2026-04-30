@@ -84,6 +84,83 @@ export class ReviewService {
     });
   }
 
+  /**
+   * Paginated visible reviews for storefront, by product slug, with aggregate stats.
+   */
+  async listPublicReviewsByProductSlug(
+    slug: string,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: Array<{
+      id: number;
+      rating: number;
+      title: string | null;
+      content: string | null;
+      createdAt: Date;
+      authorDisplayName: string;
+    }>;
+    meta: { page: number; limit: number; total: number; totalPages: number };
+    reviewCount: number;
+    averageRating: number | null;
+    ratingBreakdown: {
+      star1: number;
+      star2: number;
+      star3: number;
+      star4: number;
+      star5: number;
+    };
+  }> {
+    const product = await this.prisma.product.findFirst({
+      where: { slug, isActive: true, deletedAt: null },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new NotFoundException(`Không tìm thấy sản phẩm "${slug}"`);
+    }
+    const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+    const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 10;
+    const [stats, rows, ratingBreakdown] = await Promise.all([
+      this.reviewRepo.aggregateVisibleReviewStatsByProductId(product.id),
+      this.reviewRepo.findPublicVisibleReviewsByProductId({
+        productId: product.id,
+        skip: (safePage - 1) * safeLimit,
+        take: safeLimit,
+      }),
+      this.reviewRepo.countVisibleReviewsByStarRating(product.id),
+    ]);
+    const total = stats.reviewCount;
+    const totalPages = total === 0 ? 1 : Math.ceil(total / safeLimit);
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        rating: row.rating,
+        title: row.title,
+        content: row.content,
+        createdAt: row.createdAt,
+        authorDisplayName: ReviewService.maskReviewAuthorName(row.customerFullName),
+      })),
+      meta: { page: safePage, limit: safeLimit, total, totalPages },
+      reviewCount: stats.reviewCount,
+      averageRating: stats.averageRating,
+      ratingBreakdown,
+    };
+  }
+
+  private static maskReviewAuthorName(fullName: string | null): string {
+    if (fullName === null || fullName.trim() === '') {
+      return 'Khách hàng';
+    }
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) {
+      const word = parts[0];
+      return word.length <= 2 ? `${word.charAt(0)}*` : `${word.slice(0, 2)}***`;
+    }
+    const first = parts[0];
+    const last = parts[parts.length - 1];
+    return `${first} ${last.charAt(0)}.`;
+  }
+
   // Lấy danh sách đánh giá phục vụ quản trị (Admin).
   async getAdminReviews(query: ListAdminReviewsQueryDto): Promise<AdminReviewsListResponseDto> {
     const page = query.page ?? 1;
