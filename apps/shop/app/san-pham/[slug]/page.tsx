@@ -1,4 +1,6 @@
 import { serverApi, ServerApiError } from '@/lib/server-api';
+import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
+import { fetchSuggestedProductsByCategory } from '@/modules/products/api/catalog';
 import { ProductDetailPageContent } from '@/modules/products/components/product-detail-page-content';
 import type { ShopProductDetail } from '@/modules/products/types/product-detail';
 import type { ShopProductReviewsResult } from '@/modules/products/types/product-reviews';
@@ -33,16 +35,26 @@ export default async function ProductDetailPage(props: PageProps): Promise<React
   const { slug } = await props.params;
   const encodedSlug = encodeURIComponent(slug);
   try {
-    const [product, initialPublicReviews] = await Promise.all([
-      serverApi.get<ShopProductDetail>(`/products/${encodedSlug}`, { skipAuth: true }),
+    const product = await serverApi.get<ShopProductDetail>(`/products/${encodedSlug}`, {
+      skipAuth: true,
+    });
+    const [initialPublicReviews, suggestedProducts] = await Promise.all([
       serverApi
         .get<ShopProductReviewsResult>(`/products/${encodedSlug}/reviews?page=1&limit=10`, {
           skipAuth: true,
         })
         .catch((): ShopProductReviewsResult => emptyInitialReviews),
+      fetchSuggestedProductsByCategory({
+        categorySlug: product.category?.slug,
+        excludedProductId: product.id,
+      }).catch((): NewArrivalProduct[] => []),
     ]);
     return (
-      <ProductDetailPageContent product={product} initialPublicReviews={initialPublicReviews} />
+      <ProductDetailPageContent
+        product={product}
+        initialPublicReviews={initialPublicReviews}
+        suggestedProducts={suggestedProducts}
+      />
     );
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 404) {

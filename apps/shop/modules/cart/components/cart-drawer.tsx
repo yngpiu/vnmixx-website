@@ -128,7 +128,7 @@ export function CartDrawer(): React.JSX.Element {
   return (
     <Drawer direction="right" open={isDrawerOpen} onOpenChange={setDrawerOpen}>
       <DrawerContent className="h-svh rounded-none border-l bg-background p-0 data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:max-w-none sm:data-[vaul-drawer-direction=right]:max-w-[420px]">
-        <DrawerHeader className="border-b px-6 py-5">
+        <DrawerHeader className="border-b px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <DrawerTitle className="text-[20px] font-semibold leading-none">Giỏ hàng</DrawerTitle>

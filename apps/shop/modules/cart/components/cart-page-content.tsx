@@ -244,7 +244,7 @@ export function CartPageContent(): React.JSX.Element {
                 ))}
               </div>
               <div className="pt-5">
-                <PrimaryCtaButton ctaVariant="outline" asChild className="!w-auto">
+                <PrimaryCtaButton ctaVariant="outline" asChild className="w-auto!">
                   <Link href="/">← Tiếp tục mua hàng</Link>
                 </PrimaryCtaButton>
               </div>

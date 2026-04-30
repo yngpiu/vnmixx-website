@@ -49,7 +49,7 @@ export function HomeBannerSlider({ banners }: HomeBannerSliderProps): React.JSX.
       }
       pagination={{ clickable: true }}
       style={swiperColorVariables}
-      className={`${bannerRadiusClassName} [&_.swiper-button-next]:hidden [&_.swiper-button-prev]:hidden md:[&_.swiper-button-next]:flex md:[&_.swiper-button-prev]:flex [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40`}
+      className={`${bannerRadiusClassName} [&_.swiper-button-next]:hidden! [&_.swiper-button-prev]:hidden! md:[&_.swiper-button-next]:flex! md:[&_.swiper-button-prev]:flex! [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40`}
     >
       {banners.map((banner: PublicBanner) => (
         <SwiperSlide key={banner.id}>

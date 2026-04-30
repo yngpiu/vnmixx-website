@@ -4,6 +4,8 @@ import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { NewArrivalProductsSlider } from '@/modules/home/components/new-arrival-products-slider';
+import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import {
   ProductDetailGallery,
   type ProductDetailGallerySlide,
@@ -19,7 +21,7 @@ import { ProductWishlistHeartButton } from '@/modules/wishlist/components/produc
 import { Button } from '@repo/ui/components/ui/button';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
-import { Check, Minus, Plus } from 'lucide-react';
+import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -27,6 +29,7 @@ import { useEffect, useMemo, useState } from 'react';
 type ProductDetailPageContentProps = {
   product: ShopProductDetail;
   initialPublicReviews: ShopProductReviewsResult;
+  suggestedProducts: NewArrivalProduct[];
 };
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN');
@@ -88,6 +91,7 @@ function buildGallerySlides(product: ShopProductDetail): ProductDetailGallerySli
 export function ProductDetailPageContent({
   product,
   initialPublicReviews,
+  suggestedProducts,
 }: ProductDetailPageContentProps): React.JSX.Element {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -103,6 +107,7 @@ export function ProductDetailPageContent({
   const [selectedSizeLabel, setSelectedSizeLabel] = useState<string>(
     () => getInitialColorAndSizeLabel(product).sizeLabel,
   );
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState<boolean>(false);
   const [quantity, setQuantity] = useState<number>(1);
   const gallerySlides = useMemo(() => buildGallerySlides(product), [product]);
   const sizesForColor = useMemo(() => {
@@ -277,7 +282,7 @@ export function ProductDetailPageContent({
                       aria-pressed={isSelected}
                       onClick={() => setSelectedSizeLabel(sizeLabel)}
                       className={cn(
-                        'inline-flex min-h-8 shrink-0 flex-col items-center justify-center break-words border border-[#E7E8E9] bg-background px-3 py-1.5 text-center text-[10px] font-medium leading-tight tracking-wide uppercase transition md:min-h-9 md:px-4 md:py-2 md:text-xs rounded-br-[10px] rounded-bl-none rounded-tl-[10px] rounded-tr-none',
+                        'inline-flex min-h-8 shrink-0 flex-col items-center justify-center wrap-break-word border border-[#E7E8E9] bg-background px-3 py-1.5 text-center text-[10px] font-medium leading-tight tracking-wide uppercase transition md:min-h-9 md:px-4 md:py-2 md:text-xs rounded-br-[10px] rounded-bl-none rounded-tl-[10px] rounded-tr-none',
                         isSelected
                           ? 'border-foreground bg-foreground text-background'
                           : 'text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground',
@@ -358,14 +363,44 @@ export function ProductDetailPageContent({
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-foreground">
                 Giới thiệu
               </h2>
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              <div
+                className={cn(
+                  'whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground transition-[max-height] duration-300',
+                  isDescriptionExpanded ? 'max-h-[999px]' : 'max-h-24 overflow-hidden',
+                )}
+              >
                 {product.description}
+              </div>
+              <div className="relative mt-4 flex items-center justify-center">
+                <div className="h-px w-full bg-border" />
+                <button
+                  type="button"
+                  aria-label={isDescriptionExpanded ? 'Thu gọn mô tả' : 'Mở rộng mô tả'}
+                  aria-expanded={isDescriptionExpanded}
+                  onClick={() => setIsDescriptionExpanded((previous) => !previous)}
+                  className="absolute inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition hover:text-foreground"
+                >
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 transition-transform',
+                      isDescriptionExpanded && 'rotate-180',
+                    )}
+                  />
+                </button>
               </div>
             </div>
           ) : null}
         </div>
       </div>
       <ProductDetailReviewsSection productSlug={product.slug} initial={initialPublicReviews} />
+      {suggestedProducts.length > 0 ? (
+        <section className="pt-12">
+          <h2 className="mb-6 text-xl font-semibold uppercase tracking-wide text-foreground">
+            Sản phẩm gợi ý
+          </h2>
+          <NewArrivalProductsSlider products={suggestedProducts} />
+        </section>
+      ) : null}
     </main>
   );
 }

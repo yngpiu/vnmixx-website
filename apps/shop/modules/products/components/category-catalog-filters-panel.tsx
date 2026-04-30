@@ -60,7 +60,7 @@ export function CategoryCatalogFiltersPanel({
                   type="button"
                   onClick={() => onToggleDraftSize(size.id)}
                   className={cn(
-                    'flex size-full min-h-6 flex-col items-center justify-center break-words border border-[#E7E8E9] bg-background px-[3px] py-0.5 text-center text-[9px] font-medium leading-tight tracking-wide uppercase transition md:min-h-[26px] md:text-[10px] rounded-br-[8px] rounded-bl-none rounded-tl-[8px] rounded-tr-none',
+                    'flex size-full min-h-6 flex-col items-center justify-center wrap-break-word border border-[#E7E8E9] bg-background px-[3px] py-0.5 text-center text-[9px] font-medium leading-tight tracking-wide uppercase transition md:min-h-[26px] md:text-[10px] rounded-br-[8px] rounded-bl-none rounded-tl-[8px] rounded-tr-none',
                     isSelected
                       ? 'border-foreground bg-foreground text-background'
                       : 'text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground',
@@ -107,7 +107,7 @@ export function CategoryCatalogFiltersPanel({
       <CatalogFilterSection title="Mức giá">
         <div className="space-y-2">
           <Slider
-            className="w-full [&_[data-slot=slider-track]]:!h-[3px]"
+            className="w-full **:data-[slot=slider-track]:h-[3px]!"
             min={0}
             max={CATALOG_PRICE_RANGE_MAX}
             step={50_000}

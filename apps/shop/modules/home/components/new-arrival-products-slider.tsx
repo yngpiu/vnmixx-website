@@ -33,7 +33,7 @@ export function NewArrivalProductsSlider({
   return (
     <Swiper
       modules={[Navigation]}
-      navigation={false}
+      navigation={products.length > 4}
       spaceBetween={16}
       slidesPerView={2}
       breakpoints={{
@@ -43,7 +43,7 @@ export function NewArrivalProductsSlider({
         1280: { slidesPerView: 5, spaceBetween: 20 },
       }}
       style={swiperColorVariables}
-      className="[&_.swiper-button-next]:hidden [&_.swiper-button-prev]:hidden md:[&_.swiper-button-next]:flex md:[&_.swiper-button-prev]:flex [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-button-next]:-translate-y-10 [&_.swiper-button-prev]:-translate-y-10 [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40"
+      className="[&_.swiper-button-next]:hidden! [&_.swiper-button-prev]:hidden! md:[&_.swiper-button-next]:flex! md:[&_.swiper-button-prev]:flex! [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-button-next]:-translate-y-10 [&_.swiper-button-prev]:-translate-y-10 [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40"
     >
       {products.map((product: NewArrivalProduct) => (
         <SwiperSlide key={product.id}>

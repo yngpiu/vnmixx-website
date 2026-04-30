@@ -8,9 +8,9 @@ import {
   type MobileBottomNavMenuItem,
 } from '@/modules/header/components/mobile-bottom-nav-menu-sheet';
 import { ACCOUNT_MENU_ITEMS } from '@/modules/header/constants/account-menu-items';
-import { MOBILE_SUPPORT_MENU_ITEMS } from '@/modules/header/constants/mobile-support-menu-items';
+import { useSupportChatDrawerStore } from '@/modules/support-chat/stores/support-chat-drawer-store';
 import { Button } from '@repo/ui/components/ui/button';
-import { HeadphonesIcon, LogOutIcon, SearchIcon, UserRoundIcon } from 'lucide-react';
+import { LogOutIcon, MessageCircleIcon, SearchIcon, UserRoundIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -24,23 +24,19 @@ type MobileBottomLink =
   | {
       label: string;
       icon: React.ComponentType<{ className?: string }>;
-      type: 'support-menu' | 'account-menu' | 'account-pending' | 'account-hydrate-shell';
+      type: 'support-chat' | 'account-menu' | 'account-pending' | 'account-hydrate-shell';
     };
 
 export function MobileBottomNav(): React.JSX.Element {
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
   const logoutMutation = useLogout();
+  const openSupportChatDrawer = useSupportChatDrawerStore((state) => state.openDrawer);
   const [hasMounted, setHasMounted] = useState<boolean>(false);
-  const [isSupportSheetOpen, setSupportSheetOpen] = useState<boolean>(false);
   const [isAccountSheetOpen, setAccountSheetOpen] = useState<boolean>(false);
   useEffect(() => {
     setHasMounted(true);
   }, []);
-  const supportMenuItems: MobileBottomNavMenuItem[] = MOBILE_SUPPORT_MENU_ITEMS.map((item) => ({
-    label: item.label,
-    icon: item.icon,
-  }));
   const accountMenuItems: MobileBottomNavMenuItem[] = [
     ...ACCOUNT_MENU_ITEMS.map((item) => ({
       label: item.label,
@@ -66,7 +62,7 @@ export function MobileBottomNav(): React.JSX.Element {
         : user
           ? { label: 'Tài khoản', icon: UserRoundIcon, type: 'account-menu' }
           : { label: 'Đăng nhập', href: '/login', icon: UserRoundIcon, type: 'link' },
-    { label: 'Trợ giúp', icon: HeadphonesIcon, type: 'support-menu' },
+    { label: 'Liên hệ', icon: MessageCircleIcon, type: 'support-chat' },
   ];
   return (
     <>
@@ -124,8 +120,8 @@ export function MobileBottomNav(): React.JSX.Element {
                   type="button"
                   variant="ghost"
                   className="text-muted-foreground h-full w-full rounded-none px-0 py-0 text-xs"
-                  onClick={() => setSupportSheetOpen(true)}
-                  aria-label="Mở menu trợ giúp"
+                  onClick={openSupportChatDrawer}
+                  aria-label="Mở chat hỗ trợ"
                 >
                   <span className="flex h-full flex-col items-center justify-center gap-1">
                     <item.icon className="size-4 stroke-[1.75]" />
@@ -137,12 +133,6 @@ export function MobileBottomNav(): React.JSX.Element {
           ))}
         </ul>
       </nav>
-      <MobileBottomNavMenuSheet
-        title="Trợ giúp"
-        isOpen={isSupportSheetOpen}
-        onOpenChange={setSupportSheetOpen}
-        items={supportMenuItems}
-      />
       <MobileBottomNavMenuSheet
         title="Tài khoản của tôi"
         isOpen={isAccountSheetOpen}

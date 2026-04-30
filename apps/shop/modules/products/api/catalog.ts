@@ -136,3 +136,34 @@ export async function fetchProductReviews(
   );
   return parseJsonResponse<ShopProductReviewsResult>(response);
 }
+
+const SUGGESTED_PRODUCTS_LIMIT = 10;
+const SUGGESTED_PRODUCTS_FETCH_LIMIT = 12;
+
+/**
+ * Suggested products on PDP: newest products from same category.
+ */
+export async function fetchSuggestedProductsByCategory(params: {
+  categorySlug?: string;
+  excludedProductId: number;
+}): Promise<NewArrivalProduct[]> {
+  const query = buildProductsQuery({
+    page: 1,
+    limit: SUGGESTED_PRODUCTS_FETCH_LIMIT,
+    sort: 'newest',
+    categorySlug: params.categorySlug,
+  });
+  const response = await fetch(`${API_BASE_URL}/products?${query}`, {
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+  });
+  type ListPayload = { data: NewArrivalProduct[]; meta: PaginatedProductsResult['meta'] };
+  const parsed = await parseJsonResponse<ListPayload>(response);
+  return (parsed.data ?? [])
+    .map((product) => ({
+      ...product,
+      colorHexCodes: product.colorHexCodes ?? [],
+    }))
+    .filter((product) => product.id !== params.excludedProductId)
+    .slice(0, SUGGESTED_PRODUCTS_LIMIT);
+}

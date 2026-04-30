@@ -84,7 +84,7 @@ export function ProductDetailReviewsSection({
 
   if (initial.reviewCount === 0) {
     return (
-      <section className="mt-12 border-t border-border pt-10" aria-labelledby="pdp-reviews-heading">
+      <section className="mt-8  pt-6" aria-labelledby="pdp-reviews-heading">
         <h2
           id="pdp-reviews-heading"
           className="text-sm font-semibold uppercase tracking-wide text-foreground"
@@ -97,7 +97,7 @@ export function ProductDetailReviewsSection({
   }
 
   return (
-    <section className="mt-12 border-t border-border pt-10" aria-labelledby="pdp-reviews-heading">
+    <section className="mt-8  pt-6" aria-labelledby="pdp-reviews-heading">
       <h2
         id="pdp-reviews-heading"
         className="text-sm font-semibold uppercase tracking-wide text-foreground"

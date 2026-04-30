@@ -3,6 +3,7 @@ import { AuthProvider } from '@/modules/auth/providers/auth-provider';
 import { CartDrawer } from '@/modules/cart/components/cart-drawer';
 import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { ShopHeader } from '@/modules/header/components/shop-header';
+import { SupportChatFabSheet } from '@/modules/support-chat/components/support-chat-fab-sheet';
 import { QueryProvider } from '@/providers/query-provider';
 import '@/styles/globals.css';
 import { Toaster } from '@repo/ui/components/ui/sonner';
@@ -37,6 +38,7 @@ export default async function RootLayout({
             <main className="flex-1 pb-16 md:pb-0">{children}</main>
             <ShopFooter />
             <CartDrawer />
+            <SupportChatFabSheet />
             <Toaster richColors closeButton position="bottom-right" theme="light" />
           </AuthProvider>
         </QueryProvider>

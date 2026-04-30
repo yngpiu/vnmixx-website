@@ -39,46 +39,46 @@ const FOOTER_LINK_COLUMNS: FooterLinkColumn[] = [
   {
     title: 'Liên hệ',
     items: [
-      { label: 'Hotline', href: '#' },
-      { label: 'Email', href: '#' },
-      { label: 'Live Chat', href: '#' },
-      { label: 'Messenger', href: '#' },
-      { label: 'Liên hệ', href: '#' },
+      { label: 'Trung tâm hỗ trợ', href: '#' },
+      { label: 'Câu hỏi thường gặp', href: '#' },
+      { label: 'Gửi phản hồi dịch vụ', href: '#' },
+      { label: 'Hướng dẫn liên hệ', href: '#' },
+      { label: 'Bảo mật thông tin', href: '#' },
     ],
   },
 ];
 
 const SOCIAL_LINKS: SocialLink[] = [
   {
-    href: 'https://www.facebook.com/thoitrangivymoda/',
+    href: '#',
     alt: 'Facebook',
     iconSrc: '/images/footer/ic-fb.svg',
     iconWidth: 10,
     iconHeight: 18,
   },
   {
-    href: 'https://ivymoda.com/',
+    href: '#',
     alt: 'Google',
     iconSrc: '/images/footer/ic-gg.svg',
     iconWidth: 18,
     iconHeight: 18,
   },
   {
-    href: 'https://www.instagram.com/ivy_moda/',
+    href: '#',
     alt: 'Instagram',
     iconSrc: '/images/footer/ic-instagram.svg',
     iconWidth: 18,
     iconHeight: 18,
   },
   {
-    href: 'https://zalo.me/2129412421626719329',
+    href: '#',
     alt: 'Zalo',
     iconSrc: '/images/footer/ic-zalo.png',
     iconWidth: 18,
     iconHeight: 18,
   },
   {
-    href: 'https://www.youtube.com/user/thoitrangivymoda',
+    href: '#',
     alt: 'YouTube',
     iconSrc: '/images/footer/ic-ytb.svg',
     iconWidth: 18,
@@ -108,8 +108,6 @@ export function ShopFooter(): React.JSX.Element {
                 <li key={socialLink.alt}>
                   <Link
                     href={socialLink.href}
-                    target="_blank"
-                    rel="nofollow noreferrer"
                     className="inline-flex h-5 w-5 items-center justify-center"
                   >
                     <Image
@@ -124,7 +122,7 @@ export function ShopFooter(): React.JSX.Element {
               ))}
             </ul>
             <Link
-              href="tel:02466623434"
+              href="#"
               className="inline-flex h-10 items-center rounded-sm bg-[#1f1f1f] px-5 text-sm font-semibold uppercase tracking-[0.04em] text-white"
             >
               Hotline: 0359 880 321
