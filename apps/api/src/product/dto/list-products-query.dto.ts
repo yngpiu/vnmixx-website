@@ -58,10 +58,10 @@ export class ListProductsQueryDto {
 
   @ApiPropertyOptional({
     example: 'newest',
-    enum: ['newest', 'price_asc', 'price_desc', 'best_selling'],
+    enum: ['newest', 'price_asc', 'price_desc', 'best_selling', 'most_favorite'],
   })
   @IsString({ message: 'Tiêu chí sắp xếp phải là chuỗi ký tự' })
-  @IsIn(['newest', 'price_asc', 'price_desc', 'best_selling'], {
+  @IsIn(['newest', 'price_asc', 'price_desc', 'best_selling', 'most_favorite'], {
     message: 'Tiêu chí sắp xếp không hợp lệ',
   })
   @IsOptional()

@@ -24,6 +24,8 @@ import { useMemo, useState } from 'react';
 
 type NewArrivalProductItemProps = {
   product: NewArrivalProduct;
+  /** Category listing typography; defaults to homepage card. */
+  display?: 'compact' | 'listing';
 };
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN');
@@ -35,7 +37,10 @@ function formatMoney(value: number | null): string {
   return `${moneyFormatter.format(value)}đ`;
 }
 
-export function NewArrivalProductItem({ product }: NewArrivalProductItemProps): React.JSX.Element {
+export function NewArrivalProductItem({
+  product,
+  display = 'compact',
+}: NewArrivalProductItemProps): React.JSX.Element {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
@@ -172,10 +177,20 @@ export function NewArrivalProductItem({ product }: NewArrivalProductItemProps): 
           </button>
         </div>
         <Link href={productHref} className="block">
-          <h3 className="line-clamp-2 min-h-10 text-sm  text-foreground">{product.name}</h3>
+          <h3
+            className={
+              display === 'listing'
+                ? 'line-clamp-2 min-h-10 text-sm leading-snug text-foreground md:text-[15px]'
+                : 'line-clamp-2 min-h-10 text-sm text-foreground'
+            }
+          >
+            {product.name}
+          </h3>
         </Link>
-        <div className=" flex items-center justify-between gap-3">
-          <span className="text-base font-semibold text-foreground ">
+        <div className="flex items-center justify-between gap-3">
+          <span
+            className={`font-semibold text-foreground ${display === 'listing' ? 'text-[15px] md:text-base' : 'text-base'}`}
+          >
             {formatMoney(productPrice)}
           </span>
           <PrimaryCtaButton

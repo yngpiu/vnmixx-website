@@ -14,6 +14,13 @@ export interface ProductListItemView {
   category: { id: number; name: string; slug: string } | null;
 }
 
+/** Public list aggregation including createdAt — used only to break ties best-selling / favorites sorts. */
+type ProductPublicListAggWithCreatedAt = ProductListItemView & {
+  minPrice: number | null;
+  maxPrice: number | null;
+  createdAt: Date;
+};
+
 export interface ProductAdminListItemView {
   id: number;
   name: string;
@@ -137,6 +144,9 @@ export class ProductRepository {
     if (params.sort === 'best_selling') {
       return this.findPublicBestSellingList(params);
     }
+    if (params.sort === 'most_favorite') {
+      return this.findPublicMostFavoriteList(params);
+    }
     const { page, limit, search, categorySlug, colorIds, sizeIds, minPrice, maxPrice, sort } =
       params;
 
@@ -149,6 +159,8 @@ export class ProductRepository {
           some: { category: categoryWhereMatchesSlugTree(categorySlug) },
         },
       }),
+      ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
+      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } }),
     };
 
     const variantFilter: Prisma.ProductVariantWhereInput = {
@@ -158,7 +170,7 @@ export class ProductRepository {
       ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
     };
 
-    if (colorIds?.length || sizeIds?.length || minPrice !== undefined || maxPrice !== undefined) {
+    if (colorIds?.length || sizeIds?.length) {
       where.variants = { some: variantFilter };
     }
 
@@ -191,19 +203,17 @@ export class ProductRepository {
         0,
         4,
       );
-      return { ...rest, category: null, minPrice: minP, maxPrice: maxP, colorHexCodes };
+      return {
+        ...rest,
+        category: null,
+        minPrice: minP,
+        maxPrice: maxP,
+        colorHexCodes,
+      };
     });
 
-    let filtered = data;
-    if (minPrice !== undefined) {
-      filtered = filtered.filter((p) => p.maxPrice !== null && p.maxPrice >= minPrice);
-    }
-    if (maxPrice !== undefined) {
-      filtered = filtered.filter((p) => p.minPrice !== null && p.minPrice <= maxPrice);
-    }
-
     return {
-      data: filtered,
+      data,
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -231,6 +241,8 @@ export class ProductRepository {
           some: { category: categoryWhereMatchesSlugTree(categorySlug) },
         },
       }),
+      ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
+      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } }),
     };
     const variantFilter: Prisma.ProductVariantWhereInput = {
       isActive: true,
@@ -238,7 +250,7 @@ export class ProductRepository {
       ...(colorIds?.length && { colorId: { in: colorIds } }),
       ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
     };
-    if (colorIds?.length || sizeIds?.length || minPrice !== undefined || maxPrice !== undefined) {
+    if (colorIds?.length || sizeIds?.length) {
       where.variants = { some: variantFilter };
     }
     const products = await this.prisma.product.findMany({
@@ -256,14 +268,7 @@ export class ProductRepository {
       },
     });
     const mappedProducts = products.map(
-      ({
-        variants,
-        ...rest
-      }): ProductListItemView & {
-        minPrice: number | null;
-        maxPrice: number | null;
-        createdAt: Date;
-      } => {
+      ({ variants, createdAt, ...rest }): ProductPublicListAggWithCreatedAt => {
         const prices = variants.map((variant) => variant.price);
         const resolvedMinPrice = prices.length > 0 ? Math.min(...prices) : null;
         const resolvedMaxPrice = prices.length > 0 ? Math.max(...prices) : null;
@@ -273,6 +278,7 @@ export class ProductRepository {
         );
         return {
           ...rest,
+          createdAt,
           category: null,
           minPrice: resolvedMinPrice,
           maxPrice: resolvedMaxPrice,
@@ -280,16 +286,7 @@ export class ProductRepository {
         };
       },
     );
-    const priceFilteredProducts = mappedProducts.filter((product) => {
-      if (minPrice !== undefined && (product.maxPrice === null || product.maxPrice < minPrice)) {
-        return false;
-      }
-      if (maxPrice !== undefined && (product.minPrice === null || product.minPrice > maxPrice)) {
-        return false;
-      }
-      return true;
-    });
-    const productIds = priceFilteredProducts.map((product) => product.id);
+    const productIds = mappedProducts.map((product) => product.id);
     const bestSellingRows =
       productIds.length > 0
         ? await this.prisma.$queryRaw<Array<{ productId: number; soldCount: bigint | number }>>(
@@ -307,11 +304,122 @@ export class ProductRepository {
     const soldCountByProductId = new Map<number, number>(
       bestSellingRows.map((row) => [row.productId, Number(row.soldCount)]),
     );
-    const sortedProducts = priceFilteredProducts.slice().sort((leftProduct, rightProduct) => {
+    const sortedProducts = mappedProducts.slice().sort((leftProduct, rightProduct) => {
       const leftSoldCount = soldCountByProductId.get(leftProduct.id) ?? 0;
       const rightSoldCount = soldCountByProductId.get(rightProduct.id) ?? 0;
       if (leftSoldCount !== rightSoldCount) {
         return rightSoldCount - leftSoldCount;
+      }
+      return rightProduct.createdAt.getTime() - leftProduct.createdAt.getTime();
+    });
+    const total = sortedProducts.length;
+    const pagedProducts = sortedProducts.slice((page - 1) * limit, page * limit).map((product) => ({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      thumbnail: product.thumbnail,
+      colorHexCodes: product.colorHexCodes,
+      category: product.category,
+      minPrice: product.minPrice,
+      maxPrice: product.maxPrice,
+    }));
+    return {
+      data: pagedProducts,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  /**
+   * Sắp xếp theo số lượt thêm vào danh sách yêu thích (wishlist).
+   */
+  private async findPublicMostFavoriteList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    categorySlug?: string;
+    colorIds?: number[];
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+  }): Promise<
+    PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
+  > {
+    const { page, limit, search, categorySlug, colorIds, sizeIds, minPrice, maxPrice } = params;
+    const where: Prisma.ProductWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(search && { name: { contains: search } }),
+      ...(categorySlug && {
+        productCategories: {
+          some: { category: categoryWhereMatchesSlugTree(categorySlug) },
+        },
+      }),
+      ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
+      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } }),
+    };
+    const variantFilter: Prisma.ProductVariantWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(colorIds?.length && { colorId: { in: colorIds } }),
+      ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
+    };
+    if (colorIds?.length || sizeIds?.length) {
+      where.variants = { some: variantFilter };
+    }
+    const products = await this.prisma.product.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        thumbnail: true,
+        createdAt: true,
+        variants: {
+          where: { isActive: true, deletedAt: null },
+          select: { price: true, color: { select: { hexCode: true } } },
+        },
+      },
+    });
+    const mappedProducts = products.map(
+      ({ variants, createdAt, ...rest }): ProductPublicListAggWithCreatedAt => {
+        const prices = variants.map((variant) => variant.price);
+        const resolvedMinPrice = prices.length > 0 ? Math.min(...prices) : null;
+        const resolvedMaxPrice = prices.length > 0 ? Math.max(...prices) : null;
+        const colorHexCodes = [...new Set(variants.map((variant) => variant.color.hexCode))].slice(
+          0,
+          4,
+        );
+        return {
+          ...rest,
+          createdAt,
+          category: null,
+          minPrice: resolvedMinPrice,
+          maxPrice: resolvedMaxPrice,
+          colorHexCodes,
+        };
+      },
+    );
+    const productIds = mappedProducts.map((product) => product.id);
+    const favoriteRows =
+      productIds.length > 0
+        ? await this.prisma.$queryRaw<Array<{ productId: number; favCount: bigint | number }>>(
+            Prisma.sql`
+              SELECT w.product_id AS productId, COUNT(*) AS favCount
+              FROM wishlists w
+              WHERE w.product_id IN (${Prisma.join(productIds)})
+              GROUP BY w.product_id
+            `,
+          )
+        : [];
+    const favoriteCountByProductId = new Map<number, number>(
+      favoriteRows.map((row) => [row.productId, Number(row.favCount)]),
+    );
+    const sortedProducts = mappedProducts.slice().sort((leftProduct, rightProduct) => {
+      const leftFavCount = favoriteCountByProductId.get(leftProduct.id) ?? 0;
+      const rightFavCount = favoriteCountByProductId.get(rightProduct.id) ?? 0;
+      if (leftFavCount !== rightFavCount) {
+        return rightFavCount - leftFavCount;
       }
       return rightProduct.createdAt.getTime() - leftProduct.createdAt.getTime();
     });
@@ -817,8 +925,9 @@ export class ProductRepository {
   private getPublicSortOrder(sort?: string): Prisma.ProductOrderByWithRelationInput[] {
     switch (sort) {
       case 'price_asc':
+        return [{ basePrice: 'asc' }, { createdAt: 'desc' }];
       case 'price_desc':
-        return [{ createdAt: 'desc' }];
+        return [{ basePrice: 'desc' }, { createdAt: 'desc' }];
       case 'newest':
       default:
         return [{ createdAt: 'desc' }];

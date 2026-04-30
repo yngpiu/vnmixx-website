@@ -79,7 +79,7 @@ button {
 .shop-shell-container {
   width: 100%;
   margin-inline: auto;
-  max-width: 1300px;
+  max-width: 1400px;
   padding-inline: 14px;
 }
 
@@ -104,6 +104,6 @@ button {
 
 @media (min-width: 1536px) {
   .shop-shell-container {
-    max-width: 1300px;
+    max-width: 1400px;
   }
 }
