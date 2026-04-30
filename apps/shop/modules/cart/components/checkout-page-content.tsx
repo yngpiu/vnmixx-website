@@ -128,7 +128,10 @@ export function CheckoutPageContent(): React.JSX.Element {
     if (!isAuthSessionReady || !user || selectedAddressId !== null || addresses.length === 0) {
       return;
     }
-    const defaultAddress = addresses.find((address) => address.isDefault) ?? addresses[0];
+    const defaultAddress = addresses.find((address) => address.isDefault) ?? null;
+    if (!defaultAddress) {
+      return;
+    }
     setSelectedAddressId(defaultAddress.id);
   }, [addresses, isAuthSessionReady, selectedAddressId, user]);
   const handlePlaceOrder = async (): Promise<void> => {

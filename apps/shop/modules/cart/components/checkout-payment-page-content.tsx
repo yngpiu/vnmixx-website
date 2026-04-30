@@ -79,6 +79,8 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
   const isPaymentExpired = paymentStatus === 'EXPIRED';
   const isOrderCancelled = paymentStatus === 'CANCELLED';
   const shouldShowTerminalState = isPaymentFailed || isPaymentExpired || isOrderCancelled;
+  const orderData = orderQuery.data;
+  const checkoutSession = orderData?.checkoutSession;
 
   return (
     <main className="shop-shell-container py-8">
@@ -95,14 +97,12 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
           <p className="mt-3 text-sm text-muted-foreground">Đang tải thông tin thanh toán...</p>
         ) : orderQuery.isError ? (
           <p className="mt-3 text-sm text-muted-foreground">Không thể tải thông tin thanh toán.</p>
-        ) : orderQuery.data.checkoutSession ? (
+        ) : checkoutSession ? (
           <div className="mt-5 space-y-5">
             <p className="rounded-md bg-muted/40 px-4 py-3 text-sm text-foreground">
               Vui lòng chuyển khoản đúng số tiền với nội dung{' '}
-              <span className="font-semibold">
-                {orderQuery.data.checkoutSession.transferContent}
-              </span>{' '}
-              để hệ thống tự động xác nhận thanh toán.
+              <span className="font-semibold">{checkoutSession.transferContent}</span> để hệ thống
+              tự động xác nhận thanh toán.
             </p>
             {shouldShowTerminalState ? (
               <p className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -117,40 +117,31 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
               <div className="flex justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={orderQuery.data.checkoutSession.qrImageUrl}
+                  src={checkoutSession.qrImageUrl}
                   alt="Mã QR thanh toán"
                   className="h-[320px] w-[320px] border border-border object-contain p-2"
                 />
               </div>
               <div className="space-y-2 text-sm leading-6">
                 <p>
-                  Mã đơn hàng: <span className="font-medium">{orderQuery.data.orderCode}</span>
+                  Mã đơn hàng: <span className="font-medium">{orderData.orderCode}</span>
                 </p>
                 <p>
-                  Ngân hàng:{' '}
-                  <span className="font-medium">{orderQuery.data.checkoutSession.bankName}</span>
+                  Ngân hàng: <span className="font-medium">{checkoutSession.bankName}</span>
                 </p>
                 <p>
-                  Số tài khoản:{' '}
-                  <span className="font-medium">
-                    {orderQuery.data.checkoutSession.accountNumber}
-                  </span>
+                  Số tài khoản: <span className="font-medium">{checkoutSession.accountNumber}</span>
                 </p>
                 <p>
-                  Chủ tài khoản:{' '}
-                  <span className="font-medium">{orderQuery.data.checkoutSession.accountName}</span>
+                  Chủ tài khoản: <span className="font-medium">{checkoutSession.accountName}</span>
                 </p>
                 <p>
                   Số tiền:{' '}
-                  <span className="font-medium">
-                    {formatMoney(orderQuery.data.checkoutSession.amount)}
-                  </span>
+                  <span className="font-medium">{formatMoney(checkoutSession.amount)}</span>
                 </p>
                 <p>
                   Nội dung CK:{' '}
-                  <span className="font-medium">
-                    {orderQuery.data.checkoutSession.transferContent}
-                  </span>
+                  <span className="font-medium">{checkoutSession.transferContent}</span>
                 </p>
               </div>
             </div>

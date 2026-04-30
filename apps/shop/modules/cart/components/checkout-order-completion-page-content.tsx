@@ -15,6 +15,7 @@ export function CheckoutOrderCompletionPageContent(): React.JSX.Element {
     queryFn: () => getMyOrderDetail(orderCode),
     enabled: orderCode.length > 0,
   });
+  const orderData = orderQuery.data;
   return (
     <main className="shop-shell-container py-8">
       <div className="mb-6">
@@ -33,10 +34,15 @@ export function CheckoutOrderCompletionPageContent(): React.JSX.Element {
             Đặt hàng thành công. Mã đơn hàng của bạn là{' '}
             <span className="font-medium text-foreground">{orderCode}</span>.
           </p>
+        ) : orderData ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Đặt hàng thành công. Mã đơn hàng của bạn là{' '}
+            <span className="font-medium text-foreground">{orderData.orderCode}</span>.
+          </p>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">
             Đặt hàng thành công. Mã đơn hàng của bạn là{' '}
-            <span className="font-medium text-foreground">{orderQuery.data.orderCode}</span>.
+            <span className="font-medium text-foreground">{orderCode}</span>.
           </p>
         )}
         <div className="mt-6 flex justify-center">
