@@ -63,7 +63,7 @@ function CartItemRow({
         </p>
         <p className="text-[13px] leading-5 text-muted-foreground">
           Màu sắc: {item.variant.color.name}{' '}
-          <span className="mx-2">Size: {item.variant.size.label}</span>
+          <span className="mx-2">Kích cỡ: {item.variant.size.label}</span>
         </p>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center rounded-md border border-border">

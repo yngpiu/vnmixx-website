@@ -179,7 +179,7 @@ export function NewArrivalProductItem({
           <PrimaryCtaButton
             ctaVariant="filled"
             isIconOnly
-            aria-label="Chọn màu và size để thêm giỏ hàng"
+            aria-label="Chọn màu và kích cỡ để thêm giỏ hàng"
             onClick={openVariantPicker}
           >
             <ShoppingBag className="h-2 w-4" />
@@ -189,7 +189,7 @@ export function NewArrivalProductItem({
       <Dialog open={isPickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="max-w-[420px]">
           <DialogHeader>
-            <DialogTitle>Chọn màu và kích thước</DialogTitle>
+            <DialogTitle>Chọn màu và kích cỡ</DialogTitle>
             <DialogDescription>{product.name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-5">
@@ -215,7 +215,7 @@ export function NewArrivalProductItem({
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-sm font-medium">Kích thước</p>
+              <p className="text-sm font-medium">Kích cỡ</p>
               <div className="grid grid-cols-4 gap-2">
                 {sizeOptions.map((size: string) => {
                   const isSelected = selectedSize === size;

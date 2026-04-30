@@ -8,11 +8,17 @@ import {
 } from '@nestjs/common';
 import { OrderStatus, Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
-import { estimateCartPackageFromLines } from '../../shipping/estimate-cart-package';
+import {
+  estimateCartPackageFromLines,
+  estimateFeeItemsFromLines,
+  GHN_HEAVY_SERVICE_TYPE_ID,
+  resolveGhnServiceTypeIdByWeight,
+} from '../../shipping/estimate-cart-package';
 import { GhnService } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
 import type { CreateOrderDto, ListMyOrdersQueryDto } from '../dto';
 import { SepayWebhookDto } from '../dto/sepay-webhook.dto';
+import { OrderPaymentGateway } from '../gateway/order-payment.gateway';
 import type {
   OrderDetailView,
   OrderListItemView,
@@ -62,7 +68,7 @@ interface PackageInfo {
 
 interface ShippingCalculation {
   fee: number;
-  serviceId: number;
+  serviceTypeId: number;
   toDistrictId: number;
   toWardCode: string;
 }
@@ -79,6 +85,7 @@ export class OrderService {
     private readonly ghn: GhnService,
     private readonly shipping: ShippingService,
     private readonly sepay: SepayService,
+    private readonly orderPaymentGateway: OrderPaymentGateway,
   ) {}
 
   // ─── Thao tác của khách hàng ──────────────────────────────────────────────
@@ -96,7 +103,7 @@ export class OrderService {
     const packageInfo = this.calculatePackageInfo(cart.items);
 
     // 3. Gọi API GHN để lấy phí vận chuyển thực tế
-    const shippingInfo = await this.calculateShippingInfo(address, packageInfo, dto.serviceTypeId);
+    const shippingInfo = await this.calculateShippingInfo(cart.items, address, packageInfo);
 
     // 4. Thực thi Transaction: Khóa kho, tạo đơn hàng, thanh toán và xóa giỏ
     const orderCode = await this.executeOrderTransactionWithRetry({
@@ -155,6 +162,7 @@ export class OrderService {
 
       await this.releaseStock(tx, order.id, order.items);
     });
+    this.orderPaymentGateway.emitOrderPaymentUpdated(customerId, orderCode, 'CANCELLED');
 
     this.logger.log(`Đơn hàng ${orderCode} bị hủy bởi customer #${customerId}`);
     const result = await this.orderRepo.findByOrderCode(orderCode, customerId);
@@ -279,6 +287,7 @@ export class OrderService {
       },
       select: {
         id: true,
+        customerId: true,
         orderCode: true,
         status: true,
         payments: {
@@ -361,6 +370,8 @@ export class OrderService {
       });
     });
 
+    this.orderPaymentGateway.emitOrderPaymentUpdated(order.customerId, order.orderCode, 'SUCCESS');
+
     return { duplicate: false, matched: true, orderCode: order.orderCode };
   }
 
@@ -405,39 +416,32 @@ export class OrderService {
 
   // Tính phí vận chuyển và lấy thông tin dịch vụ GHN
   private async calculateShippingInfo(
+    items: CartItemWithVariant[],
     address: AddressWithGhn,
     pkg: PackageInfo,
-    serviceTypeId: number,
   ): Promise<ShippingCalculation> {
     const shop = this.shipping.getShopGhnIds();
     const toDistrictId = Number(address.district.giaohangnhanhId);
     const toWardCode = address.ward.giaohangnhanhId;
-
-    // 1. Lấy danh sách dịch vụ khả dụng cho khu vực nhận hàng
-    const availableServices = await this.ghn.getAvailableServices(shop.districtId, toDistrictId);
-    const matchedService = availableServices?.find((s) => s.service_type_id === serviceTypeId);
-
-    if (!matchedService) {
-      throw new BadRequestException('Dịch vụ vận chuyển không khả dụng cho địa chỉ này.');
-    }
-
-    // 2. Tính phí thực tế dựa trên cân nặng và kích thước
+    const serviceTypeId = resolveGhnServiceTypeIdByWeight(pkg.weight);
+    const feeItems = estimateFeeItemsFromLines(items.map((item) => ({ quantity: item.quantity })));
     const feeData = await this.ghn.calculateFee({
       fromDistrictId: shop.districtId,
       fromWardCode: shop.wardCode,
       toDistrictId,
       toWardCode,
-      serviceId: matchedService.service_id,
+      serviceTypeId,
       weight: pkg.weight,
       length: pkg.length,
       width: pkg.width,
       height: pkg.height,
       insuranceValue: pkg.insuranceValue,
+      ...(serviceTypeId === GHN_HEAVY_SERVICE_TYPE_ID ? { items: feeItems } : {}),
     });
 
     return {
       fee: feeData.total,
-      serviceId: matchedService.service_id,
+      serviceTypeId,
       toDistrictId,
       toWardCode,
     };
@@ -492,7 +496,7 @@ export class OrderService {
                 shippingAddressLine: params.address.addressLine,
                 shippingGhnDistrictId: params.shippingInfo.toDistrictId,
                 shippingGhnWardCode: params.shippingInfo.toWardCode,
-                serviceTypeId: params.dto.serviceTypeId,
+                serviceTypeId: params.shippingInfo.serviceTypeId,
                 requiredNote: params.dto.requiredNote,
                 note: params.dto.note ?? null,
                 packageWeight: params.packageInfo.weight,
@@ -625,6 +629,7 @@ export class OrderService {
       });
       await this.releaseStock(tx, order.id, order.items);
     });
+    this.orderPaymentGateway.emitOrderPaymentUpdated(customerId, orderCode, 'EXPIRED');
   }
 
   // Thực hiện giữ hàng trong kho (Optimistic Concurrency Control)

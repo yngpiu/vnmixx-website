@@ -160,7 +160,7 @@ export function ProductDetailPageContent({
   };
   const executeAddToCart = async (): Promise<boolean> => {
     if (!selectedVariant) {
-      toast.error('Vui lòng chọn màu và kích thước.', { position: 'bottom-right' });
+      toast.error('Vui lòng chọn màu và kích cỡ.', { position: 'bottom-right' });
       return false;
     }
     try {
@@ -270,7 +270,7 @@ export function ProductDetailPageContent({
           ) : null}
           {sizesForColor.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">Kích thước</p>
+              <p className="text-sm font-medium text-foreground">Kích cỡ</p>
               <div className="flex flex-wrap gap-x-3 gap-y-3">
                 {sizesForColor.map((sizeLabel) => {
                   const isSelected = selectedSizeLabel === sizeLabel;
@@ -278,7 +278,7 @@ export function ProductDetailPageContent({
                     <button
                       key={sizeLabel}
                       type="button"
-                      aria-label={`Chọn size ${sizeLabel}`}
+                      aria-label={`Chọn kích cỡ ${sizeLabel}`}
                       aria-pressed={isSelected}
                       onClick={() => setSelectedSizeLabel(sizeLabel)}
                       className={cn(

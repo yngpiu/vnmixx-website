@@ -40,6 +40,10 @@ export interface ProductDetailView {
   slug: string;
   description: string | null;
   thumbnail: string | null;
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
   category: { id: number; name: string; slug: string } | null;
   variants: {
     id: number;
@@ -451,6 +455,10 @@ export class ProductRepository {
           slug: true,
           description: true,
           thumbnail: true,
+          weight: true,
+          length: true,
+          width: true,
+          height: true,
           variants: {
             where: { isActive: true, deletedAt: null },
             select: VARIANT_PUBLIC_SELECT,
@@ -574,6 +582,10 @@ export class ProductRepository {
           slug: true,
           description: true,
           thumbnail: true,
+          weight: true,
+          length: true,
+          width: true,
+          height: true,
           isActive: true,
           createdAt: true,
           updatedAt: true,
@@ -629,6 +641,10 @@ export class ProductRepository {
     slug: string;
     description?: string | null;
     thumbnail?: string | null;
+    weight: number;
+    length: number;
+    width: number;
+    height: number;
     categoryIds: number[];
     isActive?: boolean;
     variants: {
@@ -654,6 +670,10 @@ export class ProductRepository {
           slug: data.slug,
           description: data.description ?? null,
           thumbnail: data.thumbnail ?? null,
+          weight: data.weight,
+          length: data.length,
+          width: data.width,
+          height: data.height,
           basePrice: initialBasePrice,
           isActive: data.isActive ?? true,
         },
@@ -716,6 +736,10 @@ export class ProductRepository {
       slug?: string;
       description?: string | null;
       thumbnail?: string | null;
+      weight?: number;
+      length?: number;
+      width?: number;
+      height?: number;
       isActive?: boolean;
     },
   ): Promise<ProductAdminDetailView> {

@@ -4,17 +4,43 @@ import { listCategories } from '@/modules/categories/api/categories';
 import { CategoryTreeMultiSelect } from '@/modules/categories/components/categories/category-tree-multi-select';
 import type { CategoryAdmin } from '@/modules/categories/types/category';
 import { categoryDisplayName } from '@/modules/categories/utils/category-display-name';
+import { listPublicColors } from '@/modules/colors/api/colors';
 import { BackButton } from '@/modules/common/components/back-button';
 import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { getProductById, updateProduct } from '@/modules/products/api/products';
+import { ProductImagesColorColumns } from '@/modules/products/components/products/product-images-color-columns';
+import { listPublicSizes } from '@/modules/sizes/api/sizes';
 import { Button } from '@repo/ui/components/ui/button';
 import { Field, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
 import { Separator } from '@repo/ui/components/ui/separator';
 import { Switch } from '@repo/ui/components/ui/switch';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@repo/ui/components/ui/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FolderTreeIcon, PackageIcon, PencilIcon, XIcon } from 'lucide-react';
+import {
+  FolderTreeIcon,
+  ImageIcon,
+  LayersIcon,
+  PackageIcon,
+  PlusIcon,
+  Trash2Icon,
+  XIcon,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -23,6 +49,15 @@ import { toast } from 'sonner';
 
 type EditProductFormProps = {
   productId: number;
+};
+type VariantDraft = {
+  id?: number;
+  colorId: number;
+  sizeId: number;
+  sku: string;
+  price: string;
+  onHand: string;
+  isActive: boolean;
 };
 
 function suggestSlugFromName(name: string): string {
@@ -77,8 +112,14 @@ export function EditProductForm({ productId }: EditProductFormProps) {
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState('');
+  const [weight, setWeight] = useState('');
+  const [length, setLength] = useState('');
+  const [width, setWidth] = useState('');
+  const [height, setHeight] = useState('');
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [isActive, setIsActive] = useState(true);
+  const [variants, setVariants] = useState<VariantDraft[]>([]);
+  const [imagesByColorId, setImagesByColorId] = useState<Record<number, string[]>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
   const detailQuery = useQuery({
@@ -89,6 +130,10 @@ export function EditProductForm({ productId }: EditProductFormProps) {
     queryKey: ['categories', 'list', { isSoftDeleted: false }],
     queryFn: () => listCategories({ isSoftDeleted: false }),
   });
+  const colorsQuery = useQuery({ queryKey: ['colors', 'public'], queryFn: listPublicColors });
+  const sizesQuery = useQuery({ queryKey: ['sizes', 'public'], queryFn: listPublicSizes });
+  const colors = useMemo(() => colorsQuery.data ?? [], [colorsQuery.data]);
+  const sizes = useMemo(() => sizesQuery.data ?? [], [sizesQuery.data]);
 
   useEffect(() => {
     const product = detailQuery.data;
@@ -96,8 +141,34 @@ export function EditProductForm({ productId }: EditProductFormProps) {
     setName(product.name);
     setSlug(product.slug);
     setDescription(product.description ?? '');
+    setWeight(String(product.weight));
+    setLength(String(product.length));
+    setWidth(String(product.width));
+    setHeight(String(product.height));
     setCategoryIds(product.categoryIds ?? (product.category ? [product.category.id] : []));
     setIsActive(product.isActive);
+    setVariants(
+      product.variants.map((variant) => ({
+        id: variant.id,
+        colorId: variant.colorId,
+        sizeId: variant.sizeId,
+        sku: variant.sku,
+        price: String(variant.price),
+        onHand: String(variant.onHand),
+        isActive: variant.isActive,
+      })),
+    );
+    const groupedImages = product.images.reduce<Record<number, string[]>>((acc, image) => {
+      if (image.colorId == null) return acc;
+      const current = acc[image.colorId] ?? [];
+      current[image.sortOrder] = image.url;
+      acc[image.colorId] = current;
+      return acc;
+    }, {});
+    const compactImages = Object.fromEntries(
+      Object.entries(groupedImages).map(([key, urls]) => [key, urls.filter((url) => Boolean(url))]),
+    );
+    setImagesByColorId(compactImages);
   }, [detailQuery.data]);
 
   useEffect(() => {
@@ -113,6 +184,57 @@ export function EditProductForm({ productId }: EditProductFormProps) {
     }
     return m;
   }, [categoriesFlat]);
+  const colorIdsInVariantOrder = useMemo(() => {
+    const seen = new Set<number>();
+    const order: number[] = [];
+    for (const variant of variants) {
+      if (!seen.has(variant.colorId)) {
+        seen.add(variant.colorId);
+        order.push(variant.colorId);
+      }
+    }
+    return order;
+  }, [variants]);
+  useEffect(() => {
+    setImagesByColorId((prev) => {
+      const next: Record<number, string[]> = {};
+      for (const colorId of colorIdsInVariantOrder) {
+        next[colorId] = prev[colorId] ?? [];
+      }
+      return next;
+    });
+  }, [colorIdsInVariantOrder]);
+  const parseVariants = (): VariantDraft[] | null => {
+    if (variants.length === 0) {
+      setFormError('Cần ít nhất một biến thể.');
+      return null;
+    }
+    const combos = new Set<string>();
+    for (let index = 0; index < variants.length; index++) {
+      const variant = variants[index]!;
+      if (!variant.sku.trim()) {
+        setFormError(`Biến thể #${index + 1}: SKU là bắt buộc.`);
+        return null;
+      }
+      const price = Number.parseInt(variant.price, 10);
+      if (!Number.isFinite(price) || price < 0) {
+        setFormError(`Biến thể #${index + 1}: Giá không hợp lệ.`);
+        return null;
+      }
+      const onHand = Number.parseInt(variant.onHand, 10);
+      if (!Number.isFinite(onHand) || onHand < 0) {
+        setFormError(`Biến thể #${index + 1}: Tồn kho không hợp lệ.`);
+        return null;
+      }
+      const key = `${variant.colorId}-${variant.sizeId}`;
+      if (combos.has(key)) {
+        setFormError(`Trùng tổ hợp màu + size ở biến thể #${index + 1}.`);
+        return null;
+      }
+      combos.add(key);
+    }
+    return variants;
+  };
 
   const updateMutation = useMutation({
     mutationFn: () =>
@@ -120,20 +242,24 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         name: name.trim(),
         slug: slug.trim(),
         description: buildDescriptionPayload(description),
+        weight: Number.parseInt(weight, 10),
+        length: Number.parseInt(length, 10),
+        width: Number.parseInt(width, 10),
+        height: Number.parseInt(height, 10),
         categoryIds,
         isActive,
-        variants: (detailQuery.data?.variants ?? []).map((variant) => ({
-          id: variant.id,
-          price: variant.price,
-          onHand: variant.onHand,
+        variants: variants.map((variant) => ({
+          ...(variant.id ? { id: variant.id } : {}),
+          colorId: variant.colorId,
+          sizeId: variant.sizeId,
+          sku: variant.sku.trim(),
+          price: Number.parseInt(variant.price, 10),
+          onHand: Number.parseInt(variant.onHand, 10),
           isActive: variant.isActive,
         })),
-        images: (detailQuery.data?.images ?? []).map((image) => ({
-          id: image.id,
-          colorId: image.colorId,
-          altText: image.altText,
-          sortOrder: image.sortOrder,
-        })),
+        images: colorIdsInVariantOrder.flatMap((colorId) =>
+          (imagesByColorId[colorId] ?? []).map((url, sortOrder) => ({ colorId, url, sortOrder })),
+        ),
       }),
     onSuccess: async () => {
       toast.success('Đã cập nhật sản phẩm.');
@@ -144,7 +270,12 @@ export function EditProductForm({ productId }: EditProductFormProps) {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const busy = detailQuery.isLoading || categoriesQuery.isLoading || updateMutation.isPending;
+  const busy =
+    detailQuery.isLoading ||
+    categoriesQuery.isLoading ||
+    colorsQuery.isLoading ||
+    sizesQuery.isLoading ||
+    updateMutation.isPending;
 
   const submit = () => {
     setFormError(null);
@@ -156,10 +287,53 @@ export function EditProductForm({ productId }: EditProductFormProps) {
       setFormError('Slug chỉ gồm chữ thường, số và dấu gạch nối giữa các từ.');
       return;
     }
+    const parsedWeight = Number.parseInt(weight, 10);
+    const parsedLength = Number.parseInt(length, 10);
+    const parsedWidth = Number.parseInt(width, 10);
+    const parsedHeight = Number.parseInt(height, 10);
+    if (!Number.isFinite(parsedWeight) || parsedWeight < 1) {
+      setFormError('Cân nặng phải là số nguyên lớn hơn hoặc bằng 1.');
+      return;
+    }
+    if (!Number.isFinite(parsedLength) || parsedLength < 1) {
+      setFormError('Chiều dài phải là số nguyên lớn hơn hoặc bằng 1.');
+      return;
+    }
+    if (!Number.isFinite(parsedWidth) || parsedWidth < 1) {
+      setFormError('Chiều rộng phải là số nguyên lớn hơn hoặc bằng 1.');
+      return;
+    }
+    if (!Number.isFinite(parsedHeight) || parsedHeight < 1) {
+      setFormError('Chiều cao phải là số nguyên lớn hơn hoặc bằng 1.');
+      return;
+    }
+    if (!parseVariants()) return;
     updateMutation.mutate();
   };
+  const addVariantRow = () => {
+    const defaultColorId = colors[0]?.id;
+    const defaultSizeId = sizes[0]?.id;
+    if (defaultColorId == null || defaultSizeId == null) return;
+    setVariants((prev) => [
+      ...prev,
+      {
+        colorId: defaultColorId,
+        sizeId: defaultSizeId,
+        sku: '',
+        price: '0',
+        onHand: '0',
+        isActive: true,
+      },
+    ]);
+  };
+  const removeVariantRow = (index: number) => {
+    setVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+  const updateVariant = (index: number, patch: Partial<VariantDraft>) => {
+    setVariants((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
 
-  if (detailQuery.isError || categoriesQuery.isError) {
+  if (detailQuery.isError || categoriesQuery.isError || colorsQuery.isError || sizesQuery.isError) {
     return (
       <p className="text-destructive text-sm" role="alert">
         Không tải được dữ liệu sản phẩm. Thử tải lại trang.
@@ -230,6 +404,52 @@ export function EditProductForm({ productId }: EditProductFormProps) {
                   disabled={busy}
                   maxLength={255}
                   className="font-mono text-sm"
+                />
+              </Field>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Field>
+                <FieldLabel htmlFor="ep-weight">Cân nặng (gram)</FieldLabel>
+                <Input
+                  id="ep-weight"
+                  type="number"
+                  min={1}
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  disabled={busy}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="ep-length">Chiều dài (cm)</FieldLabel>
+                <Input
+                  id="ep-length"
+                  type="number"
+                  min={1}
+                  value={length}
+                  onChange={(e) => setLength(e.target.value)}
+                  disabled={busy}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="ep-width">Chiều rộng (cm)</FieldLabel>
+                <Input
+                  id="ep-width"
+                  type="number"
+                  min={1}
+                  value={width}
+                  onChange={(e) => setWidth(e.target.value)}
+                  disabled={busy}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="ep-height">Chiều cao (cm)</FieldLabel>
+                <Input
+                  id="ep-height"
+                  type="number"
+                  min={1}
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  disabled={busy}
                 />
               </Field>
             </div>
@@ -339,12 +559,155 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         </section>
 
         <section className={sectionShell}>
-          <div className="bg-muted/40 flex items-start gap-3 px-5 py-4 sm:px-6">
-            <PencilIcon className="text-muted-foreground mt-0.5 size-4 shrink-0" />
-            <p className="text-muted-foreground text-sm">
-              Trang này chỉnh sửa thông tin chung và trạng thái hiển thị của sản phẩm. Quản lý biến
-              thể và hình ảnh sẽ tiếp tục theo luồng riêng.
-            </p>
+          <div className="bg-muted/40 flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 sm:px-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+                <LayersIcon className="size-4" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold leading-tight">Biến thể</h2>
+              </div>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="gap-1"
+              onClick={addVariantRow}
+              disabled={busy || !colors.length || !sizes.length}
+            >
+              <PlusIcon className="size-4" />
+              Thêm dòng
+            </Button>
+          </div>
+          <div className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="min-w-30 pl-5">Màu</TableHead>
+                  <TableHead className="min-w-26">Size</TableHead>
+                  <TableHead className="min-w-34">SKU</TableHead>
+                  <TableHead className="min-w-26">Giá (đ)</TableHead>
+                  <TableHead className="min-w-22">Tồn</TableHead>
+                  <TableHead className="w-12 pr-5 text-right" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {variants.map((row, index) => (
+                  <TableRow key={row.id ?? `${row.colorId}-${row.sizeId}-${index}`}>
+                    <TableCell className="pl-5 align-middle">
+                      <Select
+                        value={String(row.colorId)}
+                        onValueChange={(value) =>
+                          updateVariant(index, { colorId: Number.parseInt(value, 10) })
+                        }
+                        disabled={busy}
+                      >
+                        <SelectTrigger className="h-9 w-full min-w-26">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {colors.map((color) => (
+                            <SelectItem key={color.id} value={String(color.id)}>
+                              {color.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Select
+                        value={String(row.sizeId)}
+                        onValueChange={(value) =>
+                          updateVariant(index, { sizeId: Number.parseInt(value, 10) })
+                        }
+                        disabled={busy}
+                      >
+                        <SelectTrigger className="h-9 w-full min-w-22">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sizes.map((size) => (
+                            <SelectItem key={size.id} value={String(size.id)}>
+                              {size.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Input
+                        value={row.sku}
+                        onChange={(event) => updateVariant(index, { sku: event.target.value })}
+                        disabled={busy}
+                        maxLength={50}
+                        className="h-9 font-mono text-sm"
+                        placeholder="SKU"
+                      />
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.price}
+                        onChange={(event) => updateVariant(index, { price: event.target.value })}
+                        disabled={busy}
+                        className="h-9"
+                      />
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.onHand}
+                        onChange={(event) => updateVariant(index, { onHand: event.target.value })}
+                        disabled={busy}
+                        className="h-9"
+                      />
+                    </TableCell>
+                    <TableCell className="pr-5 text-right align-middle">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => removeVariantRow(index)}
+                        disabled={busy || variants.length <= 1}
+                        aria-label="Xóa dòng"
+                      >
+                        <Trash2Icon className="size-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+        <section className={sectionShell}>
+          <div className="bg-muted/40 flex flex-wrap items-center gap-3 border-b px-5 py-4 sm:px-6">
+            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+              <ImageIcon className="size-4" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold leading-tight">Ảnh sản phẩm</h2>
+            </div>
+          </div>
+          <div className="space-y-4 px-4 py-4 sm:px-5 sm:py-5">
+            <ProductImagesColorColumns
+              colorIds={colorIdsInVariantOrder}
+              colorLabel={(colorId) =>
+                colors.find((color) => color.id === colorId)?.name ?? `Màu #${colorId}`
+              }
+              imagesByColorId={imagesByColorId}
+              onUrlsChange={(colorId, urls) =>
+                setImagesByColorId((prev) => ({
+                  ...prev,
+                  [colorId]: urls,
+                }))
+              }
+              disabled={busy}
+              maxFilesPerColor={16}
+            />
           </div>
         </section>
       </div>

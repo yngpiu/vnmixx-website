@@ -80,7 +80,7 @@ function CartTableRow({
           <h2 className="text-[16px] leading-6 text-foreground">{item.variant.product.name}</h2>
           <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
             Màu sắc: {item.variant.color.name}
-            <span className="ml-4">Size: {item.variant.size.label}</span>
+            <span className="ml-4">Kích cỡ: {item.variant.size.label}</span>
           </p>
         </div>
       </div>
@@ -163,8 +163,8 @@ function CartSummaryPanel({
           <span className="font-semibold text-foreground">{formatMoney(totalPrice)}</span>
         </div>
       </div>
-      <PrimaryCtaButton className="mt-5" type="button">
-        ĐẶT HÀNG
+      <PrimaryCtaButton className="mt-5" asChild>
+        <Link href="/dat-hang">ĐẶT HÀNG</Link>
       </PrimaryCtaButton>
     </aside>
   );

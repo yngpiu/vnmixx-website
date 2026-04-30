@@ -119,6 +119,30 @@ export class UpdateProductDto {
   @MaxLength(500, { message: 'URL ảnh đại diện không được vượt quá 500 ký tự' })
   thumbnail?: string;
 
+  @ApiPropertyOptional({ example: 300, description: 'Cân nặng sản phẩm (gram)' })
+  @IsInt({ message: 'Cân nặng phải là số nguyên' })
+  @Min(1, { message: 'Cân nặng phải lớn hơn hoặc bằng 1' })
+  @IsOptional()
+  weight?: number;
+
+  @ApiPropertyOptional({ example: 30, description: 'Chiều dài sản phẩm (cm)' })
+  @IsInt({ message: 'Chiều dài phải là số nguyên' })
+  @Min(1, { message: 'Chiều dài phải lớn hơn hoặc bằng 1' })
+  @IsOptional()
+  length?: number;
+
+  @ApiPropertyOptional({ example: 25, description: 'Chiều rộng sản phẩm (cm)' })
+  @IsInt({ message: 'Chiều rộng phải là số nguyên' })
+  @Min(1, { message: 'Chiều rộng phải lớn hơn hoặc bằng 1' })
+  @IsOptional()
+  width?: number;
+
+  @ApiPropertyOptional({ example: 5, description: 'Chiều cao sản phẩm (cm)' })
+  @IsInt({ message: 'Chiều cao phải là số nguyên' })
+  @Min(1, { message: 'Chiều cao phải lớn hơn hoặc bằng 1' })
+  @IsOptional()
+  height?: number;
+
   @ApiPropertyOptional({ example: [3, 12], type: [Number] })
   @IsArray({ message: 'Danh sách ID danh mục phải là một mảng' })
   @ArrayMaxSize(40, { message: 'Không được gán quá 40 danh mục' })

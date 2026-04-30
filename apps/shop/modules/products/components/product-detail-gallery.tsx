@@ -68,8 +68,8 @@ export function ProductDetailGallery({
       : undefined;
   if (slides.length === 0) {
     return (
-      <div className="flex aspect-[2/3] w-full min-w-0 items-center justify-center bg-muted/30 text-sm text-muted-foreground">
-        Chưa có hình ảnh cho sản phẩm này.
+      <div className="flex aspect-2/3 w-full min-w-0 items-center justify-center bg-muted/30 text-sm text-muted-foreground">
+        Sản phẩm này chưa có hình ảnh!.
       </div>
     );
   }
@@ -98,13 +98,13 @@ export function ProductDetailGallery({
           thumbs={{ swiper: thumbsSwiperParam }}
           spaceBetween={0}
           style={mainSwiperStyle}
-          className="product-detail-main-swiper aspect-[2/3] w-full bg-muted/20 [&_.swiper-button-next]:hidden [&_.swiper-button-prev]:hidden md:[&_.swiper-button-next]:flex md:[&_.swiper-button-prev]:flex [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination]:mt-3 [&_.swiper-pagination]:md:hidden [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40"
+          className="product-detail-main-swiper aspect-2/3 w-full bg-muted/20 [&_.swiper-button-next]:hidden [&_.swiper-button-prev]:hidden md:[&_.swiper-button-next]:flex md:[&_.swiper-button-prev]:flex [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination]:mt-3 [&_.swiper-pagination]:md:hidden [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40"
           onSwiper={setMainSwiper}
         >
           {slides.map((slide) => (
             <SwiperSlide
               key={slide.id}
-              className="!flex h-full items-center justify-center bg-muted/10"
+              className="flex! h-full items-center justify-center bg-muted/10"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -140,7 +140,7 @@ export function ProductDetailGallery({
           {slides.map((slide) => (
             <SwiperSlide
               key={`thumb-${slide.id}`}
-              className="!aspect-[2/3] !h-auto !w-[72px] shrink-0 cursor-pointer overflow-hidden border border-transparent opacity-70 transition md:!w-full [&.swiper-slide-thumb-active]:border-foreground [&.swiper-slide-thumb-active]:opacity-100"
+              className="aspect-2/3! h-auto! w-[72px]! shrink-0 cursor-pointer overflow-hidden border border-transparent opacity-70 transition md:w-full! [&.swiper-slide-thumb-active]:border-foreground [&.swiper-slide-thumb-active]:opacity-100"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

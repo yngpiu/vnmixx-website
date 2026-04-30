@@ -1,14 +1,10 @@
 import { apiClient } from '@/lib/axios';
 import type {
-  ConfirmOrderShipmentInput,
   ListAdminOrdersParams,
   OrderAdminDetail,
   OrderAdminListResponse,
 } from '@/modules/orders/types/order-admin';
-export type {
-  ConfirmOrderShipmentInput,
-  ListAdminOrdersParams,
-} from '@/modules/orders/types/order-admin';
+export type { ListAdminOrdersParams } from '@/modules/orders/types/order-admin';
 
 export async function listAdminOrders(
   params: ListAdminOrdersParams = {},
@@ -24,13 +20,9 @@ export async function getAdminOrder(orderCode: string): Promise<OrderAdminDetail
   return data;
 }
 
-export async function confirmAdminOrder(
-  orderCode: string,
-  body: ConfirmOrderShipmentInput,
-): Promise<OrderAdminDetail> {
+export async function confirmAdminOrder(orderCode: string): Promise<OrderAdminDetail> {
   const { data } = await apiClient.patch<OrderAdminDetail>(
     `/admin/orders/${encodeURIComponent(orderCode)}/confirm`,
-    body,
   );
   return data;
 }

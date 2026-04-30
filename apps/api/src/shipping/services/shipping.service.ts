@@ -1,7 +1,5 @@
 import {
-  BadGatewayException,
   BadRequestException,
-  HttpException,
   Injectable,
   Logger,
   NotFoundException,
@@ -11,7 +9,13 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/services/prisma.service';
 import { type CalculateShippingFeeDto, type ShippingFeeResponseDto } from '../dto';
-import { estimateCartPackageFromLines } from '../estimate-cart-package';
+import {
+  estimateCartPackageFromLines,
+  estimateFeeItemsFromLines,
+  GHN_HEAVY_SERVICE_TYPE_ID,
+  resolveGhnServiceIdByType,
+  resolveGhnServiceTypeIdByWeight,
+} from '../estimate-cart-package';
 import { GhnService } from './ghn.service';
 
 // Service xử lý logic vận chuyển và tính toán phí giao hàng
@@ -129,83 +133,52 @@ export class ShippingService implements OnModuleInit {
         unitPrice: item.variant.price,
       })),
     );
+    const feeItems = estimateFeeItemsFromLines(
+      cart.items.map((item) => ({
+        quantity: item.quantity,
+      })),
+    );
 
-    // 4. Tìm kiếm các dịch vụ vận chuyển GHN khả dụng cho tuyến đường này
+    // 4. Chọn service type theo cân nặng thực tế (rule nghiệp vụ cố định)
     const fromDistrictId = this.shopGhnDistrictId!;
     const fromWardCode = this.shopGhnWardCode!;
+    const serviceTypeId = resolveGhnServiceTypeIdByWeight(weight);
+    const serviceId = resolveGhnServiceIdByType(serviceTypeId);
+    const [fee, leadtime] = await Promise.all([
+      this.ghn.calculateFee({
+        fromDistrictId,
+        fromWardCode,
+        toDistrictId,
+        toWardCode,
+        serviceTypeId,
+        weight,
+        length,
+        width,
+        height,
+        insuranceValue,
+        ...(serviceTypeId === GHN_HEAVY_SERVICE_TYPE_ID ? { items: feeItems } : {}),
+      }),
+      this.ghn.getLeadtime({
+        fromDistrictId,
+        fromWardCode,
+        toDistrictId,
+        toWardCode,
+        serviceId,
+      }),
+    ]);
 
-    const availableServices = await this.ghn.getAvailableServices(fromDistrictId, toDistrictId);
-
-    if (availableServices.length === 0) {
-      throw new BadRequestException('Không có dịch vụ vận chuyển khả dụng cho địa chỉ này.');
-    }
-
-    // 5. Tính phí và thời gian giao hàng dự kiến cho từng dịch vụ khả dụng
-    // Dùng Promise.allSettled để đảm bảo nếu một dịch vụ lỗi vẫn lấy được các dịch vụ còn lại
-    const results = await Promise.allSettled(
-      availableServices.map(async (svc) => {
-        // Dùng Promise.all để lấy đồng thời phí và thời gian dự kiến của một dịch vụ
-        const [fee, leadtime] = await Promise.all([
-          this.ghn.calculateFee({
-            fromDistrictId,
-            fromWardCode,
-            toDistrictId,
-            toWardCode,
-            serviceId: svc.service_id,
-            weight,
-            length,
-            width,
-            height,
-            insuranceValue,
-          }),
-          this.ghn.getLeadtime({
-            fromDistrictId,
-            fromWardCode,
-            toDistrictId,
-            toWardCode,
-            serviceId: svc.service_id,
-          }),
-        ]);
-
-        return {
-          serviceId: svc.service_id,
-          shortName: svc.short_name,
-          serviceTypeId: svc.service_type_id,
+    return {
+      services: [
+        {
+          serviceId,
+          shortName: serviceTypeId === GHN_HEAVY_SERVICE_TYPE_ID ? 'Hàng nặng' : 'Hàng nhẹ',
+          serviceTypeId,
           total: fee.total,
           serviceFee: fee.service_fee,
           insuranceFee: fee.insurance_fee,
           leadtime: new Date(leadtime.leadtime * 1000).toISOString(),
-        };
-      }),
-    );
-
-    // 6. Tổng hợp kết quả từ các dịch vụ thành công
-    const services = results
-      .filter((r) => r.status === 'fulfilled')
-      .map((r) => (r as PromiseFulfilledResult<ShippingFeeResponseDto['services'][number]>).value);
-
-    // 7. Ghi log các dịch vụ bị lỗi để quản trị viên theo dõi
-    const rejectedReasons = results
-      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-      .map((r): unknown => r.reason);
-
-    if (rejectedReasons.length > 0) {
-      const reasonSummary = rejectedReasons
-        .map((reason) => (reason instanceof Error ? reason.message : String(reason)))
-        .join(' | ');
-      this.logger.warn(`Có dịch vụ GHN tính phí thất bại: ${reasonSummary}`);
-    }
-
-    if (services.length === 0) {
-      const firstHttpError = rejectedReasons.find(
-        (reason): reason is HttpException => reason instanceof HttpException,
-      );
-      if (firstHttpError && firstHttpError.getStatus() >= 500) {
-        throw firstHttpError;
-      }
-      throw new BadGatewayException('Không thể tính phí vận chuyển từ dịch vụ vận chuyển.');
-    }
-
-    return { services };
+        },
+      ],
+    };
   }
 }

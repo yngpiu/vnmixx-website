@@ -113,6 +113,10 @@ export function NewProductForm() {
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState('');
+  const [weight, setWeight] = useState('');
+  const [length, setLength] = useState('');
+  const [width, setWidth] = useState('');
+  const [height, setHeight] = useState('');
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [isActive, setIsActive] = useState(true);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
@@ -247,6 +251,26 @@ export function NewProductForm() {
       setFormError('Slug chỉ gồm chữ thường, số và dấu gạch nối giữa các từ.');
       return;
     }
+    const parsedWeight = Number.parseInt(weight, 10);
+    const parsedLength = Number.parseInt(length, 10);
+    const parsedWidth = Number.parseInt(width, 10);
+    const parsedHeight = Number.parseInt(height, 10);
+    if (!Number.isFinite(parsedWeight) || parsedWeight < 1) {
+      setFormError('Cân nặng phải là số nguyên lớn hơn hoặc bằng 1.');
+      return;
+    }
+    if (!Number.isFinite(parsedLength) || parsedLength < 1) {
+      setFormError('Chiều dài phải là số nguyên lớn hơn hoặc bằng 1.');
+      return;
+    }
+    if (!Number.isFinite(parsedWidth) || parsedWidth < 1) {
+      setFormError('Chiều rộng phải là số nguyên lớn hơn hoặc bằng 1.');
+      return;
+    }
+    if (!Number.isFinite(parsedHeight) || parsedHeight < 1) {
+      setFormError('Chiều cao phải là số nguyên lớn hơn hoặc bằng 1.');
+      return;
+    }
     const parsedVariants = parseVariants();
     if (!parsedVariants) return;
 
@@ -262,6 +286,10 @@ export function NewProductForm() {
     const body: CreateProductBody = {
       name: name.trim(),
       slug: slug.trim(),
+      weight: parsedWeight,
+      length: parsedLength,
+      width: parsedWidth,
+      height: parsedHeight,
       ...(descriptionPayload ? { description: descriptionPayload } : {}),
       ...(categoryIds.length ? { categoryIds } : {}),
       isActive,
@@ -360,6 +388,52 @@ export function NewProductForm() {
                   maxLength={255}
                   className="font-mono text-sm"
                   placeholder="ao-thun-basic"
+                />
+              </Field>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <Field>
+                <FieldLabel htmlFor="np-weight">Cân nặng (gram)</FieldLabel>
+                <Input
+                  id="np-weight"
+                  type="number"
+                  min={1}
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  disabled={busy}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="np-length">Chiều dài (cm)</FieldLabel>
+                <Input
+                  id="np-length"
+                  type="number"
+                  min={1}
+                  value={length}
+                  onChange={(e) => setLength(e.target.value)}
+                  disabled={busy}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="np-width">Chiều rộng (cm)</FieldLabel>
+                <Input
+                  id="np-width"
+                  type="number"
+                  min={1}
+                  value={width}
+                  onChange={(e) => setWidth(e.target.value)}
+                  disabled={busy}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="np-height">Chiều cao (cm)</FieldLabel>
+                <Input
+                  id="np-height"
+                  type="number"
+                  min={1}
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  disabled={busy}
                 />
               </Field>
             </div>

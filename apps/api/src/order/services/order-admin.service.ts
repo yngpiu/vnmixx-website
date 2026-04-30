@@ -71,12 +71,6 @@ export class OrderAdminService {
   // Xác nhận đơn hàng và đẩy thông tin sang đơn vị vận chuyển (GHN)
   async confirmOrder(
     orderCode: string,
-    shipment: {
-      weight: number;
-      length: number;
-      width: number;
-      height: number;
-    },
     auditContext: AuditRequestContext = {},
   ): Promise<OrderAdminDetailView> {
     let beforeData: Record<string, unknown> | undefined;
@@ -139,6 +133,14 @@ export class OrderAdminService {
           'Cần xác nhận thanh toán chuyển khoản trước khi xử lý đơn hàng.',
         );
       }
+      if (
+        order.packageWeight < 1 ||
+        order.packageLength < 1 ||
+        order.packageWidth < 1 ||
+        order.packageHeight < 1
+      ) {
+        throw new BadRequestException('Thiếu thông số kiện hàng hợp lệ để tạo vận đơn GHN.');
+      }
 
       // 4. Chuẩn bị thông tin và gọi API GHN để tạo vận đơn thực tế
       const toAddress = `${order.shippingAddressLine}, ${order.shippingWard}, ${order.shippingDistrict}, ${order.shippingCity}`;
@@ -153,10 +155,10 @@ export class OrderAdminService {
           toWardName: order.shippingWard,
           toDistrictName: order.shippingDistrict,
           toProvinceName: order.shippingCity,
-          weight: shipment.weight,
-          length: shipment.length,
-          width: shipment.width,
-          height: shipment.height,
+          weight: order.packageWeight,
+          length: order.packageLength,
+          width: order.packageWidth,
+          height: order.packageHeight,
           serviceTypeId: order.serviceTypeId ?? 2,
           paymentTypeId: 1,
           requiredNote: order.requiredNote,
@@ -165,7 +167,7 @@ export class OrderAdminService {
           items: order.items.map((item) => ({
             name: item.productName,
             quantity: item.quantity,
-            weight: Math.round(shipment.weight / order.items.length),
+            weight: Math.round(order.packageWeight / order.items.length),
           })),
           note: order.note ?? undefined,
           clientOrderCode: orderCode,
@@ -183,10 +185,6 @@ export class OrderAdminService {
           where: { id: order.id },
           data: {
             status: 'AWAITING_SHIPMENT',
-            packageWeight: shipment.weight,
-            packageLength: shipment.length,
-            packageWidth: shipment.width,
-            packageHeight: shipment.height,
             ghnOrderCode: ghnResult.order_code,
             expectedDeliveryTime: new Date(ghnResult.expected_delivery_time),
           },

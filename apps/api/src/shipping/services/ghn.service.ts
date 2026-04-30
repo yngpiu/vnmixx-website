@@ -19,6 +19,13 @@ export interface GhnFeeData {
   insurance_fee: number;
 }
 
+interface GhnFeeItem {
+  length: number;
+  width: number;
+  height: number;
+  weight: number;
+}
+
 export interface GhnLeadtimeData {
   leadtime: number;
 }
@@ -78,13 +85,20 @@ export class GhnService {
     fromWardCode: string;
     toDistrictId: number;
     toWardCode: string;
-    serviceId: number;
+    serviceId?: number;
+    serviceTypeId?: number;
     weight: number;
     length: number;
     width: number;
     height: number;
     insuranceValue?: number;
+    items?: GhnFeeItem[];
   }): Promise<GhnFeeData> {
+    const hasServiceId = typeof params.serviceId === 'number';
+    const hasServiceTypeId = typeof params.serviceTypeId === 'number';
+    if (!hasServiceId && !hasServiceTypeId) {
+      throw new BadRequestException('Thiếu service_id hoặc service_type_id để tính phí GHN.');
+    }
     return this.post<GhnFeeData>(
       '/shipping-order/fee',
       {
@@ -92,12 +106,14 @@ export class GhnService {
         from_ward_code: params.fromWardCode,
         to_district_id: params.toDistrictId,
         to_ward_code: params.toWardCode,
-        service_id: params.serviceId,
+        ...(hasServiceId ? { service_id: params.serviceId } : {}),
+        ...(hasServiceTypeId ? { service_type_id: params.serviceTypeId } : {}),
         weight: params.weight,
         length: params.length,
         width: params.width,
         height: params.height,
         insurance_value: params.insuranceValue ?? 0,
+        ...(params.items && params.items.length > 0 ? { items: params.items } : {}),
       },
       { Token: this.token, ShopId: this.shopId },
     );

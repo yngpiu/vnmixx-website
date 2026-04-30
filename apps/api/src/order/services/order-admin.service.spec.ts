@@ -138,13 +138,16 @@ describe('OrderAdminService', () => {
 
   describe('confirmOrder', () => {
     const orderCode = 'ORD123';
-    const shipment = { weight: 1000, length: 10, width: 10, height: 10 };
     const orderData = {
       id: 1,
       orderCode,
       status: 'PENDING_CONFIRMATION',
       total: 100000,
       subtotal: 90000,
+      packageWeight: 1000,
+      packageLength: 10,
+      packageWidth: 10,
+      packageHeight: 10,
       shippingFullName: 'John Doe',
       shippingPhoneNumber: '0123456789',
       shippingAddressLine: '123 St',
@@ -174,7 +177,7 @@ describe('OrderAdminService', () => {
         status: 'AWAITING_SHIPMENT',
       } as any);
 
-      const result = await service.confirmOrder(orderCode, shipment);
+      const result = await service.confirmOrder(orderCode);
 
       expect(result.status).toBe('AWAITING_SHIPMENT');
       expect(ghn.createOrder).toHaveBeenCalledWith(
@@ -223,14 +226,14 @@ describe('OrderAdminService', () => {
     it('should throw BadRequestException if order is not PENDING_CONFIRMATION', async () => {
       prisma.order.findUnique.mockResolvedValue({ ...orderData, status: 'CANCELLED' } as any);
 
-      await expect(service.confirmOrder(orderCode, shipment)).rejects.toThrow(BadRequestException);
+      await expect(service.confirmOrder(orderCode)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadGatewayException if GHN order creation fails', async () => {
       prisma.order.findUnique.mockResolvedValue(orderData as any);
       ghn.createOrder.mockRejectedValue(new Error('GHN error'));
 
-      await expect(service.confirmOrder(orderCode, shipment)).rejects.toThrow(BadGatewayException);
+      await expect(service.confirmOrder(orderCode)).rejects.toThrow(BadGatewayException);
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ status: AuditLogStatus.FAILED }),
       );
@@ -247,7 +250,7 @@ describe('OrderAdminService', () => {
         version: 1,
       } as any);
 
-      await expect(service.confirmOrder(orderCode, shipment)).rejects.toThrow(BadRequestException);
+      await expect(service.confirmOrder(orderCode)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if stock version changes during update', async () => {
@@ -262,7 +265,7 @@ describe('OrderAdminService', () => {
       } as any);
       prisma.productVariant.updateMany.mockResolvedValue({ count: 0 } as any);
 
-      await expect(service.confirmOrder(orderCode, shipment)).rejects.toThrow(BadRequestException);
+      await expect(service.confirmOrder(orderCode)).rejects.toThrow(BadRequestException);
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ status: AuditLogStatus.FAILED }),
       );

@@ -99,6 +99,26 @@ export class CreateProductDto {
   @MaxLength(500, { message: 'URL ảnh đại diện không được vượt quá 500 ký tự' })
   thumbnail?: string;
 
+  @ApiProperty({ example: 300, description: 'Cân nặng sản phẩm (gram)' })
+  @IsInt({ message: 'Cân nặng phải là số nguyên' })
+  @Min(1, { message: 'Cân nặng phải lớn hơn hoặc bằng 1' })
+  weight: number;
+
+  @ApiProperty({ example: 30, description: 'Chiều dài sản phẩm (cm)' })
+  @IsInt({ message: 'Chiều dài phải là số nguyên' })
+  @Min(1, { message: 'Chiều dài phải lớn hơn hoặc bằng 1' })
+  length: number;
+
+  @ApiProperty({ example: 25, description: 'Chiều rộng sản phẩm (cm)' })
+  @IsInt({ message: 'Chiều rộng phải là số nguyên' })
+  @Min(1, { message: 'Chiều rộng phải lớn hơn hoặc bằng 1' })
+  width: number;
+
+  @ApiProperty({ example: 5, description: 'Chiều cao sản phẩm (cm)' })
+  @IsInt({ message: 'Chiều cao phải là số nguyên' })
+  @Min(1, { message: 'Chiều cao phải lớn hơn hoặc bằng 1' })
+  height: number;
+
   @ApiPropertyOptional({
     example: [3, 12],
     type: [Number],

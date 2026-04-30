@@ -7,7 +7,6 @@ import {
   confirmAdminOrder,
   confirmAdminOrderPayment,
   getAdminOrder,
-  type ConfirmOrderShipmentInput,
 } from '@/modules/orders/api/orders';
 import type { OrderAdminDetail, PaymentMethod } from '@/modules/orders/types/order-admin';
 import {
@@ -23,24 +22,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
-} from '@repo/ui/components/ui/input-group';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2Icon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { toast } from 'sonner';
 
 function canConfirmPayment(order: OrderAdminDetail): boolean {
   const payment = order.payments[0];
-  return Boolean(payment?.method === 'BANK_TRANSFER' && payment.status !== 'SUCCESS');
+  return Boolean(payment?.method === 'BANK_TRANSFER_QR' && payment.status !== 'SUCCESS');
 }
 
 function canConfirmOrder(order: OrderAdminDetail): boolean {
-  if (order.status !== 'PENDING') {
+  if (order.status !== 'PENDING_CONFIRMATION') {
     return false;
   }
   const payment = order.payments[0];
@@ -50,14 +43,14 @@ function canConfirmOrder(order: OrderAdminDetail): boolean {
   if (payment.method === 'COD') {
     return true;
   }
-  if (payment.method === 'BANK_TRANSFER' && payment.status === 'SUCCESS') {
+  if (payment.method === 'BANK_TRANSFER_QR' && payment.status === 'SUCCESS') {
     return true;
   }
   return false;
 }
 
 function canCancelOrder(order: OrderAdminDetail): boolean {
-  const blocked: OrderAdminDetail['status'][] = ['DELIVERED', 'CANCELLED', 'RETURNED'];
+  const blocked: OrderAdminDetail['status'][] = ['DELIVERED', 'CANCELLED'];
   return !blocked.includes(order.status);
 }
 
@@ -69,12 +62,6 @@ export function OrderActionsDialog(props: {
   onAfterMutation?: () => void;
 }) {
   const { orderCode, open, onOpenChange, title, onAfterMutation } = props;
-  const [shipment, setShipment] = useState<ConfirmOrderShipmentInput>({
-    weight: 0,
-    length: 0,
-    width: 0,
-    height: 0,
-  });
   const queryClient = useQueryClient();
   const detailQuery = useQuery({
     queryKey: ['orders', 'admin', 'detail', orderCode],
@@ -82,17 +69,6 @@ export function OrderActionsDialog(props: {
     enabled: open && orderCode.length > 0,
   });
   const order = detailQuery.data;
-  useEffect(() => {
-    if (!order) {
-      return;
-    }
-    setShipment({
-      weight: order.packageWeight,
-      length: order.packageLength,
-      width: order.packageWidth,
-      height: order.packageHeight,
-    });
-  }, [order]);
   const invalidate = async (): Promise<void> => {
     await queryClient.invalidateQueries({ queryKey: ['orders', 'admin'] });
     onAfterMutation?.();
@@ -107,7 +83,7 @@ export function OrderActionsDialog(props: {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
   const confirmOrderMutation = useMutation({
-    mutationFn: () => confirmAdminOrder(orderCode, shipment),
+    mutationFn: () => confirmAdminOrder(orderCode),
     onSuccess: async () => {
       toast.success('Đã xác nhận đơn và tạo vận đơn GHN.');
       await invalidate();
@@ -127,13 +103,11 @@ export function OrderActionsDialog(props: {
   const paymentMethodLabel = useMemo((): string => {
     const m = order?.payments[0]?.method as PaymentMethod | undefined;
     if (m === 'COD') return 'COD';
-    if (m === 'BANK_TRANSFER') return 'Chuyển khoản';
+    if (m === 'BANK_TRANSFER_QR') return 'Chuyển khoản';
     return '—';
   }, [order]);
   const isMutating =
     confirmPayMutation.isPending || confirmOrderMutation.isPending || cancelMutation.isPending;
-  const isShipmentValid =
-    shipment.weight >= 1 && shipment.length >= 1 && shipment.width >= 1 && shipment.height >= 1;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -163,88 +137,6 @@ export function OrderActionsDialog(props: {
               </p>
             </div>
             <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/20 p-3">
-                <label className="text-xs">
-                  <span className="mb-1 block text-muted-foreground">Khối lượng (g)</span>
-                  <InputGroup className="h-8">
-                    <InputGroupInput
-                      type="number"
-                      min={1}
-                      value={shipment.weight}
-                      onChange={(e) =>
-                        setShipment((prev) => ({
-                          ...prev,
-                          weight: Number.parseInt(e.target.value || '0', 10) || 0,
-                        }))
-                      }
-                      disabled={isMutating}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>g</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </label>
-                <label className="text-xs">
-                  <span className="mb-1 block text-muted-foreground">Dài (cm)</span>
-                  <InputGroup className="h-8">
-                    <InputGroupInput
-                      type="number"
-                      min={1}
-                      value={shipment.length}
-                      onChange={(e) =>
-                        setShipment((prev) => ({
-                          ...prev,
-                          length: Number.parseInt(e.target.value || '0', 10) || 0,
-                        }))
-                      }
-                      disabled={isMutating}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>cm</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </label>
-                <label className="text-xs">
-                  <span className="mb-1 block text-muted-foreground">Rộng (cm)</span>
-                  <InputGroup className="h-8">
-                    <InputGroupInput
-                      type="number"
-                      min={1}
-                      value={shipment.width}
-                      onChange={(e) =>
-                        setShipment((prev) => ({
-                          ...prev,
-                          width: Number.parseInt(e.target.value || '0', 10) || 0,
-                        }))
-                      }
-                      disabled={isMutating}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>cm</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </label>
-                <label className="text-xs">
-                  <span className="mb-1 block text-muted-foreground">Cao (cm)</span>
-                  <InputGroup className="h-8">
-                    <InputGroupInput
-                      type="number"
-                      min={1}
-                      value={shipment.height}
-                      onChange={(e) =>
-                        setShipment((prev) => ({
-                          ...prev,
-                          height: Number.parseInt(e.target.value || '0', 10) || 0,
-                        }))
-                      }
-                      disabled={isMutating}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>cm</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </label>
-              </div>
               <Button
                 type="button"
                 variant="secondary"
@@ -261,7 +153,7 @@ export function OrderActionsDialog(props: {
               </p>
               <Button
                 type="button"
-                disabled={!canConfirmOrder(order) || !isShipmentValid || isMutating}
+                disabled={!canConfirmOrder(order) || isMutating}
                 onClick={() => confirmOrderMutation.mutate()}
               >
                 {confirmOrderMutation.isPending ? (
@@ -270,8 +162,8 @@ export function OrderActionsDialog(props: {
                 Xác nhận đơn &amp; tạo vận đơn GHN
               </Button>
               <p className="text-xs text-muted-foreground">
-                Chỉ khi đơn ở trạng thái chờ xử lý; cần nhập đủ cân nặng và kích thước kiện trước
-                khi tạo vận đơn GHN.
+                Chỉ khi đơn ở trạng thái chờ xử lý. Hệ thống tự dùng thông số kiện đã tính sẵn để
+                tạo vận đơn GHN.
               </p>
               <Button
                 type="button"

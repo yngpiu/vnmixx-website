@@ -66,6 +66,10 @@ export type ProductAdminDetail = {
   slug: string;
   description: string | null;
   thumbnail: string | null;
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
   isActive: boolean;
   category: ProductCategoryBrief | null;
   categoryIds?: number[];
@@ -96,6 +100,10 @@ export type CreateProductBody = {
   slug: string;
   description?: string;
   thumbnail?: string;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
   /** Nhiều danh mục lá (bảng nối). Ưu tiên hơn `categoryId` nếu cả hai có. */
   categoryIds?: number[];
   /** @deprecated Dùng `categoryIds`. */
@@ -110,6 +118,10 @@ export type UpdateProductBody = {
   slug?: string;
   description?: string;
   thumbnail?: string;
+  weight?: number;
+  length?: number;
+  width?: number;
+  height?: number;
   categoryId?: number;
   categoryIds?: number[];
   isActive?: boolean;

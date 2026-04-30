@@ -174,7 +174,7 @@ function ColorImageColumn({
             <ul className="flex w-max max-w-full flex-col gap-1.5">
               {urls.map((url, index) => (
                 <SortableImageRow
-                  key={`${colorId}-${url}`}
+                  key={sortableId(colorId, index)}
                   id={sortableId(colorId, index)}
                   url={url}
                   index={index}

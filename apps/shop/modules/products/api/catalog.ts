@@ -41,6 +41,7 @@ function buildProductsQuery(params: {
   limit: number;
   categorySlug?: string;
   sort: string;
+  search?: string;
   colorIds?: number[];
   sizeIds?: number[];
   minPrice?: number;
@@ -53,6 +54,10 @@ function buildProductsQuery(params: {
   });
   if (params.categorySlug) {
     searchParams.set('categorySlug', params.categorySlug);
+  }
+  const normalizedSearch = params.search?.trim();
+  if (normalizedSearch) {
+    searchParams.set('search', normalizedSearch);
   }
   if (params.minPrice !== undefined) {
     searchParams.set('minPrice', String(params.minPrice));
@@ -77,6 +82,7 @@ export async function fetchProductList(params: {
   limit: number;
   categorySlug?: string;
   sort: string;
+  search?: string;
   colorIds?: number[];
   sizeIds?: number[];
   minPrice?: number;

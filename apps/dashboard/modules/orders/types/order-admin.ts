@@ -1,17 +1,17 @@
 /** Khớp DTO admin đơn hàng từ `apps/api` (OrderAdmin*). */
 
 export type OrderStatus =
-  | 'PENDING'
+  | 'PENDING_PAYMENT'
+  | 'PENDING_CONFIRMATION'
   | 'PROCESSING'
   | 'AWAITING_SHIPMENT'
   | 'SHIPPED'
   | 'DELIVERED'
-  | 'CANCELLED'
-  | 'RETURNED';
+  | 'CANCELLED';
 
-export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
+export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CANCELLED';
 
-export type PaymentMethod = 'COD' | 'BANK_TRANSFER';
+export type PaymentMethod = 'COD' | 'BANK_TRANSFER_QR';
 
 export interface OrderItemAdmin {
   id: number;
@@ -102,11 +102,4 @@ export type ListAdminOrdersParams = {
   paymentStatus?: PaymentStatus;
   search?: string;
   customerId?: number;
-};
-
-export type ConfirmOrderShipmentInput = {
-  weight: number;
-  length: number;
-  width: number;
-  height: number;
 };

@@ -45,6 +45,7 @@ export function ProductCategoryPage({
   const searchParams = useSearchParams();
   const page = parseCatalogPage(searchParams.get('page'));
   const sort = parseCatalogSort(searchParams.get('sort'));
+  const appliedSearch = searchParams.get('search')?.trim() ?? '';
   const appliedColorIds = useMemo(
     () => parseCatalogIdsFromSearch('colorIds', searchParams),
     [searchParams],
@@ -101,12 +102,22 @@ export function ProductCategoryPage({
       categorySlug,
       page,
       sort,
+      appliedSearch,
       appliedColorIds.join(','),
       appliedSizeIds.join(','),
       appliedMinPrice,
       appliedMaxPrice,
     ],
-    [categorySlug, page, sort, appliedColorIds, appliedSizeIds, appliedMinPrice, appliedMaxPrice],
+    [
+      categorySlug,
+      page,
+      sort,
+      appliedSearch,
+      appliedColorIds,
+      appliedSizeIds,
+      appliedMinPrice,
+      appliedMaxPrice,
+    ],
   );
   const productsQuery = useQuery({
     queryKey: listQueryKey,
@@ -116,6 +127,7 @@ export function ProductCategoryPage({
         limit: CATALOG_LIST_PAGE_LIMIT,
         categorySlug,
         sort,
+        search: appliedSearch || undefined,
         colorIds: appliedColorIds.length > 0 ? appliedColorIds : undefined,
         sizeIds: appliedSizeIds.length > 0 ? appliedSizeIds : undefined,
         minPrice: appliedMinPrice > 0 ? appliedMinPrice : undefined,

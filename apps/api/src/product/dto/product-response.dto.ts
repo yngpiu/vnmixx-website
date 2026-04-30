@@ -167,6 +167,18 @@ export class ProductDetailResponseDto {
   @ApiPropertyOptional({ nullable: true })
   thumbnail: string | null;
 
+  @ApiProperty({ example: 300, description: 'Cân nặng sản phẩm (gram)' })
+  weight: number;
+
+  @ApiProperty({ example: 30, description: 'Chiều dài sản phẩm (cm)' })
+  length: number;
+
+  @ApiProperty({ example: 25, description: 'Chiều rộng sản phẩm (cm)' })
+  width: number;
+
+  @ApiProperty({ example: 5, description: 'Chiều cao sản phẩm (cm)' })
+  height: number;
+
   @ApiPropertyOptional({ type: CategoryBriefDto, nullable: true })
   category: CategoryBriefDto | null;
 
@@ -239,6 +251,18 @@ export class ProductAdminDetailResponseDto {
 
   @ApiPropertyOptional({ nullable: true })
   thumbnail: string | null;
+
+  @ApiProperty({ example: 300, description: 'Cân nặng sản phẩm (gram)' })
+  weight: number;
+
+  @ApiProperty({ example: 30, description: 'Chiều dài sản phẩm (cm)' })
+  length: number;
+
+  @ApiProperty({ example: 25, description: 'Chiều rộng sản phẩm (cm)' })
+  width: number;
+
+  @ApiProperty({ example: 5, description: 'Chiều cao sản phẩm (cm)' })
+  height: number;
 
   @ApiProperty({ example: true })
   isActive: boolean;

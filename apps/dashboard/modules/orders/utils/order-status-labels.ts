@@ -1,25 +1,28 @@
 import type { OrderStatus, PaymentStatus } from '@/modules/orders/types/order-admin';
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  PENDING: 'Chờ xử lý',
+  PENDING_PAYMENT: 'Chờ thanh toán',
+  PENDING_CONFIRMATION: 'Chờ xác nhận',
   PROCESSING: 'Đang xử lý',
   AWAITING_SHIPMENT: 'Chờ giao hàng',
   SHIPPED: 'Đang giao',
   DELIVERED: 'Đã giao',
   CANCELLED: 'Đã hủy',
-  RETURNED: 'Hoàn trả',
 };
 
 const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   PENDING: 'Chờ thanh toán',
   SUCCESS: 'Đã thanh toán',
   FAILED: 'Thất bại',
-  REFUNDED: 'Đã hoàn tiền',
+  EXPIRED: 'Hết hạn',
+  CANCELLED: 'Đã hủy',
 };
 
 const ORDER_STATUS_BADGE_CLASSES: Record<OrderStatus, string> = {
-  PENDING:
+  PENDING_PAYMENT:
     'border-transparent bg-amber-50 text-amber-900 hover:bg-amber-100 dark:bg-amber-950/70 dark:text-amber-100 dark:hover:bg-amber-900/60',
+  PENDING_CONFIRMATION:
+    'border-transparent bg-yellow-50 text-yellow-900 hover:bg-yellow-100 dark:bg-yellow-950/70 dark:text-yellow-100 dark:hover:bg-yellow-900/60',
   PROCESSING:
     'border-transparent bg-blue-50 text-blue-900 hover:bg-blue-100 dark:bg-blue-950/70 dark:text-blue-100 dark:hover:bg-blue-900/60',
   AWAITING_SHIPMENT:
@@ -30,8 +33,6 @@ const ORDER_STATUS_BADGE_CLASSES: Record<OrderStatus, string> = {
     'border-transparent bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:bg-emerald-950/70 dark:text-emerald-100 dark:hover:bg-emerald-900/60',
   CANCELLED:
     'border-transparent bg-red-50 text-red-900 hover:bg-red-100 dark:bg-red-950/70 dark:text-red-100 dark:hover:bg-red-900/60',
-  RETURNED:
-    'border-transparent bg-orange-50 text-orange-900 hover:bg-orange-100 dark:bg-orange-950/70 dark:text-orange-100 dark:hover:bg-orange-900/60',
 };
 
 const PAYMENT_STATUS_BADGE_CLASSES: Record<PaymentStatus, string> = {
@@ -41,8 +42,10 @@ const PAYMENT_STATUS_BADGE_CLASSES: Record<PaymentStatus, string> = {
     'border-transparent bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:bg-emerald-950/70 dark:text-emerald-100 dark:hover:bg-emerald-900/60',
   FAILED:
     'border-transparent bg-red-50 text-red-900 hover:bg-red-100 dark:bg-red-950/70 dark:text-red-100 dark:hover:bg-red-900/60',
-  REFUNDED:
-    'border-transparent bg-violet-50 text-violet-900 hover:bg-violet-100 dark:bg-violet-950/70 dark:text-violet-100 dark:hover:bg-violet-900/60',
+  EXPIRED:
+    'border-transparent bg-orange-50 text-orange-900 hover:bg-orange-100 dark:bg-orange-950/70 dark:text-orange-100 dark:hover:bg-orange-900/60',
+  CANCELLED:
+    'border-transparent bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700',
 };
 
 export function getOrderStatusBadgeClassName(status: OrderStatus): string {

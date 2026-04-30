@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, MaxLength } from 'class-validator';
 
 /**
  * CreateOrderDto: DTO gửi yêu cầu tạo đơn hàng mới.
@@ -19,11 +19,6 @@ export class CreateOrderDto {
     message: 'Phương thức thanh toán không hợp lệ',
   })
   paymentMethod: 'COD' | 'BANK_TRANSFER_QR';
-
-  @ApiProperty({ example: 2, description: 'Loại dịch vụ GHN (2: Hàng nhẹ, 5: Hàng nặng)' })
-  @IsInt({ message: 'ID loại dịch vụ phải là số nguyên' })
-  @Min(1, { message: 'ID loại dịch vụ phải lớn hơn hoặc bằng 1' })
-  serviceTypeId: number;
 
   @ApiProperty({
     example: 'KHONGCHOXEMHANG',

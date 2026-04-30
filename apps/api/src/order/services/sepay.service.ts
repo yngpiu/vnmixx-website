@@ -6,6 +6,8 @@ interface BuildQrPaymentParams {
   paymentCode: string;
 }
 
+const TEST_QR_AMOUNT = 10_000;
+
 @Injectable()
 export class SepayService {
   private readonly qrBaseUrl = 'https://qr.sepay.vn/img';
@@ -18,7 +20,7 @@ export class SepayService {
 
   buildQrPaymentFields(params: BuildQrPaymentParams) {
     const settings = this.getRequiredSettings();
-    const expiresAt = new Date(Date.now() + settings.checkoutExpireMinutes * 60_000);
+    const expiredAt = new Date(Date.now() + settings.checkoutExpireMinutes * 60_000);
     const qrImageUrl = this.buildQrImageUrl({
       bankCode: settings.bankCode,
       accountNumber: settings.accountNumber,
@@ -36,7 +38,7 @@ export class SepayService {
       qrTemplate: settings.qrTemplate,
       transferContent: params.paymentCode,
       qrImageUrl,
-      expiresAt,
+      expiredAt,
     };
   }
 
@@ -68,7 +70,7 @@ export class SepayService {
     const url = new URL(this.qrBaseUrl);
     url.searchParams.set('bank', params.bankCode);
     url.searchParams.set('acc', params.accountNumber);
-    url.searchParams.set('amount', String(params.amount));
+    url.searchParams.set('amount', String(TEST_QR_AMOUNT));
     url.searchParams.set('des', params.paymentCode);
 
     if (params.qrTemplate) {

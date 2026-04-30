@@ -154,6 +154,16 @@ export function ProductDetailView({ productId }: ProductDetailViewProps) {
               <dd className="text-sm font-medium tabular-nums">{images.length}</dd>
             </div>
             <div className="space-y-1">
+              <dt className="text-sm text-muted-foreground">Cân nặng</dt>
+              <dd className="text-sm font-medium tabular-nums">{detail.weight} g</dd>
+            </div>
+            <div className="space-y-1">
+              <dt className="text-sm text-muted-foreground">Kích thước</dt>
+              <dd className="text-sm font-medium tabular-nums">
+                {detail.length} x {detail.width} x {detail.height} cm
+              </dd>
+            </div>
+            <div className="space-y-1">
               <dt className="text-sm text-muted-foreground">Tạo lúc</dt>
               <dd className="text-sm tabular-nums">
                 {dateTimeFormatter.format(new Date(detail.createdAt))}
