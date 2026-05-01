@@ -7,6 +7,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Public } from '../../auth/decorators';
 import { ok, type SuccessPayload } from '../../common/utils/response.util';
 import { SepayWebhookDto } from '../dto/sepay-webhook.dto';
 import { OrderService } from '../services/order.service';
@@ -25,6 +26,7 @@ export class SepayWebhookController {
   @ApiUnauthorizedResponse({ description: 'Authorization header không hợp lệ.' })
   @ApiBadRequestResponse({ description: 'Payload webhook không hợp lệ.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Public()
   @Post('sepay')
   @HttpCode(HttpStatus.OK)
   async handleWebhook(

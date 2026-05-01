@@ -6,7 +6,7 @@ interface BuildQrPaymentParams {
   paymentCode: string;
 }
 
-const TEST_QR_AMOUNT = 10_000;
+const SEPAY_VIETINBANK_PREFIX = 'SEVQR';
 
 @Injectable()
 export class SepayService {
@@ -21,11 +21,12 @@ export class SepayService {
   buildQrPaymentFields(params: BuildQrPaymentParams) {
     const settings = this.getRequiredSettings();
     const expiredAt = new Date(Date.now() + settings.checkoutExpireMinutes * 60_000);
+    const transferContent = this.buildTransferContent(params.paymentCode);
     const qrImageUrl = this.buildQrImageUrl({
       bankCode: settings.bankCode,
       accountNumber: settings.accountNumber,
       amount: params.amount,
-      paymentCode: params.paymentCode,
+      transferContent,
       qrTemplate: settings.qrTemplate,
     });
 
@@ -36,7 +37,7 @@ export class SepayService {
       accountNumber: settings.accountNumber,
       accountName: settings.accountName,
       qrTemplate: settings.qrTemplate,
-      transferContent: params.paymentCode,
+      transferContent,
       qrImageUrl,
       expiredAt,
     };
@@ -64,20 +65,24 @@ export class SepayService {
     bankCode: string;
     accountNumber: string;
     amount: number;
-    paymentCode: string;
+    transferContent: string;
     qrTemplate?: string;
   }): string {
     const url = new URL(this.qrBaseUrl);
     url.searchParams.set('bank', params.bankCode);
     url.searchParams.set('acc', params.accountNumber);
-    url.searchParams.set('amount', String(TEST_QR_AMOUNT));
-    url.searchParams.set('des', params.paymentCode);
+    url.searchParams.set('amount', String(params.amount));
+    url.searchParams.set('des', params.transferContent);
 
     if (params.qrTemplate) {
       url.searchParams.set('template', params.qrTemplate);
     }
 
     return url.toString();
+  }
+
+  private buildTransferContent(paymentCode: string): string {
+    return `${SEPAY_VIETINBANK_PREFIX} ${paymentCode}`;
   }
 
   private getRequiredSettings(): {

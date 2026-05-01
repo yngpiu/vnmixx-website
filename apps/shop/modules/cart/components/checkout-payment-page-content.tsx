@@ -30,17 +30,29 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
     queryFn: () => getMyOrderDetail(orderCode),
     enabled: orderCode.length > 0,
     refetchInterval: (query) => (query.state.data?.paymentStatus === 'PENDING' ? 15000 : false),
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
   const cancelOrderMutation = useMutation({
     mutationFn: () => cancelMyOrder(orderCode),
     onSuccess: () => {
       toast.success('Đã hủy đơn hàng.');
-      router.push('/tai-khoan');
+      router.replace(
+        `/dat-hang/hoan-thanh?orderCode=${encodeURIComponent(orderCode)}&paymentResult=cancelled`,
+      );
     },
     onError: (error: unknown) => {
       toast.error(error instanceof Error ? error.message : 'Không thể hủy đơn hàng lúc này.');
     },
   });
+  const paymentStatus = orderQuery.data?.paymentStatus;
+  const isPaymentSuccess = paymentStatus === 'SUCCESS';
+  const isPaymentFailed = paymentStatus === 'FAILED';
+  const isPaymentExpired = paymentStatus === 'EXPIRED';
+  const isOrderCancelled = paymentStatus === 'CANCELLED';
+  const shouldShowTerminalState = isPaymentFailed || isPaymentExpired || isOrderCancelled;
+  const orderData = orderQuery.data;
+  const checkoutSession = orderData?.checkoutSession;
   useEffect(() => {
     if (orderCode.length === 0) {
       return;
@@ -50,6 +62,26 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
     }
     router.replace(`/dat-hang/hoan-thanh?orderCode=${encodeURIComponent(orderCode)}`);
   }, [orderCode, orderQuery.data?.paymentStatus, router]);
+  useEffect(() => {
+    if (orderCode.length === 0 || orderQuery.isLoading || orderQuery.isError) {
+      return;
+    }
+    if (!shouldShowTerminalState) {
+      return;
+    }
+    const paymentResult = isPaymentExpired ? 'expired' : isPaymentFailed ? 'failed' : 'cancelled';
+    router.replace(
+      `/dat-hang/hoan-thanh?orderCode=${encodeURIComponent(orderCode)}&paymentResult=${paymentResult}`,
+    );
+  }, [
+    isPaymentExpired,
+    isPaymentFailed,
+    orderCode,
+    orderQuery.isError,
+    orderQuery.isLoading,
+    router,
+    shouldShowTerminalState,
+  ]);
   useEffect(() => {
     if (!accessToken || orderCode.length === 0) {
       return;
@@ -73,14 +105,6 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
       socket.disconnect();
     };
   }, [accessToken, orderCode, queryClient, router]);
-  const paymentStatus = orderQuery.data?.paymentStatus;
-  const isPaymentSuccess = paymentStatus === 'SUCCESS';
-  const isPaymentFailed = paymentStatus === 'FAILED';
-  const isPaymentExpired = paymentStatus === 'EXPIRED';
-  const isOrderCancelled = paymentStatus === 'CANCELLED';
-  const shouldShowTerminalState = isPaymentFailed || isPaymentExpired || isOrderCancelled;
-  const orderData = orderQuery.data;
-  const checkoutSession = orderData?.checkoutSession;
 
   return (
     <main className="shop-shell-container py-8">
@@ -104,15 +128,6 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
               <span className="font-semibold">{checkoutSession.transferContent}</span> để hệ thống
               tự động xác nhận thanh toán.
             </p>
-            {shouldShowTerminalState ? (
-              <p className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {isPaymentExpired
-                  ? 'Phiên thanh toán đã quá thời gian. Vui lòng tạo đơn hàng mới.'
-                  : isPaymentFailed
-                    ? 'Thanh toán thất bại. Vui lòng thử lại với đơn hàng mới.'
-                    : 'Đơn hàng đã bị hủy.'}
-              </p>
-            ) : null}
             <div className="space-y-5">
               <div className="flex justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

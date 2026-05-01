@@ -24,22 +24,17 @@ function getItemTotal(item: CartItem): number {
 function CartProgressSteps(): React.JSX.Element {
   return (
     <div className="border border-border px-6 py-8">
-      <div className="px-3">
-        <div className="relative grid grid-cols-4 items-start text-center">
-          <span
-            className="absolute left-[12.5%] right-[12.5%] top-[7px] h-px bg-border"
-            aria-hidden
-          />
-          {CHECKOUT_STEPS.map((step, index) => (
-            <div key={step} className="relative z-10 flex flex-col items-center gap-3">
-              <span
-                className={`size-3 rounded-full border ${index === 0 ? 'border-foreground bg-foreground' : 'border-border bg-background'}`}
-                aria-hidden
-              />
-              <span className="text-[13px] leading-5 text-muted-foreground">{step}</span>
-            </div>
-          ))}
-        </div>
+      <div className="relative grid grid-cols-4 items-start text-center">
+        <span className="absolute left-0 right-0 top-[7px] h-px bg-border" aria-hidden />
+        {CHECKOUT_STEPS.map((step, index) => (
+          <div key={step} className="relative z-10 flex flex-col items-center gap-3">
+            <span
+              className={`size-3 rounded-full border ${index === 0 ? 'border-foreground bg-foreground' : 'border-border bg-background'}`}
+              aria-hidden
+            />
+            <span className="text-[13px] leading-5 text-muted-foreground">{step}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -224,9 +219,9 @@ export function CartPageContent(): React.JSX.Element {
           </PrimaryCtaButton>
         </section>
       ) : (
-        <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px]">
-          <div className="space-y-6">
-            <CartProgressSteps />
+        <section className="space-y-6">
+          <CartProgressSteps />
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px]">
             <div>
               <h1 className="mb-5 text-[24px] leading-none font-semibold text-foreground">
                 Giỏ hàng của bạn <span className="text-rose-700">{totalQuantity} Sản Phẩm</span>
@@ -249,8 +244,8 @@ export function CartPageContent(): React.JSX.Element {
                 </PrimaryCtaButton>
               </div>
             </div>
+            <CartSummaryPanel totalPrice={totalPrice} totalQuantity={totalQuantity} />
           </div>
-          <CartSummaryPanel totalPrice={totalPrice} totalQuantity={totalQuantity} />
         </section>
       )}
     </main>
