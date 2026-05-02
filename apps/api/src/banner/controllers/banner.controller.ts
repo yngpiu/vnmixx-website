@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import {
   ApiExtraModels,
   ApiInternalServerErrorResponse,
@@ -13,7 +13,7 @@ import {
   ok,
   type SuccessPayload,
 } from '../../common/utils/response.util';
-import { BannerResponseDto } from '../dto';
+import { BannerResponseDto, ListBannersQueryDto } from '../dto';
 import { BannerService } from '../services/banner.service';
 
 @ApiTags('Banners')
@@ -32,7 +32,12 @@ export class BannerController {
   @Public()
   @Get()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async findAll(): Promise<SuccessPayload<BannerResponseDto[]>> {
-    return ok(await this.bannerService.findActivePublic(), 'Lấy danh sách banner thành công.');
+  async findAll(@Query() query: ListBannersQueryDto): Promise<SuccessPayload<BannerResponseDto[]>> {
+    return ok(
+      await this.bannerService.findActivePublic({
+        ...(query.placement !== undefined ? { placement: query.placement } : {}),
+      }),
+      'Lấy danh sách banner thành công.',
+    );
   }
 }

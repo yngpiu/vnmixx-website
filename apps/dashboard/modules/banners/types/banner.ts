@@ -6,6 +6,8 @@ export type BannerCategory = {
 
 export type BannerAdmin = {
   id: number;
+  placement: BannerPlacement;
+  title: string | null;
   imageUrl: string;
   categoryId: number;
   isActive: boolean;
@@ -17,9 +19,14 @@ export type BannerAdmin = {
 
 export type ListBannersParams = {
   isActive?: boolean;
+  placement?: BannerPlacement;
 };
 
+export type BannerPlacement = 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+
 export type CreateBannerBody = {
+  placement: BannerPlacement;
+  title?: string;
   imageUrl: string;
   categoryId: number;
   isActive?: boolean;
@@ -27,6 +34,8 @@ export type CreateBannerBody = {
 };
 
 export type UpdateBannerBody = {
+  placement?: BannerPlacement;
+  title?: string;
   imageUrl?: string;
   categoryId?: number;
   isActive?: boolean;

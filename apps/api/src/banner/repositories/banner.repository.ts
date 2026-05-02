@@ -10,6 +10,8 @@ interface BannerCategoryView {
 
 interface BannerView {
   id: number;
+  placement: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+  title: string | null;
   imageUrl: string;
   categoryId: number;
   isActive: boolean;
@@ -34,6 +36,8 @@ const BANNER_CATEGORY_SELECT = {
 
 const BANNER_SELECT = {
   id: true,
+  placement: true,
+  title: true,
   imageUrl: true,
   categoryId: true,
   isActive: true,
@@ -49,23 +53,33 @@ export type { BannerAdminView, BannerCategoryView, BannerView, CategoryStatusVie
 export class BannerRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAllActivePublic(): Promise<BannerView[]> {
+  findAllActivePublic(opts?: {
+    placement?: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+  }): Promise<BannerView[]> {
+    const where: Prisma.BannerWhereInput = {
+      isActive: true,
+      ...(opts?.placement !== undefined && { placement: opts.placement }),
+      category: { deletedAt: null, isActive: true },
+    };
     return this.prisma.banner.findMany({
-      where: {
-        isActive: true,
-        category: { deletedAt: null, isActive: true },
-      },
-      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      where,
+      orderBy: [{ placement: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
       select: BANNER_SELECT,
     });
   }
 
-  findAll(opts?: { isActive?: boolean }): Promise<BannerAdminView[]> {
-    const { isActive } = opts ?? {};
-    const where: Prisma.BannerWhereInput = { ...(isActive !== undefined && { isActive }) };
+  findAll(opts?: {
+    isActive?: boolean;
+    placement?: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+  }): Promise<BannerAdminView[]> {
+    const { isActive, placement } = opts ?? {};
+    const where: Prisma.BannerWhereInput = {
+      ...(isActive !== undefined && { isActive }),
+      ...(placement !== undefined && { placement }),
+    };
     return this.prisma.banner.findMany({
       where,
-      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      orderBy: [{ placement: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
       select: BANNER_SELECT,
     });
   }
@@ -85,6 +99,8 @@ export class BannerRepository {
   }
 
   create(data: {
+    placement: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+    title?: string | null;
     imageUrl: string;
     categoryId: number;
     isActive: boolean;
@@ -99,6 +115,8 @@ export class BannerRepository {
   update(
     id: number,
     data: {
+      placement?: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+      title?: string | null;
       imageUrl?: string;
       categoryId?: number;
       isActive?: boolean;

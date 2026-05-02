@@ -1,8 +1,8 @@
 'use client';
 
 import type { PublicBanner } from '@/modules/banner/types/banner';
+import { buildBannerHref } from '@/modules/banner/utils/build-banner-href';
 import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
-import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import Image from 'next/image';
 import Link from 'next/link';
 import 'swiper/css';
@@ -16,14 +16,14 @@ type HomeBannerSliderProps = {
 };
 
 export function HomeBannerSlider({ banners }: HomeBannerSliderProps): React.JSX.Element {
-  const bannerRadiusClassName =
-    'rounded-tl-[60px] md:rounded-tl-[90px] rounded-tr-none rounded-bl-none rounded-br-[60px] md:rounded-br-[90px]';
+  const bannerRadiusClassName = 'radius-diagonal-lg md:radius-diagonal-xl';
   const swiperColorVariables: React.CSSProperties = {
     '--swiper-navigation-color': 'var(--muted)',
     '--swiper-pagination-color': 'var(--muted)',
     '--swiper-pagination-bullet-inactive-color': 'var(--muted)',
     '--swiper-pagination-bullet-inactive-opacity': '0.8',
     '--swiper-pagination-bullet-opacity': '1',
+    overflowAnchor: 'none',
   } as React.CSSProperties;
 
   return (
@@ -47,22 +47,11 @@ export function HomeBannerSlider({ banners }: HomeBannerSliderProps): React.JSX.
     >
       {banners.map((banner: PublicBanner, slideIndex: number) => (
         <SwiperSlide key={banner.id}>
-          <Link
-            href={buildCategoryHref({
-              id: banner.category.id,
-              slug:
-                banner.category.slug && banner.category.slug.trim().length > 0
-                  ? banner.category.slug.trim()
-                  : `c${banner.category.id}`,
-            })}
-            className="block"
-          >
-            <div
-              className={`relative aspect-video w-full overflow-hidden ${bannerRadiusClassName}`}
-            >
+          <Link href={buildBannerHref(banner)} className="block">
+            <div className={`relative aspect-21/9 w-full overflow-hidden ${bannerRadiusClassName}`}>
               <Image
                 src={coerceHttpImageSrc(banner.imageUrl) ?? '/images/placeholder.jpg'}
-                alt={banner.category.name}
+                alt={banner.title ?? banner.category.name}
                 fill
                 sizes="(max-width: 1280px) 100vw, 1280px"
                 className="object-cover"

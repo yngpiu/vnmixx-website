@@ -1,5 +1,6 @@
 import { seedAddresses } from './seed-addresses';
 import { seedAuditLogs } from './seed-audit-logs';
+import { seedBanners } from './seed-banners';
 import { seedCategories } from './seed-categories';
 import { seedCustomers } from './seed-customers';
 import { seedEmployees } from './seed-employees';
@@ -21,6 +22,7 @@ async function main() {
   await seedMedia();
 
   await seedCategories();
+  await seedBanners();
   await seedProducts();
   await seedEmployees();
   await seedCustomers();

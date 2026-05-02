@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditLogStatus } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
@@ -21,13 +16,19 @@ export class BannerService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  async findActivePublic(): Promise<BannerView[]> {
-    return this.redis.getOrSet(BANNER_CACHE_KEYS.BANNER_PUBLIC_LIST, BANNER_CACHE_TTL.BANNER, () =>
-      this.repository.findAllActivePublic(),
+  async findActivePublic(opts?: {
+    placement?: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+  }): Promise<BannerView[]> {
+    const cacheKey = BANNER_CACHE_KEYS.buildPublicListKey(opts?.placement);
+    return this.redis.getOrSet(cacheKey, BANNER_CACHE_TTL.BANNER, () =>
+      this.repository.findAllActivePublic(opts),
     );
   }
 
-  async findAll(opts?: { isActive?: boolean }): Promise<BannerAdminView[]> {
+  async findAll(opts?: {
+    isActive?: boolean;
+    placement?: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+  }): Promise<BannerAdminView[]> {
     return this.repository.findAll(opts);
   }
 
@@ -46,6 +47,8 @@ export class BannerService {
     try {
       await this.validateCategoryForBinding(dto.categoryId);
       const result = await this.repository.create({
+        placement: dto.placement,
+        title: dto.title ?? null,
         imageUrl: dto.imageUrl,
         categoryId: dto.categoryId,
         isActive: dto.isActive ?? true,
@@ -82,12 +85,13 @@ export class BannerService {
   ): Promise<BannerAdminView> {
     let beforeData: BannerAdminView | undefined;
     try {
-      const existing = await this.findById(id);
-      beforeData = existing;
+      beforeData = await this.findById(id);
       if (dto.categoryId !== undefined) {
         await this.validateCategoryForBinding(dto.categoryId);
       }
       const result = await this.repository.update(id, {
+        ...(dto.placement !== undefined && { placement: dto.placement }),
+        ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
         ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
@@ -167,7 +171,7 @@ export class BannerService {
 
   private handleUniqueViolation(error: unknown): void {
     if (isPrismaErrorCode(error, 'P2002')) {
-      throw new ConflictException('Danh mục đã được liên kết với một banner khác');
+      throw new BadRequestException('Dữ liệu banner bị trùng với một bản ghi đã tồn tại');
     }
   }
 }

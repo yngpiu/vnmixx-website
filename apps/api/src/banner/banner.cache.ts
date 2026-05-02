@@ -1,5 +1,6 @@
 export const BANNER_CACHE_KEYS = {
-  BANNER_PUBLIC_LIST: 'banner:list:public',
+  buildPublicListKey: (placement?: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP'): string =>
+    placement ? `banner:list:public:${placement}` : 'banner:list:public:all',
 } as const;
 
 export const BANNER_CACHE_PATTERNS = {

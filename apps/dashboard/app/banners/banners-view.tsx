@@ -1,7 +1,7 @@
 'use client';
 
 import { deleteBanner, listBanners, updateBanner } from '@/modules/banners/api/banners';
-import type { BannerAdmin } from '@/modules/banners/types/banner';
+import type { BannerAdmin, BannerPlacement } from '@/modules/banners/types/banner';
 import { ListPage } from '@/modules/common/components/list-page';
 import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import {
@@ -38,6 +38,28 @@ import { GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+
+const PLACEMENT_SECTIONS: ReadonlyArray<{
+  placement: BannerPlacement;
+  title: string;
+  description: string;
+}> = [
+  {
+    placement: 'HERO_SLIDER',
+    title: 'Hero banner',
+    description: 'Không giới hạn số lượng.',
+  },
+  {
+    placement: 'FEATURED_TILE',
+    title: 'Featured tile',
+    description: 'Không giới hạn số lượng.',
+  },
+  {
+    placement: 'PROMO_STRIP',
+    title: 'Promo strip',
+    description: 'Tối đa 1 banner.',
+  },
+];
 
 type SortableBannerCardProps = {
   banner: BannerAdmin;
@@ -165,13 +187,28 @@ export function BannersView() {
   );
 
   const banners = useMemo(() => bannersQuery.data ?? [], [bannersQuery.data]);
+  const bannersByPlacement = useMemo(() => {
+    return PLACEMENT_SECTIONS.reduce<Record<BannerPlacement, BannerAdmin[]>>(
+      (accumulator, section) => {
+        accumulator[section.placement] = banners.filter(
+          (banner) => banner.placement === section.placement,
+        );
+        return accumulator;
+      },
+      {
+        HERO_SLIDER: [],
+        FEATURED_TILE: [],
+        PROMO_STRIP: [],
+      },
+    );
+  }, [banners]);
 
-  const handleDragEnd = (event: DragEndEvent): void => {
+  const handleDragEnd = (placement: BannerPlacement, event: DragEndEvent): void => {
     const { active, over } = event;
     if (!over || active.id === over.id) {
       return;
     }
-    const currentIds = banners.map((banner) => banner.id);
+    const currentIds = bannersByPlacement[placement].map((banner) => banner.id);
     const oldIndex = currentIds.indexOf(Number(active.id));
     const newIndex = currentIds.indexOf(Number(over.id));
     if (oldIndex < 0 || newIndex < 0) {
@@ -194,9 +231,7 @@ export function BannersView() {
           </Button>
         }
       >
-        <p className="text-muted-foreground text-sm">
-          Kéo-thả các card để sắp xếp thứ tự hiển thị. Không cần nhập số thứ tự thủ công.
-        </p>
+        <p className="text-muted-foreground text-sm">Kéo-thả để sắp xếp trong từng loại banner.</p>
         {bannersQuery.isLoading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
@@ -215,23 +250,49 @@ export function BannersView() {
             Chưa có banner. Hãy tạo banner đầu tiên để hiển thị ở trang shop.
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            autoScroll={false}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={banners.map((banner) => banner.id)}
-              strategy={rectSortingStrategy}
-            >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {banners.map((banner) => (
-                  <SortableBannerCard key={banner.id} banner={banner} onDelete={setDeleteTarget} />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+          <div className="space-y-6">
+            {PLACEMENT_SECTIONS.map((section) => {
+              const sectionBanners = bannersByPlacement[section.placement];
+              return (
+                <section key={section.placement} className="space-y-3 rounded-xl border p-4">
+                  <div>
+                    <h2 className="text-base font-semibold">{section.title}</h2>
+                    <p className="text-muted-foreground text-sm">{section.description}</p>
+                  </div>
+                  {sectionBanners.length === 0 ? (
+                    <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
+                      Chưa có banner thuộc loại này.
+                    </div>
+                  ) : (
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      autoScroll={false}
+                      onDragEnd={(event) => handleDragEnd(section.placement, event)}
+                    >
+                      <SortableContext
+                        items={sectionBanners.map((banner) => banner.id)}
+                        strategy={rectSortingStrategy}
+                      >
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                          {sectionBanners.map((banner) => (
+                            <SortableBannerCard
+                              key={banner.id}
+                              banner={banner}
+                              onDelete={setDeleteTarget}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  )}
+                </section>
+              );
+            })}
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Loại Promo strip chỉ nên có 1 banner. Form tạo mới sẽ chặn nếu đã tồn tại.
+            </div>
+          </div>
         )}
       </ListPage>
 

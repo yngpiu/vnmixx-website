@@ -4,8 +4,12 @@ export type PublicBannerCategory = {
   slug: string;
 };
 
+export type PublicBannerPlacement = 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+
 export type PublicBanner = {
   id: number;
+  placement: PublicBannerPlacement;
+  title: string | null;
   imageUrl: string;
   categoryId: number;
   isActive: boolean;

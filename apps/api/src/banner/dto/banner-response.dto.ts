@@ -15,6 +15,12 @@ export class BannerResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
 
+  @ApiProperty({ example: 'HERO_SLIDER' })
+  placement: 'HERO_SLIDER' | 'FEATURED_TILE' | 'PROMO_STRIP';
+
+  @ApiProperty({ example: 'Holiday Chic Sale', nullable: true })
+  title: string | null;
+
   @ApiProperty({ example: 'https://media.vnmixx.shop/banner/sale-thang-4.jpg' })
   imageUrl: string;
 

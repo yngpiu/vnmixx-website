@@ -15,7 +15,6 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
-  ApiConflictResponse,
   ApiCreatedResponse,
   ApiExtraModels,
   ApiForbiddenResponse,
@@ -57,8 +56,7 @@ export class BannerAdminController {
 
   @ApiOperation({
     summary: 'Lấy danh sách banner',
-    description:
-      '`isActive` / `isSoftDeleted`: không gửi = không lọc; gửi true/false để lọc (cùng quy ước danh sách admin khác).',
+    description: '`isActive` và `placement`: không gửi = không lọc; gửi giá trị cụ thể để lọc.',
   })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
@@ -74,6 +72,7 @@ export class BannerAdminController {
     return ok(
       await this.bannerService.findAll({
         ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
+        ...(query.placement !== undefined ? { placement: query.placement } : {}),
       }),
       'Lấy danh sách banner thành công.',
     );
@@ -96,7 +95,6 @@ export class BannerAdminController {
   @ApiCreatedResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(BannerAdminResponseDto) }),
   })
-  @ApiConflictResponse({ description: 'Danh mục đã được liên kết với banner khác.' })
   @Post()
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
@@ -116,7 +114,6 @@ export class BannerAdminController {
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(BannerAdminResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy banner.' })
-  @ApiConflictResponse({ description: 'Danh mục đã được liên kết với banner khác.' })
   @Put(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
