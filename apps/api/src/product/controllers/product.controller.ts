@@ -19,13 +19,19 @@ import {
   ProductDetailResponseDto,
   ProductListColorResponseDto,
   ProductListResponseDto,
+  ProductListVariantResponseDto,
 } from '../dto';
 import { ProductService } from '../services/product.service';
 
 // Cung cấp các API công khai cho khách hàng truy cập dữ liệu sản phẩm.
 // Được tối ưu hóa qua cơ chế Cache để giảm tải cho database và tăng tốc độ phản hồi.
 @ApiTags('Sản phẩm')
-@ApiExtraModels(ProductListResponseDto, ProductListColorResponseDto, ProductDetailResponseDto)
+@ApiExtraModels(
+  ProductListResponseDto,
+  ProductListColorResponseDto,
+  ProductListVariantResponseDto,
+  ProductDetailResponseDto,
+)
 @Controller('products')
 // API công khai để khách hàng tra cứu và xem chi tiết sản phẩm.
 export class ProductController {
@@ -46,6 +52,18 @@ export class ProductController {
       await this.productService.findPublicList(query),
       'Lấy danh sách sản phẩm thành công.',
     );
+  }
+
+  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm theo slug' })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductDetailResponseDto) }),
+  })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
+  @Public()
+  @Get('slug/:slug')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  async findBySlug(@Param('slug') slug: string): Promise<SuccessPayload<ProductDetailResponseDto>> {
+    return ok(await this.productService.findBySlug(slug), 'Lấy chi tiết sản phẩm thành công.');
   }
 
   // Truy vấn chi tiết một sản phẩm theo ID.

@@ -1,22 +1,11 @@
 'use client';
 
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
-import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
+import { ProductCard } from '@/modules/common/components/product-card';
+import { ProductCardSlider } from '@/modules/common/components/product-card-slider';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-
-const NewArrivalProductsSlider = dynamic(
-  () =>
-    import('@/modules/home/components/new-arrival-products-slider').then(
-      (module) => module.NewArrivalProductsSlider,
-    ),
-  {
-    ssr: false,
-    loading: () => <div className="h-[520px] w-full animate-pulse bg-muted/20" aria-hidden />,
-  },
-);
+import { useEffect, useMemo, useState } from 'react';
 
 type NewArrivalSectionProps = {
   title: string;
@@ -45,14 +34,14 @@ export function NewArrivalSection({
     [menProducts, womenProducts],
   );
   const [activeTabId, setActiveTabId] = useState<BrandTab['id']>('ivy-moda');
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
   const activeTab = tabs.find((tab: BrandTab) => tab.id === activeTabId) ?? tabs[0]!;
 
-  const activeTabCategory = activeTab.products.find(
-    (product) => product.category !== null,
-  )?.category;
-  const activeTabHref = activeTabCategory
-    ? `${buildCategoryHref({ id: activeTabCategory.id, slug: activeTabCategory.slug })}?sort=${sort}`
-    : `/san-pham?sort=${sort}`;
+  const activeTabHref =
+    activeTab.id === 'ivy-moda' ? `/danh-muc/nu?sort=${sort}` : `/danh-muc/nam?sort=${sort}`;
 
   return (
     <section className="pb-16">
@@ -60,7 +49,7 @@ export function NewArrivalSection({
         <div className="mx-auto max-w-xl text-center">
           <h2
             suppressHydrationWarning
-            className="text-3xl font-semibold tracking-[0.2em] uppercase"
+            className="text-2xl font-semibold md:tracking-[0.2em] uppercase md:text-3xl"
           >
             {title}
           </h2>
@@ -85,10 +74,22 @@ export function NewArrivalSection({
           })}
         </div>
         <div className="mt-8">
-          <NewArrivalProductsSlider key={activeTab.id} products={activeTab.products} />
+          {isHydrated ? (
+            <ProductCardSlider key={activeTab.id} products={activeTab.products} />
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {activeTab.products.map((product: NewArrivalProduct) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </div>
         <div className="mt-8 flex justify-center">
-          <PrimaryCtaButton ctaVariant="outline" asChild className="w-auto! min-w-[180px]">
+          <PrimaryCtaButton
+            ctaVariant="outline"
+            asChild
+            className="w-auto! min-w-[180px] normal-case font-medium"
+          >
             <Link href={activeTabHref}>Xem tất cả</Link>
           </PrimaryCtaButton>
         </div>

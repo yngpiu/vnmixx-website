@@ -23,7 +23,7 @@ function getCategoryHref(category: HeaderCategoryNode): string {
   if (category.slug === 've-chung-toi') {
     return '/about';
   }
-  return buildCategoryHref({ id: category.id, slug: category.slug });
+  return buildCategoryHref({ slug: category.slug });
 }
 
 function getDropdownLayoutClass(secondLevelCount: number): {

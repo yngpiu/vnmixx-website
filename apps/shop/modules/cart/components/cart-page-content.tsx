@@ -85,7 +85,7 @@ function CartTableRow({
         </div>
       </div>
       <div className="flex justify-center self-center">
-        <div className="flex items-center rounded-md border border-border">
+        <div className="radius-diagonal-sm flex items-center overflow-hidden border border-border">
           <Button
             type="button"
             variant="ghost"

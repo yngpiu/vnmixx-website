@@ -1,8 +1,8 @@
 'use client';
 
 import { LabeledInputSelect } from '@/modules/common/components/labeled-input-select';
+import { ProductCard } from '@/modules/common/components/product-card';
 import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
-import { NewArrivalProductItem } from '@/modules/home/components/new-arrival-product-item';
 import { fetchProductList, fetchShopColors, fetchShopSizes } from '@/modules/products/api/catalog';
 import { CatalogPaginationNav } from '@/modules/products/components/catalog-pagination-nav';
 import { CatalogProductGridSkeleton } from '@/modules/products/components/catalog-product-grid-skeleton';
@@ -247,7 +247,7 @@ export function ProductCategoryPage({
         {parentCategory ? (
           <>
             <Link
-              href={buildCategoryHref({ id: parentCategory.id, slug: parentCategory.slug })}
+              href={buildCategoryHref({ slug: parentCategory.slug })}
               className="transition hover:text-foreground"
             >
               {parentCategory.name}
@@ -305,7 +305,7 @@ export function ProductCategoryPage({
             <>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {items.map((product) => (
-                  <NewArrivalProductItem key={product.id} product={product} display="listing" />
+                  <ProductCard key={product.id} product={product} display="listing" />
                 ))}
               </div>
               {meta ? (

@@ -71,7 +71,7 @@ function CartItemRow({
           <span className="mx-2">Kích cỡ: {item.variant.size.label}</span>
         </p>
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center rounded-md border border-border">
+          <div className="radius-diagonal-sm flex items-center overflow-hidden border border-border">
             <Button
               type="button"
               variant="ghost"

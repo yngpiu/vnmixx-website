@@ -3,8 +3,8 @@
 import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { ProductCard } from '@/modules/common/components/product-card';
 import { ACCOUNT_MENU_ITEMS } from '@/modules/header/constants/account-menu-items';
-import { NewArrivalProductItem } from '@/modules/home/components/new-arrival-product-item';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import { useMyWishlistQuery } from '@/modules/wishlist/hooks/use-wishlist';
 import type { WishlistItem } from '@/modules/wishlist/types/wishlist';
@@ -50,7 +50,7 @@ function WishlistBreadcrumb(): React.JSX.Element {
 function AccountNavAside(): React.JSX.Element {
   const pathname = usePathname();
   return (
-    <aside className="self-start border border-border rounded-tl-[20px] rounded-tr-none rounded-bl-none rounded-br-[20px] p-4">
+    <aside className="radius-diagonal-lg self-start border border-border p-4">
       <div className="mb-3 border-b border-border pb-3 text-[20px] font-semibold text-foreground">
         Tài khoản
       </div>
@@ -176,7 +176,7 @@ export default function AccountWishlistPage(): React.JSX.Element {
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {items.map((item) => (
-                <NewArrivalProductItem
+                <ProductCard
                   key={item.product.id}
                   product={mapWishlistItemToNewArrivalProduct(item)}
                   display="listing"

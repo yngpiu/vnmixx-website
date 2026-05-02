@@ -4,7 +4,7 @@ import type { MetadataRoute } from 'next';
 
 type PaginatedProductsEnvelope = {
   success: boolean;
-  data: Array<{ id: number; slug: string }>;
+  data: Array<{ slug: string }>;
   meta?: {
     page: number;
     limit: number;
@@ -15,13 +15,13 @@ type PaginatedProductsEnvelope = {
 
 type CategoriesEnvelope = {
   success: boolean;
-  data: Array<{ id: number; slug: string; isActive?: boolean }>;
+  data: Array<{ slug: string; isActive?: boolean }>;
 };
 
 const PRODUCTS_PAGE_LIMIT = 200;
 const PRODUCTS_MAX_PAGES = 50;
 
-async function fetchActiveCategories(): Promise<Array<{ id: number; slug: string }>> {
+async function fetchActiveCategories(): Promise<Array<{ slug: string }>> {
   const response = await fetch(`${API_BASE_URL}/categories`, { next: { revalidate: 3600 } });
   if (!response.ok) {
     return [];
@@ -31,12 +31,12 @@ async function fetchActiveCategories(): Promise<Array<{ id: number; slug: string
     return [];
   }
   return payload.data
-    .filter((item) => item.isActive !== false && Boolean(item.slug) && item.id > 0)
-    .map((item) => ({ id: item.id, slug: item.slug }));
+    .filter((item) => item.isActive !== false && Boolean(item.slug))
+    .map((item) => ({ slug: item.slug }));
 }
 
-async function fetchAllProducts(): Promise<Array<{ id: number; slug: string }>> {
-  const products: Array<{ id: number; slug: string }> = [];
+async function fetchAllProducts(): Promise<Array<{ slug: string }>> {
+  const products: Array<{ slug: string }> = [];
   let currentPage = 1;
   let totalPages = 1;
   while (currentPage <= totalPages && currentPage <= PRODUCTS_MAX_PAGES) {
@@ -56,8 +56,8 @@ async function fetchAllProducts(): Promise<Array<{ id: number; slug: string }>> 
       break;
     }
     for (const product of payload.data ?? []) {
-      if (product.slug && product.id > 0) {
-        products.push({ id: product.id, slug: product.slug });
+      if (product.slug) {
+        products.push({ slug: product.slug });
       }
     }
     totalPages = payload.meta?.totalPages ?? 1;

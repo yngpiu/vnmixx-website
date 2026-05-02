@@ -131,6 +131,32 @@ export class ProductListColorResponseDto {
   backUrl: string | null;
 }
 
+export class ProductListVariantResponseDto {
+  @ApiProperty({ example: 11 })
+  id: number;
+
+  @ApiProperty({ example: 299000 })
+  price: number;
+
+  @ApiProperty({ example: 24 })
+  onHand: number;
+
+  @ApiProperty({ example: 2 })
+  reserved: number;
+
+  @ApiProperty({
+    type: VariantColorDto,
+    example: { id: 1, name: 'Trắng', hexCode: '#FFFFFF' },
+  })
+  color: VariantColorDto;
+
+  @ApiProperty({
+    type: VariantSizeDto,
+    example: { id: 2, label: 'M', sortOrder: 2 },
+  })
+  size: VariantSizeDto;
+}
+
 export class ProductListItemResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -156,6 +182,12 @@ export class ProductListItemResponseDto {
       "Distinct variant colors on the listing (max 4, first-appearance order). Each item carries that color's frontUrl/backUrl only; images without color_id are omitted here.",
   })
   colors: ProductListColorResponseDto[];
+
+  @ApiProperty({
+    type: [ProductListVariantResponseDto],
+    description: 'Public active variants for listing interactions (size picker/add-to-cart).',
+  })
+  variants: ProductListVariantResponseDto[];
 }
 
 export class PaginationMetaDto {

@@ -53,6 +53,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     }),
     ThrottlerModule.forRoot({
       throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }],
+      errorMessage: 'Bạn đã gửi quá nhiều yêu cầu, vui lòng thử lại sau.',
     }),
     CoreModule,
     PrismaModule,

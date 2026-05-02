@@ -28,6 +28,30 @@ export class PublicShopProductReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
   @ApiOperation({
+    summary: 'Danh sách đánh giá công khai theo slug sản phẩm (kèm trung bình và tổng số)',
+  })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({
+      $ref: getSchemaPath(PublicShopProductReviewsResponseDto),
+    }),
+  })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
+  @Public()
+  @Get('slug/:slug/reviews')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  async listByProductSlug(
+    @Param('slug') slug: string,
+    @Query() query: ListPublicShopProductReviewsQueryDto,
+  ): Promise<SuccessPayload<PublicShopProductReviewsResponseDto>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    return ok(
+      await this.reviewService.listPublicReviewsByProductSlug(slug, page, limit),
+      'Lấy danh sách đánh giá thành công.',
+    );
+  }
+
+  @ApiOperation({
     summary: 'Danh sách đánh giá công khai theo ID sản phẩm (kèm trung bình và tổng số)',
   })
   @ApiOkResponse({

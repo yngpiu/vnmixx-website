@@ -63,7 +63,6 @@ export class CategoryService {
     return category;
   }
 
-  // Legacy helper kept for compatibility.
   async findBySlug(slug: string): Promise<CategoryView & { children: CategoryTreeNodeView[] }> {
     const category = await this.repository.findBySlug(slug);
     if (!category) {

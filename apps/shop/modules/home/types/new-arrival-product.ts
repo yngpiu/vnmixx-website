@@ -17,6 +17,23 @@ export type NewArrivalProduct = {
   maxPrice: number | null;
   /** Variant colors on listing cards: front/back URL per color only (max 4 colors). */
   colors: ProductListColor[];
+  /** Public active variants used for size picker and add-to-cart on listing cards. */
+  variants?: {
+    id: number;
+    price: number;
+    onHand: number;
+    reserved: number;
+    color: {
+      id: number;
+      name: string;
+      hexCode: string;
+    };
+    size: {
+      id: number;
+      label: string;
+      sortOrder: number;
+    };
+  }[];
   category: {
     id: number;
     name: string;

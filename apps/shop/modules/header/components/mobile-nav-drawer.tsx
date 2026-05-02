@@ -5,7 +5,7 @@ import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import { useHeaderUiStore } from '@/modules/header/stores/header-ui-store';
 import type { HeaderCategoryNode } from '@/modules/header/types/header';
 import { Button } from '@repo/ui/components/ui/button';
-import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@repo/ui/components/ui/sheet';
 import { cn } from '@repo/ui/lib/utils';
 import { XIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -30,7 +30,7 @@ function getCategoryHref(category: HeaderCategoryNode): string {
   if (category.slug === 've-chung-toi') {
     return '/about';
   }
-  return buildCategoryHref({ id: category.id, slug: category.slug });
+  return buildCategoryHref({ slug: category.slug });
 }
 
 function hasCategoryChildren(category: HeaderCategoryNode): boolean {
@@ -120,6 +120,9 @@ export function MobileNavDrawer({ categoryTree }: MobileNavDrawerProps): React.J
         showCloseButton={false}
       >
         <SheetTitle className="sr-only">Danh mục sản phẩm</SheetTitle>
+        <SheetDescription className="sr-only">
+          Menu điều hướng danh mục sản phẩm trên thiết bị di động.
+        </SheetDescription>
         <div className="px-2 pt-2">
           <Button
             type="button"

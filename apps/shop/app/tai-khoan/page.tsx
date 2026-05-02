@@ -305,7 +305,7 @@ export default function AccountPage(): React.JSX.Element {
       </nav>
 
       <section className="mt-8 grid gap-8 md:grid-cols-[270px_minmax(0,1fr)] md:items-start">
-        <aside className="self-start border border-border rounded-tl-[20px] rounded-tr-none rounded-bl-none rounded-br-[20px] p-4">
+        <aside className="radius-diagonal-lg self-start border border-border p-4">
           <div className="mb-3 border-b border-border pb-3 text-[20px] font-semibold text-foreground">
             {profileQuery.data.fullName}
           </div>

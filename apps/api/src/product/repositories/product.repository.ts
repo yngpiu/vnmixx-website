@@ -15,6 +15,14 @@ export interface ProductListItemView {
   slug: string;
   /** Variant colors (max 4) with front/back URL per color for listing cards; no standalone thumbnail. */
   colors: ProductListColorEntry[];
+  variants: {
+    id: number;
+    price: number;
+    onHand: number;
+    reserved: number;
+    color: { id: number; name: string; hexCode: string };
+    size: { id: number; label: string; sortOrder: number };
+  }[];
   category: { id: number; name: string; slug: string } | null;
 }
 
@@ -207,8 +215,12 @@ export class ProductRepository {
           variants: {
             where: { isActive: true, deletedAt: null },
             select: {
+              id: true,
               price: true,
+              onHand: true,
+              reserved: true,
               color: { select: { id: true, name: true, hexCode: true } },
+              size: { select: { id: true, label: true, sortOrder: true } },
             },
           },
         },
@@ -225,6 +237,7 @@ export class ProductRepository {
         name: rest.name,
         slug: rest.slug,
         colors,
+        variants,
         category: productCategories[0]?.category ?? null,
         minPrice: minP,
         maxPrice: maxP,
@@ -292,8 +305,12 @@ export class ProductRepository {
         variants: {
           where: { isActive: true, deletedAt: null },
           select: {
+            id: true,
             price: true,
+            onHand: true,
+            reserved: true,
             color: { select: { id: true, name: true, hexCode: true } },
+            size: { select: { id: true, label: true, sortOrder: true } },
           },
         },
       },
@@ -315,6 +332,7 @@ export class ProductRepository {
           name: rest.name,
           slug: rest.slug,
           colors,
+          variants,
           createdAt,
           category: productCategories[0]?.category ?? null,
           minPrice: resolvedMinPrice,
@@ -354,6 +372,7 @@ export class ProductRepository {
       name: product.name,
       slug: product.slug,
       colors: product.colors,
+      variants: product.variants,
       category: product.category,
       minPrice: product.minPrice,
       maxPrice: product.maxPrice,
@@ -422,8 +441,12 @@ export class ProductRepository {
         variants: {
           where: { isActive: true, deletedAt: null },
           select: {
+            id: true,
             price: true,
+            onHand: true,
+            reserved: true,
             color: { select: { id: true, name: true, hexCode: true } },
+            size: { select: { id: true, label: true, sortOrder: true } },
           },
         },
       },
@@ -445,6 +468,7 @@ export class ProductRepository {
           name: rest.name,
           slug: rest.slug,
           colors,
+          variants,
           createdAt,
           category: productCategories[0]?.category ?? null,
           minPrice: resolvedMinPrice,
@@ -481,6 +505,7 @@ export class ProductRepository {
       name: product.name,
       slug: product.slug,
       colors: product.colors,
+      variants: product.variants,
       category: product.category,
       minPrice: product.minPrice,
       maxPrice: product.maxPrice,
@@ -521,7 +546,6 @@ export class ProductRepository {
       ) as Promise<ProductDetailView | null>;
   }
 
-  // Legacy helper for slug lookups.
   async findBySlug(slug: string): Promise<ProductDetailView | null> {
     return this.prisma.product
       .findFirst({

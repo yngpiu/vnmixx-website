@@ -83,10 +83,49 @@ button {
   padding-inline: 14px;
 }
 
+/* Diagonal corner radius scale (top-left + bottom-right). */
+.radius-diagonal-sm {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 10px;
+}
+
+.radius-diagonal-md {
+  border-top-left-radius: 16px;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 16px;
+}
+
+.radius-diagonal-lg {
+  border-top-left-radius: 36px;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 36px;
+}
+
+.radius-diagonal-xl {
+  border-top-left-radius: 60px;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 60px;
+}
+
 @media (min-width: 768px) {
   .shop-shell-container {
     max-width: 750px;
     padding-inline: 0;
+  }
+
+  .md\:radius-diagonal-lg {
+    border-top-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+  }
+
+  .md\:radius-diagonal-xl {
+    border-top-left-radius: 90px;
+    border-bottom-right-radius: 90px;
   }
 }
 

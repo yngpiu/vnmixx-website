@@ -49,10 +49,13 @@ export class ProductService {
   // ─── Công khai (Khách hàng) ──────────────────────────────────────────────────
 
   // Truy vấn danh sách sản phẩm cho khách hàng, sử dụng Redis Cache để giảm tải DB
-  findPublicList(
-    query: ListProductsQueryDto,
-  ): Promise<
-    PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
+  findPublicList(query: ListProductsQueryDto): Promise<
+    PaginatedResult<
+      ProductListItemView & {
+        minPrice: number | null;
+        maxPrice: number | null;
+      }
+    >
   > {
     const params = {
       page: query.page ?? 1,
@@ -92,7 +95,6 @@ export class ProductService {
     return cached;
   }
 
-  // Legacy helper kept for compatibility.
   async findBySlug(slug: string) {
     const product = await this.repository.findBySlug(slug);
     if (!product) throw new NotFoundException(`Không tìm thấy sản phẩm "${slug}"`);

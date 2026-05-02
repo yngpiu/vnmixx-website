@@ -98,6 +98,7 @@ export async function fetchProductList(params: {
   const items = (parsed.data ?? []).map((product) => ({
     ...product,
     colors: product.colors ?? [],
+    variants: product.variants ?? [],
   }));
   return {
     data: items,
@@ -125,7 +126,7 @@ export async function fetchShopSizes(): Promise<ShopSizeOption[]> {
  * Public paginated reviews for a product (by ID).
  */
 export async function fetchProductReviews(
-  productId: number,
+  productSlug: string,
   params: { page: number; limit?: number },
 ): Promise<ShopProductReviewsResult> {
   const limit = params.limit ?? 10;
@@ -134,7 +135,7 @@ export async function fetchProductReviews(
     limit: String(limit),
   });
   const response = await fetch(
-    `${API_BASE_URL}/products/${productId}/reviews?${searchParams.toString()}`,
+    `${API_BASE_URL}/products/slug/${productSlug}/reviews?${searchParams.toString()}`,
     {
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',

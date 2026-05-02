@@ -12,6 +12,7 @@ export {
   ProductListColorResponseDto,
   ProductListItemResponseDto,
   ProductListResponseDto,
+  ProductListVariantResponseDto,
 } from './product-response.dto';
 export { UpdateImageDto } from './update-image.dto';
 export { UpdateProductDto } from './update-product.dto';

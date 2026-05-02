@@ -15,8 +15,8 @@ interface PageProps {
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const { slug: routeKey } = await props.params;
-  const parsedRoute = parseProductRouteKey(routeKey);
-  if (!parsedRoute) {
+  const productSlug = parseProductRouteKey(routeKey);
+  if (!productSlug) {
     return {
       title: 'Sản phẩm',
       description: 'Thông tin chi tiết sản phẩm tại VNMIXX Shop.',
@@ -26,7 +26,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     };
   }
   try {
-    const product = await serverApi.get<ShopProductDetail>(`/products/${parsedRoute.id}`, {
+    const product = await serverApi.get<ShopProductDetail>(`/products/slug/${productSlug}`, {
       skipAuth: true,
     });
     const title = product.name;
@@ -35,7 +35,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title,
       description,
       alternates: {
-        canonical: buildProductHref({ id: product.id, slug: product.slug }),
+        canonical: buildProductHref({ slug: product.slug }),
       },
       openGraph: {
         title,
@@ -69,21 +69,21 @@ const emptyInitialReviews: ShopProductReviewsResult = {
 
 export default async function ProductDetailPage(props: PageProps): Promise<React.JSX.Element> {
   const { slug: routeKey } = await props.params;
-  const parsedRoute = parseProductRouteKey(routeKey);
-  if (!parsedRoute) {
+  const productSlug = parseProductRouteKey(routeKey);
+  if (!productSlug) {
     notFound();
   }
   try {
-    const product = await serverApi.get<ShopProductDetail>(`/products/${parsedRoute.id}`, {
+    const product = await serverApi.get<ShopProductDetail>(`/products/slug/${productSlug}`, {
       skipAuth: true,
     });
-    const canonicalPath = buildProductHref({ id: product.id, slug: product.slug });
+    const canonicalPath = buildProductHref({ slug: product.slug });
     if (routeKey !== canonicalPath.replace('/san-pham/', '')) {
       redirect(canonicalPath);
     }
     const [initialPublicReviews, suggestedProducts] = await Promise.all([
       serverApi
-        .get<ShopProductReviewsResult>(`/products/${product.id}/reviews?page=1&limit=10`, {
+        .get<ShopProductReviewsResult>(`/products/slug/${product.slug}/reviews?page=1&limit=10`, {
           skipAuth: true,
         })
         .catch((): ShopProductReviewsResult => emptyInitialReviews),

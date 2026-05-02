@@ -4,8 +4,8 @@ import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { ProductCardSlider } from '@/modules/common/components/product-card-slider';
 import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
-import { NewArrivalProductsSlider } from '@/modules/home/components/new-arrival-products-slider';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import {
   ProductDetailGallery,
@@ -191,7 +191,7 @@ export function ProductDetailPageContent({
           <>
             <span className="mx-2">/</span>
             <Link
-              href={buildCategoryHref({ id: product.category.id, slug: product.category.slug })}
+              href={buildCategoryHref({ slug: product.category.slug })}
               className="hover:text-foreground"
             >
               {product.category.name}
@@ -356,8 +356,8 @@ export function ProductDetailPageContent({
               </h2>
               <div
                 className={cn(
-                  'whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground transition-[max-height] duration-300',
-                  isDescriptionExpanded ? 'max-h-[999px]' : 'max-h-24 overflow-hidden',
+                  'overflow-hidden whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground transition-[max-height] duration-300',
+                  isDescriptionExpanded ? 'max-h-[999px]' : 'max-h-24',
                 )}
               >
                 {product.description}
@@ -383,13 +383,13 @@ export function ProductDetailPageContent({
           ) : null}
         </div>
       </div>
-      <ProductDetailReviewsSection productId={product.id} initial={initialPublicReviews} />
+      <ProductDetailReviewsSection productSlug={product.slug} initial={initialPublicReviews} />
       {suggestedProducts.length > 0 ? (
         <section className="pt-12">
           <h2 className="mb-6 text-xl font-semibold uppercase tracking-wide text-foreground">
             Sản phẩm gợi ý
           </h2>
-          <NewArrivalProductsSlider products={suggestedProducts} />
+          <ProductCardSlider products={suggestedProducts} />
         </section>
       ) : null}
     </main>

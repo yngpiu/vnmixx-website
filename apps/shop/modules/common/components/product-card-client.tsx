@@ -2,7 +2,6 @@
 
 import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
-import { getProductVariantMatrixById } from '@/modules/cart/api/cart';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import type { ProductVariantOption } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
@@ -14,25 +13,17 @@ import { buildProductHref } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct, ProductListColor } from '@/modules/home/types/new-arrival-product';
 import { ProductWishlistHeartButton } from '@/modules/wishlist/components/product-wishlist-heart-button';
 import { Button } from '@repo/ui/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/ui/popover';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
-import { useQuery } from '@tanstack/react-query';
 import { Check, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 const EMPTY_PRODUCT_COLORS: ProductListColor[] = [];
 
-type NewArrivalProductItemProps = {
+export type ProductCardProps = {
   product: NewArrivalProduct;
   /** Category listing typography; defaults to homepage card. */
   display?: 'compact' | 'listing';
@@ -47,16 +38,15 @@ function formatMoney(value: number | null): string {
   return `${moneyFormatter.format(value)}đ`;
 }
 
-export function NewArrivalProductItem({
+export function ProductCardClient({
   product,
   display = 'compact',
-}: NewArrivalProductItemProps): React.JSX.Element {
-  const router = useRouter();
+}: ProductCardProps): React.JSX.Element {
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
   const addCartItemMutation = useAddCartItemMutation();
   const productPrice = product.minPrice ?? product.maxPrice;
-  const productHref = buildProductHref({ id: product.id, slug: product.slug });
+  const productHref = buildProductHref({ slug: product.slug });
   const listColors: ProductListColor[] = product.colors?.length
     ? product.colors
     : EMPTY_PRODUCT_COLORS;
@@ -92,50 +82,26 @@ export function NewArrivalProductItem({
     listingSecondarySrc != null &&
     listingSecondarySrc !== listingPrimarySrc;
   const [isPickerOpen, setPickerOpen] = useState<boolean>(false);
-  const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColorHexCode, setSelectedColorHexCode] = useState<string>(
     productColorHexCodes[0] ?? '#111111',
   );
-  const productVariantsQuery = useQuery({
-    queryKey: ['shop', 'products', product.id, 'variants'],
-    queryFn: () => getProductVariantMatrixById(product.id),
-    enabled: isPickerOpen,
-    staleTime: 1000 * 60 * 5,
-  });
-  const availableVariants = useMemo(
-    () => productVariantsQuery.data?.variants ?? [],
-    [productVariantsQuery.data?.variants],
+  const availableVariants = useMemo<ProductVariantOption[]>(
+    () => (product.variants ?? []).map((variant) => ({ ...variant })),
+    [product.variants],
   );
-  const availableColorOptions = useMemo(() => {
-    const sourceVariants = availableVariants.length > 0 ? availableVariants : [];
-    if (sourceVariants.length === 0) {
-      return productColorHexCodes.map((hexCode) => ({
-        name: 'Màu tùy chọn',
-        hexCode,
-      }));
-    }
-    return sourceVariants.reduce<{ name: string; hexCode: string }[]>((result, variant) => {
-      const hasExisting = result.some((item) => item.hexCode === variant.color.hexCode);
-      if (!hasExisting) {
-        result.push({ name: variant.color.name, hexCode: variant.color.hexCode });
-      }
-      return result;
-    }, []);
-  }, [availableVariants, productColorHexCodes]);
   const selectedVariantByColor = useMemo(
     () => availableVariants.filter((variant) => variant.color.hexCode === selectedColorHexCode),
     [availableVariants, selectedColorHexCode],
   );
   const sizeOptions = useMemo(
-    () => [...new Set(selectedVariantByColor.map((variant) => variant.size.label))],
-    [selectedVariantByColor],
-  );
-  const selectedVariant = useMemo<ProductVariantOption | null>(
-    () =>
-      selectedVariantByColor.find((variant) => variant.size.label === selectedSize) ??
-      selectedVariantByColor[0] ??
-      null,
-    [selectedSize, selectedVariantByColor],
+    () => [
+      ...new Set(
+        (selectedVariantByColor.length > 0 ? selectedVariantByColor : availableVariants).map(
+          (variant) => variant.size.label,
+        ),
+      ),
+    ],
+    [availableVariants, selectedVariantByColor],
   );
   const openVariantPicker = (): void => {
     if (!isAuthSessionReady) {
@@ -145,16 +111,18 @@ export function NewArrivalProductItem({
       toast.error('Bạn cần đăng nhập để thêm vào giỏ hàng', {
         position: 'bottom-right',
       });
-      router.push('/login');
       return;
     }
     setSelectedColorHexCode(
       selectedListColorEntry?.hexCode ?? productColorHexCodes[0] ?? '#111111',
     );
-    setSelectedSize('');
     setPickerOpen(true);
   };
-  const handleAddToCart = async (): Promise<void> => {
+  const handleSelectSize = async (size: string): Promise<void> => {
+    const selectedVariant: ProductVariantOption | null =
+      selectedVariantByColor.find((variant) => variant.size.label === size) ??
+      availableVariants.find((variant) => variant.size.label === size) ??
+      null;
     if (!selectedVariant) {
       toast.error('Không tìm thấy biến thể phù hợp.', { position: 'bottom-right' });
       return;
@@ -256,84 +224,49 @@ export function NewArrivalProductItem({
           >
             {formatMoney(productPrice)}
           </span>
-          <PrimaryCtaButton
-            ctaVariant="filled"
-            isIconOnly
-            aria-label="Chọn màu và kích cỡ để thêm giỏ hàng"
-            onClick={openVariantPicker}
-          >
-            <ShoppingBag className="h-2 w-4" />
-          </PrimaryCtaButton>
-        </div>
-      </div>
-      <Dialog open={isPickerOpen} onOpenChange={setPickerOpen}>
-        <DialogContent className="max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Chọn màu và kích cỡ</DialogTitle>
-            <DialogDescription>{product.name}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Màu sắc</p>
-              <div className="flex flex-wrap items-center gap-2">
-                {availableColorOptions.map((color) => {
-                  const isSelected = selectedColorHexCode === color.hexCode;
-                  return (
-                    <button
-                      key={`${product.id}-${color.hexCode}`}
-                      type="button"
-                      aria-label={`Chọn màu ${color.name}`}
-                      onClick={() => {
-                        setSelectedColorHexCode(color.hexCode);
-                        setSelectedSize('');
-                      }}
-                      className={`h-8 w-8 rounded-full border-2 transition ${isSelected ? 'border-foreground' : 'border-border'}`}
-                      style={{ backgroundColor: color.hexCode }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Kích cỡ</p>
-              <div className="grid grid-cols-4 gap-2">
-                {sizeOptions.map((size: string) => {
-                  const isSelected = selectedSize === size;
-                  return (
+          <Popover open={isPickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger asChild>
+              <PrimaryCtaButton
+                ctaVariant="filled"
+                isIconOnly
+                className="h-7! w-7! md:h-8! md:w-8!"
+                aria-label="Chọn kích cỡ để thêm giỏ hàng"
+                onClick={openVariantPicker}
+              >
+                <ShoppingBag className="size-3.5" />
+              </PrimaryCtaButton>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              side="top"
+              sideOffset={8}
+              className="w-[clamp(92px,24vw,118px)] rounded-none border border-[#E7E8E9] bg-white p-0 shadow-none"
+            >
+              <div className="space-y-1 p-[clamp(6px,1.8vw,10px)]">
+                <div className="grid grid-cols-1 gap-2">
+                  {sizeOptions.map((size: string) => (
                     <Button
                       key={`${product.id}-${size}`}
                       type="button"
-                      variant={isSelected ? 'default' : 'outline'}
-                      onClick={() => setSelectedSize(size)}
+                      variant="ghost"
+                      className="h-[clamp(28px,7vw,32px)] justify-center rounded-none px-0 text-[clamp(14px,4.2vw,16px)] font-medium text-foreground hover:bg-muted/30"
+                      disabled={addCartItemMutation.isPending}
+                      onClick={() => void handleSelectSize(size)}
                     >
                       {size}
                     </Button>
-                  );
-                })}
+                  ))}
+                </div>
+                {sizeOptions.length === 0 ? (
+                  <p className="text-center text-xs text-muted-foreground">
+                    Sản phẩm chưa có biến thể khả dụng.
+                  </p>
+                ) : null}
               </div>
-            </div>
-            {productVariantsQuery.isLoading ? (
-              <p className="text-sm text-muted-foreground">Đang tải biến thể...</p>
-            ) : null}
-            {productVariantsQuery.isError ? (
-              <p className="text-sm text-destructive" role="alert">
-                {productVariantsQuery.error instanceof Error
-                  ? productVariantsQuery.error.message
-                  : 'Không tải được biến thể sản phẩm.'}
-              </p>
-            ) : null}
-            <PrimaryCtaButton
-              type="button"
-              onClick={() => void handleAddToCart()}
-              disabled={
-                !selectedVariant || addCartItemMutation.isPending || productVariantsQuery.isLoading
-              }
-            >
-              Thêm vào giỏ hàng
-            </PrimaryCtaButton>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
     </article>
   );
 }

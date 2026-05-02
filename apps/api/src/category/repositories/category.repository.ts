@@ -139,7 +139,6 @@ export class CategoryRepository {
     }) as unknown as Promise<(CategoryView & { children: CategoryTreeNodeView[] }) | null>;
   }
 
-  // Legacy helper for slug lookups.
   async findBySlug(
     slug: string,
   ): Promise<(CategoryView & { children: CategoryTreeNodeView[] }) | null> {

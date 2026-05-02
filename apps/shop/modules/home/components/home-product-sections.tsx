@@ -1,18 +1,5 @@
-'use client';
-
+import { NewArrivalSection } from '@/modules/home/components/new-arrival-section';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
-import dynamic from 'next/dynamic';
-
-const NewArrivalSection = dynamic(
-  () =>
-    import('@/modules/home/components/new-arrival-section').then(
-      (module) => module.NewArrivalSection,
-    ),
-  {
-    ssr: false,
-    loading: () => <section className="pb-16" />,
-  },
-);
 
 type HomeProductSectionsProps = {
   womenProducts: NewArrivalProduct[];

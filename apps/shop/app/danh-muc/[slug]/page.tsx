@@ -24,8 +24,8 @@ interface PageProps {
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const { slug: routeKey } = await props.params;
-  const parsedRoute = parseCategoryRouteKey(routeKey);
-  if (!parsedRoute) {
+  const categorySlug = parseCategoryRouteKey(routeKey);
+  if (!categorySlug) {
     return {
       title: 'Danh mục',
       description: 'Danh mục sản phẩm thời trang tại VNMIXX Shop.',
@@ -35,7 +35,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     };
   }
   try {
-    const category = await serverApi.get<CategoryPayload>(`/categories/${parsedRoute.id}`, {
+    const category = await serverApi.get<CategoryPayload>(`/categories/slug/${categorySlug}`, {
       skipAuth: true,
     });
     const title = category.name;
@@ -44,7 +44,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title,
       description,
       alternates: {
-        canonical: buildCategoryHref({ id: category.id, slug: category.slug }),
+        canonical: buildCategoryHref({ slug: category.slug }),
       },
       openGraph: {
         title,
@@ -70,15 +70,15 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 export default async function CategoryListingPage(props: PageProps): Promise<React.JSX.Element> {
   const { slug: routeKey } = await props.params;
-  const parsedRoute = parseCategoryRouteKey(routeKey);
-  if (!parsedRoute) {
+  const categorySlug = parseCategoryRouteKey(routeKey);
+  if (!categorySlug) {
     notFound();
   }
   try {
-    const category = await serverApi.get<CategoryPayload>(`/categories/${parsedRoute.id}`, {
+    const category = await serverApi.get<CategoryPayload>(`/categories/slug/${categorySlug}`, {
       skipAuth: true,
     });
-    const canonicalPath = buildCategoryHref({ id: category.id, slug: category.slug });
+    const canonicalPath = buildCategoryHref({ slug: category.slug });
     if (routeKey !== canonicalPath.replace('/danh-muc/', '')) {
       redirect(canonicalPath);
     }

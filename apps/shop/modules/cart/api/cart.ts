@@ -3,7 +3,6 @@ import type {
   AddCartItemPayload,
   Cart,
   CartItem,
-  ProductVariantMatrix,
   UpdateCartItemPayload,
 } from '@/modules/cart/types/cart';
 
@@ -34,11 +33,4 @@ export async function removeMyCartItem(itemId: number): Promise<void> {
 
 export async function clearMyCart(): Promise<void> {
   await apiClient.delete('/me/cart');
-}
-
-export async function getProductVariantMatrixById(
-  productId: number,
-): Promise<ProductVariantMatrix> {
-  const { data } = await apiClient.get<ProductVariantMatrix>(`/products/${productId}`);
-  return { variants: data.variants ?? [] };
 }

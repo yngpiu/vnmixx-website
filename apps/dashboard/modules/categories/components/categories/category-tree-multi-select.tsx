@@ -147,6 +147,7 @@ export type CategoryTreeMultiSelectProps = {
   categories: CategoryAdmin[];
   value: number[];
   onChange: (ids: number[]) => void;
+  maxSelected?: number;
   disabled?: boolean;
   /**
    * `card`: khối độc lập (dùng ngoài layout chia đôi).
@@ -160,6 +161,7 @@ export function CategoryTreeMultiSelect({
   categories,
   value,
   onChange,
+  maxSelected,
   disabled,
   chrome = 'card',
   className,
@@ -217,11 +219,13 @@ export function CategoryTreeMultiSelect({
   const onToggleLeaf = useCallback(
     (leafId: number, checked: boolean) => {
       const next = checked
-        ? [...value.filter((id) => id !== leafId), leafId]
+        ? maxSelected === 1
+          ? [leafId]
+          : [...value.filter((id) => id !== leafId), leafId]
         : value.filter((id) => id !== leafId);
       onChange([...new Set(next)].sort((a, b) => a - b));
     },
-    [value, onChange],
+    [maxSelected, onChange, value],
   );
 
   const clearAll = useCallback(() => onChange([]), [onChange]);

@@ -147,6 +147,40 @@ export class ReviewService {
     };
   }
 
+  async listPublicReviewsByProductSlug(
+    productSlug: string,
+    page: number,
+    limit: number,
+  ): Promise<{
+    data: Array<{
+      id: number;
+      rating: number;
+      title: string | null;
+      content: string | null;
+      createdAt: Date;
+      authorDisplayName: string;
+    }>;
+    meta: { page: number; limit: number; total: number; totalPages: number };
+    reviewCount: number;
+    averageRating: number | null;
+    ratingBreakdown: {
+      star1: number;
+      star2: number;
+      star3: number;
+      star4: number;
+      star5: number;
+    };
+  }> {
+    const product = await this.prisma.product.findFirst({
+      where: { slug: productSlug, isActive: true, deletedAt: null },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new NotFoundException(`Không tìm thấy sản phẩm "${productSlug}"`);
+    }
+    return this.listPublicReviewsByProductId(product.id, page, limit);
+  }
+
   private static maskReviewAuthorName(fullName: string | null): string {
     if (fullName === null || fullName.trim() === '') {
       return 'Khách hàng';
