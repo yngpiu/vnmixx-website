@@ -2,7 +2,7 @@
 
 import { MediaPickerDialog } from '@/modules/products/components/products/media-picker-dialog';
 import { Button } from '@repo/ui/components/ui/button';
-import { ImagePlusIcon, ImagesIcon, Trash2Icon } from 'lucide-react';
+import { ImagesIcon, Trash2Icon } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
@@ -123,69 +123,6 @@ export function ProductImageUploadField({
         selectedUrls={urls}
         onConfirm={(picked) => {
           onUrlsChange(picked.slice(0, maxFiles));
-        }}
-      />
-    </div>
-  );
-}
-
-/** Single thumbnail: one file, replaces previous URL */
-export function ProductThumbnailUploadField({
-  disabled,
-  url,
-  onUrlChange,
-}: {
-  disabled?: boolean;
-  url: string;
-  onUrlChange: (url: string) => void;
-}) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-1"
-          disabled={disabled}
-          onClick={() => setPickerOpen(true)}
-        >
-          <ImagePlusIcon className="size-4" />
-          {url ? 'Đổi ảnh' : 'Chọn ảnh'}
-        </Button>
-        {url ? (
-          <div className="relative size-24 overflow-hidden rounded-lg border shadow-sm ring-1 ring-border/60">
-            <Image src={url} alt="" fill className="object-cover" sizes="96px" unoptimized />
-          </div>
-        ) : (
-          <div className="text-muted-foreground flex min-h-24 min-w-34 items-center justify-center rounded-lg border border-dashed bg-muted/30 px-3 text-center text-xs">
-            Ảnh đại diện (tuỳ chọn)
-          </div>
-        )}
-      </div>
-      {url ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onUrlChange('')}
-        >
-          Xóa thumbnail
-        </Button>
-      ) : null}
-      <MediaPickerDialog
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        title="Chọn thumbnail"
-        description="Thumbnail chỉ nhận một ảnh."
-        multiple={false}
-        selectedUrls={url ? [url] : []}
-        onConfirm={(picked) => {
-          const first = picked[0];
-          onUrlChange(first ?? '');
         }}
       />
     </div>

@@ -8,6 +8,7 @@ export type ProductAdminListItem = {
   id: number;
   name: string;
   slug: string;
+  /** First product image by sort_order (computed in API); not stored on Product. */
   thumbnail: string | null;
   isActive: boolean;
   category: ProductCategoryBrief | null;
@@ -65,7 +66,6 @@ export type ProductAdminDetail = {
   name: string;
   slug: string;
   description: string | null;
-  thumbnail: string | null;
   weight: number;
   length: number;
   width: number;
@@ -99,7 +99,6 @@ export type CreateProductBody = {
   name: string;
   slug: string;
   description?: string;
-  thumbnail?: string;
   weight?: number;
   length?: number;
   width?: number;
@@ -117,7 +116,6 @@ export type UpdateProductBody = {
   name?: string;
   slug?: string;
   description?: string;
-  thumbnail?: string;
   weight?: number;
   length?: number;
   width?: number;
