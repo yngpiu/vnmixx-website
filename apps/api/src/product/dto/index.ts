@@ -9,6 +9,7 @@ export {
   ProductAdminListItemResponseDto,
   ProductAdminListResponseDto,
   ProductDetailResponseDto,
+  ProductListColorResponseDto,
   ProductListItemResponseDto,
   ProductListResponseDto,
 } from './product-response.dto';

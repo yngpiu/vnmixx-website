@@ -6,6 +6,18 @@ import { resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 const PRODUCT_COUNT = Number(process.env.SEED_PRODUCT_COUNT ?? 200);
 const SEED_SKU_PREFIX = 'VNMIXX-';
 
+/** Number of picsum placeholders per variant color (front/back/detail… for list + PDP). */
+const IMAGES_PER_COLOR_MIN = 3;
+const IMAGES_PER_COLOR_MAX = 5;
+
+const COLOR_IMAGE_ANGLE_LABELS = [
+  'Mặt trước',
+  'Mặt sau',
+  'Cận chi tiết',
+  'Lookbook',
+  'Góc nghiêng',
+];
+
 const COLORS: { name: string; hexCode: string }[] = [
   { name: 'Đen', hexCode: '#1A1A1A' },
   { name: 'Trắng', hexCode: '#FAFAFA' },
@@ -124,6 +136,10 @@ export async function seedProducts(): Promise<void> {
   try {
     const colorByName = await ensureColors(prisma);
     const sizeByLabel = await ensureSizes(prisma);
+    const colorIdToName = new Map<number, string>();
+    for (const [name, id] of colorByName) {
+      colorIdToName.set(id, name);
+    }
     const colorIds = COLORS.map((c) => colorByName.get(c.name)).filter(
       (id): id is number => id != null,
     );
@@ -174,7 +190,6 @@ export async function seedProducts(): Promise<void> {
                   name,
                   slug,
                   description: buildDescription(name),
-                  thumbnail: picsumUrl(`thumb-${slug}`, 480, 600),
                   weight: faker.number.int({ min: 200, max: 1200 }),
                   length: faker.number.int({ min: 20, max: 45 }),
                   width: faker.number.int({ min: 15, max: 35 }),
@@ -230,15 +245,24 @@ export async function seedProducts(): Promise<void> {
           let imgOrder = 1;
 
           for (const colorId of selectedColors) {
-            imagesData.push({
-              productId: product.id,
-              colorId: colorId,
-              url: picsumUrl(`prod-${product.id}-col-${colorId}`, 800, 1000),
-              altText: `${name} - Màu ${COLORS.find((c) => c.name === [...colorByName].find(([, v]) => v === colorId)?.[0])?.name}`,
-              sortOrder: imgOrder++,
-              createdAt,
-              updatedAt: createdAt,
+            const colorName = colorIdToName.get(colorId) ?? `#${colorId}`;
+            const imagesThisColor = faker.number.int({
+              min: IMAGES_PER_COLOR_MIN,
+              max: IMAGES_PER_COLOR_MAX,
             });
+            for (let imageIndex = 0; imageIndex < imagesThisColor; imageIndex += 1) {
+              const angleLabel = COLOR_IMAGE_ANGLE_LABELS[imageIndex] ?? `Ảnh ${imageIndex + 1}`;
+              imagesData.push({
+                productId: product.id,
+                colorId,
+                url: picsumUrl(`prod-${product.id}-c${colorId}-i${imageIndex}`, 800, 1000),
+                altText: `${name} · ${colorName} · ${angleLabel}`,
+                sortOrder: imgOrder,
+                createdAt,
+                updatedAt: createdAt,
+              });
+              imgOrder += 1;
+            }
 
             for (const sizeId of selectedSizes) {
               variantsData.push({

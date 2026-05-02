@@ -47,16 +47,25 @@ export class CategoryService {
     );
   }
 
-  // Kiểm tra danh mục tồn tại theo slug trước khi trả về chi tiết.
-  async findBySlug(slug: string): Promise<CategoryView & { children: CategoryTreeNodeView[] }> {
+  // Kiểm tra danh mục tồn tại theo ID trước khi trả về chi tiết.
+  async findPublicById(id: number): Promise<CategoryView & { children: CategoryTreeNodeView[] }> {
     const category = await this.redis.getOrSet(
-      CATEGORY_CACHE_KEYS.CATEGORY_SLUG(slug),
+      CATEGORY_CACHE_KEYS.CATEGORY_ID(id),
       CATEGORY_CACHE_TTL.CATEGORY,
       async () => {
-        const result = await this.repository.findBySlug(slug);
+        const result = await this.repository.findPublicById(id);
         return result ?? null;
       },
     );
+    if (!category) {
+      throw new NotFoundException(`Không tìm thấy danh mục #${id}`);
+    }
+    return category;
+  }
+
+  // Legacy helper kept for compatibility.
+  async findBySlug(slug: string): Promise<CategoryView & { children: CategoryTreeNodeView[] }> {
+    const category = await this.repository.findBySlug(slug);
     if (!category) {
       throw new NotFoundException(`Không tìm thấy danh mục "${slug}"`);
     }

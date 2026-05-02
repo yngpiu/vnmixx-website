@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import {
   ApiExtraModels,
   ApiInternalServerErrorResponse,
@@ -14,13 +14,18 @@ import {
   ok,
   type SuccessPayload,
 } from '../../common/utils/response.util';
-import { ListProductsQueryDto, ProductDetailResponseDto, ProductListResponseDto } from '../dto';
+import {
+  ListProductsQueryDto,
+  ProductDetailResponseDto,
+  ProductListColorResponseDto,
+  ProductListResponseDto,
+} from '../dto';
 import { ProductService } from '../services/product.service';
 
 // Cung cấp các API công khai cho khách hàng truy cập dữ liệu sản phẩm.
 // Được tối ưu hóa qua cơ chế Cache để giảm tải cho database và tăng tốc độ phản hồi.
 @ApiTags('Sản phẩm')
-@ApiExtraModels(ProductListResponseDto, ProductDetailResponseDto)
+@ApiExtraModels(ProductListResponseDto, ProductListColorResponseDto, ProductDetailResponseDto)
 @Controller('products')
 // API công khai để khách hàng tra cứu và xem chi tiết sản phẩm.
 export class ProductController {
@@ -43,16 +48,18 @@ export class ProductController {
     );
   }
 
-  // Truy vấn chi tiết một sản phẩm dựa trên đường dẫn thân thiện (slug).
-  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm theo slug' })
+  // Truy vấn chi tiết một sản phẩm theo ID.
+  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm theo ID' })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductDetailResponseDto) }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Public()
-  @Get(':slug')
+  @Get(':id')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async findBySlug(@Param('slug') slug: string): Promise<SuccessPayload<ProductDetailResponseDto>> {
-    return ok(await this.productService.findBySlug(slug), 'Lấy chi tiết sản phẩm thành công.');
+  async findById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<SuccessPayload<ProductDetailResponseDto>> {
+    return ok(await this.productService.findPublicById(id), 'Lấy chi tiết sản phẩm thành công.');
   }
 }

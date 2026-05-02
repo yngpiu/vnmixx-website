@@ -35,6 +35,7 @@ import {
 import {
   AddCartItemDto,
   CartItemColorDto,
+  CartItemProductDto,
   CartItemResponseDto,
   CartItemSizeDto,
   CartItemVariantDto,
@@ -52,6 +53,7 @@ import { CartService } from '../services/cart.service';
   CartResponseDto,
   CartItemResponseDto,
   CartItemVariantDto,
+  CartItemProductDto,
   CartItemColorDto,
   CartItemSizeDto,
 )

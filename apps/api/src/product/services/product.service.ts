@@ -75,21 +75,28 @@ export class ProductService {
     );
   }
 
-  // Lấy chi tiết sản phẩm qua Slug cho khách hàng có sử dụng Cache
-  async findBySlug(slug: string) {
+  // Lấy chi tiết sản phẩm qua ID cho khách hàng có sử dụng Cache
+  async findPublicById(id: number) {
     const cached = await this.redis.getOrSet(
-      PRODUCT_CACHE_KEYS.PRODUCT_SLUG(slug),
+      PRODUCT_CACHE_KEYS.PRODUCT_ID(id),
       PRODUCT_CACHE_TTL.PRODUCT_DETAIL,
       async () => {
-        const product = await this.repository.findBySlug(slug);
+        const product = await this.repository.findPublicById(id);
         if (!product) {
           return null;
         }
         return this.transformPublicDetail(product);
       },
     );
-    if (!cached) throw new NotFoundException(`Không tìm thấy sản phẩm "${slug}"`);
+    if (!cached) throw new NotFoundException(`Không tìm thấy sản phẩm #${id}`);
     return cached;
+  }
+
+  // Legacy helper kept for compatibility.
+  async findBySlug(slug: string) {
+    const product = await this.repository.findBySlug(slug);
+    if (!product) throw new NotFoundException(`Không tìm thấy sản phẩm "${slug}"`);
+    return this.transformPublicDetail(product);
   }
 
   // ─── Quản trị (Admin) ───────────────────────────────────────────────────────
@@ -162,19 +169,11 @@ export class ProductService {
         }
       }
 
-      // 4. Tự động xác định ảnh thumbnail dựa trên các ảnh được cung cấp
-      const autoThumbnail = this.imageService.resolveCreateThumbnail({
-        requestedThumbnail: dto.thumbnail,
-        variants: dto.variants,
-        images: dto.images ?? [],
-      });
-
-      // 5. Lưu toàn bộ thông tin sản phẩm vào DB trong một transaction ngầm
+      // 4. Lưu toàn bộ thông tin sản phẩm vào DB trong một transaction ngầm
       const product = await this.repository.createFull({
         name: dto.name,
         slug: dto.slug,
         description: dto.description,
-        thumbnail: autoThumbnail,
         weight: dto.weight,
         length: dto.length,
         width: dto.width,
@@ -186,7 +185,7 @@ export class ProductService {
       });
 
       // 6. Xóa Cache danh sách sản phẩm vì dữ liệu đã thay đổi
-      await this.cacheService.invalidateProductCache(dto.slug);
+      await this.cacheService.invalidateProductCache(product.id);
 
       // 7. Ghi Audit Log để theo dõi vết tạo mới của nhân viên
       const afterData = this.transformAdminDetail(product);
@@ -242,7 +241,6 @@ export class ProductService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.slug !== undefined && { slug: dto.slug }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.thumbnail !== undefined && { thumbnail: dto.thumbnail }),
         ...(dto.weight !== undefined && { weight: dto.weight }),
         ...(dto.length !== undefined && { length: dto.length }),
         ...(dto.width !== undefined && { width: dto.width }),
@@ -261,10 +259,7 @@ export class ProductService {
       }
 
       // 3. Xóa Cache cũ và Cache Slug mới (nếu Slug thay đổi) để đảm bảo dữ liệu mới nhất
-      await this.cacheService.invalidateProductCache(existing.slug);
-      if (dto.slug && dto.slug !== existing.slug) {
-        await this.cacheService.deleteSlugCache(dto.slug);
-      }
+      await this.cacheService.invalidateProductCache(existing.id);
 
       // 4. Ghi Audit Log thành công
       const afterData = this.transformAdminDetail(product);
@@ -300,7 +295,7 @@ export class ProductService {
     try {
       await this.repository.softDelete(id);
       // Buộc xóa cache để khách hàng không nhìn thấy sản phẩm đã bị xóa
-      await this.cacheService.invalidateProductCache(beforeData.slug);
+      await this.cacheService.invalidateProductCache(beforeData.id);
       const afterRow = await this.repository.findAdminById(id);
       const afterData = afterRow ? this.transformAdminDetail(afterRow) : undefined;
       await this.auditLogService.write({
@@ -333,7 +328,7 @@ export class ProductService {
       if (!beforeData.deletedAt) throw new BadRequestException('Sản phẩm chưa bị xóa');
 
       const restored = await this.repository.restore(id);
-      await this.cacheService.invalidateProductCache(beforeData.slug);
+      await this.cacheService.invalidateProductCache(beforeData.id);
       const afterData = this.transformAdminDetail(restored);
       await this.auditLogService.write({
         ...auditContext,
@@ -491,7 +486,6 @@ export class ProductService {
       name: product.name,
       slug: product.slug,
       description: product.description,
-      thumbnail: product.thumbnail,
       weight: product.weight,
       length: product.length,
       width: product.width,
@@ -512,7 +506,6 @@ export class ProductService {
       name: product.name,
       slug: product.slug,
       description: product.description,
-      thumbnail: product.thumbnail,
       weight: product.weight,
       length: product.length,
       width: product.width,

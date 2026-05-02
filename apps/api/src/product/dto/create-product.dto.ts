@@ -93,12 +93,6 @@ export class CreateProductDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com/thumb.jpg', nullable: true })
-  @IsString({ message: 'URL ảnh đại diện phải là chuỗi ký tự' })
-  @IsOptional()
-  @MaxLength(500, { message: 'URL ảnh đại diện không được vượt quá 500 ký tự' })
-  thumbnail?: string;
-
   @ApiProperty({ example: 300, description: 'Cân nặng sản phẩm (gram)' })
   @IsInt({ message: 'Cân nặng phải là số nguyên' })
   @Min(1, { message: 'Cân nặng phải lớn hơn hoặc bằng 1' })

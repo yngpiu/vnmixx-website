@@ -182,11 +182,16 @@ export class DashboardAdminService {
         MAX(oi.product_name) AS product_name,
         SUM(oi.quantity) AS sold_quantity,
         SUM(oi.subtotal) AS revenue,
-        MAX(p.thumbnail) AS thumbnail_url
+        (
+          SELECT pi.url
+          FROM product_images pi
+          WHERE pi.product_id = pv.product_id
+          ORDER BY pi.sort_order ASC, pi.id ASC
+          LIMIT 1
+        ) AS thumbnail_url
       FROM order_items oi
       INNER JOIN orders o ON o.id = oi.order_id
       INNER JOIN product_variants pv ON pv.id = oi.variant_id
-      INNER JOIN products p ON p.id = pv.product_id
       WHERE o.created_at BETWEEN ${range.start} AND ${range.end}
         AND o.status <> 'CANCELLED'
       GROUP BY pv.product_id

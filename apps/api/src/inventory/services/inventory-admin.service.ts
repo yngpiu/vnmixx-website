@@ -5,6 +5,10 @@ import {
   Prisma,
 } from '../../../generated/prisma/client';
 import {
+  pickFirstProductImageUrl,
+  resolvePreviewImageUrlForColor,
+} from '../../common/utils/product-preview-image-url.util';
+import {
   DEFAULT_INVENTORY_PAGE_SIZE,
   DEFAULT_LOW_STOCK_THRESHOLD,
   LOW_STOCK_LIMIT,
@@ -60,7 +64,7 @@ export class InventoryAdminService {
         return {
           productId: product.id,
           productName: product.name,
-          thumbnailUrl: product.thumbnail,
+          thumbnailUrl: pickFirstProductImageUrl(product.images),
           colorName: lowestVariant.colorName,
           sizeLabel: lowestVariant.sizeLabel,
           skuSummary: lowestVariant.sku,
@@ -138,7 +142,7 @@ export class InventoryAdminService {
           variantId: variant.id,
           productId: variant.productId,
           productName: variant.product.name,
-          thumbnailUrl: variant.product.thumbnail,
+          thumbnailUrl: resolvePreviewImageUrlForColor(variant.colorId, variant.product.images),
           sku: variant.sku,
           colorName: variant.color?.name ?? null,
           sizeLabel: variant.size?.label ?? null,

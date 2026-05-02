@@ -1,5 +1,5 @@
 export const PRODUCT_CACHE_KEYS = {
-  PRODUCT_SLUG: (slug: string) => `prod:slug:${slug}`,
+  PRODUCT_ID: (id: number) => `prod:id:${id}`,
   PRODUCT_LIST: (hash: string) => `prod:list:${hash}`,
 } as const;
 

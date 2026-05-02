@@ -38,8 +38,13 @@ export class CartItemProductDto {
   @ApiProperty({ example: 'ao-basic-tee' })
   slug: string;
 
-  @ApiProperty({ example: 'https://example.com/thumb.jpg', nullable: true })
-  thumbnail: string | null;
+  @ApiProperty({
+    example: 'https://example.com/front.jpg',
+    nullable: true,
+    description:
+      'Ảnh xem trước theo product_images và màu biến thể (ảnh có colorId khớp, hoặc ảnh đầu tiên của SP).',
+  })
+  previewUrl: string | null;
 }
 
 /**

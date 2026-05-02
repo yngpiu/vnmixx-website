@@ -1,7 +1,7 @@
 export const CATEGORY_CACHE_KEYS = {
   CATEGORY_LIST: 'cat:list',
   CATEGORY_TREE: 'cat:tree',
-  CATEGORY_SLUG: (slug: string) => `cat:slug:${slug}`,
+  CATEGORY_ID: (id: number) => `cat:id:${id}`,
 } as const;
 
 export const CATEGORY_CACHE_PATTERNS = {

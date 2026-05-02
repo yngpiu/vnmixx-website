@@ -11,16 +11,21 @@ export class ProductCacheService {
 
   // Xóa toàn bộ cache liên quan đến một sản phẩm và tất cả cache danh sách sản phẩm.
   // Cần gọi sau khi Tạo/Cập nhật/Xóa sản phẩm hoặc biến thể.
-  async invalidateProductCache(slug: string): Promise<void> {
+  async invalidateProductCache(productId: number): Promise<void> {
     await Promise.all([
-      this.redis.del(PRODUCT_CACHE_KEYS.PRODUCT_SLUG(slug)),
+      this.redis.del(PRODUCT_CACHE_KEYS.PRODUCT_ID(productId)),
       this.redis.deleteByPattern(PRODUCT_CACHE_PATTERNS.ALL_PRODUCT_LISTS),
     ]);
   }
 
-  // Xóa cache chi tiết sản phẩm theo Slug.
-  async deleteSlugCache(slug: string): Promise<void> {
-    await this.redis.del(PRODUCT_CACHE_KEYS.PRODUCT_SLUG(slug));
+  // Xóa cache chi tiết sản phẩm theo ID.
+  async deleteProductDetailCache(productId: number): Promise<void> {
+    await this.redis.del(PRODUCT_CACHE_KEYS.PRODUCT_ID(productId));
+  }
+
+  // Backward-compatible alias for old tests/call sites.
+  async deleteSlugCache(): Promise<void> {
+    return Promise.resolve();
   }
 
   // Tạo mã hash từ các tham số truy vấn (Lọc, phân trang, tìm kiếm).

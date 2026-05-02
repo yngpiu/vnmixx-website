@@ -104,35 +104,4 @@ describe('ProductImageService', () => {
       await expect(service.updateImage(1, 'slug', 100, dto)).rejects.toThrow(BadRequestException);
     });
   });
-
-  describe('resolveCreateThumbnail', () => {
-    it('should return requested thumbnail if provided', () => {
-      const res = service.resolveCreateThumbnail({
-        requestedThumbnail: 'req.jpg',
-        variants: [],
-        images: [],
-      });
-      expect(res).toBe('req.jpg');
-    });
-
-    it('should return first image of first color if no thumbnail requested', () => {
-      const res = service.resolveCreateThumbnail({
-        variants: [{ colorId: 10 }, { colorId: 20 }],
-        images: [
-          { url: 'img2.jpg', colorId: 10, sortOrder: 1 },
-          { url: 'img1.jpg', colorId: 10, sortOrder: 0 },
-          { url: 'img3.jpg', colorId: 20, sortOrder: 0 },
-        ],
-      });
-      expect(res).toBe('img1.jpg');
-    });
-
-    it('should return undefined if no images match first color', () => {
-      const res = service.resolveCreateThumbnail({
-        variants: [{ colorId: 10 }],
-        images: [{ url: 'img.jpg', colorId: 20 }],
-      });
-      expect(res).toBeUndefined();
-    });
-  });
 });

@@ -30,7 +30,7 @@ export class ProductVariantService {
   // 3. Ràng buộc DB đảm bảo một sản phẩm không có 2 biến thể trùng (màu, kích thước).
   async createVariant(
     productId: number,
-    slug: string,
+    _slug: string,
     dto: CreateVariantDto,
     auditContext: AuditRequestContext = {},
   ) {
@@ -47,7 +47,7 @@ export class ProductVariantService {
       }
 
       const result = await this.repository.createVariant(productId, dto);
-      await this.cacheService.invalidateProductCache(slug);
+      await this.cacheService.invalidateProductCache(productId);
       await this.auditLogService.write({
         ...auditContext,
         action: 'product.variant.create',
@@ -80,7 +80,7 @@ export class ProductVariantService {
   // Không cho phép cập nhật Màu sắc/Kích thước sau khi đã tạo để đảm bảo tính toàn vẹn dữ liệu đơn hàng.
   async updateVariant(
     productId: number,
-    slug: string,
+    _slug: string,
     variantId: number,
     dto: UpdateVariantDto,
     auditContext: AuditRequestContext = {},
@@ -104,7 +104,7 @@ export class ProductVariantService {
         ...(dto.onHand !== undefined && { onHand: dto.onHand }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       });
-      await this.cacheService.invalidateProductCache(slug);
+      await this.cacheService.invalidateProductCache(productId);
       await this.auditLogService.write({
         ...auditContext,
         action: 'product.variant.update',

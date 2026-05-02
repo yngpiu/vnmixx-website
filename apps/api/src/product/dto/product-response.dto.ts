@@ -103,6 +103,34 @@ class ProductVariantAdminDto extends ProductVariantDto {
 
 // ─── Public response DTOs ────────────────────────────────────────────────
 
+/** One variant color row on list APIs: URLs belong to this color gallery only. */
+export class ProductListColorResponseDto {
+  @ApiProperty({ example: 1, description: 'Color id matched to product_variants.color_id.' })
+  id: number;
+
+  @ApiProperty({ example: 'Đen' })
+  name: string;
+
+  @ApiProperty({ example: '#111111' })
+  hexCode: string;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    example: 'https://example.com/front.jpg',
+    description:
+      'This color only: lowest sort_order image in product_images for this color_id (front).',
+  })
+  frontUrl: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    example: 'https://example.com/back.jpg',
+    description:
+      'This color only: second-lowest sort_order image for this color_id (back); null if fewer than 2 images.',
+  })
+  backUrl: string | null;
+}
+
 export class ProductListItemResponseDto {
   @ApiProperty({ example: 1 })
   id: number;
@@ -113,9 +141,6 @@ export class ProductListItemResponseDto {
   @ApiProperty({ example: 'ao-basic-tee' })
   slug: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com/thumb.jpg', nullable: true })
-  thumbnail: string | null;
-
   @ApiPropertyOptional({ example: 249000, nullable: true })
   minPrice: number | null;
 
@@ -125,8 +150,12 @@ export class ProductListItemResponseDto {
   @ApiPropertyOptional({ type: CategoryBriefDto, nullable: true })
   category: CategoryBriefDto | null;
 
-  @ApiProperty({ type: [String], example: ['#FFFFFF', '#000000'] })
-  colorHexCodes: string[];
+  @ApiProperty({
+    type: [ProductListColorResponseDto],
+    description:
+      "Distinct variant colors on the listing (max 4, first-appearance order). Each item carries that color's frontUrl/backUrl only; images without color_id are omitted here.",
+  })
+  colors: ProductListColorResponseDto[];
 }
 
 export class PaginationMetaDto {
@@ -164,9 +193,6 @@ export class ProductDetailResponseDto {
   @ApiPropertyOptional({ example: 'Áo thun basic...', nullable: true })
   description: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
-  thumbnail: string | null;
-
   @ApiProperty({ example: 300, description: 'Cân nặng sản phẩm (gram)' })
   weight: number;
 
@@ -201,7 +227,11 @@ export class ProductAdminListItemResponseDto {
   @ApiProperty({ example: 'ao-basic-tee' })
   slug: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Preview image URL from product_images (smallest sort_order). No persisted thumbnail column.',
+  })
   thumbnail: string | null;
 
   @ApiProperty({ example: true })
@@ -248,9 +278,6 @@ export class ProductAdminDetailResponseDto {
 
   @ApiPropertyOptional({ nullable: true })
   description: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  thumbnail: string | null;
 
   @ApiProperty({ example: 300, description: 'Cân nặng sản phẩm (gram)' })
   weight: number;

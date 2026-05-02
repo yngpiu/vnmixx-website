@@ -4,12 +4,13 @@ import {
   InventoryVoucherType,
   Prisma,
 } from '../../../generated/prisma/client';
+import type { ProductImageUrlRow } from '../../common/utils/product-preview-image-url.util';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
 export type LowStockProductRow = {
   id: number;
   name: string;
-  thumbnail: string | null;
+  images: { url: string; sortOrder: number }[];
   variants: Array<{
     sku: string;
     onHand: number;
@@ -26,7 +27,11 @@ export type InventoryVariantRow = {
   reserved: number;
   updatedAt: Date;
   productId: number;
-  product: { name: string; thumbnail: string | null };
+  colorId: number;
+  product: {
+    name: string;
+    images: ProductImageUrlRow[];
+  };
   color: { name: string } | null;
   size: { label: string } | null;
 };
@@ -72,7 +77,10 @@ export class InventoryRepository {
       select: {
         id: true,
         name: true,
-        thumbnail: true,
+        images: {
+          select: { url: true, sortOrder: true },
+          orderBy: { sortOrder: 'asc' },
+        },
         variants: {
           where: { deletedAt: null, isActive: true },
           select: {
@@ -114,10 +122,14 @@ export class InventoryRepository {
         reserved: true,
         updatedAt: true,
         productId: true,
+        colorId: true,
         product: {
           select: {
             name: true,
-            thumbnail: true,
+            images: {
+              select: { url: true, colorId: true, sortOrder: true },
+              orderBy: { sortOrder: 'asc' },
+            },
           },
         },
         color: { select: { name: true } },

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ProductListColorResponseDto } from '../../product/dto/product-response.dto';
 
 // DTO đại diện cho thông tin giá của biến thể sản phẩm trong wishlist.
 export class WishlistProductVariantDto {
@@ -17,8 +18,8 @@ export class WishlistProductDto {
   @ApiProperty({ example: 'ao-basic-tee' })
   slug: string;
 
-  @ApiProperty({ example: 'https://example.com/thumb.jpg', nullable: true })
-  thumbnail: string | null;
+  @ApiProperty({ type: [ProductListColorResponseDto] })
+  colors: ProductListColorResponseDto[];
 
   @ApiProperty({ type: [WishlistProductVariantDto] })
   variants: WishlistProductVariantDto[];

@@ -85,10 +85,10 @@ export class ReviewService {
   }
 
   /**
-   * Paginated visible reviews for storefront, by product slug, with aggregate stats.
+   * Paginated visible reviews for storefront, by product ID, with aggregate stats.
    */
-  async listPublicReviewsByProductSlug(
-    slug: string,
+  async listPublicReviewsByProductId(
+    productId: number,
     page: number,
     limit: number,
   ): Promise<{
@@ -112,11 +112,11 @@ export class ReviewService {
     };
   }> {
     const product = await this.prisma.product.findFirst({
-      where: { slug, isActive: true, deletedAt: null },
+      where: { id: productId, isActive: true, deletedAt: null },
       select: { id: true },
     });
     if (!product) {
-      throw new NotFoundException(`Không tìm thấy sản phẩm "${slug}"`);
+      throw new NotFoundException(`Không tìm thấy sản phẩm #${productId}`);
     }
     const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
     const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 10;

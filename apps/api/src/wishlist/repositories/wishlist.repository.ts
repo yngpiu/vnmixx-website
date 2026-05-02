@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/services/prisma.service';
+import {
+  type ProductListColorEntry,
+  buildPublicListColors,
+} from '../../product/utils/public-product-list-colors.util';
 
 export interface WishlistProductVariantView {
   price: number;
@@ -9,7 +13,7 @@ export interface WishlistProductView {
   id: number;
   name: string;
   slug: string;
-  thumbnail: string | null;
+  colors: ProductListColorEntry[];
   variants: WishlistProductVariantView[];
 }
 
@@ -19,21 +23,20 @@ export interface WishlistItemView {
 }
 
 // Cấu trúc chọn dữ liệu cho sản phẩm trong danh sách yêu thích.
-const WISHLIST_SELECT = {
-  createdAt: true,
-  product: {
+const WISHLIST_PRODUCT_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  images: {
+    select: { colorId: true, url: true, sortOrder: true },
+    orderBy: { sortOrder: 'asc' as const },
+  },
+  variants: {
     select: {
-      id: true,
-      name: true,
-      slug: true,
-      thumbnail: true,
-      variants: {
-        select: { price: true },
-        where: { isActive: true, deletedAt: null },
-        orderBy: { price: 'asc' as const },
-        take: 1,
-      },
+      price: true,
+      color: { select: { id: true, name: true, hexCode: true } },
     },
+    where: { isActive: true, deletedAt: null },
   },
 } as const;
 
@@ -44,14 +47,31 @@ export class WishlistRepository {
 
   // Lấy tất cả mục yêu thích của khách hàng, sắp xếp theo thời gian tạo giảm dần.
   async findAllByCustomerId(customerId: number): Promise<WishlistItemView[]> {
-    return this.prisma.wishlist.findMany({
+    const rows = await this.prisma.wishlist.findMany({
       where: {
         customerId,
         product: { isActive: true, deletedAt: null },
       },
       orderBy: { createdAt: 'desc' },
-      select: WISHLIST_SELECT,
-    }) as unknown as Promise<WishlistItemView[]>;
+      select: {
+        createdAt: true,
+        product: { select: WISHLIST_PRODUCT_SELECT },
+      },
+    });
+    return rows.map((row) => {
+      const product = row.product;
+      const colors = buildPublicListColors(product.variants, product.images);
+      return {
+        createdAt: row.createdAt,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          colors,
+          variants: product.variants.map((variant) => ({ price: variant.price })),
+        },
+      };
+    });
   }
 
   // Kiểm tra xem một sản phẩm đã có trong danh sách yêu thích của khách hàng chưa.

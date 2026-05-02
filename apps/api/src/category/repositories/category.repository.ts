@@ -119,7 +119,27 @@ export class CategoryRepository {
     });
   }
 
-  // Tìm danh mục theo slug và bao gồm các danh mục con trực tiếp.
+  // Tìm danh mục theo ID và bao gồm các danh mục con trực tiếp.
+  async findPublicById(
+    id: number,
+  ): Promise<(CategoryView & { children: CategoryTreeNodeView[] }) | null> {
+    return this.prisma.category.findFirst({
+      where: { id, deletedAt: null, isActive: true },
+      select: {
+        ...CATEGORY_SELECT,
+        children: {
+          where: { deletedAt: null, isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            ...TREE_NODE_SELECT,
+            children: false,
+          },
+        },
+      },
+    }) as unknown as Promise<(CategoryView & { children: CategoryTreeNodeView[] }) | null>;
+  }
+
+  // Legacy helper for slug lookups.
   async findBySlug(
     slug: string,
   ): Promise<(CategoryView & { children: CategoryTreeNodeView[] }) | null> {

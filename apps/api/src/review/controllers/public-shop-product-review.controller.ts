@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import {
   ApiExtraModels,
   ApiInternalServerErrorResponse,
@@ -17,36 +17,36 @@ import {
 import {
   ListPublicShopProductReviewsQueryDto,
   PublicShopProductRatingBreakdownDto,
-  PublicShopProductReviewsBySlugResponseDto,
+  PublicShopProductReviewsBySlugResponseDto as PublicShopProductReviewsResponseDto,
 } from '../dto';
 import { ReviewService } from '../services/review.service';
 
 @ApiTags('Reviews')
-@ApiExtraModels(PublicShopProductReviewsBySlugResponseDto, PublicShopProductRatingBreakdownDto)
+@ApiExtraModels(PublicShopProductReviewsResponseDto, PublicShopProductRatingBreakdownDto)
 @Controller('products')
 export class PublicShopProductReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
   @ApiOperation({
-    summary: 'Danh sách đánh giá công khai theo slug sản phẩm (kèm trung bình và tổng số)',
+    summary: 'Danh sách đánh giá công khai theo ID sản phẩm (kèm trung bình và tổng số)',
   })
   @ApiOkResponse({
     schema: buildSuccessResponseSchema({
-      $ref: getSchemaPath(PublicShopProductReviewsBySlugResponseDto),
+      $ref: getSchemaPath(PublicShopProductReviewsResponseDto),
     }),
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
   @Public()
-  @Get(':slug/reviews')
+  @Get(':id/reviews')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async listByProductSlug(
-    @Param('slug') slug: string,
+  async listByProductId(
+    @Param('id', ParseIntPipe) id: number,
     @Query() query: ListPublicShopProductReviewsQueryDto,
-  ): Promise<SuccessPayload<PublicShopProductReviewsBySlugResponseDto>> {
+  ): Promise<SuccessPayload<PublicShopProductReviewsResponseDto>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
     return ok(
-      await this.reviewService.listPublicReviewsByProductSlug(slug, page, limit),
+      await this.reviewService.listPublicReviewsByProductId(id, page, limit),
       'Lấy danh sách đánh giá thành công.',
     );
   }

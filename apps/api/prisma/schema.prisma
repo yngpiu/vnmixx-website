@@ -351,7 +351,6 @@ model Product {
   name        String           @db.VarChar(255)
   slug        String           @unique(map: "uk_products_slug") @db.VarChar(255)
   description String?          @db.Text
-  thumbnail   String?          @db.VarChar(500)
   basePrice   Int?             @map("base_price") @db.UnsignedInt
   weight      Int              @db.UnsignedInt
   length      Int              @db.UnsignedSmallInt

@@ -20,7 +20,7 @@ export class ProductImageService {
   // Hình ảnh có thể gắn với một `colorId` hoặc dùng chung cho toàn bộ sản phẩm.
   async createImage(
     productId: number,
-    slug: string,
+    _slug: string,
     dto: CreateImageDto,
     auditContext: AuditRequestContext = {},
   ) {
@@ -31,7 +31,7 @@ export class ProductImageService {
       }
 
       const result = await this.repository.createImage(productId, dto);
-      await this.cacheService.invalidateProductCache(slug);
+      await this.cacheService.invalidateProductCache(productId);
       await this.auditLogService.write({
         ...auditContext,
         action: 'product.image.create',
@@ -58,7 +58,7 @@ export class ProductImageService {
   // Cập nhật thông tin hình ảnh (Màu sắc liên kết, văn bản thay thế, thứ tự hiển thị).
   async updateImage(
     productId: number,
-    slug: string,
+    _slug: string,
     imageId: number,
     dto: UpdateImageDto,
     auditContext: AuditRequestContext = {},
@@ -82,7 +82,7 @@ export class ProductImageService {
         ...(dto.altText !== undefined && { altText: dto.altText }),
         ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       });
-      await this.cacheService.invalidateProductCache(slug);
+      await this.cacheService.invalidateProductCache(productId);
       await this.auditLogService.write({
         ...auditContext,
         action: 'product.image.update',
@@ -107,32 +107,5 @@ export class ProductImageService {
       });
       throw error;
     }
-  }
-
-  // Logic xác định Thumbnail tự động:
-  // Nếu không cung cấp requestedThumbnail, hệ thống sẽ lấy ảnh đầu tiên của màu sắc thuộc biến thể đầu tiên.
-  resolveCreateThumbnail(params: {
-    requestedThumbnail?: string;
-    variants: { colorId: number }[];
-    images: { url: string; colorId?: number; sortOrder?: number }[];
-  }): string | undefined {
-    if (params.requestedThumbnail?.trim()) {
-      return params.requestedThumbnail.trim();
-    }
-    if (params.images.length === 0 || params.variants.length === 0) {
-      return undefined;
-    }
-    const firstColorId = params.variants[0]?.colorId;
-    if (!firstColorId) {
-      return undefined;
-    }
-    const firstImageOfFirstColor = params.images
-      .filter((image) => image.colorId === firstColorId)
-      .sort((left, right) => {
-        const leftSortOrder = left.sortOrder ?? Number.MAX_SAFE_INTEGER;
-        const rightSortOrder = right.sortOrder ?? Number.MAX_SAFE_INTEGER;
-        return leftSortOrder - rightSortOrder;
-      })[0];
-    return firstImageOfFirstColor?.url;
   }
 }

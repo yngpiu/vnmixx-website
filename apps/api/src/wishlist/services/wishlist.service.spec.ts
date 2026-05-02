@@ -52,7 +52,7 @@ describe('WishlistService', () => {
       const expectedItems: WishlistItemView[] = [
         {
           createdAt: new Date(),
-          product: { id: 100, name: 'P', slug: 's', thumbnail: null, variants: [] },
+          product: { id: 100, name: 'P', slug: 's', colors: [], variants: [] },
         },
       ];
       redis.getOrSet.mockImplementation((_key, _ttl, cb) => cb());

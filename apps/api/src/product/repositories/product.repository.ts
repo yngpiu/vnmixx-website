@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
 import { softDeletedWhere } from '../../common/utils/prisma.util';
 import { PrismaService } from '../../prisma/services/prisma.service';
+import {
+  type ProductListColorEntry,
+  buildPublicListColors,
+} from '../utils/public-product-list-colors.util';
 
 // ─── View types ─────────────────────────────────────────────────────────────
 
@@ -9,8 +13,8 @@ export interface ProductListItemView {
   id: number;
   name: string;
   slug: string;
-  thumbnail: string | null;
-  colorHexCodes: string[];
+  /** Variant colors (max 4) with front/back URL per color for listing cards; no standalone thumbnail. */
+  colors: ProductListColorEntry[];
   category: { id: number; name: string; slug: string } | null;
 }
 
@@ -25,6 +29,7 @@ export interface ProductAdminListItemView {
   id: number;
   name: string;
   slug: string;
+  /** First product_images URL by sort order (computed; not persisted on Product). */
   thumbnail: string | null;
   isActive: boolean;
   category: { id: number; name: string; slug: string } | null;
@@ -39,7 +44,6 @@ export interface ProductDetailView {
   name: string;
   slug: string;
   description: string | null;
-  thumbnail: string | null;
   weight: number;
   length: number;
   width: number;
@@ -190,29 +194,40 @@ export class ProductRepository {
           id: true,
           name: true,
           slug: true,
-          thumbnail: true,
+          productCategories: {
+            take: 1,
+            select: {
+              category: { select: { id: true, name: true, slug: true } },
+            },
+          },
+          images: {
+            select: { colorId: true, url: true, sortOrder: true },
+            orderBy: { sortOrder: 'asc' },
+          },
           variants: {
             where: { isActive: true, deletedAt: null },
-            select: { price: true, color: { select: { hexCode: true } } },
+            select: {
+              price: true,
+              color: { select: { id: true, name: true, hexCode: true } },
+            },
           },
         },
       }),
     ]);
 
-    const data = products.map(({ variants, ...rest }) => {
+    const data = products.map(({ variants, productCategories, images, ...rest }) => {
       const prices = variants.map((v) => v.price);
       const minP = prices.length ? Math.min(...prices) : null;
       const maxP = prices.length ? Math.max(...prices) : null;
-      const colorHexCodes = [...new Set(variants.map((variant) => variant.color.hexCode))].slice(
-        0,
-        4,
-      );
+      const colors = buildPublicListColors(variants, images);
       return {
-        ...rest,
-        category: null,
+        id: rest.id,
+        name: rest.name,
+        slug: rest.slug,
+        colors,
+        category: productCategories[0]?.category ?? null,
         minPrice: minP,
         maxPrice: maxP,
-        colorHexCodes,
       };
     });
 
@@ -263,30 +278,47 @@ export class ProductRepository {
         id: true,
         name: true,
         slug: true,
-        thumbnail: true,
         createdAt: true,
+        productCategories: {
+          take: 1,
+          select: {
+            category: { select: { id: true, name: true, slug: true } },
+          },
+        },
+        images: {
+          select: { colorId: true, url: true, sortOrder: true },
+          orderBy: { sortOrder: 'asc' },
+        },
         variants: {
           where: { isActive: true, deletedAt: null },
-          select: { price: true, color: { select: { hexCode: true } } },
+          select: {
+            price: true,
+            color: { select: { id: true, name: true, hexCode: true } },
+          },
         },
       },
     });
     const mappedProducts = products.map(
-      ({ variants, createdAt, ...rest }): ProductPublicListAggWithCreatedAt => {
+      ({
+        variants,
+        createdAt,
+        productCategories,
+        images,
+        ...rest
+      }): ProductPublicListAggWithCreatedAt => {
         const prices = variants.map((variant) => variant.price);
         const resolvedMinPrice = prices.length > 0 ? Math.min(...prices) : null;
         const resolvedMaxPrice = prices.length > 0 ? Math.max(...prices) : null;
-        const colorHexCodes = [...new Set(variants.map((variant) => variant.color.hexCode))].slice(
-          0,
-          4,
-        );
+        const colors = buildPublicListColors(variants, images);
         return {
-          ...rest,
+          id: rest.id,
+          name: rest.name,
+          slug: rest.slug,
+          colors,
           createdAt,
-          category: null,
+          category: productCategories[0]?.category ?? null,
           minPrice: resolvedMinPrice,
           maxPrice: resolvedMaxPrice,
-          colorHexCodes,
         };
       },
     );
@@ -321,8 +353,7 @@ export class ProductRepository {
       id: product.id,
       name: product.name,
       slug: product.slug,
-      thumbnail: product.thumbnail,
-      colorHexCodes: product.colorHexCodes,
+      colors: product.colors,
       category: product.category,
       minPrice: product.minPrice,
       maxPrice: product.maxPrice,
@@ -377,30 +408,47 @@ export class ProductRepository {
         id: true,
         name: true,
         slug: true,
-        thumbnail: true,
         createdAt: true,
+        productCategories: {
+          take: 1,
+          select: {
+            category: { select: { id: true, name: true, slug: true } },
+          },
+        },
+        images: {
+          select: { colorId: true, url: true, sortOrder: true },
+          orderBy: { sortOrder: 'asc' },
+        },
         variants: {
           where: { isActive: true, deletedAt: null },
-          select: { price: true, color: { select: { hexCode: true } } },
+          select: {
+            price: true,
+            color: { select: { id: true, name: true, hexCode: true } },
+          },
         },
       },
     });
     const mappedProducts = products.map(
-      ({ variants, createdAt, ...rest }): ProductPublicListAggWithCreatedAt => {
+      ({
+        variants,
+        createdAt,
+        productCategories,
+        images,
+        ...rest
+      }): ProductPublicListAggWithCreatedAt => {
         const prices = variants.map((variant) => variant.price);
         const resolvedMinPrice = prices.length > 0 ? Math.min(...prices) : null;
         const resolvedMaxPrice = prices.length > 0 ? Math.max(...prices) : null;
-        const colorHexCodes = [...new Set(variants.map((variant) => variant.color.hexCode))].slice(
-          0,
-          4,
-        );
+        const colors = buildPublicListColors(variants, images);
         return {
-          ...rest,
+          id: rest.id,
+          name: rest.name,
+          slug: rest.slug,
+          colors,
           createdAt,
-          category: null,
+          category: productCategories[0]?.category ?? null,
           minPrice: resolvedMinPrice,
           maxPrice: resolvedMaxPrice,
-          colorHexCodes,
         };
       },
     );
@@ -432,8 +480,7 @@ export class ProductRepository {
       id: product.id,
       name: product.name,
       slug: product.slug,
-      thumbnail: product.thumbnail,
-      colorHexCodes: product.colorHexCodes,
+      colors: product.colors,
       category: product.category,
       minPrice: product.minPrice,
       maxPrice: product.maxPrice,
@@ -444,7 +491,37 @@ export class ProductRepository {
     };
   }
 
-  // Tìm kiếm chi tiết sản phẩm công khai theo slug.
+  // Tìm kiếm chi tiết sản phẩm công khai theo ID.
+  async findPublicById(id: number): Promise<ProductDetailView | null> {
+    return this.prisma.product
+      .findFirst({
+        where: { id, isActive: true, deletedAt: null },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          weight: true,
+          length: true,
+          width: true,
+          height: true,
+          variants: {
+            where: { isActive: true, deletedAt: null },
+            select: VARIANT_PUBLIC_SELECT,
+            orderBy: [{ color: { name: 'asc' } }, { size: { sortOrder: 'asc' } }],
+          },
+          images: {
+            select: IMAGE_SELECT,
+            orderBy: { sortOrder: 'asc' },
+          },
+        },
+      })
+      .then((product) =>
+        product ? { ...product, category: null } : null,
+      ) as Promise<ProductDetailView | null>;
+  }
+
+  // Legacy helper for slug lookups.
   async findBySlug(slug: string): Promise<ProductDetailView | null> {
     return this.prisma.product
       .findFirst({
@@ -454,7 +531,6 @@ export class ProductRepository {
           name: true,
           slug: true,
           description: true,
-          thumbnail: true,
           weight: true,
           length: true,
           width: true,
@@ -537,12 +613,16 @@ export class ProductRepository {
           id: true,
           name: true,
           slug: true,
-          thumbnail: true,
           isActive: true,
           createdAt: true,
           updatedAt: true,
           deletedAt: true,
           _count: { select: { variants: true } },
+          images: {
+            select: { url: true },
+            orderBy: { sortOrder: 'asc' },
+            take: 1,
+          },
           productCategories: {
             take: 1,
             select: {
@@ -559,10 +639,11 @@ export class ProductRepository {
       }),
     ]);
 
-    const data = products.map(({ variants, productCategories, ...rest }) => {
+    const data = products.map(({ variants, productCategories, images, ...productRest }) => {
       const totalStock = variants.reduce((sum, v) => sum + v.onHand, 0);
       const category = productCategories?.[0]?.category ?? null;
-      return { ...rest, category, totalStock };
+      const thumbnail = images[0]?.url ?? null;
+      return { ...productRest, thumbnail, category, totalStock };
     });
 
     return {
@@ -581,7 +662,6 @@ export class ProductRepository {
           name: true,
           slug: true,
           description: true,
-          thumbnail: true,
           weight: true,
           length: true,
           width: true,
@@ -640,7 +720,6 @@ export class ProductRepository {
     name: string;
     slug: string;
     description?: string | null;
-    thumbnail?: string | null;
     weight: number;
     length: number;
     width: number;
@@ -669,7 +748,6 @@ export class ProductRepository {
           name: data.name,
           slug: data.slug,
           description: data.description ?? null,
-          thumbnail: data.thumbnail ?? null,
           weight: data.weight,
           length: data.length,
           width: data.width,
@@ -735,7 +813,6 @@ export class ProductRepository {
       name?: string;
       slug?: string;
       description?: string | null;
-      thumbnail?: string | null;
       weight?: number;
       length?: number;
       width?: number;

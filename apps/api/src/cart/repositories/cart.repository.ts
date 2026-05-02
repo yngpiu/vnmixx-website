@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { resolvePreviewImageUrlForColor } from '../../common/utils/product-preview-image-url.util';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
 const CART_ITEM_SELECT = {
@@ -15,7 +16,17 @@ const CART_ITEM_SELECT = {
       reserved: true,
       color: { select: { id: true, name: true, hexCode: true } },
       size: { select: { id: true, label: true } },
-      product: { select: { id: true, name: true, slug: true, thumbnail: true } },
+      product: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          images: {
+            select: { url: true, colorId: true, sortOrder: true },
+            orderBy: { sortOrder: 'asc' as const },
+          },
+        },
+      },
     },
   },
 } as const;
@@ -43,7 +54,8 @@ export interface CartItemView {
     reserved: number;
     color: { id: number; name: string; hexCode: string };
     size: { id: number; label: string };
-    product: { id: number; name: string; slug: string; thumbnail: string | null };
+    /** First catalog image URL for the variant color (from product_images). */
+    product: { id: number; name: string; slug: string; previewUrl: string | null };
   };
 }
 
@@ -54,6 +66,72 @@ export interface CartView {
   items: CartItemView[];
 }
 
+type CartItemPrismaRow = {
+  id: number;
+  quantity: number;
+  createdAt: Date;
+  updatedAt: Date;
+  variant: {
+    id: number;
+    sku: string;
+    price: number;
+    onHand: number;
+    reserved: number;
+    color: { id: number; name: string; hexCode: string };
+    size: { id: number; label: string };
+    product: {
+      id: number;
+      name: string;
+      slug: string;
+      images: { url: string; colorId: number | null; sortOrder: number }[];
+    };
+  };
+};
+
+function toCartItemView(row: CartItemPrismaRow): CartItemView {
+  const previewUrl = resolvePreviewImageUrlForColor(
+    row.variant.color.id,
+    row.variant.product.images,
+  );
+  return {
+    id: row.id,
+    quantity: row.quantity,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    variant: {
+      id: row.variant.id,
+      sku: row.variant.sku,
+      price: row.variant.price,
+      onHand: row.variant.onHand,
+      reserved: row.variant.reserved,
+      color: row.variant.color,
+      size: row.variant.size,
+      product: {
+        id: row.variant.product.id,
+        name: row.variant.product.name,
+        slug: row.variant.product.slug,
+        previewUrl,
+      },
+    },
+  };
+}
+
+type CartPrismaRow = {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  items: CartItemPrismaRow[];
+};
+
+function toCartView(row: CartPrismaRow): CartView {
+  return {
+    id: row.id,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    items: row.items.map(toCartItemView),
+  };
+}
+
 @Injectable()
 // Repository Prisma cho các thao tác quản lý giỏ hàng của khách hàng.
 export class CartRepository {
@@ -61,21 +139,27 @@ export class CartRepository {
 
   // Tìm giỏ hàng theo ID khách hàng.
   async findByCustomerId(customerId: number): Promise<CartView | null> {
-    return this.prisma.cart.findUnique({
+    const cart = await this.prisma.cart.findUnique({
       where: { customerId },
       select: CART_SELECT,
-    }) as unknown as Promise<CartView | null>;
+    });
+    if (!cart) {
+      return null;
+    }
+    return toCartView(cart as CartPrismaRow);
   }
 
   // Tìm hoặc tạo mới giỏ hàng cho khách hàng nếu chưa tồn tại.
   async findOrCreate(customerId: number): Promise<CartView> {
     const existing = await this.findByCustomerId(customerId);
-    if (existing) return existing;
-
-    return this.prisma.cart.create({
+    if (existing) {
+      return existing;
+    }
+    const created = await this.prisma.cart.create({
       data: { customerId },
       select: CART_SELECT,
-    }) as unknown as Promise<CartView>;
+    });
+    return toCartView(created as CartPrismaRow);
   }
 
   // Tìm một mục trong giỏ hàng dựa trên cartId và variantId.
@@ -94,21 +178,23 @@ export class CartRepository {
 
   // Thêm sản phẩm vào giỏ hàng hoặc tăng số lượng nếu đã tồn tại.
   async addItem(cartId: number, variantId: number, quantity: number): Promise<CartItemView> {
-    return this.prisma.cartItem.upsert({
+    const row = await this.prisma.cartItem.upsert({
       where: { cartId_variantId: { cartId, variantId } },
       create: { cartId, variantId, quantity },
       update: { quantity: { increment: quantity } },
       select: CART_ITEM_SELECT,
-    }) as unknown as Promise<CartItemView>;
+    });
+    return toCartItemView(row as CartItemPrismaRow);
   }
 
   // Cập nhật số lượng mới cho một mục cụ thể trong giỏ hàng.
   async updateItemQuantity(itemId: number, quantity: number): Promise<CartItemView> {
-    return this.prisma.cartItem.update({
+    const row = await this.prisma.cartItem.update({
       where: { id: itemId },
       data: { quantity },
       select: CART_ITEM_SELECT,
-    }) as unknown as Promise<CartItemView>;
+    });
+    return toCartItemView(row as CartItemPrismaRow);
   }
 
   // Loại bỏ hoàn toàn một mục khỏi giỏ hàng.

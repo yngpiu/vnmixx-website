@@ -24,7 +24,10 @@ describe('ProductService', () => {
     name: 'Test Product',
     slug: 'test-product',
     description: 'Desc',
-    thumbnail: 'thumb.jpg',
+    weight: 100,
+    length: 10,
+    width: 10,
+    height: 5,
     isActive: true,
     category: { id: 3, name: 'Cat', slug: 'cat' },
     productCategories: [{ categoryId: 3 }],
@@ -79,7 +82,6 @@ describe('ProductService', () => {
         {
           provide: ProductImageService,
           useValue: {
-            resolveCreateThumbnail: jest.fn(),
             createImage: jest.fn(),
             updateImage: jest.fn(),
             deleteImage: jest.fn(),

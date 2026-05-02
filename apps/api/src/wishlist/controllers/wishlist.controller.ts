@@ -33,6 +33,7 @@ import {
   okNoData,
   type SuccessPayload,
 } from '../../common/utils/response.util';
+import { ProductListColorResponseDto } from '../../product/dto';
 import { WishlistItemResponseDto } from '../dto';
 import { WishlistService } from '../services/wishlist.service';
 
@@ -41,7 +42,7 @@ import { WishlistService } from '../services/wishlist.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('CUSTOMER')
-@ApiExtraModels(WishlistItemResponseDto)
+@ApiExtraModels(WishlistItemResponseDto, ProductListColorResponseDto)
 @Controller('me/wishlist')
 // Controller quản lý danh sách yêu thích cá nhân của khách hàng.
 export class WishlistController {
