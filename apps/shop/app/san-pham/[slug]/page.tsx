@@ -1,25 +1,61 @@
 import { serverApi, ServerApiError } from '@/lib/server-api';
+import { buildProductHref, parseProductRouteKey } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import { fetchSuggestedProductsByCategory } from '@/modules/products/api/catalog';
 import { ProductDetailPageContent } from '@/modules/products/components/product-detail-page-content';
 import type { ShopProductDetail } from '@/modules/products/types/product-detail';
 import type { ShopProductReviewsResult } from '@/modules/products/types/product-reviews';
-import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { notFound, redirect } from 'next/navigation';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata(props: PageProps): Promise<{ title: string }> {
-  const { slug } = await props.params;
+export const dynamic = 'force-dynamic';
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const { slug: routeKey } = await props.params;
+  const parsedRoute = parseProductRouteKey(routeKey);
+  if (!parsedRoute) {
+    return {
+      title: 'Sản phẩm',
+      description: 'Thông tin chi tiết sản phẩm tại VNMIXX Shop.',
+      alternates: {
+        canonical: '/san-pham',
+      },
+    };
+  }
   try {
-    const product = await serverApi.get<ShopProductDetail>(
-      `/products/${encodeURIComponent(slug)}`,
-      { skipAuth: true },
-    );
-    return { title: `${product.name} | VNMIXX Shop` };
+    const product = await serverApi.get<ShopProductDetail>(`/products/${parsedRoute.id}`, {
+      skipAuth: true,
+    });
+    const title = product.name;
+    const description = product.description ?? `Chi tiết sản phẩm ${product.name} tại VNMIXX Shop.`;
+    return {
+      title,
+      description,
+      alternates: {
+        canonical: buildProductHref({ id: product.id, slug: product.slug }),
+      },
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+      },
+    };
   } catch {
-    return { title: 'Sản phẩm | VNMIXX Shop' };
+    return {
+      title: 'Sản phẩm',
+      description: 'Thông tin chi tiết sản phẩm tại VNMIXX Shop.',
+      alternates: {
+        canonical: '/san-pham',
+      },
+    };
   }
 }
 
@@ -32,15 +68,22 @@ const emptyInitialReviews: ShopProductReviewsResult = {
 };
 
 export default async function ProductDetailPage(props: PageProps): Promise<React.JSX.Element> {
-  const { slug } = await props.params;
-  const encodedSlug = encodeURIComponent(slug);
+  const { slug: routeKey } = await props.params;
+  const parsedRoute = parseProductRouteKey(routeKey);
+  if (!parsedRoute) {
+    notFound();
+  }
   try {
-    const product = await serverApi.get<ShopProductDetail>(`/products/${encodedSlug}`, {
+    const product = await serverApi.get<ShopProductDetail>(`/products/${parsedRoute.id}`, {
       skipAuth: true,
     });
+    const canonicalPath = buildProductHref({ id: product.id, slug: product.slug });
+    if (routeKey !== canonicalPath.replace('/san-pham/', '')) {
+      redirect(canonicalPath);
+    }
     const [initialPublicReviews, suggestedProducts] = await Promise.all([
       serverApi
-        .get<ShopProductReviewsResult>(`/products/${encodedSlug}/reviews?page=1&limit=10`, {
+        .get<ShopProductReviewsResult>(`/products/${product.id}/reviews?page=1&limit=10`, {
           skipAuth: true,
         })
         .catch((): ShopProductReviewsResult => emptyInitialReviews),

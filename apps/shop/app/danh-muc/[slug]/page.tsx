@@ -1,7 +1,9 @@
 import { serverApi } from '@/lib/server-api';
+import { buildCategoryHref, parseCategoryRouteKey } from '@/modules/common/utils/shop-routes';
 import { ProductCategoryPage } from '@/modules/products/components/product-category-page';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
-import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
 type CategoryBrief = {
@@ -19,24 +21,67 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata(props: PageProps): Promise<{ title: string }> {
-  const { slug } = await props.params;
+export const dynamic = 'force-dynamic';
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const { slug: routeKey } = await props.params;
+  const parsedRoute = parseCategoryRouteKey(routeKey);
+  if (!parsedRoute) {
+    return {
+      title: 'Danh mục',
+      description: 'Danh mục sản phẩm thời trang tại VNMIXX Shop.',
+      alternates: {
+        canonical: '/san-pham',
+      },
+    };
+  }
   try {
-    const category = await serverApi.get<CategoryPayload>(`/categories/${slug}`, {
+    const category = await serverApi.get<CategoryPayload>(`/categories/${parsedRoute.id}`, {
       skipAuth: true,
     });
-    return { title: `${category.name} | VNMIXX Shop` };
+    const title = category.name;
+    const description = `Khám phá sản phẩm trong danh mục ${category.name} tại VNMIXX Shop.`;
+    return {
+      title,
+      description,
+      alternates: {
+        canonical: buildCategoryHref({ id: category.id, slug: category.slug }),
+      },
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+      },
+    };
   } catch {
-    return { title: 'Danh mục | VNMIXX Shop' };
+    return {
+      title: 'Danh mục',
+      description: 'Danh mục sản phẩm thời trang tại VNMIXX Shop.',
+      alternates: {
+        canonical: '/san-pham',
+      },
+    };
   }
 }
 
 export default async function CategoryListingPage(props: PageProps): Promise<React.JSX.Element> {
-  const { slug } = await props.params;
+  const { slug: routeKey } = await props.params;
+  const parsedRoute = parseCategoryRouteKey(routeKey);
+  if (!parsedRoute) {
+    notFound();
+  }
   try {
-    const category = await serverApi.get<CategoryPayload>(`/categories/${slug}`, {
+    const category = await serverApi.get<CategoryPayload>(`/categories/${parsedRoute.id}`, {
       skipAuth: true,
     });
+    const canonicalPath = buildCategoryHref({ id: category.id, slug: category.slug });
+    if (routeKey !== canonicalPath.replace('/danh-muc/', '')) {
+      redirect(canonicalPath);
+    }
     return (
       <Suspense fallback={<CategoryPageFallback />}>
         <ProductCategoryPage

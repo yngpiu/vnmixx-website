@@ -21,6 +21,7 @@ import {
 import { toast } from '@repo/ui/components/ui/sonner';
 import { useQuery } from '@tanstack/react-query';
 import { ShoppingBagIcon } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -276,12 +277,15 @@ export function CheckoutPageContent(): React.JSX.Element {
                   className="grid grid-cols-[1fr_130px_130px] items-start gap-3 border-b border-border py-4"
                 >
                   <div className="grid grid-cols-[76px_1fr] gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.variant.product.thumbnail ?? '/images/placeholder.jpg'}
-                      alt={item.variant.product.name}
-                      className="h-[104px] w-[76px] object-cover"
-                    />
+                    <div className="relative h-[104px] w-[76px] overflow-hidden">
+                      <Image
+                        src={item.variant.product.thumbnail ?? '/images/placeholder.jpg'}
+                        alt={item.variant.product.name}
+                        fill
+                        sizes="76px"
+                        className="object-cover"
+                      />
+                    </div>
                     <div className="pt-0.5">
                       <p className="text-[16px] leading-6 text-foreground">
                         {item.variant.product.name}

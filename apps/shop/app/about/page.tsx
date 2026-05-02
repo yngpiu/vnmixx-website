@@ -1,3 +1,15 @@
+import type { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+export const metadata: Metadata = {
+  title: 'Về chúng tôi',
+  description:
+    'Tìm hiểu về VNMIXX, thương hiệu thời trang theo đuổi phong cách hiện đại, tối giản và linh hoạt.',
+  alternates: {
+    canonical: '/about',
+  },
+};
+
 export default function AboutPage(): React.JSX.Element {
   return (
     <main className="shop-shell-container pb-16 pt-10">

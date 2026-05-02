@@ -16,6 +16,7 @@ import {
   DrawerTitle,
 } from '@repo/ui/components/ui/drawer';
 import { MinusIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN');
@@ -51,12 +52,15 @@ function CartItemRow({
   };
   return (
     <div className="grid grid-cols-[72px_1fr] gap-3 border-b border-border/70 pb-4">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={item.variant.product.thumbnail ?? '/images/placeholder.jpg'}
-        alt={item.variant.product.name}
-        className="h-[96px] w-[72px] rounded-sm object-cover"
-      />
+      <div className="relative h-[96px] w-[72px] overflow-hidden rounded-sm">
+        <Image
+          src={item.variant.product.thumbnail ?? '/images/placeholder.jpg'}
+          alt={item.variant.product.name}
+          fill
+          sizes="72px"
+          className="object-cover"
+        />
+      </div>
       <div className="space-y-2">
         <p className="line-clamp-2 text-[14px] leading-5 text-foreground">
           {item.variant.product.name}

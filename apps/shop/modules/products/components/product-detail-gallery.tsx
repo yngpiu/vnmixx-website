@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type JSX } from 'react';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
@@ -106,13 +107,16 @@ export function ProductDetailGallery({
               key={slide.id}
               className="flex! h-full items-center justify-center bg-muted/10"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={slide.url}
-                alt={slide.alt}
-                className="h-full w-full object-cover"
-                draggable={false}
-              />
+              <div className="relative h-full w-full">
+                <Image
+                  src={slide.url}
+                  alt={slide.alt}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 58vw, 48vw"
+                  className="object-cover"
+                  draggable={false}
+                />
+              </div>
             </SwiperSlide>
           ))}
         </Swiper>
@@ -142,13 +146,16 @@ export function ProductDetailGallery({
               key={`thumb-${slide.id}`}
               className="aspect-2/3! h-auto! w-[72px]! shrink-0 cursor-pointer overflow-hidden border border-transparent opacity-70 transition md:w-full! [&.swiper-slide-thumb-active]:border-foreground [&.swiper-slide-thumb-active]:opacity-100"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={slide.url}
-                alt=""
-                className="h-full w-full object-cover"
-                draggable={false}
-              />
+              <div className="relative h-full w-full">
+                <Image
+                  src={slide.url}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 72px, (max-width: 1024px) 80px, 96px"
+                  className="object-cover"
+                  draggable={false}
+                />
+              </div>
             </SwiperSlide>
           ))}
         </Swiper>

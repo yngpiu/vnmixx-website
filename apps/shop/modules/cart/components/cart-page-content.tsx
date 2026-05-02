@@ -8,6 +8,7 @@ import type { CartItem } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { Button } from '@repo/ui/components/ui/button';
 import { MinusIcon, PlusIcon, ShoppingBagIcon, Trash2Icon } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN');
@@ -65,12 +66,15 @@ function CartTableRow({
   return (
     <article className="grid grid-cols-[1fr_130px_130px_36px] items-start gap-3 border-b border-border py-4">
       <div className="grid grid-cols-[76px_1fr] gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={item.variant.product.thumbnail ?? '/images/placeholder.jpg'}
-          alt={item.variant.product.name}
-          className="h-[104px] w-[76px] object-cover"
-        />
+        <div className="relative h-[104px] w-[76px] overflow-hidden">
+          <Image
+            src={item.variant.product.thumbnail ?? '/images/placeholder.jpg'}
+            alt={item.variant.product.name}
+            fill
+            sizes="76px"
+            className="object-cover"
+          />
+        </div>
         <div className="pt-0.5">
           <h2 className="text-[16px] leading-6 text-foreground">{item.variant.product.name}</h2>
           <p className="mt-1 text-[13px] leading-5 text-muted-foreground">

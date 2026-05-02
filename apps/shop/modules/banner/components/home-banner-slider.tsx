@@ -1,6 +1,8 @@
 'use client';
 
 import type { PublicBanner } from '@/modules/banner/types/banner';
+import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
+import Image from 'next/image';
 import Link from 'next/link';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -51,15 +53,24 @@ export function HomeBannerSlider({ banners }: HomeBannerSliderProps): React.JSX.
       style={swiperColorVariables}
       className={`${bannerRadiusClassName} [&_.swiper-button-next]:hidden! [&_.swiper-button-prev]:hidden! md:[&_.swiper-button-next]:flex! md:[&_.swiper-button-prev]:flex! [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40`}
     >
-      {banners.map((banner: PublicBanner) => (
+      {banners.map((banner: PublicBanner, slideIndex: number) => (
         <SwiperSlide key={banner.id}>
-          <Link href={`/danh-muc/${banner.category.slug}`} className="block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={banner.imageUrl}
-              alt={banner.category.name}
-              className={`aspect-video w-full object-cover ${bannerRadiusClassName}`}
-            />
+          <Link
+            href={buildCategoryHref({ id: banner.category.id, slug: banner.category.slug })}
+            className="block"
+          >
+            <div
+              className={`relative aspect-video w-full overflow-hidden ${bannerRadiusClassName}`}
+            >
+              <Image
+                src={banner.imageUrl}
+                alt={banner.category.name}
+                fill
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                className="object-cover"
+                priority={slideIndex === 0}
+              />
+            </div>
           </Link>
         </SwiperSlide>
       ))}

@@ -10,6 +10,7 @@ import {
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -130,12 +131,15 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
             </p>
             <div className="space-y-5">
               <div className="flex justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={checkoutSession.qrImageUrl}
-                  alt="Mã QR thanh toán"
-                  className="h-[320px] w-[320px] border border-border object-contain p-2"
-                />
+                <div className="relative h-[320px] w-[320px] border border-border p-2">
+                  <Image
+                    src={checkoutSession.qrImageUrl}
+                    alt="Mã QR thanh toán"
+                    fill
+                    sizes="320px"
+                    className="object-contain p-2"
+                  />
+                </div>
               </div>
               <div className="space-y-2 text-sm leading-6">
                 <p>

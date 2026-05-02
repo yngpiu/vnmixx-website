@@ -5,6 +5,16 @@ import {
   getNewArrivalProductsByCategory,
 } from '@/modules/home/api/new-arrival-products';
 import { HomeProductSections } from '@/modules/home/components/home-product-sections';
+import type { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+export const metadata: Metadata = {
+  title: 'Trang chủ',
+  description: 'VNMIXX Shop - cập nhật bộ sưu tập mới, sản phẩm bán chạy và gợi ý theo danh mục.',
+  alternates: {
+    canonical: '/',
+  },
+};
 
 export default async function Page(): Promise<React.JSX.Element> {
   const banners = await getPublicBanners().catch(() => []);

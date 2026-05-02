@@ -27,6 +27,7 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImagePlusIcon, XIcon } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -107,15 +108,26 @@ function SupportMessageBody({ content }: { content: string }): React.JSX.Element
                 imageCount === 1 && 'max-w-[420px]',
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt="Ảnh đính kèm"
+              <div
                 className={cn(
-                  'w-full object-cover',
+                  'relative w-full',
                   imageCount === 1 ? 'h-64' : imageCount <= 4 ? 'h-40' : 'h-28',
                 )}
-              />
+              >
+                <Image
+                  src={url}
+                  alt="Ảnh đính kèm"
+                  fill
+                  sizes={
+                    imageCount === 1
+                      ? '(max-width: 768px) 78vw, 420px'
+                      : imageCount <= 4
+                        ? '(max-width: 768px) 39vw, 220px'
+                        : '(max-width: 768px) 26vw, 140px'
+                  }
+                  className="object-cover"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -523,8 +535,14 @@ export function SupportChatFabSheet(): React.JSX.Element {
                           key={`${entry.file.name}-${entry.previewUrl}`}
                           className="relative size-14 overflow-hidden rounded-md border border-border bg-muted"
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={entry.previewUrl} alt="" className="size-full object-cover" />
+                          <Image
+                            src={entry.previewUrl}
+                            alt=""
+                            fill
+                            sizes="56px"
+                            unoptimized
+                            className="object-cover"
+                          />
                           <button
                             type="button"
                             className="bg-background/90 text-foreground absolute top-0.5 right-0.5 rounded p-0.5"

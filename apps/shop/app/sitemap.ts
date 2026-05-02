@@ -1,0 +1,105 @@
+import { API_BASE_URL, SHOP_SITE_URL } from '@/config/constants';
+import { buildCategoryHref, buildProductHref } from '@/modules/common/utils/shop-routes';
+import type { MetadataRoute } from 'next';
+
+type PaginatedProductsEnvelope = {
+  success: boolean;
+  data: Array<{ id: number; slug: string }>;
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+type CategoriesEnvelope = {
+  success: boolean;
+  data: Array<{ id: number; slug: string; isActive?: boolean }>;
+};
+
+const PRODUCTS_PAGE_LIMIT = 200;
+const PRODUCTS_MAX_PAGES = 50;
+
+async function fetchActiveCategories(): Promise<Array<{ id: number; slug: string }>> {
+  const response = await fetch(`${API_BASE_URL}/categories`, { next: { revalidate: 3600 } });
+  if (!response.ok) {
+    return [];
+  }
+  const payload = (await response.json()) as CategoriesEnvelope;
+  if (!payload.success) {
+    return [];
+  }
+  return payload.data
+    .filter((item) => item.isActive !== false && Boolean(item.slug) && item.id > 0)
+    .map((item) => ({ id: item.id, slug: item.slug }));
+}
+
+async function fetchAllProducts(): Promise<Array<{ id: number; slug: string }>> {
+  const products: Array<{ id: number; slug: string }> = [];
+  let currentPage = 1;
+  let totalPages = 1;
+  while (currentPage <= totalPages && currentPage <= PRODUCTS_MAX_PAGES) {
+    const searchParams = new URLSearchParams({
+      page: String(currentPage),
+      limit: String(PRODUCTS_PAGE_LIMIT),
+      sort: 'newest',
+    });
+    const response = await fetch(`${API_BASE_URL}/products?${searchParams.toString()}`, {
+      next: { revalidate: 3600 },
+    });
+    if (!response.ok) {
+      break;
+    }
+    const payload = (await response.json()) as PaginatedProductsEnvelope;
+    if (!payload.success) {
+      break;
+    }
+    for (const product of payload.data ?? []) {
+      if (product.slug && product.id > 0) {
+        products.push({ id: product.id, slug: product.slug });
+      }
+    }
+    totalPages = payload.meta?.totalPages ?? 1;
+    currentPage += 1;
+  }
+  return products;
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const currentDate = new Date();
+  const [categories, products] = await Promise.all([fetchActiveCategories(), fetchAllProducts()]);
+  const staticRoutes: MetadataRoute.Sitemap = [
+    {
+      url: `${SHOP_SITE_URL}/`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 1,
+    },
+    {
+      url: `${SHOP_SITE_URL}/about`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    },
+    {
+      url: `${SHOP_SITE_URL}/san-pham`,
+      lastModified: currentDate,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+  ];
+  const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
+    url: `${SHOP_SITE_URL}${buildCategoryHref(category)}`,
+    lastModified: currentDate,
+    changeFrequency: 'daily',
+    priority: 0.8,
+  }));
+  const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
+    url: `${SHOP_SITE_URL}${buildProductHref(product)}`,
+    lastModified: currentDate,
+    changeFrequency: 'daily',
+    priority: 0.8,
+  }));
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes];
+}

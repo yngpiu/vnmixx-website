@@ -6,6 +6,10 @@ const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:400
 export const API_BASE_URL = rawBaseUrl.endsWith('/v1')
   ? rawBaseUrl
   : `${rawBaseUrl.replace(/\/$/, '')}/v1`;
+export const SHOP_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(
+  /\/$/,
+  '',
+);
 
 export const ACCESS_TOKEN_MAX_AGE = 900;
 

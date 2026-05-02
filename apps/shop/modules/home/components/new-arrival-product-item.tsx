@@ -2,11 +2,12 @@
 
 import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
-import { getProductVariantMatrixBySlug } from '@/modules/cart/api/cart';
+import { getProductVariantMatrixById } from '@/modules/cart/api/cart';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import type { ProductVariantOption } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
-import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
+import { buildProductHref } from '@/modules/common/utils/shop-routes';
+import type { NewArrivalProduct, ProductListColor } from '@/modules/home/types/new-arrival-product';
 import { ProductWishlistHeartButton } from '@/modules/wishlist/components/product-wishlist-heart-button';
 import { Button } from '@repo/ui/components/ui/button';
 import {
@@ -17,11 +18,15 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { toast } from '@repo/ui/components/ui/sonner';
+import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { ShoppingBag } from 'lucide-react';
+import { Check, ShoppingBag } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+const EMPTY_PRODUCT_COLORS: ProductListColor[] = [];
 
 type NewArrivalProductItemProps = {
   product: NewArrivalProduct;
@@ -47,19 +52,49 @@ export function NewArrivalProductItem({
   const isAuthSessionReady = useAuthSessionReady();
   const addCartItemMutation = useAddCartItemMutation();
   const productPrice = product.minPrice ?? product.maxPrice;
-  const productHref = `/san-pham/${product.slug}`;
+  const productHref = buildProductHref({ id: product.id, slug: product.slug });
+  const listColors: ProductListColor[] = product.colors?.length
+    ? product.colors
+    : EMPTY_PRODUCT_COLORS;
   const productColorHexCodes = useMemo(
-    () => (product.colorHexCodes.length > 0 ? product.colorHexCodes : ['#111111']),
-    [product.colorHexCodes],
+    () => (listColors.length > 0 ? listColors.map((color) => color.hexCode) : ['#111111']),
+    [listColors],
   );
+  const [selectedListColorId, setSelectedListColorId] = useState<number | null>(
+    listColors[0]?.id ?? null,
+  );
+  const [isListingImageHovered, setListingImageHovered] = useState(false);
+  useEffect(() => {
+    const colors = product.colors?.length ? product.colors : EMPTY_PRODUCT_COLORS;
+    const fallbackId = colors[0]?.id ?? null;
+    setSelectedListColorId((previous) => {
+      if (previous != null && colors.some((color) => color.id === previous)) {
+        return previous;
+      }
+      return fallbackId;
+    });
+  }, [product.id, product.colors]);
+  useEffect(() => {
+    setListingImageHovered(false);
+  }, [selectedListColorId]);
+  const selectedListColorEntry = useMemo(
+    () => listColors.find((color) => color.id === selectedListColorId) ?? listColors[0] ?? null,
+    [listColors, selectedListColorId],
+  );
+  const listingPrimarySrc = selectedListColorEntry?.frontUrl ?? '/images/placeholder.jpg';
+  const listingSecondarySrc = selectedListColorEntry?.backUrl ?? null;
+  const showListingAlternateImage =
+    isListingImageHovered &&
+    listingSecondarySrc != null &&
+    listingSecondarySrc !== listingPrimarySrc;
   const [isPickerOpen, setPickerOpen] = useState<boolean>(false);
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [selectedColorHexCode, setSelectedColorHexCode] = useState<string>(
     productColorHexCodes[0] ?? '#111111',
   );
   const productVariantsQuery = useQuery({
-    queryKey: ['shop', 'products', product.slug, 'variants'],
-    queryFn: () => getProductVariantMatrixBySlug(product.slug),
+    queryKey: ['shop', 'products', product.id, 'variants'],
+    queryFn: () => getProductVariantMatrixById(product.id),
     enabled: isPickerOpen,
     staleTime: 1000 * 60 * 5,
   });
@@ -109,7 +144,9 @@ export function NewArrivalProductItem({
       router.push('/login');
       return;
     }
-    setSelectedColorHexCode(productColorHexCodes[0] ?? '#111111');
+    setSelectedColorHexCode(
+      selectedListColorEntry?.hexCode ?? productColorHexCodes[0] ?? '#111111',
+    );
     setSelectedSize('');
     setPickerOpen(true);
   };
@@ -136,26 +173,65 @@ export function NewArrivalProductItem({
     <article className="group">
       <Link href={productHref} className="block">
         <div className="overflow-hidden bg-muted/20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={product.thumbnail ?? '/images/placeholder.jpg'}
-            alt={product.name}
-            className="aspect-3/4 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-            loading="lazy"
-          />
+          <div
+            className="relative aspect-3/4 w-full"
+            onMouseEnter={() => setListingImageHovered(true)}
+            onMouseLeave={() => setListingImageHovered(false)}
+          >
+            <Image
+              src={listingPrimarySrc}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+              className={cn(
+                'pointer-events-none object-cover transition duration-300 group-hover:scale-[1.02]',
+                showListingAlternateImage ? 'opacity-0' : 'opacity-100',
+              )}
+            />
+            {listingSecondarySrc ? (
+              <Image
+                src={listingSecondarySrc}
+                alt=""
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+                className={cn(
+                  'pointer-events-none absolute inset-0 object-cover transition-opacity duration-300 group-hover:scale-[1.02]',
+                  showListingAlternateImage ? 'opacity-100' : 'opacity-0',
+                )}
+                aria-hidden
+              />
+            ) : null}
+          </div>
         </div>
       </Link>
       <div className="mt-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            {productColorHexCodes.map((hexCode, index: number) => (
-              <span
-                key={`${product.id}-${hexCode}-${index}`}
-                className="h-4 w-4 rounded-full"
-                style={{ backgroundColor: hexCode }}
-                aria-hidden
-              />
-            ))}
+            {listColors.map((color) => {
+              const isSelectedColor = selectedListColorId === color.id;
+              return (
+                <button
+                  key={`${product.id}-${color.id}`}
+                  type="button"
+                  aria-label={`Hiển thị ảnh màu ${color.name}`}
+                  aria-pressed={isSelectedColor}
+                  className="relative flex size-[17px] shrink-0 items-center justify-center rounded-full outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                  style={{ backgroundColor: color.hexCode }}
+                  onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                    event.preventDefault();
+                    setSelectedListColorId(color.id);
+                  }}
+                >
+                  {isSelectedColor ? (
+                    <Check
+                      aria-hidden
+                      className="size-3 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)] dark:drop-shadow-[0_1px_1px_rgba(0,0,0,1)]"
+                      strokeWidth={2.75}
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
           <ProductWishlistHeartButton productId={product.id} layout="card" />
         </div>
