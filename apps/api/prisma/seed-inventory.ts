@@ -112,9 +112,6 @@ export async function seedInventory(): Promise<void> {
             where: { id: fresh.id, version: fresh.version },
             data: {
               onHand: nextOnHand,
-              ...(type === InventoryVoucherType.IMPORT && unitPrice > 0
-                ? { defaultCost: unitPrice }
-                : {}),
               version: { increment: 1 },
             },
           });

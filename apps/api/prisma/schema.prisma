@@ -360,7 +360,6 @@ model Product {
   name        String    @db.VarChar(255)
   slug        String    @unique(map: "uk_products_slug") @db.VarChar(255)
   description String?   @db.Text
-  basePrice   Int?      @map("base_price") @db.UnsignedInt
   weight      Int       @db.UnsignedInt
   length      Int       @db.UnsignedSmallInt
   width       Int       @db.UnsignedSmallInt
@@ -402,7 +401,6 @@ model ProductVariant {
   barcode     String?   @unique(map: "uk_variants_barcode") @db.VarChar(64)
   unit        String    @default("pcs") @db.VarChar(20)
   price       Int       @db.UnsignedInt
-  defaultCost Int?      @map("default_cost") @db.UnsignedInt
   onHand      Int       @default(0) @map("on_hand") @db.UnsignedInt
   reserved    Int       @default(0) @db.UnsignedInt
   version     Int       @default(0) @db.UnsignedInt
@@ -572,7 +570,6 @@ model Order {
   packageLength         Int          @default(0) @map("package_length") @db.UnsignedSmallInt
   packageWidth          Int          @default(0) @map("package_width") @db.UnsignedSmallInt
   packageHeight         Int          @default(0) @map("package_height") @db.UnsignedSmallInt
-  couponCode            String?      @map("coupon_code") @db.VarChar(50)
   subtotal              Int          @db.UnsignedInt
   discountAmount        Int          @default(0) @map("discount_amount") @db.UnsignedInt
   shippingFee           Int          @default(0) @map("shipping_fee") @db.UnsignedInt

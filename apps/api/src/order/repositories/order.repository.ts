@@ -78,7 +78,6 @@ export interface OrderDetailView extends OrderListItemView {
   note: string | null;
   ghnOrderCode: string | null;
   expectedDeliveryTime: Date | null;
-  couponCode: string | null;
   updatedAt: Date;
   payments: PaymentView[];
   checkoutSession: CheckoutInfoView | null;
@@ -176,7 +175,6 @@ const ORDER_DETAIL_SELECT = {
   note: true,
   ghnOrderCode: true,
   expectedDeliveryTime: true,
-  couponCode: true,
   updatedAt: true,
   payments: { select: PAYMENT_SELECT, orderBy: { createdAt: 'desc' as const } },
   statusHistories: { select: STATUS_HISTORY_SELECT, orderBy: { createdAt: 'desc' as const } },

@@ -268,9 +268,6 @@ export class InventoryRepository {
           where: { id: variant.id, version: variant.version },
           data: {
             onHand: nextOnHand,
-            ...(params.type === 'IMPORT' && item.unitPrice > 0
-              ? { defaultCost: item.unitPrice }
-              : {}),
             version: { increment: 1 },
           },
         });

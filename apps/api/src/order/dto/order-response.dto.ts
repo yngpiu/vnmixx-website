@@ -241,9 +241,6 @@ export class OrderDetailResponseDto extends OrderListItemResponseDto {
   @ApiPropertyOptional({ example: null, nullable: true })
   expectedDeliveryTime: Date | null;
 
-  @ApiPropertyOptional({ example: null, nullable: true })
-  couponCode: string | null;
-
   @ApiProperty({ example: '2026-04-10T10:00:00.000Z' })
   updatedAt: Date;
 

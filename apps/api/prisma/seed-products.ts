@@ -224,7 +224,7 @@ export async function seedProducts(): Promise<void> {
           const selectedColors = faker.helpers.arrayElements(colorIds, numColors);
           const selectedSizes = faker.helpers.arrayElements(sizeIds, numSizes);
 
-          const basePrice = faker.helpers.arrayElement([
+          const variantStartPrice = faker.helpers.arrayElement([
             99000, 149000, 199000, 249000, 299000, 349000, 399000, 499000, 599000, 799000, 999000,
             1290000, 1590000,
           ]);
@@ -270,7 +270,7 @@ export async function seedProducts(): Promise<void> {
                 colorId,
                 sizeId,
                 sku: `${SEED_SKU_PREFIX}${product.id}-C${colorId}-S${sizeId}-${faker.string.alphanumeric(4).toUpperCase()}`,
-                price: basePrice + sizeId * 5000,
+                price: variantStartPrice + sizeId * 5000,
                 onHand: faker.number.int({ min: 0, max: 500 }),
                 reserved: faker.number.int({ min: 0, max: 20 }),
                 version: 0,
