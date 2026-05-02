@@ -7,6 +7,7 @@ import { useDebouncedCartQuantityUpdate } from '@/modules/cart/hooks/use-debounc
 import { useCartStore } from '@/modules/cart/stores/cart-store';
 import type { CartItem } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Drawer,
@@ -54,7 +55,7 @@ function CartItemRow({
     <div className="grid grid-cols-[72px_1fr] gap-3 border-b border-border/70 pb-4">
       <div className="relative h-[96px] w-[72px] overflow-hidden rounded-sm">
         <Image
-          src={item.variant.product.thumbnail ?? '/images/placeholder.jpg'}
+          src={coerceHttpImageSrc(item.variant.product.previewUrl) ?? '/images/placeholder.jpg'}
           alt={item.variant.product.name}
           fill
           sizes="72px"

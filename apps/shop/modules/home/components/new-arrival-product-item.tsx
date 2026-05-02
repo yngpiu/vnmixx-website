@@ -6,6 +6,10 @@ import { getProductVariantMatrixById } from '@/modules/cart/api/cart';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import type { ProductVariantOption } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import {
+  coerceHttpImageSrc,
+  resolveListingImageSrc,
+} from '@/modules/common/utils/coerce-http-image-src';
 import { buildProductHref } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct, ProductListColor } from '@/modules/home/types/new-arrival-product';
 import { ProductWishlistHeartButton } from '@/modules/wishlist/components/product-wishlist-heart-button';
@@ -81,8 +85,8 @@ export function NewArrivalProductItem({
     () => listColors.find((color) => color.id === selectedListColorId) ?? listColors[0] ?? null,
     [listColors, selectedListColorId],
   );
-  const listingPrimarySrc = selectedListColorEntry?.frontUrl ?? '/images/placeholder.jpg';
-  const listingSecondarySrc = selectedListColorEntry?.backUrl ?? null;
+  const listingPrimarySrc = resolveListingImageSrc(selectedListColorEntry?.frontUrl);
+  const listingSecondarySrc = coerceHttpImageSrc(selectedListColorEntry?.backUrl);
   const showListingAlternateImage =
     isListingImageHovered &&
     listingSecondarySrc != null &&

@@ -6,6 +6,7 @@ import { useCartQuery, useRemoveCartItemMutation } from '@/modules/cart/hooks/us
 import { useDebouncedCartQuantityUpdate } from '@/modules/cart/hooks/use-debounced-cart-quantity';
 import type { CartItem } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
 import { Button } from '@repo/ui/components/ui/button';
 import { MinusIcon, PlusIcon, ShoppingBagIcon, Trash2Icon } from 'lucide-react';
 import Image from 'next/image';
@@ -68,7 +69,7 @@ function CartTableRow({
       <div className="grid grid-cols-[76px_1fr] gap-3">
         <div className="relative h-[104px] w-[76px] overflow-hidden">
           <Image
-            src={item.variant.product.thumbnail ?? '/images/placeholder.jpg'}
+            src={coerceHttpImageSrc(item.variant.product.previewUrl) ?? '/images/placeholder.jpg'}
             alt={item.variant.product.name}
             fill
             sizes="76px"

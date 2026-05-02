@@ -1,6 +1,7 @@
 'use client';
 
 import { LabeledInputSelect } from '@/modules/common/components/labeled-input-select';
+import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import { NewArrivalProductItem } from '@/modules/home/components/new-arrival-product-item';
 import { fetchProductList, fetchShopColors, fetchShopSizes } from '@/modules/products/api/catalog';
 import { CatalogPaginationNav } from '@/modules/products/components/catalog-pagination-nav';
@@ -32,7 +33,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 type ProductCategoryPageProps = {
   categorySlug: string;
   categoryName: string;
-  parentCategory: { name: string; slug: string } | null;
+  parentCategory: { id: number; name: string; slug: string } | null;
 };
 
 export function ProductCategoryPage({
@@ -246,7 +247,7 @@ export function ProductCategoryPage({
         {parentCategory ? (
           <>
             <Link
-              href={`/danh-muc/${parentCategory.slug}`}
+              href={buildCategoryHref({ id: parentCategory.id, slug: parentCategory.slug })}
               className="transition hover:text-foreground"
             >
               {parentCategory.name}

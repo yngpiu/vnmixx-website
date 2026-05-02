@@ -20,10 +20,9 @@ function mapWishlistItemToNewArrivalProduct(item: WishlistItem): NewArrivalProdu
     id: item.product.id,
     name: item.product.name,
     slug: item.product.slug,
-    thumbnail: item.product.thumbnail,
     minPrice,
     maxPrice,
-    colorHexCodes: [],
+    colors: item.product.colors ?? [],
     category: null,
   };
 }

@@ -14,4 +14,5 @@ export const inter = Inter({
 export const montserrat = Montserrat({
   subsets: ['latin'],
   display: 'swap',
+  preload: false,
 });

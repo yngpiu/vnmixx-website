@@ -2,7 +2,7 @@ export interface CartProduct {
   id: number;
   name: string;
   slug: string;
-  thumbnail: string | null;
+  previewUrl: string | null;
 }
 
 export interface CartVariantColor {

@@ -1,6 +1,7 @@
 'use client';
 
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -27,7 +28,6 @@ type NewArrivalSectionProps = {
 type BrandTab = {
   id: 'ivy-moda' | 'metagent';
   label: string;
-  categorySlug: string;
   products: NewArrivalProduct[];
 };
 
@@ -39,13 +39,20 @@ export function NewArrivalSection({
 }: NewArrivalSectionProps): React.JSX.Element {
   const tabs = useMemo<BrandTab[]>(
     () => [
-      { id: 'ivy-moda', label: 'Nữ', categorySlug: 'nu', products: womenProducts },
-      { id: 'metagent', label: 'Nam', categorySlug: 'nam', products: menProducts },
+      { id: 'ivy-moda', label: 'Nữ', products: womenProducts },
+      { id: 'metagent', label: 'Nam', products: menProducts },
     ],
     [menProducts, womenProducts],
   );
   const [activeTabId, setActiveTabId] = useState<BrandTab['id']>('ivy-moda');
   const activeTab = tabs.find((tab: BrandTab) => tab.id === activeTabId) ?? tabs[0]!;
+
+  const activeTabCategory = activeTab.products.find(
+    (product) => product.category !== null,
+  )?.category;
+  const activeTabHref = activeTabCategory
+    ? `${buildCategoryHref({ id: activeTabCategory.id, slug: activeTabCategory.slug })}?sort=${sort}`
+    : `/san-pham?sort=${sort}`;
 
   return (
     <section className="pb-16">
@@ -82,7 +89,7 @@ export function NewArrivalSection({
         </div>
         <div className="mt-8 flex justify-center">
           <PrimaryCtaButton ctaVariant="outline" asChild className="w-auto! min-w-[180px]">
-            <Link href={`/danh-muc/${activeTab.categorySlug}?sort=${sort}`}>Xem tất cả</Link>
+            <Link href={activeTabHref}>Xem tất cả</Link>
           </PrimaryCtaButton>
         </div>
       </div>

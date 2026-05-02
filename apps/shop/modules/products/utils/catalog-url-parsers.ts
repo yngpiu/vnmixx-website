@@ -15,7 +15,7 @@ export function parseCatalogPage(value: string | null): number {
 
 export function parseCatalogIdsFromSearch(key: string, searchParams: URLSearchParams): number[] {
   const rawValues = [...searchParams.getAll(key)].flatMap((entry) =>
-    entry.split(',').map((part) => part.trim()),
+    typeof entry === 'string' ? entry.split(',').map((part) => part.trim()) : [],
   );
   const result: number[] = [];
   for (const raw of rawValues) {

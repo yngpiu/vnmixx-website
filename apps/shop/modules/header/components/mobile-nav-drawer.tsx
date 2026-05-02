@@ -1,6 +1,7 @@
 'use client';
 
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import { useHeaderUiStore } from '@/modules/header/stores/header-ui-store';
 import type { HeaderCategoryNode } from '@/modules/header/types/header';
 import { Button } from '@repo/ui/components/ui/button';
@@ -25,11 +26,11 @@ const MOBILE_EXTRA_ROOT_CATEGORIES: HeaderCategoryNode[] = [
   },
 ] as const;
 
-function getCategoryHref(categorySlug: string): string {
-  if (categorySlug === 've-chung-toi') {
+function getCategoryHref(category: HeaderCategoryNode): string {
+  if (category.slug === 've-chung-toi') {
     return '/about';
   }
-  return `/danh-muc/${categorySlug}`;
+  return buildCategoryHref({ id: category.id, slug: category.slug });
 }
 
 function hasCategoryChildren(category: HeaderCategoryNode): boolean {
@@ -65,7 +66,7 @@ function CategoryMenuNode({
     <div className={cn('space-y-1', level > 1 ? 'pl-4' : undefined)}>
       <div className="flex items-center justify-between gap-3">
         <Link
-          href={getCategoryHref(node.slug)}
+          href={getCategoryHref(node)}
           className={cn(
             getCategoryLabelClassName(level),
             node.isFeatured ? 'text-destructive' : undefined,

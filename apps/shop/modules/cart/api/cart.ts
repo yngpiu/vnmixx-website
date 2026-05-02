@@ -36,7 +36,9 @@ export async function clearMyCart(): Promise<void> {
   await apiClient.delete('/me/cart');
 }
 
-export async function getProductVariantMatrixBySlug(slug: string): Promise<ProductVariantMatrix> {
-  const { data } = await apiClient.get<ProductVariantMatrix>(`/products/${slug}`);
+export async function getProductVariantMatrixById(
+  productId: number,
+): Promise<ProductVariantMatrix> {
+  const { data } = await apiClient.get<ProductVariantMatrix>(`/products/${productId}`);
   return { variants: data.variants ?? [] };
 }

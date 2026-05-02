@@ -1,6 +1,7 @@
 'use client';
 
 import type { PublicBanner } from '@/modules/banner/types/banner';
+import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
 import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -39,16 +40,7 @@ export function HomeBannerSlider({ banners }: HomeBannerSliderProps): React.JSX.
             }
           : false
       }
-      navigation={false}
-      breakpoints={
-        banners.length > 1
-          ? {
-              768: {
-                navigation: true,
-              },
-            }
-          : undefined
-      }
+      navigation={banners.length > 1}
       pagination={{ clickable: true }}
       style={swiperColorVariables}
       className={`${bannerRadiusClassName} [&_.swiper-button-next]:hidden! [&_.swiper-button-prev]:hidden! md:[&_.swiper-button-next]:flex! md:[&_.swiper-button-prev]:flex! [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40`}
@@ -56,14 +48,20 @@ export function HomeBannerSlider({ banners }: HomeBannerSliderProps): React.JSX.
       {banners.map((banner: PublicBanner, slideIndex: number) => (
         <SwiperSlide key={banner.id}>
           <Link
-            href={buildCategoryHref({ id: banner.category.id, slug: banner.category.slug })}
+            href={buildCategoryHref({
+              id: banner.category.id,
+              slug:
+                banner.category.slug && banner.category.slug.trim().length > 0
+                  ? banner.category.slug.trim()
+                  : `c${banner.category.id}`,
+            })}
             className="block"
           >
             <div
               className={`relative aspect-video w-full overflow-hidden ${bannerRadiusClassName}`}
             >
               <Image
-                src={banner.imageUrl}
+                src={coerceHttpImageSrc(banner.imageUrl) ?? '/images/placeholder.jpg'}
                 alt={banner.category.name}
                 fill
                 sizes="(max-width: 1280px) 100vw, 1280px"

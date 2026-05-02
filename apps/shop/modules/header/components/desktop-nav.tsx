@@ -1,5 +1,6 @@
 'use client';
 
+import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import type { HeaderCategoryNode, HeaderTopLink } from '@/modules/header/types/header';
 import {
   NavigationMenu,
@@ -18,11 +19,11 @@ interface DesktopNavProps {
   auxiliaryLinks: HeaderTopLink[];
 }
 
-function getCategoryHref(categorySlug: string): string {
-  if (categorySlug === 've-chung-toi') {
+function getCategoryHref(category: HeaderCategoryNode): string {
+  if (category.slug === 've-chung-toi') {
     return '/about';
   }
-  return `/danh-muc/${categorySlug}`;
+  return buildCategoryHref({ id: category.id, slug: category.slug });
 }
 
 function getDropdownLayoutClass(secondLevelCount: number): {
@@ -63,7 +64,7 @@ export function DesktopNav({ categoryTree, auxiliaryLinks }: DesktopNavProps): R
               <NavigationMenuItem key={topLevelCategory.id}>
                 <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
                   <Link
-                    href={getCategoryHref(topLevelCategory.slug)}
+                    href={getCategoryHref(topLevelCategory)}
                     className="h-9 px-2.5 text-sm font-semibold text-foreground uppercase tracking-wide xl:text-[15px]"
                   >
                     {topLevelCategory.name}
@@ -87,7 +88,7 @@ export function DesktopNav({ categoryTree, auxiliaryLinks }: DesktopNavProps): R
                   {topLevelCategory.children.map((secondLevelCategory) => (
                     <div key={secondLevelCategory.id} className="space-y-2">
                       <Link
-                        href={getCategoryHref(secondLevelCategory.slug)}
+                        href={getCategoryHref(secondLevelCategory)}
                         className="block text-sm font-semibold uppercase transition-colors hover:text-destructive"
                       >
                         {secondLevelCategory.name}
@@ -96,7 +97,7 @@ export function DesktopNav({ categoryTree, auxiliaryLinks }: DesktopNavProps): R
                         {secondLevelCategory.children.map((thirdLevelCategory) => (
                           <Link
                             key={thirdLevelCategory.id}
-                            href={getCategoryHref(thirdLevelCategory.slug)}
+                            href={getCategoryHref(thirdLevelCategory)}
                             className="block text-sm text-muted-foreground transition-colors hover:text-foreground"
                           >
                             {thirdLevelCategory.name}

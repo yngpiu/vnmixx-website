@@ -1,3 +1,5 @@
+import type { ProductListColor } from '@/modules/home/types/new-arrival-product';
+
 export type WishlistProductVariant = {
   price: number;
 };
@@ -6,7 +8,7 @@ export type WishlistProduct = {
   id: number;
   name: string;
   slug: string;
-  thumbnail: string | null;
+  colors: ProductListColor[];
   variants: WishlistProductVariant[];
 };
 

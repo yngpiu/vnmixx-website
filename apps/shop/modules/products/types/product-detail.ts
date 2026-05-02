@@ -23,7 +23,6 @@ export type ShopProductDetail = {
   name: string;
   slug: string;
   description: string | null;
-  thumbnail: string | null;
   category: { id: number; name: string; slug: string } | null;
   variants: ShopProductDetailVariant[];
   images: ShopProductDetailImage[];

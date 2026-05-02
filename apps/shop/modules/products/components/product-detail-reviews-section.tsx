@@ -11,7 +11,7 @@ import { Button } from '@repo/ui/components/ui/button';
 import { useCallback, useState } from 'react';
 
 type ProductDetailReviewsSectionProps = {
-  productSlug: string;
+  productId: number;
   initial: ShopProductReviewsResult;
 };
 
@@ -50,7 +50,7 @@ function formatReviewDate(iso: string): string {
  * Storefront product reviews: histogram by star + paginated list + load more.
  */
 export function ProductDetailReviewsSection({
-  productSlug,
+  productId,
   initial,
 }: ProductDetailReviewsSectionProps): React.JSX.Element {
   const [items, setItems] = useState<ShopProductReviewItem[]>(() => initial.data);
@@ -69,7 +69,7 @@ export function ProductDetailReviewsSection({
     setError(null);
     try {
       const nextPage: number = loadedPage + 1;
-      const next: ShopProductReviewsResult = await fetchProductReviews(productSlug, {
+      const next: ShopProductReviewsResult = await fetchProductReviews(productId, {
         page: nextPage,
         limit: pageSize,
       });
@@ -80,7 +80,7 @@ export function ProductDetailReviewsSection({
     } finally {
       setLoading(false);
     }
-  }, [canLoadMore, loading, loadedPage, pageSize, productSlug]);
+  }, [canLoadMore, loading, loadedPage, pageSize, productId]);
 
   if (initial.reviewCount === 0) {
     return (

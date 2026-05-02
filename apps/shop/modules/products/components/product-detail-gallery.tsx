@@ -1,5 +1,6 @@
 'use client';
 
+import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type JSX } from 'react';
 import type { Swiper as SwiperType } from 'swiper';
@@ -85,9 +86,14 @@ export function ProductDetailGallery({
   const thumbsSwiperStyle = {
     '--swiper-navigation-color': 'var(--muted)',
   } as CSSProperties;
+  /**
+   * Desktop vertical thumbs: Swiper needs a wrapper with explicit height. The main block is
+   * `aspect-2/3`; this parent is `relative` so `absolute inset-y-0` gets that same height (see
+   * Swiper vertical slider — height on the swiper container).
+   */
   return (
-    <div className="flex w-full min-w-0 flex-col gap-3 max-md:gap-4 md:flex-row md:items-stretch md:gap-3">
-      <div className="relative min-w-0 w-full md:flex-1">
+    <div className="relative w-full min-w-0">
+      <div className="aspect-2/3 w-full md:pr-25 lg:pr-29">
         <Swiper
           modules={[Navigation, Thumbs, Pagination]}
           direction="horizontal"
@@ -99,21 +105,22 @@ export function ProductDetailGallery({
           thumbs={{ swiper: thumbsSwiperParam }}
           spaceBetween={0}
           style={mainSwiperStyle}
-          className="product-detail-main-swiper aspect-2/3 w-full bg-muted/20 [&_.swiper-button-next]:hidden [&_.swiper-button-prev]:hidden md:[&_.swiper-button-next]:flex md:[&_.swiper-button-prev]:flex [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination]:mt-3 [&_.swiper-pagination]:md:hidden [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40"
+          className="product-detail-main-swiper h-full w-full bg-muted/20 [&_.swiper-button-next]:hidden! [&_.swiper-button-prev]:hidden! md:[&_.swiper-button-next]:flex! md:[&_.swiper-button-prev]:flex! [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75 [&_.swiper-pagination]:mt-3 [&_.swiper-pagination]:md:hidden [&_.swiper-pagination-bullet]:border [&_.swiper-pagination-bullet]:border-muted-foreground/40"
           onSwiper={setMainSwiper}
         >
-          {slides.map((slide) => (
+          {slides.map((slide, index) => (
             <SwiperSlide
               key={slide.id}
               className="flex! h-full items-center justify-center bg-muted/10"
             >
               <div className="relative h-full w-full">
                 <Image
-                  src={slide.url}
+                  src={coerceHttpImageSrc(slide.url) ?? '/images/placeholder.jpg'}
                   alt={slide.alt}
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 58vw, 48vw"
                   className="object-cover"
+                  loading={index === initialMainSlideIndex ? 'eager' : 'lazy'}
                   draggable={false}
                 />
               </div>
@@ -121,41 +128,38 @@ export function ProductDetailGallery({
           ))}
         </Swiper>
       </div>
-      <div className="relative w-full max-md:min-h-0 shrink-0 md:w-20 md:shrink-0 lg:w-24">
+      <div className="mt-3 h-[112px] w-full md:absolute md:inset-y-0 md:right-0 md:mt-0 md:h-auto md:w-20 md:min-h-0 lg:w-24">
         <Swiper
           modules={[Thumbs, FreeMode, Navigation]}
           onSwiper={setThumbsSwiper}
           direction="horizontal"
           navigation={hasMultipleSlides}
-          freeMode={{ enabled: true, minimumVelocity: 0.02 }}
           breakpoints={{
             768: {
               direction: 'vertical',
               freeMode: false,
             },
           }}
+          freeMode={{ enabled: true, minimumVelocity: 0.02 }}
           spaceBetween={8}
           slidesPerView="auto"
           watchSlidesProgress
-          watchOverflow
           style={thumbsSwiperStyle}
-          className="product-detail-thumbs-swiper h-[112px] min-h-0 touch-pan-x md:h-full md:touch-auto [&_.swiper-button-next]:hidden [&_.swiper-button-prev]:hidden md:[&_.swiper-button-next]:flex md:[&_.swiper-button-prev]:flex [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:scale-75"
+          className="product-detail-thumbs-swiper box-border h-full min-h-0 touch-pan-x md:touch-pan-y [&_.swiper-button-prev]:hidden! [&_.swiper-button-next]:hidden! md:[&_.swiper-button-prev]:flex! md:[&_.swiper-button-next]:flex! [&_.swiper-button-prev]:scale-75 [&_.swiper-button-next]:scale-75 [&_.swiper-button-prev]:z-10 [&_.swiper-button-next]:z-10"
         >
           {slides.map((slide) => (
             <SwiperSlide
               key={`thumb-${slide.id}`}
-              className="aspect-2/3! h-auto! w-[72px]! shrink-0 cursor-pointer overflow-hidden border border-transparent opacity-70 transition md:w-full! [&.swiper-slide-thumb-active]:border-foreground [&.swiper-slide-thumb-active]:opacity-100"
+              className="relative aspect-2/3 h-auto! w-[72px]! shrink-0 cursor-pointer overflow-hidden border border-transparent opacity-70 transition md:aspect-auto md:h-[118px]! md:w-full! lg:h-[134px]! [&.swiper-slide-thumb-active]:border-foreground [&.swiper-slide-thumb-active]:opacity-100"
             >
-              <div className="relative h-full w-full">
-                <Image
-                  src={slide.url}
-                  alt=""
-                  fill
-                  sizes="(max-width: 768px) 72px, (max-width: 1024px) 80px, 96px"
-                  className="object-cover"
-                  draggable={false}
-                />
-              </div>
+              <Image
+                src={coerceHttpImageSrc(slide.url) ?? '/images/placeholder.jpg'}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 72px, (max-width: 1024px) 80px, 96px"
+                className="object-cover"
+                draggable={false}
+              />
             </SwiperSlide>
           ))}
         </Swiper>

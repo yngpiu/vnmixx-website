@@ -97,7 +97,7 @@ export async function fetchProductList(params: {
   const parsed = await parseJsonResponse<ListPayload>(response);
   const items = (parsed.data ?? []).map((product) => ({
     ...product,
-    colorHexCodes: product.colorHexCodes ?? [],
+    colors: product.colors ?? [],
   }));
   return {
     data: items,
@@ -122,10 +122,10 @@ export async function fetchShopSizes(): Promise<ShopSizeOption[]> {
 }
 
 /**
- * Public paginated reviews for a product (by slug).
+ * Public paginated reviews for a product (by ID).
  */
 export async function fetchProductReviews(
-  slug: string,
+  productId: number,
   params: { page: number; limit?: number },
 ): Promise<ShopProductReviewsResult> {
   const limit = params.limit ?? 10;
@@ -134,7 +134,7 @@ export async function fetchProductReviews(
     limit: String(limit),
   });
   const response = await fetch(
-    `${API_BASE_URL}/products/${encodeURIComponent(slug)}/reviews?${searchParams.toString()}`,
+    `${API_BASE_URL}/products/${productId}/reviews?${searchParams.toString()}`,
     {
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
@@ -168,7 +168,7 @@ export async function fetchSuggestedProductsByCategory(params: {
   return (parsed.data ?? [])
     .map((product) => ({
       ...product,
-      colorHexCodes: product.colorHexCodes ?? [],
+      colors: product.colors ?? [],
     }))
     .filter((product) => product.id !== params.excludedProductId)
     .slice(0, SUGGESTED_PRODUCTS_LIMIT);

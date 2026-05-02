@@ -4,6 +4,7 @@ import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import { NewArrivalProductsSlider } from '@/modules/home/components/new-arrival-products-slider';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import {
@@ -67,25 +68,12 @@ function getInitialColorAndSizeLabel(product: ShopProductDetail): {
 }
 
 function buildGallerySlides(product: ShopProductDetail): ProductDetailGallerySlide[] {
-  if (product.images.length > 0) {
-    return product.images.map((image) => ({
-      id: image.id,
-      url: image.url,
-      alt: image.altText ?? product.name,
-      colorId: image.colorId,
-    }));
-  }
-  if (product.thumbnail) {
-    return [
-      {
-        id: 0,
-        url: product.thumbnail,
-        alt: product.name,
-        colorId: null,
-      },
-    ];
-  }
-  return [];
+  return product.images.map((image) => ({
+    id: image.id,
+    url: image.url,
+    alt: image.altText ?? product.name,
+    colorId: image.colorId,
+  }));
 }
 
 export function ProductDetailPageContent({
@@ -202,7 +190,10 @@ export function ProductDetailPageContent({
         {product.category ? (
           <>
             <span className="mx-2">/</span>
-            <Link href={`/danh-muc/${product.category.slug}`} className="hover:text-foreground">
+            <Link
+              href={buildCategoryHref({ id: product.category.id, slug: product.category.slug })}
+              className="hover:text-foreground"
+            >
               {product.category.name}
             </Link>
           </>
@@ -392,7 +383,7 @@ export function ProductDetailPageContent({
           ) : null}
         </div>
       </div>
-      <ProductDetailReviewsSection productSlug={product.slug} initial={initialPublicReviews} />
+      <ProductDetailReviewsSection productId={product.id} initial={initialPublicReviews} />
       {suggestedProducts.length > 0 ? (
         <section className="pt-12">
           <h2 className="mb-6 text-xl font-semibold uppercase tracking-wide text-foreground">

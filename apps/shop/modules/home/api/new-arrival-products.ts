@@ -18,7 +18,7 @@ async function getProductsByCategoryAndSort(
   );
   return (payload.data ?? []).map((product: NewArrivalProduct) => ({
     ...product,
-    colorHexCodes: product.colorHexCodes ?? [],
+    colors: product.colors ?? [],
   }));
 }
 
