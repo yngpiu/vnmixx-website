@@ -1,35 +1,22 @@
 'use client';
 
-import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
-import { useAuthStore } from '@/modules/auth/stores/auth-store';
-import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { ProductCardSlider } from '@/modules/common/components/product-card-slider';
 import { SizeSoldOutDiagonalOverlay } from '@/modules/common/components/size-sold-out-diagonal-overlay';
-import { getVariantAvailableQuantity } from '@/modules/common/utils/get-variant-available-quantity';
 import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
-import {
-  ProductDetailGallery,
-  type ProductDetailGallerySlide,
-} from '@/modules/products/components/product-detail-gallery';
+import { ProductDetailGallery } from '@/modules/products/components/product-detail-gallery';
 import { ProductDetailReviewSummary } from '@/modules/products/components/product-detail-review-summary';
 import { ProductDetailReviewsSection } from '@/modules/products/components/product-detail-reviews-section';
-import type {
-  ShopProductDetail,
-  ShopProductDetailVariant,
-} from '@/modules/products/types/product-detail';
+import { useProductDetailController } from '@/modules/products/hooks/use-product-detail-controller';
+import type { ShopProductDetail } from '@/modules/products/types/product-detail';
 import type { ShopProductReviewsResult } from '@/modules/products/types/product-reviews';
-import { formatCatalogPriceLabel } from '@/modules/products/utils/format-catalog-price-label';
 import { ProductWishlistHeartButton } from '@/modules/wishlist/components/product-wishlist-heart-button';
 import { Button } from '@repo/ui/components/ui/button';
-import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
 import { Check, ChevronDown, MinusIcon, PlusIcon } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
 
 type ProductDetailPageContentProps = {
   product: ShopProductDetail;
@@ -38,171 +25,32 @@ type ProductDetailPageContentProps = {
   breadcrumbCategory?: { slug: string; name: string } | null;
 };
 
-function buildUniqueColorsFromVariants(
-  variants: readonly ShopProductDetailVariant[],
-): { id: number; name: string; hexCode: string }[] {
-  const seenColorIds = new Set<number>();
-  const uniqueColors: { id: number; name: string; hexCode: string }[] = [];
-  for (const variant of variants) {
-    if (!seenColorIds.has(variant.color.id)) {
-      seenColorIds.add(variant.color.id);
-      uniqueColors.push(variant.color);
-    }
-  }
-  return uniqueColors;
-}
-
-/** Default color + first size for that color (must match post-mount useEffect) so SSR and hydration agree. */
-function getInitialColorAndSizeLabel(product: ShopProductDetail): {
-  colorId: number;
-  sizeLabel: string;
-} {
-  const colorId = buildUniqueColorsFromVariants(product.variants)[0]?.id ?? 0;
-  const variantsForColor = product.variants
-    .filter((variant) => variant.color.id === colorId)
-    .sort((a, b) => a.size.sortOrder - b.size.sortOrder);
-  const byLabel = new Map<string, ShopProductDetailVariant>();
-  for (const variant of variantsForColor) {
-    if (!byLabel.has(variant.size.label)) {
-      byLabel.set(variant.size.label, variant);
-    }
-  }
-  const rows = [...byLabel.values()].sort((a, b) => a.size.sortOrder - b.size.sortOrder);
-  const firstInStock = rows.find((v) => getVariantAvailableQuantity(v) > 0);
-  const sizeLabel = firstInStock?.size.label ?? '';
-  return { colorId, sizeLabel };
-}
-
-function buildGallerySlides(product: ShopProductDetail): ProductDetailGallerySlide[] {
-  return product.images.map((image) => ({
-    id: image.id,
-    url: image.url,
-    alt: image.altText ?? product.name,
-    colorId: image.colorId,
-  }));
-}
-
 export function ProductDetailPageContent({
   product,
   initialPublicReviews,
   suggestedProducts,
   breadcrumbCategory = null,
 }: ProductDetailPageContentProps): React.JSX.Element {
-  const router = useRouter();
-  const user = useAuthStore((state) => state.user);
-  const isAuthSessionReady = useAuthSessionReady();
-  const addCartItemMutation = useAddCartItemMutation();
-  const colorOptions = useMemo(
-    () => buildUniqueColorsFromVariants(product.variants),
-    [product.variants],
-  );
-  const [selectedColorId, setSelectedColorId] = useState<number>(
-    () => getInitialColorAndSizeLabel(product).colorId,
-  );
-  const [selectedSizeLabel, setSelectedSizeLabel] = useState<string>(
-    () => getInitialColorAndSizeLabel(product).sizeLabel,
-  );
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState<boolean>(false);
-  const [quantity, setQuantity] = useState<number>(1);
-  const gallerySlides = useMemo(() => buildGallerySlides(product), [product]);
-  const sizeRowsForColor = useMemo(() => {
-    const sortedVariants = product.variants
-      .filter((variant) => variant.color.id === selectedColorId)
-      .sort((a, b) => a.size.sortOrder - b.size.sortOrder);
-    const byLabel = new Map<string, ShopProductDetailVariant>();
-    for (const variant of sortedVariants) {
-      if (!byLabel.has(variant.size.label)) {
-        byLabel.set(variant.size.label, variant);
-      }
-    }
-    return [...byLabel.values()]
-      .sort((a, b) => a.size.sortOrder - b.size.sortOrder)
-      .map((variant) => ({
-        label: variant.size.label,
-        isOutOfStock: getVariantAvailableQuantity(variant) <= 0,
-      }));
-  }, [product.variants, selectedColorId]);
-  useEffect(() => {
-    const firstInStock = sizeRowsForColor.find((row) => !row.isOutOfStock);
-    setSelectedSizeLabel(firstInStock?.label ?? '');
-    setQuantity(1);
-  }, [selectedColorId, sizeRowsForColor]);
-  const selectedVariant = useMemo<ShopProductDetailVariant | null>(() => {
-    if (!selectedSizeLabel) {
-      return null;
-    }
-    return (
-      product.variants.find(
-        (variant) =>
-          variant.color.id === selectedColorId && variant.size.label === selectedSizeLabel,
-      ) ?? null
-    );
-  }, [product.variants, selectedColorId, selectedSizeLabel]);
-  const priceRangeLabel = useMemo(() => {
-    if (product.variants.length === 0) {
-      return 'Liên hệ';
-    }
-    const prices = product.variants.map((variant) => variant.price);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    if (minPrice === maxPrice) {
-      return formatCatalogPriceLabel(minPrice);
-    }
-    return `${formatCatalogPriceLabel(minPrice)} – ${formatCatalogPriceLabel(maxPrice)}`;
-  }, [product.variants]);
-  const displayPriceLabel =
-    selectedVariant !== null ? formatCatalogPriceLabel(selectedVariant.price) : priceRangeLabel;
-  const selectedAvailableQty =
-    selectedVariant !== null ? getVariantAvailableQuantity(selectedVariant) : 0;
-  const maxQuantity = selectedAvailableQty <= 0 ? 0 : selectedAvailableQty;
-  const requireLoginForCart = (): boolean => {
-    if (!isAuthSessionReady) {
-      return true;
-    }
-    if (!user) {
-      toast.error('Bạn cần đăng nhập để thêm vào giỏ hàng', { position: 'bottom-right' });
-      router.push('/login');
-      return true;
-    }
-    return false;
-  };
-  const executeAddToCart = async (): Promise<boolean> => {
-    if (!selectedVariant) {
-      toast.error('Vui lòng chọn màu và kích cỡ.', { position: 'bottom-right' });
-      return false;
-    }
-    if (getVariantAvailableQuantity(selectedVariant) < 1) {
-      return false;
-    }
-    try {
-      await addCartItemMutation.mutateAsync({
-        variantId: selectedVariant.id,
-        quantity,
-      });
-      toast.success('Đã thêm sản phẩm vào giỏ hàng', { position: 'bottom-right' });
-      return true;
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thể thêm vào giỏ hàng.', {
-        position: 'bottom-right',
-      });
-      return false;
-    }
-  };
-  const handleAddToCart = async (): Promise<void> => {
-    if (requireLoginForCart()) {
-      return;
-    }
-    await executeAddToCart();
-  };
-  const handleBuyNow = async (): Promise<void> => {
-    if (requireLoginForCart()) {
-      return;
-    }
-    const okResult = await executeAddToCart();
-    if (okResult) {
-      router.push('/gio-hang');
-    }
-  };
+  const {
+    colorOptions,
+    selectedColorId,
+    setSelectedColorId,
+    selectedSizeLabel,
+    setSelectedSizeLabel,
+    isDescriptionExpanded,
+    setIsDescriptionExpanded,
+    quantity,
+    setQuantity,
+    gallerySlides,
+    sizeRowsForColor,
+    selectedVariant,
+    displayPriceLabel,
+    selectedAvailableQty,
+    maxQuantity,
+    isAddToCartPending,
+    handleAddToCart,
+    handleBuyNow,
+  } = useProductDetailController({ product });
   const selectedColorName = colorOptions.find((color) => color.id === selectedColorId)?.name ?? '—';
   const resolvedBreadcrumbCategory = breadcrumbCategory ?? product.category;
   return (
@@ -370,11 +218,7 @@ export function ProductDetailPageContent({
               type="button"
               className="sm:flex-1"
               onClick={() => void handleAddToCart()}
-              disabled={
-                selectedVariant === null ||
-                addCartItemMutation.isPending ||
-                selectedAvailableQty < 1
-              }
+              disabled={selectedVariant === null || isAddToCartPending || selectedAvailableQty < 1}
             >
               Thêm vào giỏ
             </PrimaryCtaButton>
@@ -383,11 +227,7 @@ export function ProductDetailPageContent({
               ctaVariant="outline"
               className="sm:flex-1"
               onClick={() => void handleBuyNow()}
-              disabled={
-                selectedVariant === null ||
-                addCartItemMutation.isPending ||
-                selectedAvailableQty < 1
-              }
+              disabled={selectedVariant === null || isAddToCartPending || selectedAvailableQty < 1}
             >
               Mua hàng
             </PrimaryCtaButton>

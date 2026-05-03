@@ -1,6 +1,9 @@
 'use client';
 
+'use client';
+
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import type { ShopColorOption, ShopSizeOption } from '@/modules/products/api/catalog';
 import { CatalogFilterSection } from '@/modules/products/components/catalog-filter-section';
 import { CATALOG_PRICE_RANGE_MAX } from '@/modules/products/constants/catalog';
@@ -8,6 +11,7 @@ import { formatCatalogPriceLabel } from '@/modules/products/utils/format-catalog
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import { Slider } from '@repo/ui/components/ui/slider';
 import { cn } from '@repo/ui/lib/utils';
+import { Check } from 'lucide-react';
 
 export type CategoryCatalogFiltersPanelProps = {
   sortedSizes: ShopSizeOption[];
@@ -75,13 +79,13 @@ export function CategoryCatalogFiltersPanel({
       </CatalogFilterSection>
       <CatalogFilterSection title="Màu sắc">
         {isColorsLoading ? (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2.5">
             {Array.from({ length: 10 }).map((_, index) => (
               <Skeleton key={index} className="size-6 shrink-0 rounded-full" />
             ))}
           </div>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2.5">
             {colorOptions.map((color) => {
               const isSelected = draftColorIds.includes(color.id);
               return (
@@ -90,15 +94,21 @@ export function CategoryCatalogFiltersPanel({
                   type="button"
                   title={color.name}
                   aria-label={`Lọc màu ${color.name}`}
+                  aria-pressed={isSelected}
                   onClick={() => onToggleDraftColor(color.id)}
-                  className={cn(
-                    'size-6 shrink-0 rounded-full border transition md:size-[26px]',
-                    isSelected
-                      ? 'border-foreground ring-1 ring-offset-1 ring-offset-background'
-                      : 'border-border',
-                  )}
+                  className="relative flex size-6 shrink-0 items-center justify-center rounded-full transition md:size-[26px]"
                   style={{ backgroundColor: color.hexCode }}
-                />
+                >
+                  {isSelected ? (
+                    <Check
+                      className={cn(
+                        'h-3.5 w-3.5 drop-shadow',
+                        isLightHex(color.hexCode) ? 'text-foreground' : 'text-primary-foreground',
+                      )}
+                      strokeWidth={2.5}
+                    />
+                  ) : null}
+                </button>
               );
             })}
           </div>

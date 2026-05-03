@@ -1,31 +1,20 @@
 'use client';
 
-import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
-import { useAuthStore } from '@/modules/auth/stores/auth-store';
-import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
-import type { ProductVariantOption } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { SizeSoldOutDiagonalOverlay } from '@/modules/common/components/size-sold-out-diagonal-overlay';
-import {
-  coerceHttpImageSrc,
-  resolveListingImageSrc,
-} from '@/modules/common/utils/coerce-http-image-src';
-import { getVariantAvailableQuantity } from '@/modules/common/utils/get-variant-available-quantity';
+import { useProductCardController } from '@/modules/common/hooks/use-product-card-controller';
 import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import { buildProductHref } from '@/modules/common/utils/shop-routes';
-import type { NewArrivalProduct, ProductListColor } from '@/modules/home/types/new-arrival-product';
+import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import { formatCatalogPriceLabelNullable } from '@/modules/products/utils/format-catalog-price-label';
 import { ProductWishlistHeartButton } from '@/modules/wishlist/components/product-wishlist-heart-button';
 import { Button } from '@repo/ui/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/ui/popover';
-import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
 import { Check, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-
-const EMPTY_PRODUCT_COLORS: ProductListColor[] = [];
+import type React from 'react';
 
 export type ProductCardProps = {
   product: NewArrivalProduct;
@@ -39,113 +28,23 @@ export function ProductCardClient({
   display = 'compact',
   productHrefOverride,
 }: ProductCardProps): React.JSX.Element {
-  const user = useAuthStore((state) => state.user);
-  const isAuthSessionReady = useAuthSessionReady();
-  const addCartItemMutation = useAddCartItemMutation();
   const productPrice = product.minPrice ?? product.maxPrice;
   const productHref = productHrefOverride ?? buildProductHref({ slug: product.slug });
-  const listColors: ProductListColor[] = product.colors?.length
-    ? product.colors
-    : EMPTY_PRODUCT_COLORS;
-  const productColorHexCodes = useMemo(
-    () => (listColors.length > 0 ? listColors.map((color) => color.hexCode) : ['#111111']),
-    [listColors],
-  );
-  const [selectedListColorId, setSelectedListColorId] = useState<number | null>(
-    listColors[0]?.id ?? null,
-  );
-  const [isListingImageHovered, setListingImageHovered] = useState(false);
-  useEffect(() => {
-    const colors = product.colors?.length ? product.colors : EMPTY_PRODUCT_COLORS;
-    const fallbackId = colors[0]?.id ?? null;
-    setSelectedListColorId((previous) => {
-      if (previous != null && colors.some((color) => color.id === previous)) {
-        return previous;
-      }
-      return fallbackId;
-    });
-  }, [product.id, product.colors]);
-  useEffect(() => {
-    setListingImageHovered(false);
-  }, [selectedListColorId]);
-  const selectedListColorEntry = useMemo(
-    () => listColors.find((color) => color.id === selectedListColorId) ?? listColors[0] ?? null,
-    [listColors, selectedListColorId],
-  );
-  const listingPrimarySrc = resolveListingImageSrc(selectedListColorEntry?.frontUrl);
-  const listingSecondarySrc = coerceHttpImageSrc(selectedListColorEntry?.backUrl);
-  const showListingAlternateImage =
-    isListingImageHovered &&
-    listingSecondarySrc != null &&
-    listingSecondarySrc !== listingPrimarySrc;
-  const [isPickerOpen, setPickerOpen] = useState<boolean>(false);
-  const [selectedColorHexCode, setSelectedColorHexCode] = useState<string>(
-    productColorHexCodes[0] ?? '#111111',
-  );
-  const availableVariants = useMemo<ProductVariantOption[]>(
-    () => (product.variants ?? []).map((variant) => ({ ...variant })),
-    [product.variants],
-  );
-  const selectedVariantByColor = useMemo(
-    () => availableVariants.filter((variant) => variant.color.hexCode === selectedColorHexCode),
-    [availableVariants, selectedColorHexCode],
-  );
-  const sizePickerRows = useMemo(() => {
-    const source = selectedVariantByColor.length > 0 ? selectedVariantByColor : availableVariants;
-    const byLabel = new Map<string, ProductVariantOption>();
-    for (const variant of source) {
-      const label = variant.size.label;
-      if (!byLabel.has(label)) {
-        byLabel.set(label, variant);
-      }
-    }
-    return Array.from(byLabel.values())
-      .sort((left, right) => left.size.sortOrder - right.size.sortOrder)
-      .map((variant) => ({
-        label: variant.size.label,
-        isOutOfStock: getVariantAvailableQuantity(variant) <= 0,
-      }));
-  }, [availableVariants, selectedVariantByColor]);
-  const openVariantPicker = (): void => {
-    if (!isAuthSessionReady) {
-      return;
-    }
-    if (!user) {
-      toast.error('Bạn cần đăng nhập để thêm vào giỏ hàng', {
-        position: 'bottom-right',
-      });
-      return;
-    }
-    setSelectedColorHexCode(
-      selectedListColorEntry?.hexCode ?? productColorHexCodes[0] ?? '#111111',
-    );
-    setPickerOpen(true);
-  };
-  const handleSelectSize = async (size: string): Promise<void> => {
-    const selectedVariant: ProductVariantOption | null =
-      selectedVariantByColor.find((variant) => variant.size.label === size) ??
-      availableVariants.find((variant) => variant.size.label === size) ??
-      null;
-    if (!selectedVariant) {
-      toast.error('Không tìm thấy biến thể phù hợp.', { position: 'bottom-right' });
-      return;
-    }
-    if (getVariantAvailableQuantity(selectedVariant) <= 0) {
-      return;
-    }
-    try {
-      await addCartItemMutation.mutateAsync({
-        variantId: selectedVariant.id,
-        quantity: 1,
-      });
-      setPickerOpen(false);
-      toast.success('Đã thêm sản phẩm vào giỏ hàng', { position: 'bottom-right' });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thể thêm vào giỏ hàng.', {
-        position: 'bottom-right',
-      });
-    }
-  };
+  const {
+    listColors,
+    selectedListColorId,
+    setSelectedListColorId,
+    setListingImageHovered,
+    showListingAlternateImage,
+    listingPrimarySrc,
+    listingSecondarySrc,
+    isPickerOpen,
+    setPickerOpen,
+    sizePickerRows,
+    openVariantPicker,
+    handleSelectSize,
+    isAddCartPending,
+  } = useProductCardController(product);
 
   return (
     <article className="group">
@@ -269,7 +168,7 @@ export function ProductCardClient({
                         type="button"
                         variant="ghost"
                         className="h-[clamp(28px,7vw,32px)] justify-center rounded-none px-0 text-[clamp(14px,4.2vw,16px)] font-medium text-foreground hover:bg-muted/30"
-                        disabled={addCartItemMutation.isPending}
+                        disabled={isAddCartPending}
                         onClick={() => void handleSelectSize(row.label)}
                       >
                         {row.label}

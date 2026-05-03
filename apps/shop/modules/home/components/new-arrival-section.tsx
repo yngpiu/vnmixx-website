@@ -4,6 +4,7 @@ import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button
 import { ProductCard } from '@/modules/common/components/product-card';
 import { ProductCardSlider } from '@/modules/common/components/product-card-slider';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
+import { serializeCatalogSort } from '@/modules/products/utils/catalog-url-parsers';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -40,8 +41,11 @@ export function NewArrivalSection({
   }, []);
   const activeTab = tabs.find((tab: BrandTab) => tab.id === activeTabId) ?? tabs[0]!;
 
+  const sortSlug = serializeCatalogSort(sort);
   const activeTabHref =
-    activeTab.id === 'ivy-moda' ? `/danh-muc/nu?sort=${sort}` : `/danh-muc/nam?sort=${sort}`;
+    activeTab.id === 'ivy-moda'
+      ? `/danh-muc/nu?sort=${sortSlug}`
+      : `/danh-muc/nam?sort=${sortSlug}`;
 
   return (
     <section className="pb-16">

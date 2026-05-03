@@ -54,7 +54,7 @@ export function MobileBottomNav(): React.JSX.Element {
     },
   ];
   const mobileBottomLinks: MobileBottomLink[] = [
-    { label: 'Tìm kiếm', href: '/search', icon: SearchIcon, type: 'link' },
+    { label: 'Tìm kiếm', href: '/tim-kiem', icon: SearchIcon, type: 'link' },
     !hasMounted
       ? { label: 'Tài khoản', icon: UserRoundIcon, type: 'account-hydrate-shell' }
       : !isAuthSessionReady

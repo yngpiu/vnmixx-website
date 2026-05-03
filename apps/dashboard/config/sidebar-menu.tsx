@@ -9,6 +9,8 @@ import {
   LayoutDashboardIcon,
   MessageSquareIcon,
   PackageIcon,
+  PaletteIcon,
+  RulerIcon,
   ShieldIcon,
   ShoppingCartIcon,
   StarIcon,
@@ -79,6 +81,8 @@ export const sidebarSections: SidebarSection[] = [
         icon: <ImageIcon className="size-4 shrink-0" />,
       },
       moduleNav('categories', TagsIcon),
+      moduleNav('colors', PaletteIcon),
+      moduleNav('sizes', RulerIcon),
       moduleNav('customers', UsersIcon),
       moduleNav('inventory', TruckIcon),
       {

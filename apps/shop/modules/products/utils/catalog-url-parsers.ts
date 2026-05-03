@@ -28,11 +28,15 @@ export function parseCatalogIdsFromSearch(key: string, searchParams: URLSearchPa
 }
 
 export function parseCatalogSort(value: string | null): ProductListSortOption {
-  const allowed = CATALOG_SORT_OPTIONS.map((option) => option.value);
-  if (value && allowed.includes(value as ProductListSortOption)) {
+  const allowedSortValues = CATALOG_SORT_OPTIONS.map((option) => option.value);
+  if (value && allowedSortValues.includes(value as ProductListSortOption)) {
     return value as ProductListSortOption;
   }
   return 'newest';
+}
+
+export function serializeCatalogSort(sort: ProductListSortOption): string {
+  return sort;
 }
 
 export function parseCatalogPrice(value: string | null, fallback: number): number {

@@ -8,7 +8,10 @@ import { useEffect, useMemo, useState } from 'react';
 export function HeaderSearch(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const appliedSearch = useMemo(() => searchParams.get('search')?.trim() ?? '', [searchParams]);
+  const appliedSearch = useMemo(
+    () => searchParams.get('q')?.trim() ?? searchParams.get('search')?.trim() ?? '',
+    [searchParams],
+  );
   const [searchInputValue, setSearchInputValue] = useState<string>(appliedSearch);
   useEffect(() => {
     setSearchInputValue(appliedSearch);
@@ -17,10 +20,10 @@ export function HeaderSearch(): React.JSX.Element {
     const nextParams = new URLSearchParams();
     const normalizedSearch = searchInputValue.trim();
     if (normalizedSearch) {
-      nextParams.set('search', normalizedSearch);
+      nextParams.set('q', normalizedSearch);
     }
     const queryString = nextParams.toString();
-    router.push(queryString ? `/san-pham?${queryString}` : '/san-pham');
+    router.push(queryString ? `/tim-kiem?${queryString}` : '/tim-kiem');
   }
   return (
     <form
