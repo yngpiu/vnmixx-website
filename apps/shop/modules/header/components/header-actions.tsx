@@ -4,6 +4,7 @@ import { useLogout } from '@/modules/auth/hooks/use-auth';
 import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useCartQuery } from '@/modules/cart/hooks/use-cart';
+import { useGuestCart } from '@/modules/cart/hooks/use-guest-cart';
 import { useCartStore } from '@/modules/cart/stores/cart-store';
 import {
   HeaderDropdownMenuContent,
@@ -24,10 +25,12 @@ export function HeaderActions(): React.JSX.Element {
   const openCartDrawer = useCartStore((state) => state.openDrawer);
   const openSupportChatDrawer = useSupportChatDrawerStore((state) => state.openDrawer);
   const cartQuery = useCartQuery({ enabled: Boolean(isAuthSessionReady && user) });
-  const totalQuantity = (cartQuery.data?.items ?? []).reduce(
+  const { totalQuantity: guestTotalQuantity } = useGuestCart();
+  const serverTotalQuantity = (cartQuery.data?.items ?? []).reduce(
     (total, item) => total + item.quantity,
     0,
   );
+  const totalQuantity = user ? serverTotalQuantity : guestTotalQuantity;
 
   function navigateToLogin(): void {
     router.push('/login');

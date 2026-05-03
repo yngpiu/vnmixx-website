@@ -4,6 +4,7 @@ import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useCartQuery, useRemoveCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import { useDebouncedCartQuantityUpdate } from '@/modules/cart/hooks/use-debounced-cart-quantity';
+import { useGuestCart } from '@/modules/cart/hooks/use-guest-cart';
 import type { CartItem } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
@@ -164,7 +165,7 @@ function CartSummaryPanel({
         </div>
       </div>
       <PrimaryCtaButton className="mt-5" asChild>
-        <Link href="/dat-hang">ĐẶT HÀNG</Link>
+        <Link href="/checkout">ĐẶT HÀNG</Link>
       </PrimaryCtaButton>
     </aside>
   );
@@ -174,6 +175,7 @@ export function CartPageContent(): React.JSX.Element {
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
   const cartQuery = useCartQuery({ enabled: Boolean(user) });
+  const { totalQuantity: guestTotalQuantity } = useGuestCart();
   const { scheduleQuantityUpdate, isSavingQuantity } = useDebouncedCartQuantityUpdate();
   const removeCartItemMutation = useRemoveCartItemMutation();
   const items = cartQuery.data?.items ?? [];
@@ -191,7 +193,9 @@ export function CartPageContent(): React.JSX.Element {
     return (
       <main className="shop-shell-container py-8 md:py-10">
         <h1 className="mb-6 text-2xl font-semibold">Giỏ hàng</h1>
-        <p className="text-sm text-muted-foreground">Vui lòng đăng nhập để xem giỏ hàng.</p>
+        <p className="text-sm text-muted-foreground">
+          Bạn đang có {guestTotalQuantity} sản phẩm lưu tạm. Vui lòng đăng nhập để đồng bộ giỏ hàng.
+        </p>
       </main>
     );
   }

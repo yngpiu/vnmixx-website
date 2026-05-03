@@ -44,8 +44,8 @@ export function NewArrivalSection({
   const sortSlug = serializeCatalogSort(sort);
   const activeTabHref =
     activeTab.id === 'ivy-moda'
-      ? `/danh-muc/nu?sort=${sortSlug}`
-      : `/danh-muc/nam?sort=${sortSlug}`;
+      ? `/categories/nu?sort=${sortSlug}`
+      : `/categories/nam?sort=${sortSlug}`;
 
   return (
     <section className="pb-16">

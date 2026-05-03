@@ -7,7 +7,6 @@ import {
 import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
 import { Heart } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 type ProductWishlistHeartButtonProps = {
   productId: number;
@@ -18,7 +17,6 @@ export function ProductWishlistHeartButton({
   productId,
   layout,
 }: ProductWishlistHeartButtonProps): React.JSX.Element {
-  const router = useRouter();
   const { isFavorite, toggleFavorite, isPending, isAuthenticatedCustomer, isAuthSessionReady } =
     useWishlistProductToggle(productId);
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
@@ -29,7 +27,6 @@ export function ProductWishlistHeartButton({
     }
     if (!isAuthenticatedCustomer) {
       toast.error('Bạn cần đăng nhập để thực hiện chức năng này', { position: 'bottom-right' });
-      router.push('/login');
       return;
     }
     void (async () => {

@@ -2,7 +2,6 @@
 
 import {
   addMyCartItem,
-  clearMyCart,
   getMyCart,
   removeMyCartItem,
   updateMyCartItem,
@@ -74,20 +73,6 @@ export function useRemoveCartItemMutation() {
           ...currentCart,
           items: currentCart.items.filter((item) => item.id !== itemId),
         };
-      });
-      void queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY });
-    },
-  });
-}
-
-export function useClearCartMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: clearMyCart,
-    onSuccess: () => {
-      queryClient.setQueryData<Cart | undefined>(CART_QUERY_KEY, (currentCart) => {
-        if (!currentCart) return currentCart;
-        return { ...currentCart, items: [] };
       });
       void queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY });
     },

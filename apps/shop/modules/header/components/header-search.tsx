@@ -37,7 +37,7 @@ export function HeaderSearch(): React.JSX.Element {
     const nextParams = new URLSearchParams();
     nextParams.set('q', normalizedSearch);
     const queryString = nextParams.toString();
-    router.push(`/tim-kiem?${queryString}`);
+    router.push(`/search?${queryString}`);
   };
   return (
     <form

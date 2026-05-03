@@ -4,6 +4,7 @@ import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useCartQuery } from '@/modules/cart/hooks/use-cart';
 import { useDebouncedCartQuantityUpdate } from '@/modules/cart/hooks/use-debounced-cart-quantity';
+import { useGuestCart } from '@/modules/cart/hooks/use-guest-cart';
 import { useCartStore } from '@/modules/cart/stores/cart-store';
 import type { CartItem } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
@@ -122,11 +123,14 @@ export function CartDrawer(): React.JSX.Element {
   const cartQuery = useCartQuery({ enabled: Boolean(isAuthSessionReady && user) });
   const { scheduleQuantityUpdate, removeCartItemImmediately, isSavingQuantity } =
     useDebouncedCartQuantityUpdate();
+  const { totalQuantity: guestTotalQuantity } = useGuestCart();
   const items = cartQuery.data?.items ?? [];
   const isDrawerOpen = useCartStore((state) => state.isDrawerOpen);
   const setDrawerOpen = useCartStore((state) => state.setDrawerOpen);
   const closeDrawer = useCartStore((state) => state.closeDrawer);
-  const totalQuantity = items.reduce((total, item) => total + item.quantity, 0);
+  const totalQuantity = user
+    ? items.reduce((total, item) => total + item.quantity, 0)
+    : guestTotalQuantity;
   return (
     <Drawer direction="right" open={isDrawerOpen} onOpenChange={setDrawerOpen}>
       <DrawerContent className="h-svh rounded-none border-l bg-background p-0 data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:max-w-none sm:data-[vaul-drawer-direction=right]:max-w-[420px]">
@@ -156,7 +160,10 @@ export function CartDrawer(): React.JSX.Element {
         <div className="flex min-h-0 flex-1 flex-col">
           {!isAuthSessionReady ? null : user === null ? (
             <div className="flex flex-1 flex-col gap-4 p-4">
-              <p className="text-sm text-muted-foreground">Đăng nhập để xem giỏ hàng của bạn.</p>
+              <p className="text-sm text-muted-foreground">
+                Bạn đang có {guestTotalQuantity} sản phẩm lưu tạm. Đăng nhập để đồng bộ vào giỏ
+                hàng.
+              </p>
               <PrimaryCtaButton
                 type="button"
                 className="w-full"
@@ -199,7 +206,7 @@ export function CartDrawer(): React.JSX.Element {
               </div>
               <div className="border-t px-4 py-3">
                 <PrimaryCtaButton asChild className="w-full" onClick={closeDrawer}>
-                  <Link href="/gio-hang" aria-label="Xem giỏ hàng">
+                  <Link href="/cart" aria-label="Xem giỏ hàng">
                     Xem giỏ hàng
                   </Link>
                 </PrimaryCtaButton>

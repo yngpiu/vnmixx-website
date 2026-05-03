@@ -39,7 +39,7 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
     onSuccess: () => {
       toast.success('Đã hủy đơn hàng.');
       router.replace(
-        `/dat-hang/hoan-thanh?orderCode=${encodeURIComponent(orderCode)}&paymentResult=cancelled`,
+        `/checkout/complete?orderCode=${encodeURIComponent(orderCode)}&paymentResult=cancelled`,
       );
     },
     onError: (error: unknown) => {
@@ -61,7 +61,7 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
     if (orderQuery.data?.paymentStatus !== 'SUCCESS') {
       return;
     }
-    router.replace(`/dat-hang/hoan-thanh?orderCode=${encodeURIComponent(orderCode)}`);
+    router.replace(`/checkout/complete?orderCode=${encodeURIComponent(orderCode)}`);
   }, [orderCode, orderQuery.data?.paymentStatus, router]);
   useEffect(() => {
     if (orderCode.length === 0 || orderQuery.isLoading || orderQuery.isError) {
@@ -72,7 +72,7 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
     }
     const paymentResult = isPaymentExpired ? 'expired' : isPaymentFailed ? 'failed' : 'cancelled';
     router.replace(
-      `/dat-hang/hoan-thanh?orderCode=${encodeURIComponent(orderCode)}&paymentResult=${paymentResult}`,
+      `/checkout/complete?orderCode=${encodeURIComponent(orderCode)}&paymentResult=${paymentResult}`,
     );
   }, [
     isPaymentExpired,
@@ -100,7 +100,7 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
         });
         return;
       }
-      router.replace(`/dat-hang/hoan-thanh?orderCode=${encodeURIComponent(orderCode)}`);
+      router.replace(`/checkout/complete?orderCode=${encodeURIComponent(orderCode)}`);
     });
     return () => {
       socket.disconnect();

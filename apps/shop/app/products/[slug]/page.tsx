@@ -25,7 +25,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title: 'Sản phẩm',
       description: 'Thông tin chi tiết sản phẩm tại VNMIXX Shop.',
       alternates: {
-        canonical: '/san-pham',
+        canonical: '/products',
       },
     };
   }
@@ -57,7 +57,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title: 'Sản phẩm',
       description: 'Thông tin chi tiết sản phẩm tại VNMIXX Shop.',
       alternates: {
-        canonical: '/san-pham',
+        canonical: '/products',
       },
     };
   }
@@ -83,7 +83,7 @@ export default async function ProductDetailPage(props: PageProps): Promise<React
       skipAuth: true,
     });
     const canonicalPath = buildProductHref({ slug: product.slug });
-    if (routeKey !== canonicalPath.replace('/san-pham/', '')) {
+    if (routeKey !== canonicalPath.replace('/products/', '')) {
       redirect(canonicalPath);
     }
     const [initialPublicReviews, suggestedProducts] = await Promise.all([

@@ -5,19 +5,8 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
-      allow: ['/', '/about', '/san-pham', '/san-pham/', '/danh-muc/', '/danh-muc'],
-      disallow: [
-        '/gio-hang',
-        '/dat-hang',
-        '/dat-hang/',
-        '/me',
-        '/me/',
-        '/tai-khoan',
-        '/tai-khoan/',
-        '/login',
-        '/signup',
-        '/otp',
-      ],
+      allow: ['/', '/about', '/products', '/products/', '/categories/', '/categories'],
+      disallow: ['/cart', '/checkout', '/checkout/', '/me', '/me/', '/login', '/signup', '/otp'],
     },
     sitemap: `${SHOP_SITE_URL}/sitemap.xml`,
   };

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'Tìm kiếm sản phẩm',
   description: 'Kết quả tìm kiếm sản phẩm thời trang tại VNMIXX Shop.',
   alternates: {
-    canonical: '/tim-kiem',
+    canonical: '/search',
   },
 };
 

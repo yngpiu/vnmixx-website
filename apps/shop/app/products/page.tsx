@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: 'Tất cả sản phẩm',
   description: 'Danh sách tất cả sản phẩm thời trang tại VNMIXX Shop.',
   alternates: {
-    canonical: '/san-pham',
+    canonical: '/products',
   },
 };
 
@@ -34,7 +34,7 @@ export default async function ProductsPage(props: ProductsPageProps): Promise<Re
     resolveSearchValue(searchParams.q) || resolveSearchValue(searchParams.search);
   if (searchKeyword) {
     const nextParams = new URLSearchParams({ q: searchKeyword });
-    redirect(`/tim-kiem?${nextParams.toString()}`);
+    redirect(`/search?${nextParams.toString()}`);
   }
   return (
     <ProductCategoryPage categorySlug="" categoryName="Tất cả sản phẩm" breadcrumbCategories={[]} />

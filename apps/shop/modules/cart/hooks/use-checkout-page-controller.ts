@@ -99,10 +99,10 @@ export function useCheckoutPageController(): UseCheckoutPageControllerReturn {
         requiredNote: 'KHONGCHOXEMHANG',
       });
       if (paymentMethod === 'BANK_TRANSFER_QR') {
-        router.push(`/dat-hang/thanh-toan?orderCode=${encodeURIComponent(order.orderCode)}`);
+        router.push(`/checkout/payment?orderCode=${encodeURIComponent(order.orderCode)}`);
         return;
       }
-      router.push(`/dat-hang/hoan-thanh?orderCode=${encodeURIComponent(order.orderCode)}`);
+      router.push(`/checkout/complete?orderCode=${encodeURIComponent(order.orderCode)}`);
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : 'Không thể đặt hàng lúc này.');
     }

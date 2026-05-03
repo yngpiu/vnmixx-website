@@ -51,7 +51,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title: 'Danh mục',
       description: 'Danh mục sản phẩm thời trang tại VNMIXX Shop.',
       alternates: {
-        canonical: '/san-pham',
+        canonical: '/products',
       },
     };
   }
@@ -83,7 +83,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
       title: 'Danh mục',
       description: 'Danh mục sản phẩm thời trang tại VNMIXX Shop.',
       alternates: {
-        canonical: '/san-pham',
+        canonical: '/products',
       },
     };
   }
@@ -98,7 +98,7 @@ export default async function CategoryListingPage(props: PageProps): Promise<Rea
   try {
     const category = await fetchCategoryBySlug(categorySlug);
     const canonicalPath = buildCategoryHref({ slug: category.slug });
-    if (routeKey !== canonicalPath.replace('/danh-muc/', '')) {
+    if (routeKey !== canonicalPath.replace('/categories/', '')) {
       redirect(canonicalPath);
     }
     const breadcrumbCategories = await buildCategoryBreadcrumbParents(category);

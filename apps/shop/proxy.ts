@@ -14,7 +14,7 @@ interface AuthResponse {
 }
 
 const PUBLIC_AUTH_PATHS = ['/login', '/signup', '/otp'];
-const PROTECTED_PATHS = ['/tai-khoan', '/me'];
+const PROTECTED_PATHS = ['/me'];
 
 function isPathMatched(pathname: string, paths: string[]): boolean {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));

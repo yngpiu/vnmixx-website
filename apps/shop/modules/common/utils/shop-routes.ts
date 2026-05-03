@@ -3,11 +3,11 @@ type EntityRouteInput = {
 };
 
 export function buildProductHref(input: EntityRouteInput): string {
-  return `/san-pham/${input.slug}`;
+  return `/products/${input.slug}`;
 }
 
 export function buildCategoryHref(input: EntityRouteInput): string {
-  return `/danh-muc/${input.slug}`;
+  return `/categories/${input.slug}`;
 }
 
 function parseRouteSlug(routeKey: string): string | null {

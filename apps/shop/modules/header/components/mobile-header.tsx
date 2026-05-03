@@ -3,6 +3,7 @@
 import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useCartQuery } from '@/modules/cart/hooks/use-cart';
+import { useGuestCart } from '@/modules/cart/hooks/use-guest-cart';
 import { useCartStore } from '@/modules/cart/stores/cart-store';
 import { useHeaderUiStore } from '@/modules/header/stores/header-ui-store';
 import { Button } from '@repo/ui/components/ui/button';
@@ -16,10 +17,12 @@ export function MobileHeader(): React.JSX.Element {
   const isAuthSessionReady = useAuthSessionReady();
   const openCartDrawer = useCartStore((state) => state.openDrawer);
   const cartQuery = useCartQuery({ enabled: Boolean(isAuthSessionReady && user) });
-  const totalQuantity = (cartQuery.data?.items ?? []).reduce(
+  const { totalQuantity: guestTotalQuantity } = useGuestCart();
+  const serverTotalQuantity = (cartQuery.data?.items ?? []).reduce(
     (total, item) => total + item.quantity,
     0,
   );
+  const totalQuantity = user ? serverTotalQuantity : guestTotalQuantity;
   return (
     <div className="shop-shell-container flex h-14 items-center justify-between border-b md:hidden">
       <Button

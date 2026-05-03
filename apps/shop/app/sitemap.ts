@@ -83,7 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     },
     {
-      url: `${SHOP_SITE_URL}/san-pham`,
+      url: `${SHOP_SITE_URL}/products`,
       lastModified: currentDate,
       changeFrequency: 'daily',
       priority: 0.9,

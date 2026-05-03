@@ -310,7 +310,7 @@ export function CheckoutPageContent(): React.JSX.Element {
                 : 'HOÀN THÀNH'}
           </PrimaryCtaButton>
           <Button variant="link" asChild className="mt-3 h-auto p-0 text-muted-foreground">
-            <Link href="/gio-hang">Quay lại giỏ hàng</Link>
+            <Link href="/cart">Quay lại giỏ hàng</Link>
           </Button>
         </aside>
       </section>
