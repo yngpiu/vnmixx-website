@@ -41,6 +41,7 @@ export default function LoginPage(): React.JSX.Element {
   const searchParams = useSearchParams();
   const [formError, setFormError] = useState<string | null>(null);
   const isVerifiedSuccess = searchParams.get('verified') === '1';
+  const isResetPasswordSuccess = searchParams.get('reset') === '1';
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -129,7 +130,7 @@ export default function LoginPage(): React.JSX.Element {
 
               <div className="flex items-center justify-end">
                 <Link
-                  href="#"
+                  href="/forgot-password"
                   className="text-sm font-medium text-muted-foreground hover:text-foreground"
                   aria-label="Quên mật khẩu"
                 >
@@ -151,6 +152,14 @@ export default function LoginPage(): React.JSX.Element {
                   role="status"
                 >
                   Xác thực email thành công. Vui lòng đăng nhập để tiếp tục.
+                </p>
+              ) : null}
+              {!formError && !isVerifiedSuccess && isResetPasswordSuccess ? (
+                <p
+                  className="text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200 px-3 py-2 text-sm"
+                  role="status"
+                >
+                  Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.
                 </p>
               ) : null}
 

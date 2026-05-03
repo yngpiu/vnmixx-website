@@ -25,6 +25,17 @@ type CustomerRegisterResponse = {
   resendAfter?: number;
 };
 
+type ForgotPasswordResponse = {
+  message: string;
+  email: string;
+  otpExpiresIn: number;
+  resendAfter: number;
+};
+
+type ForgotPasswordVerifyOtpResponse = {
+  resetToken: string;
+};
+
 function createCookieOptions(maxAge: number, isHttpOnly: boolean) {
   return {
     httpOnly: isHttpOnly,
@@ -197,6 +208,48 @@ export async function resendOtpAction(data: {
       skipAuth: true,
     });
     return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: extractErrorMessage(err) };
+  }
+}
+
+export async function forgotPasswordAction(data: {
+  email: string;
+}): Promise<ActionResult<ForgotPasswordResponse>> {
+  try {
+    const result = await serverApi.post<ForgotPasswordResponse>('/auth/forgot-password', data, {
+      skipAuth: true,
+    });
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: extractErrorMessage(err) };
+  }
+}
+
+export async function forgotPasswordVerifyOtpAction(data: {
+  email: string;
+  otp: string;
+}): Promise<ActionResult<ForgotPasswordVerifyOtpResponse>> {
+  try {
+    const result = await serverApi.post<ForgotPasswordVerifyOtpResponse>(
+      '/auth/forgot-password/verify-otp',
+      data,
+      { skipAuth: true },
+    );
+    return { success: true, data: result };
+  } catch (err) {
+    return { success: false, error: extractErrorMessage(err) };
+  }
+}
+
+export async function resetPasswordAction(data: {
+  email: string;
+  resetToken: string;
+  newPassword: string;
+}): Promise<ActionResult<null>> {
+  try {
+    await serverApi.post('/auth/forgot-password/reset', data, { skipAuth: true });
+    return { success: true, data: null };
   } catch (err) {
     return { success: false, error: extractErrorMessage(err) };
   }

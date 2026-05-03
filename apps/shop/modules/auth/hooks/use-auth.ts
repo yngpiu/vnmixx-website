@@ -1,8 +1,11 @@
 import {
+  forgotPasswordAction,
+  forgotPasswordVerifyOtpAction,
   loginAction,
   logoutAction,
   registerAction,
   resendOtpAction,
+  resetPasswordAction,
   verifyOtpAction,
 } from '@/modules/auth/actions/auth';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
@@ -94,6 +97,68 @@ export function useResendOtp() {
         throw new Error(result.error);
       }
       return result.data as CustomerRegisterResponse;
+    },
+  });
+}
+
+type ForgotPasswordVariables = {
+  email: string;
+};
+
+type ForgotPasswordResponse = {
+  message: string;
+  email: string;
+  otpExpiresIn: number;
+  resendAfter: number;
+};
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: async (variables: ForgotPasswordVariables) => {
+      const result = await forgotPasswordAction(variables);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return result.data as ForgotPasswordResponse;
+    },
+  });
+}
+
+type ForgotPasswordVerifyOtpVariables = {
+  email: string;
+  otp: string;
+};
+
+type ForgotPasswordVerifyOtpResponse = {
+  resetToken: string;
+};
+
+export function useForgotPasswordVerifyOtp() {
+  return useMutation({
+    mutationFn: async (variables: ForgotPasswordVerifyOtpVariables) => {
+      const result = await forgotPasswordVerifyOtpAction(variables);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return result.data as ForgotPasswordVerifyOtpResponse;
+    },
+  });
+}
+
+type ResetPasswordVariables = {
+  email: string;
+  resetToken: string;
+  newPassword: string;
+};
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: async (variables: ResetPasswordVariables) => {
+      const result = await resetPasswordAction(variables);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return true;
     },
   });
 }
