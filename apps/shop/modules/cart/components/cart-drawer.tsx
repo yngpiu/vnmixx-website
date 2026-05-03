@@ -19,6 +19,7 @@ import {
 import { MinusIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN');
 
@@ -28,10 +29,6 @@ function formatMoney(value: number): string {
 
 function getItemTotal(item: CartItem): number {
   return item.variant.price * item.quantity;
-}
-
-function getCartTotal(items: CartItem[]): number {
-  return items.reduce((total, item) => total + getItemTotal(item), 0);
 }
 
 function CartItemRow({
@@ -119,6 +116,7 @@ function CartItemRow({
 }
 
 export function CartDrawer(): React.JSX.Element {
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
   const cartQuery = useCartQuery({ enabled: Boolean(isAuthSessionReady && user) });
@@ -129,7 +127,6 @@ export function CartDrawer(): React.JSX.Element {
   const setDrawerOpen = useCartStore((state) => state.setDrawerOpen);
   const closeDrawer = useCartStore((state) => state.closeDrawer);
   const totalQuantity = items.reduce((total, item) => total + item.quantity, 0);
-  const cartTotal = getCartTotal(items);
   return (
     <Drawer direction="right" open={isDrawerOpen} onOpenChange={setDrawerOpen}>
       <DrawerContent className="h-svh rounded-none border-l bg-background p-0 data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:max-w-none sm:data-[vaul-drawer-direction=right]:max-w-[420px]">
@@ -157,50 +154,58 @@ export function CartDrawer(): React.JSX.Element {
           </DrawerDescription>
         </DrawerHeader>
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="space-y-4 overflow-y-auto px-6 py-5">
-            {!isAuthSessionReady ? null : user === null ? (
-              <p className="py-10 text-center text-base text-muted-foreground">
-                Vui lòng đăng nhập để xem giỏ hàng.
-              </p>
-            ) : cartQuery.isLoading ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                Đang tải giỏ hàng...
-              </p>
-            ) : cartQuery.isError ? (
-              <p className="py-10 text-center text-sm text-destructive" role="alert">
-                {cartQuery.error instanceof Error
-                  ? cartQuery.error.message
-                  : 'Không tải được giỏ hàng.'}
-              </p>
-            ) : items.length > 0 ? (
-              items.map((item) => (
-                <CartItemRow
-                  key={item.id}
-                  item={item}
-                  isUpdating={isSavingQuantity}
-                  scheduleQuantityUpdate={scheduleQuantityUpdate}
-                  removeCartItemImmediately={removeCartItemImmediately}
-                />
-              ))
-            ) : (
-              <p className="py-10 text-center text-base text-muted-foreground">
-                Giỏ hàng đang trống.
-              </p>
-            )}
-          </div>
-          <div className="mt-auto border-t px-6 py-5">
-            <div className="mb-4 flex items-center justify-end gap-2">
-              <span className="text-[14px] text-muted-foreground">Tổng cộng:</span>
-              <span className="text-[18px] font-semibold leading-none text-foreground">
-                {formatMoney(cartTotal)}
-              </span>
+          {!isAuthSessionReady ? null : user === null ? (
+            <div className="flex flex-1 flex-col gap-4 p-4">
+              <p className="text-sm text-muted-foreground">Đăng nhập để xem giỏ hàng của bạn.</p>
+              <PrimaryCtaButton
+                type="button"
+                className="w-full"
+                onClick={() => {
+                  closeDrawer();
+                  router.push('/login');
+                }}
+              >
+                Đăng nhập
+              </PrimaryCtaButton>
             </div>
-            <PrimaryCtaButton asChild onClick={closeDrawer}>
-              <Link href="/gio-hang" aria-label="Xem giỏ hàng">
-                XEM GIỎ HÀNG
-              </Link>
-            </PrimaryCtaButton>
-          </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                {cartQuery.isLoading ? (
+                  <p className="py-10 text-center text-sm text-muted-foreground">
+                    Đang tải giỏ hàng...
+                  </p>
+                ) : cartQuery.isError ? (
+                  <p className="py-10 text-center text-sm text-destructive" role="alert">
+                    {cartQuery.error instanceof Error
+                      ? cartQuery.error.message
+                      : 'Không tải được giỏ hàng.'}
+                  </p>
+                ) : items.length > 0 ? (
+                  items.map((item) => (
+                    <CartItemRow
+                      key={item.id}
+                      item={item}
+                      isUpdating={isSavingQuantity}
+                      scheduleQuantityUpdate={scheduleQuantityUpdate}
+                      removeCartItemImmediately={removeCartItemImmediately}
+                    />
+                  ))
+                ) : (
+                  <p className="py-10 text-center text-base text-muted-foreground">
+                    Giỏ hàng đang trống.
+                  </p>
+                )}
+              </div>
+              <div className="border-t px-4 py-3">
+                <PrimaryCtaButton asChild className="w-full" onClick={closeDrawer}>
+                  <Link href="/gio-hang" aria-label="Xem giỏ hàng">
+                    Xem giỏ hàng
+                  </Link>
+                </PrimaryCtaButton>
+              </div>
+            </div>
+          )}
         </div>
       </DrawerContent>
     </Drawer>
