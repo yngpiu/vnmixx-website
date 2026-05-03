@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 import { isPrismaErrorCode } from '../../common/utils/prisma.util';
 import { RedisService } from '../../redis/services/redis.service';
-import { type WishlistItemView, WishlistRepository } from '../repositories/wishlist.repository';
+import { ListWishlistQueryDto } from '../dto';
+import {
+  type WishlistItemView,
+  type WishlistPaginatedView,
+  WishlistRepository,
+} from '../repositories/wishlist.repository';
 import { WISHLIST_CACHE_KEYS, WISHLIST_CACHE_TTL } from '../wishlist.cache';
 
 @Injectable()
@@ -18,10 +23,35 @@ export class WishlistService {
   ) {}
 
   // Lấy danh sách yêu thích của khách hàng, ưu tiên lấy từ cache.
-  async findAll(customerId: number): Promise<WishlistItemView[]> {
-    return this.redis.getOrSet(WISHLIST_CACHE_KEYS.LIST(customerId), WISHLIST_CACHE_TTL.LIST, () =>
-      this.wishlistRepo.findAllByCustomerId(customerId),
+  async findAll(
+    customerId: number,
+    query: ListWishlistQueryDto,
+  ): Promise<{
+    data: WishlistItemView[];
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 12;
+    const cached = await this.redis.getOrSet<WishlistPaginatedView>(
+      WISHLIST_CACHE_KEYS.LIST(customerId, page, limit),
+      WISHLIST_CACHE_TTL.LIST,
+      () => this.wishlistRepo.findAllByCustomerId(customerId, page, limit),
     );
+    const totalPages = cached.total > 0 ? Math.ceil(cached.total / limit) : 1;
+    return {
+      data: cached.data,
+      meta: {
+        page,
+        limit,
+        total: cached.total,
+        totalPages,
+      },
+    };
   }
 
   // Thêm sản phẩm vào danh sách yêu thích và xóa cache liên quan.
@@ -35,7 +65,7 @@ export class WishlistService {
     try {
       await this.wishlistRepo.add(customerId, productId);
       // Xóa cache để dữ liệu được cập nhật mới ở lần truy vấn sau.
-      await this.redis.del(WISHLIST_CACHE_KEYS.LIST(customerId));
+      await this.redis.deleteByPattern(WISHLIST_CACHE_KEYS.LIST_PATTERN(customerId));
     } catch (error) {
       if (isPrismaErrorCode(error, 'P2002')) {
         throw new ConflictException('Sản phẩm đã có trong danh sách yêu thích.');
@@ -52,7 +82,7 @@ export class WishlistService {
     try {
       await this.wishlistRepo.remove(customerId, productId);
       // Xóa cache sau khi xóa thành công để đồng bộ dữ liệu.
-      await this.redis.del(WISHLIST_CACHE_KEYS.LIST(customerId));
+      await this.redis.deleteByPattern(WISHLIST_CACHE_KEYS.LIST_PATTERN(customerId));
     } catch (error) {
       if (isPrismaErrorCode(error, 'P2025')) {
         throw new NotFoundException('Sản phẩm không có trong danh sách yêu thích.');

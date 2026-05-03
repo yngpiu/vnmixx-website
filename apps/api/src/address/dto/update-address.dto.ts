@@ -6,8 +6,11 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
 } from 'class-validator';
+
+const regexPhoneNumber = /^(03[2-9]|05[6|8|9]|07[0|6-9]|08[1-9]|09[0-9])[0-9]{7}$/;
 
 export class UpdateAddressDto {
   @ApiPropertyOptional({ example: 'Nguyễn Văn A', maxLength: 100 })
@@ -20,6 +23,7 @@ export class UpdateAddressDto {
   @ApiPropertyOptional({ example: '0901234567', maxLength: 20 })
   @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
   @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
+  @Matches(regexPhoneNumber, { message: 'Số điện thoại không đúng định dạng hợp lệ' })
   @IsOptional()
   @MaxLength(20, { message: 'Số điện thoại không được vượt quá 20 ký tự' })
   phoneNumber?: string;

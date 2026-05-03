@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { AuditLogStatus } from 'generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
@@ -22,6 +22,7 @@ describe('ProfileService', () => {
           provide: CustomerProfileRepository,
           useValue: {
             findById: jest.fn(),
+            existsByPhone: jest.fn(),
             update: jest.fn(),
           },
         },
@@ -80,8 +81,16 @@ describe('ProfileService', () => {
 
   describe('updateCustomerProfile', () => {
     it('should update profile with all fields', async () => {
-      const dto = { fullName: 'New Name', dob: '1990-01-01', gender: 'MALE', avatarUrl: 'url' };
+      const dto = {
+        fullName: 'New Name',
+        phoneNumber: '0912345678',
+        dob: '1990-01-01',
+        gender: 'MALE',
+        avatarUrl: 'url',
+      };
       const updated = { id: 1, ...dto } as any;
+      customerRepo.findById.mockResolvedValue({ id: 1, phoneNumber: '0988888888' } as any);
+      customerRepo.existsByPhone.mockResolvedValue(false);
       customerRepo.update.mockResolvedValue(updated);
 
       const result = await service.updateCustomerProfile(1, dto as any);
@@ -89,6 +98,7 @@ describe('ProfileService', () => {
       expect(result).toBe(updated);
       expect(customerRepo.update).toHaveBeenCalledWith(1, {
         fullName: 'New Name',
+        phoneNumber: '0912345678',
         dob: new Date('1990-01-01'),
         gender: 'MALE',
         avatarUrl: 'url',
@@ -114,6 +124,16 @@ describe('ProfileService', () => {
       await expect(service.updateCustomerProfile(1, { fullName: 'Name' })).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should throw ConflictException when phone number is already registered', async () => {
+      customerRepo.findById.mockResolvedValue({ id: 1, phoneNumber: '0988888888' } as any);
+      customerRepo.existsByPhone.mockResolvedValue(true);
+
+      await expect(
+        service.updateCustomerProfile(1, { phoneNumber: '0912345678' } as any),
+      ).rejects.toThrow(ConflictException);
+      expect(customerRepo.update).not.toHaveBeenCalled();
     });
   });
 

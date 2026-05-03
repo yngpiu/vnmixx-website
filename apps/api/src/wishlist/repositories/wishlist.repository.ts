@@ -21,6 +21,10 @@ export interface WishlistItemView {
   createdAt: Date;
   product: WishlistProductView;
 }
+export interface WishlistPaginatedView {
+  data: WishlistItemView[];
+  total: number;
+}
 
 // Cấu trúc chọn dữ liệu cho sản phẩm trong danh sách yêu thích.
 const WISHLIST_PRODUCT_SELECT = {
@@ -46,32 +50,47 @@ export class WishlistRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   // Lấy tất cả mục yêu thích của khách hàng, sắp xếp theo thời gian tạo giảm dần.
-  async findAllByCustomerId(customerId: number): Promise<WishlistItemView[]> {
-    const rows = await this.prisma.wishlist.findMany({
-      where: {
-        customerId,
-        product: { isActive: true, deletedAt: null },
-      },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        createdAt: true,
-        product: { select: WISHLIST_PRODUCT_SELECT },
-      },
-    });
-    return rows.map((row) => {
-      const product = row.product;
-      const colors = buildPublicListColors(product.variants, product.images);
-      return {
-        createdAt: row.createdAt,
-        product: {
-          id: product.id,
-          name: product.name,
-          slug: product.slug,
-          colors,
-          variants: product.variants.map((variant) => ({ price: variant.price })),
+  async findAllByCustomerId(
+    customerId: number,
+    page: number,
+    limit: number,
+  ): Promise<WishlistPaginatedView> {
+    const whereClause = {
+      customerId,
+      product: { isActive: true, deletedAt: null },
+    };
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.wishlist.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          createdAt: true,
+          product: { select: WISHLIST_PRODUCT_SELECT },
         },
-      };
-    });
+      }),
+      this.prisma.wishlist.count({
+        where: whereClause,
+      }),
+    ]);
+    return {
+      data: rows.map((row) => {
+        const product = row.product;
+        const colors = buildPublicListColors(product.variants, product.images);
+        return {
+          createdAt: row.createdAt,
+          product: {
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            colors,
+            variants: product.variants.map((variant) => ({ price: variant.price })),
+          },
+        };
+      }),
+      total,
+    };
   }
 
   // Kiểm tra xem một sản phẩm đã có trong danh sách yêu thích của khách hàng chưa.

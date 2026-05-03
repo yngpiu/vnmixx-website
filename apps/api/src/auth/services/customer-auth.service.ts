@@ -53,7 +53,7 @@ export class CustomerAuthService {
   private readonly otpExpiration: number;
   private readonly otpResendCooldown: number;
   private readonly otpMaxAttempts: number;
-  private static readonly phoneRegex = /^(\+?84[35879]\d{8}|0[35879]\d{8})$/;
+  private static readonly phoneRegex = /^(03[2-9]|05[6|8|9]|07[0|6-9]|08[1-9]|09[0-9])[0-9]{7}$/;
 
   constructor(
     private readonly customerRepo: CustomerRepository,
@@ -176,7 +176,7 @@ export class CustomerAuthService {
   // Đăng nhập khách hàng.
   // Logic: Tìm theo email/phone -> Kiểm tra trạng thái tài khoản (Active/Verified) -> So sánh mật khẩu băm.
   async loginCustomer(dto: LoginDto): Promise<CustomerAuthIdentity> {
-    const identifier = dto.email;
+    const identifier = dto.emailOrPhone;
 
     // 1. Tìm thông tin khách hàng dựa trên email hoặc số điện thoại
     const customer = this.isPhoneNumberIdentifier(identifier)
@@ -210,12 +210,7 @@ export class CustomerAuthService {
     phoneNumber: string,
   ): Promise<ReturnType<CustomerRepository['findByPhone']>> {
     const normalized = phoneNumber.trim();
-    const found = await this.customerRepo.findByPhone(normalized);
-    if (found) return found;
-
-    // Fallback: hệ thống có thể lưu có/không dấu '+'.
-    if (!normalized.startsWith('+')) return null;
-    return this.customerRepo.findByPhone(normalized.slice(1));
+    return this.customerRepo.findByPhone(normalized);
   }
 
   // Đổi mật khẩu cho khách hàng đã đăng nhập.

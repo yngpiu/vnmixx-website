@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -53,7 +54,7 @@ export class ProfileService {
     }
   }
 
-  // Cập nhật các thông tin cơ bản của khách hàng (Họ tên, ngày sinh, giới tính, avatar).
+  // Cập nhật các thông tin cơ bản của khách hàng (Họ tên, SĐT, ngày sinh, giới tính, avatar).
   async updateCustomerProfile(
     customerId: number,
     dto: UpdateCustomerProfileDto,
@@ -63,14 +64,30 @@ export class ProfileService {
         throw new BadRequestException('Cần cung cấp ít nhất một trường dữ liệu');
       }
 
+      if (dto.phoneNumber !== undefined) {
+        const currentProfile = await this.customerRepo.findById(customerId);
+        if (!currentProfile) {
+          throw new NotFoundException('Không tìm thấy khách hàng');
+        }
+        const isChangingPhoneNumber = currentProfile.phoneNumber !== dto.phoneNumber;
+        if (isChangingPhoneNumber) {
+          const isPhoneNumberTaken = await this.customerRepo.existsByPhone(dto.phoneNumber);
+          if (isPhoneNumberTaken) {
+            throw new ConflictException('Số điện thoại đã được đăng ký');
+          }
+        }
+      }
+
       const data: {
         fullName?: string;
+        phoneNumber?: string;
         dob?: Date | null;
         gender?: Gender | null;
         avatarUrl?: string;
       } = {};
 
       if (dto.fullName !== undefined) data.fullName = dto.fullName;
+      if (dto.phoneNumber !== undefined) data.phoneNumber = dto.phoneNumber;
       if (dto.dob !== undefined) data.dob = new Date(dto.dob);
       if (dto.gender !== undefined) data.gender = dto.gender as Gender;
       if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl;
@@ -79,7 +96,11 @@ export class ProfileService {
       if (!updated) throw new NotFoundException('Không tìm thấy khách hàng');
       return updated;
     } catch (error) {
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       this.logger.error(

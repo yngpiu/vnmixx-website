@@ -2,7 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from 'generated/prisma/client';
 import { RedisService } from '../../redis/services/redis.service';
-import { WishlistItemView, WishlistRepository } from '../repositories/wishlist.repository';
+import { WishlistPaginatedView, WishlistRepository } from '../repositories/wishlist.repository';
 import { WishlistService } from './wishlist.service';
 
 describe('WishlistService', () => {
@@ -20,7 +20,7 @@ describe('WishlistService', () => {
 
     const mockRedis = {
       getOrSet: jest.fn(),
-      del: jest.fn(),
+      deleteByPattern: jest.fn(),
     } as unknown as jest.Mocked<RedisService>;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -47,20 +47,29 @@ describe('WishlistService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all wishlist items for a customer from cache/repo', async () => {
+    it('should return paginated wishlist items and meta for a customer', async () => {
       const customerId = 1;
-      const expectedItems: WishlistItemView[] = [
-        {
-          createdAt: new Date(),
-          product: { id: 100, name: 'P', slug: 's', colors: [], variants: [] },
-        },
-      ];
+      const expectedPayload: WishlistPaginatedView = {
+        data: [
+          {
+            createdAt: new Date(),
+            product: { id: 100, name: 'P', slug: 's', colors: [], variants: [] },
+          },
+        ],
+        total: 1,
+      };
       redis.getOrSet.mockImplementation((_key, _ttl, cb) => cb());
-      repo.findAllByCustomerId.mockResolvedValue(expectedItems);
+      repo.findAllByCustomerId.mockResolvedValue(expectedPayload);
 
-      const result = await service.findAll(customerId);
+      const result = await service.findAll(customerId, { page: 1, limit: 12 });
 
-      expect(result).toEqual(expectedItems);
+      expect(result.data).toEqual(expectedPayload.data);
+      expect(result.meta).toEqual({
+        page: 1,
+        limit: 12,
+        total: 1,
+        totalPages: 1,
+      });
       expect(redis.getOrSet).toHaveBeenCalled();
     });
   });
@@ -89,12 +98,12 @@ describe('WishlistService', () => {
     it('should add product successfully and clear cache', async () => {
       repo.productExists.mockResolvedValue(true);
       repo.add.mockResolvedValue(undefined);
-      redis.del.mockResolvedValue(undefined);
+      redis.deleteByPattern.mockResolvedValue(undefined);
 
       await service.add(customerId, productId);
 
       expect(repo.add).toHaveBeenCalledWith(customerId, productId);
-      expect(redis.del).toHaveBeenCalled();
+      expect(redis.deleteByPattern).toHaveBeenCalled();
     });
   });
 
@@ -114,12 +123,12 @@ describe('WishlistService', () => {
 
     it('should remove product successfully and clear cache', async () => {
       repo.remove.mockResolvedValue(undefined);
-      redis.del.mockResolvedValue(undefined);
+      redis.deleteByPattern.mockResolvedValue(undefined);
 
       await service.remove(customerId, productId);
 
       expect(repo.remove).toHaveBeenCalledWith(customerId, productId);
-      expect(redis.del).toHaveBeenCalled();
+      expect(redis.deleteByPattern).toHaveBeenCalled();
     });
   });
 });

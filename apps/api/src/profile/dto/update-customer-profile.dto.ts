@@ -15,6 +15,17 @@ export class UpdateCustomerProfileDto {
   @MaxLength(100, { message: 'Họ tên không được vượt quá 100 ký tự' })
   fullName?: string;
 
+  @ApiPropertyOptional({
+    example: '0912345678',
+    description: 'Số điện thoại Việt Nam gồm 10 chữ số hợp lệ',
+  })
+  @IsOptional()
+  @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
+  @Matches(/^(03[2-9]|05[6|8|9]|07[0|6-9]|08[1-9]|09[0-9])[0-9]{7}$/, {
+    message: 'Số điện thoại không đúng định dạng',
+  })
+  phoneNumber?: string;
+
   @ApiPropertyOptional({ example: '1999-12-31', description: 'Ngày sinh (YYYY-MM-DD)' })
   @IsOptional()
   @IsString({ message: 'Ngày sinh phải là chuỗi ký tự' })

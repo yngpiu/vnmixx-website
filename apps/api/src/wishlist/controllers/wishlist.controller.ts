@@ -7,6 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -29,12 +30,12 @@ import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   buildNullDataSuccessResponseSchema,
   buildSuccessResponseSchema,
-  ok,
   okNoData,
+  okWithMeta,
   type SuccessPayload,
 } from '../../common/utils/response.util';
 import { ProductListColorResponseDto } from '../../product/dto';
-import { WishlistItemResponseDto } from '../dto';
+import { ListWishlistQueryDto, WishlistItemResponseDto } from '../dto';
 import { WishlistService } from '../services/wishlist.service';
 
 @ApiTags('Wishlist')
@@ -52,17 +53,22 @@ export class WishlistController {
   @ApiOperation({ summary: 'Lấy danh sách yêu thích của khách hàng hiện tại' })
   @ApiOkResponse({
     description: 'Lấy danh sách yêu thích thành công.',
-    schema: buildSuccessResponseSchema({
-      type: 'array',
-      items: { $ref: getSchemaPath(WishlistItemResponseDto) },
-    }),
+    schema: buildSuccessResponseSchema(
+      {
+        type: 'array',
+        items: { $ref: getSchemaPath(WishlistItemResponseDto) },
+      },
+      { includeMeta: true },
+    ),
   })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Get()
   async findAll(
     @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ListWishlistQueryDto,
   ): Promise<SuccessPayload<WishlistItemResponseDto[]>> {
-    return ok(await this.wishlistService.findAll(user.id), 'Lấy danh sách yêu thích thành công.');
+    const result = await this.wishlistService.findAll(user.id, query);
+    return okWithMeta(result.data, 'Lấy danh sách yêu thích thành công.', result.meta);
   }
 
   // Thêm một sản phẩm mới vào danh sách yêu thích để theo dõi sau.

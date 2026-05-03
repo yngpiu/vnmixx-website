@@ -196,7 +196,7 @@ describe('CustomerAuthService', () => {
   });
 
   describe('loginCustomer', () => {
-    const loginDto: LoginDto = { email: 'test@example.com', password: 'password123' };
+    const loginDto: LoginDto = { emailOrPhone: 'test@example.com', password: 'password123' };
 
     it('should login successfully', async () => {
       customerRepo.findByEmail.mockResolvedValue(mockCustomer as any);
@@ -208,7 +208,7 @@ describe('CustomerAuthService', () => {
     });
 
     it('should login successfully with phone number', async () => {
-      const loginPhoneDto: LoginDto = { email: '0901234567', password: 'password123' };
+      const loginPhoneDto: LoginDto = { emailOrPhone: '0901234567', password: 'password123' };
       customerRepo.findByPhone.mockResolvedValue(mockCustomer as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 

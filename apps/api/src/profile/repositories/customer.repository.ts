@@ -16,6 +16,7 @@ export interface CustomerProfileView {
 
 export interface UpdateCustomerProfileData {
   fullName?: string;
+  phoneNumber?: string;
   dob?: Date | null;
   gender?: Gender | null;
   avatarUrl?: string;
@@ -50,5 +51,12 @@ export class CustomerProfileRepository {
     });
     if (count === 0) return null;
     return this.findById(id);
+  }
+
+  async existsByPhone(phoneNumber: string): Promise<boolean> {
+    const total = await this.prisma.customer.count({
+      where: { phoneNumber, deletedAt: null },
+    });
+    return total > 0;
   }
 }

@@ -10,7 +10,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
-const regexPhoneNumber = /(84|0[3|5|7|8|9])+([0-9]{8})\b/g;
+const regexPhoneNumber = /^(03[2-9]|05[6|8|9]|07[0|6-9]|08[1-9]|09[0-9])[0-9]{7}$/;
 
 export class CreateAddressDto {
   @ApiProperty({ example: 'Nguyễn Văn A', maxLength: 100 })
