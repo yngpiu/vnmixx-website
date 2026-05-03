@@ -155,7 +155,7 @@ export function CreateCategoryDialog({
                 maxLength={100}
                 placeholder="VD: Áo thun cổ tròn"
               />
-              <FieldError errors={nameError ? [{ message: nameError }] : []} />
+              <FieldError className="mt-1" errors={nameError ? [{ message: nameError }] : []} />
             </Field>
 
             <Field data-invalid={Boolean(slugError)}>
@@ -173,7 +173,7 @@ export function CreateCategoryDialog({
                 placeholder="ao-thun-co-tron"
                 className="font-mono text-sm"
               />
-              <FieldError errors={slugError ? [{ message: slugError }] : []} />
+              <FieldError className="mt-1" errors={slugError ? [{ message: slugError }] : []} />
             </Field>
 
             <div className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">

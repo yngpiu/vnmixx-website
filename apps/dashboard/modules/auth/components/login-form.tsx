@@ -81,7 +81,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
             <FieldGroup>
               {errors.root ? (
                 <Field data-invalid>
-                  <FieldError errors={[errors.root]} />
+                  <FieldError className="mt-1" errors={[errors.root]} />
                 </Field>
               ) : null}
               <Field data-invalid={Boolean(errors.email)}>
@@ -95,7 +95,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                   disabled={isPending}
                   {...form.register('email')}
                 />
-                <FieldError errors={[errors.email]} />
+                <FieldError className="mt-1" errors={[errors.email]} />
               </Field>
               <Field data-invalid={Boolean(errors.password)}>
                 <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
@@ -125,7 +125,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
-                <FieldError errors={[errors.password]} />
+                <FieldError className="mt-1" errors={[errors.password]} />
               </Field>
               <Field>
                 <Button type="submit" disabled={isPending} className="w-full">

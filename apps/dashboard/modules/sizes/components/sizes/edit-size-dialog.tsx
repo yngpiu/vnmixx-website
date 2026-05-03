@@ -131,7 +131,10 @@ export function EditSizeDialog({ sizeId, open, onOpenChange }: EditSizeDialogPro
                     disabled={busy}
                     maxLength={10}
                   />
-                  <FieldError errors={labelError ? [{ message: labelError }] : []} />
+                  <FieldError
+                    className="mt-1"
+                    errors={labelError ? [{ message: labelError }] : []}
+                  />
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="edit-size-order">Thứ tự sắp xếp</FieldLabel>

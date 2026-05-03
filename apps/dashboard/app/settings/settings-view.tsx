@@ -387,7 +387,7 @@ export function SettingsView() {
                         </Button>
                       </div>
                     </div>
-                    <FieldError errors={[errors.avatarUrl]} />
+                    <FieldError className="mt-1" errors={[errors.avatarUrl]} />
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="settings-full-name">Họ và tên</FieldLabel>
@@ -396,7 +396,7 @@ export function SettingsView() {
                       placeholder="Nguyễn Văn A"
                       {...register('fullName')}
                     />
-                    <FieldError errors={[errors.fullName]} />
+                    <FieldError className="mt-1" errors={[errors.fullName]} />
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="settings-phone-number">Số điện thoại</FieldLabel>
@@ -405,7 +405,7 @@ export function SettingsView() {
                       placeholder="0901234567"
                       {...register('phoneNumber')}
                     />
-                    <FieldError errors={[errors.phoneNumber]} />
+                    <FieldError className="mt-1" errors={[errors.phoneNumber]} />
                   </Field>
                 </FieldGroup>
                 <div className="flex items-center gap-2">
@@ -470,7 +470,7 @@ export function SettingsView() {
                         </InputGroupButton>
                       </InputGroupAddon>
                     </InputGroup>
-                    <FieldError errors={[passwordErrors.currentPassword]} />
+                    <FieldError className="mt-1" errors={[passwordErrors.currentPassword]} />
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="settings-new-password">Mật khẩu mới</FieldLabel>
@@ -500,7 +500,7 @@ export function SettingsView() {
                         </InputGroupButton>
                       </InputGroupAddon>
                     </InputGroup>
-                    <FieldError errors={[passwordErrors.newPassword]} />
+                    <FieldError className="mt-1" errors={[passwordErrors.newPassword]} />
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="settings-confirm-password">
@@ -534,7 +534,7 @@ export function SettingsView() {
                         </InputGroupButton>
                       </InputGroupAddon>
                     </InputGroup>
-                    <FieldError errors={[passwordErrors.confirmPassword]} />
+                    <FieldError className="mt-1" errors={[passwordErrors.confirmPassword]} />
                   </Field>
                 </FieldGroup>
                 <div className="flex items-center gap-2">

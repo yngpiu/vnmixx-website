@@ -143,7 +143,7 @@ export function EditColorDialog({ colorId, open, onOpenChange }: EditColorDialog
                     disabled={busy}
                     maxLength={50}
                   />
-                  <FieldError errors={nameError ? [{ message: nameError }] : []} />
+                  <FieldError className="mt-1" errors={nameError ? [{ message: nameError }] : []} />
                 </Field>
                 <Field data-invalid={Boolean(hexError)}>
                   <FieldLabel htmlFor="edit-color-hex">Mã HEX</FieldLabel>
@@ -170,7 +170,7 @@ export function EditColorDialog({ colorId, open, onOpenChange }: EditColorDialog
                       aria-hidden
                     />
                   </div>
-                  <FieldError errors={hexError ? [{ message: hexError }] : []} />
+                  <FieldError className="mt-1" errors={hexError ? [{ message: hexError }] : []} />
                 </Field>
               </FieldGroup>
             </form>

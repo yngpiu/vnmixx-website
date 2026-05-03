@@ -110,7 +110,7 @@ export function CreateColorDialog({ open, onOpenChange }: CreateColorDialogProps
                 maxLength={50}
                 placeholder="VD: Đỏ đậm"
               />
-              <FieldError errors={nameError ? [{ message: nameError }] : []} />
+              <FieldError className="mt-1" errors={nameError ? [{ message: nameError }] : []} />
             </Field>
             <Field data-invalid={Boolean(hexError)}>
               <FieldLabel htmlFor="create-color-hex">Mã HEX</FieldLabel>
@@ -138,7 +138,7 @@ export function CreateColorDialog({ open, onOpenChange }: CreateColorDialogProps
                   aria-hidden
                 />
               </div>
-              <FieldError errors={hexError ? [{ message: hexError }] : []} />
+              <FieldError className="mt-1" errors={hexError ? [{ message: hexError }] : []} />
             </Field>
           </FieldGroup>
         </form>

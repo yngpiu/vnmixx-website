@@ -264,7 +264,7 @@ export function EditEmployeeDialog({
               <FieldGroup className="gap-4">
                 {rolesErrors.root ? (
                   <Field data-invalid>
-                    <FieldError errors={[rolesErrors.root]} />
+                    <FieldError className="mt-1" errors={[rolesErrors.root]} />
                   </Field>
                 ) : null}
 
@@ -282,6 +282,7 @@ export function EditEmployeeDialog({
                   ) : null}
                   {rolesQuery.isError ? (
                     <FieldError
+                      className="mt-1"
                       errors={[
                         {
                           message:
@@ -322,7 +323,7 @@ export function EditEmployeeDialog({
                       );
                     }}
                   />
-                  <FieldError errors={[rolesErrors.roleId]} />
+                  <FieldError className="mt-1" errors={[rolesErrors.roleId]} />
                 </Field>
               </FieldGroup>
             </form>

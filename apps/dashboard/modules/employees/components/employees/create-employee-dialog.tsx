@@ -162,7 +162,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
           <FieldGroup className="gap-4">
             {errors.root ? (
               <Field data-invalid>
-                <FieldError errors={[errors.root]} />
+                <FieldError className="mt-1" errors={[errors.root]} />
               </Field>
             ) : null}
             <Field data-invalid={Boolean(errors.fullName)}>
@@ -174,7 +174,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
                 disabled={isPending}
                 {...register('fullName')}
               />
-              <FieldError errors={[errors.fullName]} />
+              <FieldError className="mt-1" errors={[errors.fullName]} />
             </Field>
             <Field data-invalid={Boolean(errors.email)}>
               <FieldLabel htmlFor="emp-email">Email</FieldLabel>
@@ -186,7 +186,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
                 disabled={isPending}
                 {...register('email')}
               />
-              <FieldError errors={[errors.email]} />
+              <FieldError className="mt-1" errors={[errors.email]} />
             </Field>
             <Field data-invalid={Boolean(errors.phoneNumber)}>
               <FieldLabel htmlFor="emp-phone">Số điện thoại</FieldLabel>
@@ -198,7 +198,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
                 disabled={isPending}
                 {...register('phoneNumber')}
               />
-              <FieldError errors={[errors.phoneNumber]} />
+              <FieldError className="mt-1" errors={[errors.phoneNumber]} />
             </Field>
             <Field data-invalid={Boolean(errors.password)}>
               <FieldLabel htmlFor="emp-password">Mật khẩu</FieldLabel>
@@ -210,7 +210,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
                 disabled={isPending}
                 {...register('password')}
               />
-              <FieldError errors={[errors.password]} />
+              <FieldError className="mt-1" errors={[errors.password]} />
             </Field>
             <Field>
               <FieldLabel>Vai trò</FieldLabel>
@@ -219,6 +219,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
               ) : null}
               {rolesQuery.isError ? (
                 <FieldError
+                  className="mt-1"
                   errors={[
                     {
                       message:
@@ -260,7 +261,7 @@ export function CreateEmployeeDialog({ open, onOpenChange }: CreateEmployeeDialo
                 }}
               />
               <FieldDescription>Mỗi nhân viên chỉ có một vai trò.</FieldDescription>
-              <FieldError errors={[errors.roleId]} />
+              <FieldError className="mt-1" errors={[errors.roleId]} />
             </Field>
           </FieldGroup>
         </form>

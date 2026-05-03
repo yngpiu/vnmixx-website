@@ -104,7 +104,7 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
                 maxLength={10}
                 placeholder="VD: M"
               />
-              <FieldError errors={labelError ? [{ message: labelError }] : []} />
+              <FieldError className="mt-1" errors={labelError ? [{ message: labelError }] : []} />
             </Field>
             <Field>
               <FieldLabel htmlFor="create-size-order">Thứ tự sắp xếp</FieldLabel>

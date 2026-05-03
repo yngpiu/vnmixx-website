@@ -132,7 +132,7 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
                     maxLength={50}
                     placeholder="VD: Kế toán"
                   />
-                  {errors.name ? <FieldError errors={[errors.name]} /> : null}
+                  {errors.name ? <FieldError className="mt-1" errors={[errors.name]} /> : null}
                 </Field>
                 <Field data-invalid={Boolean(errors.description)}>
                   <FieldLabel htmlFor="create-role-desc">Mô tả</FieldLabel>
@@ -145,7 +145,9 @@ export function CreateRoleDialog({ open, onOpenChange }: CreateRoleDialogProps) 
                     rows={3}
                     placeholder="Mô tả ngắn cho vai trò này"
                   />
-                  {errors.description ? <FieldError errors={[errors.description]} /> : null}
+                  {errors.description ? (
+                    <FieldError className="mt-1" errors={[errors.description]} />
+                  ) : null}
                 </Field>
               </FieldGroup>
             }
