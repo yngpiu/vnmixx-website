@@ -1,6 +1,7 @@
 'use client';
 
-import { FieldLabel } from '@repo/ui/components/ui/field';
+import { Field, FieldError, FieldLabel } from '@repo/ui/components/ui/field';
+import { Input } from '@repo/ui/components/ui/input';
 import {
   InputGroup,
   InputGroupAddon,
@@ -16,6 +17,8 @@ export interface LabeledInputProps extends Omit<React.ComponentProps<'input'>, '
   name: string;
   required?: boolean;
   hint?: string;
+  error?: string;
+  invalid?: boolean;
   labelClassName?: string;
   inputClassName?: string;
 }
@@ -30,6 +33,8 @@ export function LabeledInput({
   name,
   required,
   hint,
+  error,
+  invalid,
   labelClassName,
   inputClassName,
   id,
@@ -39,55 +44,61 @@ export function LabeledInput({
   const resolvedId = id ?? name;
   const isPasswordInput = inputProps.type === 'password';
   const resolvedInputType = isPasswordInput && isPasswordVisible ? 'text' : inputProps.type;
+  const hasError = Boolean(invalid || error);
   return (
-    <div className="space-y-2 w-full">
-      <FieldLabel
-        htmlFor={resolvedId}
-        className={cn(labelClassName, 'text-[14px] leading-[24px] text-[#57585A] font-normal')}
-      >
-        {label}
-      </FieldLabel>
-      {isPasswordInput ? (
-        <InputGroup className="h-10 md:h-12 rounded-[4px] border border-[#E7E8E9] bg-white">
-          <InputGroupInput
+    <Field data-invalid={hasError} className="gap-0">
+      <div className="space-y-2 w-full">
+        <FieldLabel
+          htmlFor={resolvedId}
+          className={cn(labelClassName, 'text-[14px] leading-[24px] text-[#57585A] font-normal')}
+        >
+          {label}
+        </FieldLabel>
+        {isPasswordInput ? (
+          <InputGroup className="h-10 md:h-12 rounded-[4px] border border-[#E7E8E9] bg-white">
+            <InputGroupInput
+              {...inputProps}
+              id={resolvedId}
+              type={resolvedInputType}
+              name={name}
+              aria-required={Boolean(required)}
+              aria-invalid={hasError}
+              className={cn(
+                'h-full px-[12px] md:px-[15px] py-[10px] md:py-[15px] text-[14px] leading-[16px] text-[#57585A] placeholder:text-muted-foreground/70',
+                inputProps.className,
+                inputClassName,
+              )}
+            />
+            <InputGroupAddon align="inline-end" className="pr-[15px]">
+              <InputGroupButton
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="size-5 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                onClick={() => setIsPasswordVisible((currentValue) => !currentValue)}
+                aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
+              >
+                {isPasswordVisible ? (
+                  <EyeOffIcon className="size-4" />
+                ) : (
+                  <EyeIcon className="size-4" />
+                )}
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        ) : (
+          <Input
             {...inputProps}
             id={resolvedId}
-            type={resolvedInputType}
             name={name}
             aria-required={Boolean(required)}
-            className={cn(
-              'h-full px-[12px] md:px-[15px] py-[10px] md:py-[15px] text-[14px] leading-[16px] text-[#57585A] placeholder:text-muted-foreground/70',
-              inputProps.className,
-              inputClassName,
-            )}
+            aria-invalid={hasError}
+            className={cn(LABELED_INPUT_CLASS_NAME, inputProps.className, inputClassName)}
           />
-          <InputGroupAddon align="inline-end" className="pr-[15px]">
-            <InputGroupButton
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              className="size-5 text-muted-foreground hover:bg-transparent hover:text-foreground"
-              onClick={() => setIsPasswordVisible((currentValue) => !currentValue)}
-              aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
-            >
-              {isPasswordVisible ? (
-                <EyeOffIcon className="size-4" />
-              ) : (
-                <EyeIcon className="size-4" />
-              )}
-            </InputGroupButton>
-          </InputGroupAddon>
-        </InputGroup>
-      ) : (
-        <input
-          {...inputProps}
-          id={resolvedId}
-          name={name}
-          aria-required={Boolean(required)}
-          className={cn(LABELED_INPUT_CLASS_NAME, inputProps.className, inputClassName)}
-        />
-      )}
-      {hint ? <div className="text-sm text-muted-foreground">{hint}</div> : null}
-    </div>
+        )}
+        {hint ? <div className="text-sm text-muted-foreground">{hint}</div> : null}
+        {error ? <FieldError className="mt-1" errors={[{ message: error }]} /> : null}
+      </div>
+    </Field>
   );
 }

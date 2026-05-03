@@ -4,7 +4,6 @@ import { useForgotPassword } from '@/modules/auth/hooks/use-auth';
 import { LabeledInput } from '@/modules/common/components/labeled-input';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Field, FieldError } from '@repo/ui/components/ui/field';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,11 +12,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, { message: 'Email không được để trống.' })
-    .email({ message: 'Email không hợp lệ.' }),
+  email: z.email({ message: 'Email không hợp lệ.' }),
 });
 
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
@@ -75,19 +70,17 @@ export default function ForgotPasswordPage(): React.JSX.Element {
             Nhập email đã đăng ký để nhận OTP đặt lại mật khẩu.
           </p>
         </div>
-        <Field data-invalid={Boolean(errors.email)} className="gap-0">
-          <LabeledInput
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="Nhập email"
-            disabled={busy}
-            {...emailFieldProps}
-            aria-invalid={Boolean(errors.email)}
-          />
-          {errors.email ? <FieldError errors={[{ message: errors.email.message }]} /> : null}
-        </Field>
+        <LabeledInput
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="Nhập email"
+          disabled={busy}
+          error={errors.email?.message}
+          invalid={Boolean(errors.email)}
+          {...emailFieldProps}
+        />
         {formError ? (
           <p
             className={cn(

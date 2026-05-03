@@ -15,6 +15,7 @@ import {
   buildShopSupportChatMessageContent,
   parseShopSupportMessageContent,
 } from '@/modules/support-chat/utils/support-chat-parse';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@repo/ui/components/ui/drawer';
 import { toast } from '@repo/ui/components/ui/sonner';
@@ -30,6 +31,8 @@ import { ImagePlusIcon, XIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 const INLINE_FIELD_CLASS =
   'box-border min-h-10 max-h-10 w-full shrink rounded-[4px] border border-[#E7E8E9] bg-white px-3 py-0 md:min-h-12 md:max-h-12 md:px-[15px] ' +
@@ -39,6 +42,12 @@ const INLINE_FIELD_CLASS =
 const TIMESTAMP_BOUNDARY_MS = 5 * 60 * 1000;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_CHAT_IMAGES = 10;
+const MAX_DRAFT_LENGTH = 2000;
+const supportChatDraftSchema = z.object({
+  draft: z.string().max(MAX_DRAFT_LENGTH, { message: 'Tin nhắn quá dài.' }),
+});
+
+type SupportChatDraftValues = z.infer<typeof supportChatDraftSchema>;
 
 function isSameDate(dateA: Date, dateB: Date): boolean {
   return (
@@ -147,7 +156,12 @@ export function SupportChatFabSheet(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
   const isLoggedIn = Boolean(accessToken && user);
-  const [draft, setDraft] = useState('');
+  const form = useForm<SupportChatDraftValues>({
+    resolver: zodResolver(supportChatDraftSchema),
+    defaultValues: { draft: '' },
+  });
+  const { register, handleSubmit, watch, setValue } = form;
+  const draft = watch('draft');
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [realtimeMessages, setRealtimeMessages] = useState<ChatMessage[]>([]);
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
@@ -278,12 +292,12 @@ export function SupportChatFabSheet(): React.JSX.Element {
     [chatId, user?.fullName, user?.id],
   );
 
-  const handleSendMessage = async (): Promise<void> => {
+  const handleSendMessage = async (values: SupportChatDraftValues): Promise<void> => {
     if (!socket || !chatId) return;
-    const textContent = draft.trim();
+    const textContent = values.draft.trim();
     const imagesToSend = selectedImages;
     if (!textContent && imagesToSend.length === 0) return;
-    setDraft('');
+    setValue('draft', '', { shouldValidate: true });
     setSelectedImages([]);
     setScrollToBottomTick((tick) => tick + 1);
     if (textContent) {
@@ -515,10 +529,9 @@ export function SupportChatFabSheet(): React.JSX.Element {
                 </div>
                 <form
                   className="shrink-0 border-t border-border bg-card p-4"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void handleSendMessage();
-                  }}
+                  onSubmit={handleSubmit((values: SupportChatDraftValues) => {
+                    void handleSendMessage(values);
+                  })}
                 >
                   <input
                     ref={fileInputRef}
@@ -570,11 +583,9 @@ export function SupportChatFabSheet(): React.JSX.Element {
                       <ImagePlusIcon className="size-5 text-[#57585A]" />
                     </Button>
                     <input
-                      name="supportChatDraft"
                       type="text"
-                      maxLength={2000}
-                      value={draft}
-                      onChange={(event) => setDraft(event.target.value)}
+                      maxLength={MAX_DRAFT_LENGTH}
+                      {...register('draft')}
                       placeholder="Nhập tin nhắn..."
                       className={INLINE_FIELD_CLASS}
                       disabled={!socket}

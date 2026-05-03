@@ -12,6 +12,7 @@ export interface CustomerProfile {
 
 export interface UpdateCustomerProfilePayload {
   fullName: string;
+  phoneNumber?: string;
   dob?: string;
   gender?: CustomerGender;
   avatarUrl?: string;

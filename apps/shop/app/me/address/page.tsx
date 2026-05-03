@@ -17,6 +17,7 @@ import {
   LabeledInputSelect,
   type LabeledInputSelectOption,
 } from '@/modules/common/components/labeled-input-select';
+import { LabeledRadioGroup } from '@/modules/common/components/labeled-radio-group';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { ACCOUNT_MENU_ITEMS } from '@/modules/header/constants/account-menu-items';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,8 +36,6 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { Field, FieldError } from '@repo/ui/components/ui/field';
-import { Label } from '@repo/ui/components/ui/label';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -47,12 +46,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+const regexPhoneNumber = /^(03[2-9]|05[6|8|9]|07[0|6-9]|08[1-9]|09[0-9])[0-9]{7}$/;
+
 const addressSchema = z.object({
   fullName: z.string().trim().min(1, { message: 'Họ tên không được để trống.' }),
   phoneNumber: z
     .string()
     .trim()
-    .regex(/^(84|0[3|5|7|8|9])+([0-9]{8})$/, { message: 'Số điện thoại không đúng định dạng.' }),
+    .min(1, { message: 'Số điện thoại không được để trống.' })
+    .regex(regexPhoneNumber, { message: 'Số điện thoại không đúng định dạng.' }),
   cityId: z.string().min(1, { message: 'Vui lòng chọn Tỉnh/TP.' }),
   districtId: z.string().min(1, { message: 'Vui lòng chọn Quận/Huyện.' }),
   wardId: z.string().min(1, { message: 'Vui lòng chọn Phường/Xã.' }),
@@ -179,7 +181,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
     void registrationName;
     return rest;
   };
-
   useEffect(() => {
     if (!isDialogOpen || !cityId) {
       return;
@@ -194,7 +195,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
       clearErrors(['districtId', 'wardId']);
     }
   }, [cityId, clearErrors, districtId, districtsQuery.data, isDialogOpen, setValue]);
-
   useEffect(() => {
     if (!isDialogOpen || !districtId) {
       return;
@@ -209,7 +209,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
       clearErrors('wardId');
     }
   }, [clearErrors, districtId, isDialogOpen, setValue, wardsQuery.data, watch]);
-
   const closeDialog = (): void => {
     setIsDialogOpen(false);
     setDialogMode('create');
@@ -225,7 +224,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
       isDefault: false,
     });
   };
-
   const openCreateDialog = (): void => {
     setDialogMode('create');
     setEditingAddressId(null);
@@ -241,7 +239,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
     });
     setIsDialogOpen(true);
   };
-
   const openEditDialog = (address: CustomerAddress): void => {
     setDialogMode('edit');
     setEditingAddressId(address.id);
@@ -270,7 +267,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
     await removeAddressMutation.mutateAsync(deletingAddress.id);
     setDeletingAddress(null);
   };
-
   const handleSubmitAddress = async (values: AddressFormValues): Promise<void> => {
     const payload = {
       fullName: values.fullName.trim().replace(/\s+/g, ' '),
@@ -291,7 +287,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
     }
     await createAddressMutation.mutateAsync(payload);
   };
-
   if (addressListQuery.isLoading) {
     return (
       <main className="shop-shell-container pb-16 pt-8">
@@ -299,7 +294,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
       </main>
     );
   }
-
   if (addressListQuery.isError) {
     return (
       <main className="shop-shell-container pb-16 pt-8">
@@ -311,17 +305,19 @@ export default function AccountAddressBookPage(): React.JSX.Element {
       </main>
     );
   }
-
   return (
     <main className="shop-shell-container pb-16 pt-6">
       <nav className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Trang chủ
         </Link>
-        <span className="mx-2">-</span>
+        <span className="mx-2">/</span>
+        <Link href="/me/profile" className="hover:text-foreground">
+          Tài khoản
+        </Link>
+        <span className="mx-2">/</span>
         <span>Sổ địa chỉ</span>
       </nav>
-
       <section className="mt-8 grid gap-8 md:grid-cols-[270px_minmax(0,1fr)] md:items-start">
         <aside className="radius-diagonal-lg self-start border border-border p-4">
           <div className="mb-3 border-b border-border pb-3 text-[20px] font-semibold text-foreground">
@@ -348,7 +344,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
             })}
           </ul>
         </aside>
-
         <div>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <h1 className="text-[24px] leading-[30px] font-semibold uppercase text-foreground">
@@ -358,7 +353,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
               THÊM ĐỊA CHỈ
             </PrimaryCtaButton>
           </div>
-
           {addresses.length === 0 ? (
             <div className="mt-6 flex min-h-[180px] items-center justify-center rounded-md bg-white px-4 text-sm text-muted-foreground">
               Bạn chưa có địa chỉ nào trong sổ địa chỉ.
@@ -422,7 +416,6 @@ export default function AccountAddressBookPage(): React.JSX.Element {
           )}
         </div>
       </section>
-
       <Dialog
         open={isDialogOpen}
         onOpenChange={(openValue: boolean) => {
@@ -457,70 +450,56 @@ export default function AccountAddressBookPage(): React.JSX.Element {
             noValidate
           >
             <div className="grid gap-4 md:grid-cols-2">
-              <Field data-invalid={Boolean(errors.fullName)} className="gap-0">
-                <LabeledInput
-                  label="Họ tên"
-                  name="fullName"
-                  placeholder="Nhập họ tên"
-                  disabled={isFormSubmitting}
-                  {...omitRegisterName(fullNameRegistration)}
-                />
-                {errors.fullName ? (
-                  <FieldError errors={[{ message: errors.fullName.message }]} />
-                ) : null}
-              </Field>
-              <Field data-invalid={Boolean(errors.phoneNumber)} className="gap-0">
-                <LabeledInput
-                  label="Số điện thoại"
-                  name="phoneNumber"
-                  placeholder="Nhập số điện thoại"
-                  disabled={isFormSubmitting}
-                  {...omitRegisterName(phoneNumberRegistration)}
-                />
-                {errors.phoneNumber ? (
-                  <FieldError errors={[{ message: errors.phoneNumber.message }]} />
-                ) : null}
-              </Field>
-              <Field data-invalid={Boolean(errors.cityId)} className="gap-0">
-                <LabeledInputSelect
-                  label="Chọn Tỉnh/TP"
-                  name="cityId"
-                  value={cityId}
-                  options={cityOptions}
-                  placeholder={citiesQuery.isLoading ? 'Đang tải...' : 'Chọn Tỉnh/TP'}
-                  disabled={isFormSubmitting || citiesQuery.isLoading}
-                  onValueChange={(value: string) => {
-                    setValue('cityId', value, { shouldDirty: true });
-                    setValue('districtId', '', { shouldDirty: true });
-                    setValue('wardId', '', { shouldDirty: true });
-                    clearErrors(['cityId', 'districtId', 'wardId']);
-                  }}
-                  invalid={Boolean(errors.cityId)}
-                />
-                {errors.cityId ? (
-                  <FieldError errors={[{ message: errors.cityId.message }]} />
-                ) : null}
-              </Field>
-              <Field data-invalid={Boolean(errors.districtId)} className="gap-0">
-                <LabeledInputSelect
-                  label="Quận/Huyện"
-                  name="districtId"
-                  value={districtId}
-                  options={districtOptions}
-                  placeholder={!cityId ? 'Chọn Tỉnh/TP trước' : 'Chọn Quận/Huyện'}
-                  disabled={isFormSubmitting || !cityId || districtsQuery.isLoading}
-                  onValueChange={(value: string) => {
-                    setValue('districtId', value, { shouldDirty: true });
-                    setValue('wardId', '', { shouldDirty: true });
-                    clearErrors(['districtId', 'wardId']);
-                  }}
-                  invalid={Boolean(errors.districtId)}
-                />
-                {errors.districtId ? (
-                  <FieldError errors={[{ message: errors.districtId.message }]} />
-                ) : null}
-              </Field>
-              <Field data-invalid={Boolean(errors.wardId)} className="gap-0 md:col-span-2">
+              <LabeledInput
+                label="Họ tên"
+                name="fullName"
+                placeholder="Nhập họ tên"
+                disabled={isFormSubmitting}
+                error={errors.fullName?.message}
+                invalid={Boolean(errors.fullName)}
+                {...omitRegisterName(fullNameRegistration)}
+              />
+              <LabeledInput
+                label="Số điện thoại"
+                name="phoneNumber"
+                placeholder="Nhập số điện thoại"
+                disabled={isFormSubmitting}
+                error={errors.phoneNumber?.message}
+                invalid={Boolean(errors.phoneNumber)}
+                {...omitRegisterName(phoneNumberRegistration)}
+              />
+              <LabeledInputSelect
+                label="Chọn Tỉnh/TP"
+                name="cityId"
+                value={cityId}
+                options={cityOptions}
+                placeholder={citiesQuery.isLoading ? 'Đang tải...' : 'Chọn Tỉnh/TP'}
+                disabled={isFormSubmitting || citiesQuery.isLoading}
+                onValueChange={(value: string) => {
+                  setValue('cityId', value, { shouldDirty: true });
+                  setValue('districtId', '', { shouldDirty: true });
+                  setValue('wardId', '', { shouldDirty: true });
+                  clearErrors(['cityId', 'districtId', 'wardId']);
+                }}
+                invalid={Boolean(errors.cityId)}
+                error={errors.cityId?.message}
+              />
+              <LabeledInputSelect
+                label="Quận/Huyện"
+                name="districtId"
+                value={districtId}
+                options={districtOptions}
+                placeholder={!cityId ? 'Chọn Tỉnh/TP trước' : 'Chọn Quận/Huyện'}
+                disabled={isFormSubmitting || !cityId || districtsQuery.isLoading}
+                onValueChange={(value: string) => {
+                  setValue('districtId', value, { shouldDirty: true });
+                  setValue('wardId', '', { shouldDirty: true });
+                  clearErrors(['districtId', 'wardId']);
+                }}
+                invalid={Boolean(errors.districtId)}
+                error={errors.districtId?.message}
+              />
+              <div className="md:col-span-2">
                 <LabeledInputSelect
                   label="Phường xã"
                   name="wardId"
@@ -532,62 +511,35 @@ export default function AccountAddressBookPage(): React.JSX.Element {
                     setValue('wardId', value, { shouldDirty: true })
                   }
                   invalid={Boolean(errors.wardId)}
+                  error={errors.wardId?.message}
                 />
-                {errors.wardId ? (
-                  <FieldError errors={[{ message: errors.wardId.message }]} />
-                ) : null}
-              </Field>
-              <Field data-invalid={Boolean(errors.addressLine)} className="gap-0 md:col-span-2">
+              </div>
+              <div className="md:col-span-2">
                 <LabeledInput
                   label="Địa chỉ"
                   name="addressLine"
                   placeholder="Nhập địa chỉ"
                   disabled={isFormSubmitting}
+                  error={errors.addressLine?.message}
+                  invalid={Boolean(errors.addressLine)}
                   {...omitRegisterName(addressLineRegistration)}
                 />
-                {errors.addressLine ? (
-                  <FieldError errors={[{ message: errors.addressLine.message }]} />
-                ) : null}
-              </Field>
-            </div>
-
-            <Field data-invalid={Boolean(errors.type)} className="gap-0">
-              <div className="space-y-2 w-full">
-                <Label className="text-[14px] leading-[24px] text-[#57585A] font-normal">
-                  Loại địa chỉ
-                </Label>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="flex h-[48px] items-center gap-3 rounded-[4px] border border-border bg-white px-[15px] py-[15px] text-[14px] leading-[16px] text-[#57585A]">
-                    <input
-                      type="radio"
-                      value="HOME"
-                      checked={selectedAddressType === 'HOME'}
-                      onChange={() =>
-                        setValue('type', 'HOME', { shouldValidate: true, shouldDirty: true })
-                      }
-                      disabled={isFormSubmitting}
-                      className="size-4 accent-primary"
-                    />
-                    Nhà/chung cư
-                  </label>
-                  <label className="flex h-[48px] items-center gap-3 rounded-[4px] border border-border bg-white px-[15px] py-[15px] text-[14px] leading-[16px] text-[#57585A]">
-                    <input
-                      type="radio"
-                      value="OFFICE"
-                      checked={selectedAddressType === 'OFFICE'}
-                      onChange={() =>
-                        setValue('type', 'OFFICE', { shouldValidate: true, shouldDirty: true })
-                      }
-                      disabled={isFormSubmitting}
-                      className="size-4 accent-primary"
-                    />
-                    Cơ quan/công ty
-                  </label>
-                </div>
               </div>
-              {errors.type ? <FieldError errors={[{ message: errors.type.message }]} /> : null}
-            </Field>
-
+            </div>
+            <LabeledRadioGroup<'HOME' | 'OFFICE'>
+              label="Loại địa chỉ"
+              value={selectedAddressType}
+              options={[
+                { value: 'HOME', label: 'Nhà/chung cư' },
+                { value: 'OFFICE', label: 'Cơ quan/công ty' },
+              ]}
+              onValueChange={(value) =>
+                setValue('type', value, { shouldValidate: true, shouldDirty: true })
+              }
+              disabled={isFormSubmitting}
+              invalid={Boolean(errors.type)}
+              error={errors.type?.message}
+            />
             <div className="flex items-center gap-2">
               <Checkbox
                 id="is-default-address"
@@ -600,11 +552,10 @@ export default function AccountAddressBookPage(): React.JSX.Element {
                 }
                 disabled={isFormSubmitting}
               />
-              <Label htmlFor="is-default-address" className="text-sm text-muted-foreground">
+              <label htmlFor="is-default-address" className="text-sm text-muted-foreground">
                 Đặt làm mặc định
-              </Label>
+              </label>
             </div>
-
             <PrimaryCtaButton type="submit" disabled={isFormSubmitting}>
               {isFormSubmitting
                 ? 'ĐANG XỬ LÝ...'

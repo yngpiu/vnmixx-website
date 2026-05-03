@@ -3,30 +3,38 @@
 import { BirthDatePicker } from '@/modules/auth/components/birth-date-picker';
 import { GenderSelect, type GenderValue } from '@/modules/auth/components/gender-select';
 import { useRegister } from '@/modules/auth/hooks/use-auth';
+import { LabeledCheckbox } from '@/modules/common/components/labeled-checkbox';
 import { LabeledInput } from '@/modules/common/components/labeled-input';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Checkbox } from '@repo/ui/components/ui/checkbox';
-import { Field, FieldError } from '@repo/ui/components/ui/field';
 import { cn } from '@repo/ui/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
+
+const regexPhoneNumber = /^(03[2-9]|05[6|8|9]|07[0|6-9]|08[1-9]|09[0-9])[0-9]{7}$/;
+const GENDER_VALUES = ['MALE', 'FEMALE', 'OTHER'] as const;
 
 const signupSchema = z
   .object({
     fullName: z.string().min(1, { message: 'Họ và tên không được để trống.' }),
-    email: z
+    email: z.email({ message: 'Email không hợp lệ.' }),
+    phoneNumber: z
       .string()
-      .min(1, { message: 'Email không được để trống.' })
-      .email({ message: 'Email không hợp lệ.' }),
-    phoneNumber: z.string().min(1, { message: 'Điện thoại không được để trống.' }),
+      .trim()
+      .min(1, { message: 'Điện thoại không được để trống.' })
+      .regex(regexPhoneNumber, { message: 'Số điện thoại không đúng định dạng.' }),
     dob: z
       .string()
-      .optional()
-      .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), { message: 'Ngày sinh không hợp lệ.' }),
-    gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
+      .min(1, { message: 'Vui lòng chọn ngày sinh.' })
+      .refine((v) => /^\d{4}-\d{2}-\d{2}$/.test(v), { message: 'Ngày sinh không hợp lệ.' }),
+    gender: z
+      .string()
+      .min(1, { message: 'Vui lòng chọn giới tính.' })
+      .refine((value) => GENDER_VALUES.includes(value as (typeof GENDER_VALUES)[number]), {
+        message: 'Giới tính không hợp lệ.',
+      }),
     password: z.string().min(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự.' }),
     confirmPassword: z.string().min(1, { message: 'Vui lòng nhập lại mật khẩu.' }),
     termsAccepted: z
@@ -52,8 +60,8 @@ export default function SignupPage(): React.JSX.Element {
       fullName: '',
       email: '',
       phoneNumber: '',
-      dob: undefined,
-      gender: 'FEMALE',
+      dob: '',
+      gender: '',
       password: '',
       confirmPassword: '',
       termsAccepted: false,
@@ -64,7 +72,6 @@ export default function SignupPage(): React.JSX.Element {
     control,
     register,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors },
   } = form;
@@ -87,10 +94,10 @@ export default function SignupPage(): React.JSX.Element {
   const passwordFieldProps = omitRegisterName(passwordRegistration);
   const confirmPasswordFieldProps = omitRegisterName(confirmPasswordRegistration);
 
-  const gender = watch('gender');
-  const dob = watch('dob');
-  const termsAccepted = watch('termsAccepted');
+  const gender = useWatch({ control, name: 'gender' });
+  const dob = useWatch({ control, name: 'dob' });
   const busy = registerMutation.isPending;
+  const isSubmitDisabled = busy;
 
   const onSubmit = async (values: SignupValues): Promise<void> => {
     setFormError(null);
@@ -109,7 +116,7 @@ export default function SignupPage(): React.JSX.Element {
         phoneNumber: values.phoneNumber,
         password: values.password,
         ...(values.dob ? { dob: values.dob } : {}),
-        gender: values.gender,
+        gender: values.gender as 'MALE' | 'FEMALE' | 'OTHER',
       };
       const backendResponse = await registerMutation.mutateAsync(payload);
       setMessage(backendResponse.message);
@@ -140,139 +147,104 @@ export default function SignupPage(): React.JSX.Element {
           noValidate
         >
           <div className="space-y-5 px-8 md:pr-16">
-            <Field data-invalid={Boolean(errors.fullName)} className="gap-0">
-              <LabeledInput
-                label="Họ và tên"
-                name="fullName"
-                placeholder="Nhập họ và tên"
-                autoComplete="name"
-                disabled={busy}
-                {...fullNameFieldProps}
-                aria-invalid={Boolean(errors.fullName)}
-              />
-              {errors.fullName ? (
-                <FieldError errors={[{ message: errors.fullName.message }]} />
-              ) : null}
-            </Field>
+            <LabeledInput
+              label="Họ và tên"
+              name="fullName"
+              placeholder="Nhập họ và tên"
+              autoComplete="name"
+              disabled={busy}
+              error={errors.fullName?.message}
+              invalid={Boolean(errors.fullName)}
+              {...fullNameFieldProps}
+            />
+            <LabeledInput
+              label="Email"
+              name="email"
+              placeholder="Nhập email"
+              type="email"
+              autoComplete="email"
+              disabled={busy}
+              error={errors.email?.message}
+              invalid={Boolean(errors.email)}
+              {...emailFieldProps}
+            />
+            <LabeledInput
+              label="Điện thoại:"
+              name="phoneNumber"
+              placeholder="Nhập số điện thoại"
+              autoComplete="tel"
+              disabled={busy}
+              error={errors.phoneNumber?.message}
+              invalid={Boolean(errors.phoneNumber)}
+              {...phoneNumberFieldProps}
+            />
 
-            <Field data-invalid={Boolean(errors.email)} className="gap-0">
-              <LabeledInput
-                label="Email"
-                name="email"
-                placeholder="Nhập email"
-                type="email"
-                autoComplete="email"
-                disabled={busy}
-                {...emailFieldProps}
-                aria-invalid={Boolean(errors.email)}
-              />
-              {errors.email ? <FieldError errors={[{ message: errors.email.message }]} /> : null}
-            </Field>
-
-            <Field data-invalid={Boolean(errors.phoneNumber)} className="gap-0">
-              <LabeledInput
-                label="Điện thoại:"
-                name="phoneNumber"
-                placeholder="Nhập số điện thoại"
-                autoComplete="tel"
-                disabled={busy}
-                {...phoneNumberFieldProps}
-                aria-invalid={Boolean(errors.phoneNumber)}
-              />
-              {errors.phoneNumber ? (
-                <FieldError errors={[{ message: errors.phoneNumber.message }]} />
-              ) : null}
-            </Field>
-
-            <Field data-invalid={Boolean(errors.dob)} className="gap-0">
-              <BirthDatePicker
-                label="Ngày sinh:"
-                name="dob"
-                placeholder="Ngày sinh..."
-                value={dob}
-                disabled={busy}
-                onValueChange={(next: string | undefined) =>
-                  setValue('dob', next, { shouldValidate: true })
-                }
-                invalid={Boolean(errors.dob)}
-              />
-              {errors.dob ? <FieldError errors={[{ message: errors.dob.message }]} /> : null}
-            </Field>
-
-            <Field data-invalid={Boolean(errors.gender)} className="gap-0">
-              <GenderSelect
-                name="gender"
-                label="Giới tính"
-                value={gender as GenderValue}
-                disabled={busy}
-                onValueChange={(v: GenderValue) => setValue('gender', v, { shouldValidate: true })}
-                invalid={Boolean(errors.gender)}
-              />
-              {errors.gender ? <FieldError errors={[{ message: errors.gender.message }]} /> : null}
-            </Field>
+            <BirthDatePicker
+              label="Ngày sinh:"
+              name="dob"
+              placeholder="Ngày sinh..."
+              value={dob}
+              disabled={busy}
+              onValueChange={(next: string | undefined) =>
+                setValue('dob', next ?? '', { shouldValidate: true })
+              }
+              invalid={Boolean(errors.dob)}
+              error={errors.dob?.message}
+            />
+            <GenderSelect
+              name="gender"
+              label="Giới tính"
+              value={
+                GENDER_VALUES.includes(gender as GenderValue) ? (gender as GenderValue) : undefined
+              }
+              disabled={busy}
+              onValueChange={(v: GenderValue) => setValue('gender', v, { shouldValidate: true })}
+              invalid={Boolean(errors.gender)}
+              error={errors.gender?.message}
+            />
           </div>
 
           <div className="space-y-5 px-8 md:pl-16">
-            <Field data-invalid={Boolean(errors.password)} className="gap-0">
-              <LabeledInput
-                label="Mật khẩu"
-                name="password"
-                type="password"
-                placeholder="Nhập mật khẩu"
-                autoComplete="new-password"
-                disabled={busy}
-                {...passwordFieldProps}
-                aria-invalid={Boolean(errors.password)}
-              />
-              {errors.password ? (
-                <FieldError errors={[{ message: errors.password.message }]} />
-              ) : null}
-            </Field>
+            <LabeledInput
+              label="Mật khẩu"
+              name="password"
+              type="password"
+              placeholder="Nhập mật khẩu"
+              autoComplete="new-password"
+              disabled={busy}
+              error={errors.password?.message}
+              invalid={Boolean(errors.password)}
+              {...passwordFieldProps}
+            />
+            <LabeledInput
+              label="Nhập lại mật khẩu"
+              name="confirmPassword"
+              type="password"
+              placeholder="Nhập lại mật khẩu"
+              autoComplete="new-password"
+              disabled={busy}
+              error={errors.confirmPassword?.message}
+              invalid={Boolean(errors.confirmPassword)}
+              {...confirmPasswordFieldProps}
+            />
 
-            <Field data-invalid={Boolean(errors.confirmPassword)} className="gap-0">
-              <LabeledInput
-                label="Nhập lại mật khẩu"
-                name="confirmPassword"
-                type="password"
-                placeholder="Nhập lại mật khẩu"
-                autoComplete="new-password"
-                disabled={busy}
-                {...confirmPasswordFieldProps}
-                aria-invalid={Boolean(errors.confirmPassword)}
+            <div className="pt-2">
+              <Controller
+                name="termsAccepted"
+                control={control}
+                render={({ field }) => (
+                  <LabeledCheckbox
+                    id="termsAccepted"
+                    label="Đồng ý với các điều khoản của IVY"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    disabled={busy}
+                    invalid={Boolean(errors.termsAccepted)}
+                    error={errors.termsAccepted?.message}
+                  />
+                )}
               />
-              {errors.confirmPassword ? (
-                <FieldError errors={[{ message: errors.confirmPassword.message }]} />
-              ) : null}
-            </Field>
-
-            <Field data-invalid={Boolean(errors.termsAccepted)} className="gap-0">
-              <div className="pt-2 space-y-2">
-                <Controller
-                  name="termsAccepted"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="flex items-center gap-3">
-                      <Checkbox
-                        id="termsAccepted"
-                        checked={field.value}
-                        onCheckedChange={(v) => field.onChange(Boolean(v))}
-                        disabled={busy}
-                        aria-invalid={Boolean(errors.termsAccepted)}
-                      />
-                      <label
-                        htmlFor="termsAccepted"
-                        className="text-sm leading-relaxed text-muted-foreground"
-                      >
-                        Đồng ý với các điều khoản của IVY
-                      </label>
-                    </div>
-                  )}
-                />
-                {errors.termsAccepted ? (
-                  <FieldError errors={[{ message: errors.termsAccepted.message }]} />
-                ) : null}
-              </div>
-            </Field>
+            </div>
 
             {formError ? (
               <p
@@ -294,8 +266,8 @@ export default function SignupPage(): React.JSX.Element {
             <PrimaryCtaButton
               type="submit"
               className="mt-2"
-              disabled={!termsAccepted || busy}
-              aria-disabled={!termsAccepted || busy}
+              disabled={isSubmitDisabled}
+              aria-disabled={isSubmitDisabled}
             >
               ĐĂNG KÝ
             </PrimaryCtaButton>

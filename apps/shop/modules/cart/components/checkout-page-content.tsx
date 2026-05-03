@@ -193,7 +193,7 @@ export function CheckoutPageContent(): React.JSX.Element {
             )}
             <div className="pt-1">
               <PrimaryCtaButton ctaVariant="outline" asChild className="w-auto!">
-                <Link href="/tai-khoan/dia-chi">+ THÊM ĐỊA CHỈ</Link>
+                <Link href="/me/address">+ THÊM ĐỊA CHỈ</Link>
               </PrimaryCtaButton>
             </div>
           </section>

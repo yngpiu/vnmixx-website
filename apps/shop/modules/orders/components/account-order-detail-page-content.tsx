@@ -50,11 +50,15 @@ export function AccountOrderDetailPageContent({
         <Link href="/" className="hover:text-foreground">
           Trang chủ
         </Link>
-        <span className="mx-2">-</span>
-        <Link href="/tai-khoan/don-hang" className="hover:text-foreground">
+        <span className="mx-2">/</span>
+        <Link href="/me/profile" className="hover:text-foreground">
+          Tài khoản
+        </Link>
+        <span className="mx-2">/</span>
+        <Link href="/me/order" className="hover:text-foreground">
           Quản lý đơn hàng
         </Link>
-        <span className="mx-2">-</span>
+        <span className="mx-2">/</span>
         <span>Chi tiết đơn hàng</span>
       </nav>
       <section className="mt-8 grid gap-8 md:grid-cols-[270px_minmax(0,1fr)] md:items-start">
@@ -65,7 +69,7 @@ export function AccountOrderDetailPageContent({
           <ul className="space-y-0.5">
             {ACCOUNT_MENU_ITEMS.map((item) => {
               const ItemIcon = item.icon;
-              const isOrderRoute = item.href === '/tai-khoan/don-hang';
+              const isOrderRoute = item.href === '/me/order';
               const isActive = isOrderRoute
                 ? pathname.startsWith(item.href)
                 : pathname === item.href;
@@ -88,7 +92,7 @@ export function AccountOrderDetailPageContent({
         </aside>
         <div>
           <Link
-            href="/tai-khoan/don-hang"
+            href="/me/order"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ChevronLeftIcon className="size-4" />
@@ -200,7 +204,7 @@ export function AccountOrderDetailPageContent({
                 </div>
                 <div className="flex justify-start">
                   <PrimaryCtaButton className="w-auto min-w-[220px]" asChild>
-                    <Link href="/tai-khoan/don-hang">QUAY LẠI DANH SÁCH</Link>
+                    <Link href="/me/order">QUAY LẠI DANH SÁCH</Link>
                   </PrimaryCtaButton>
                 </div>
               </div>

@@ -1,9 +1,23 @@
 import { apiClient } from '@/lib/axios';
-import type { WishlistItem } from '@/modules/wishlist/types/wishlist';
+import type { PaginatedWishlistResult, WishlistItem } from '@/modules/wishlist/types/wishlist';
 
-export async function getMyWishlist(): Promise<WishlistItem[]> {
-  const { data } = await apiClient.get<WishlistItem[]>('/me/wishlist');
-  return Array.isArray(data) ? data : [];
+export async function getMyWishlist(params: {
+  page: number;
+  limit: number;
+}): Promise<PaginatedWishlistResult> {
+  const { data } = await apiClient.get<{
+    data: WishlistItem[];
+    meta: PaginatedWishlistResult['meta'];
+  }>('/me/wishlist', {
+    params: {
+      page: params.page,
+      limit: params.limit,
+    },
+  });
+  return {
+    data: Array.isArray(data.data) ? data.data : [],
+    meta: data.meta,
+  };
 }
 
 export async function addMyWishlistItem(productId: number): Promise<void> {

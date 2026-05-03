@@ -10,6 +10,8 @@ export default function robots(): MetadataRoute.Robots {
         '/gio-hang',
         '/dat-hang',
         '/dat-hang/',
+        '/me',
+        '/me/',
         '/tai-khoan',
         '/tai-khoan/',
         '/login',

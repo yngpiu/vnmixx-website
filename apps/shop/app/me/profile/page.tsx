@@ -17,7 +17,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
-import { Field, FieldError } from '@repo/ui/components/ui/field';
+import { Field } from '@repo/ui/components/ui/field';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,14 +28,16 @@ import { useEffect, useState, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+const regexPhoneNumber = /^(03[2-9]|05[6|8|9]|07[0|6-9]|08[1-9]|09[0-9])[0-9]{7}$/;
+
 const profileSchema = z.object({
   fullName: z.string().trim().min(1, { message: 'Họ và tên không được để trống.' }),
-  phoneNumber: z.string().trim().min(1, { message: 'Số điện thoại không được để trống.' }),
-  email: z
+  phoneNumber: z
     .string()
     .trim()
-    .min(1, { message: 'Email không được để trống.' })
-    .email({ message: 'Email không hợp lệ.' }),
+    .min(1, { message: 'Số điện thoại không được để trống.' })
+    .regex(regexPhoneNumber, { message: 'Số điện thoại không đúng định dạng.' }),
+  email: z.email({ message: 'Email không hợp lệ.' }),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
   dob: z
     .string()
@@ -182,7 +184,6 @@ export default function AccountPage(): React.JSX.Element {
       toast.error(error instanceof Error ? error.message : 'Không thể đổi mật khẩu.');
     },
   });
-
   useEffect(() => {
     if (!profileQuery.data) {
       return;
@@ -195,7 +196,6 @@ export default function AccountPage(): React.JSX.Element {
       dob: normalizeDateOfBirth(profileQuery.data.dob),
     });
   }, [profileQuery.data, reset]);
-
   useEffect(() => {
     return () => {
       if (localAvatarPreviewUrl) {
@@ -203,7 +203,6 @@ export default function AccountPage(): React.JSX.Element {
       }
     };
   }, [localAvatarPreviewUrl]);
-
   const isBusy = profileQuery.isLoading || isSubmittingProfile;
   const isChangingPassword = changePasswordMutation.isPending;
   const canSubmit = isDirty || pendingAvatarFile !== null;
@@ -218,7 +217,6 @@ export default function AccountPage(): React.JSX.Element {
   const gender = watch('gender');
   const dob = watch('dob');
   const avatarUrl = localAvatarPreviewUrl ?? profileQuery.data?.avatarUrl ?? undefined;
-
   const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const selectedFile = event.target.files?.[0];
     event.target.value = '';
@@ -235,7 +233,6 @@ export default function AccountPage(): React.JSX.Element {
     setPendingAvatarFile(selectedFile);
     setLocalAvatarPreviewUrl(URL.createObjectURL(selectedFile));
   };
-
   const onSubmit = async (values: ProfileValues): Promise<void> => {
     setIsSubmittingProfile(true);
     try {
@@ -245,11 +242,13 @@ export default function AccountPage(): React.JSX.Element {
       }
       const payload: {
         fullName: string;
+        phoneNumber?: string;
         dob?: string;
         gender: CustomerGender;
         avatarUrl?: string;
       } = {
         fullName: values.fullName.trim().replace(/\s+/g, ' '),
+        phoneNumber: values.phoneNumber.trim(),
         gender: values.gender,
         ...(values.dob ? { dob: values.dob } : {}),
         ...(nextAvatarUrl ? { avatarUrl: nextAvatarUrl } : {}),
@@ -261,19 +260,16 @@ export default function AccountPage(): React.JSX.Element {
       setIsSubmittingProfile(false);
     }
   };
-
   const handleChangePasswordSubmit = async (values: ChangePasswordValues): Promise<void> => {
     await changePasswordMutation.mutateAsync({
       currentPassword: values.currentPassword,
       newPassword: values.newPassword,
     });
   };
-
   const closeChangePasswordDialog = (): void => {
     setIsChangePasswordDialogOpen(false);
     resetChangePasswordForm();
   };
-
   if (profileQuery.isLoading) {
     return (
       <main className="shop-shell-container pb-16 pt-8">
@@ -281,7 +277,6 @@ export default function AccountPage(): React.JSX.Element {
       </main>
     );
   }
-
   if (profileQuery.isError || !profileQuery.data) {
     return (
       <main className="shop-shell-container pb-16 pt-8">
@@ -293,17 +288,19 @@ export default function AccountPage(): React.JSX.Element {
       </main>
     );
   }
-
   return (
     <main className="shop-shell-container pb-16 pt-6">
       <nav className="text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Trang chủ
         </Link>
-        <span className="mx-2">-</span>
+        <span className="mx-2">/</span>
+        <Link href="/me/profile" className="hover:text-foreground">
+          Tài khoản
+        </Link>
+        <span className="mx-2">/</span>
         <span>Thông tin tài khoản</span>
       </nav>
-
       <section className="mt-8 grid gap-8 md:grid-cols-[270px_minmax(0,1fr)] md:items-start">
         <aside className="radius-diagonal-lg self-start border border-border p-4">
           <div className="mb-3 border-b border-border pb-3 text-[20px] font-semibold text-foreground">
@@ -330,7 +327,6 @@ export default function AccountPage(): React.JSX.Element {
             })}
           </ul>
         </aside>
-
         <div>
           <h1 className="text-[24px] leading-[30px] font-semibold uppercase text-foreground">
             Tài khoản của tôi
@@ -367,83 +363,59 @@ export default function AccountPage(): React.JSX.Element {
                 </div>
               </div>
             </Field>
-
-            <Field data-invalid={Boolean(errors.fullName)} className="gap-0">
-              <LabeledInput
-                label="Họ và tên"
-                name="fullName"
-                placeholder="Nhập họ và tên"
-                disabled={isBusy}
-                {...omitRegisterName(fullNameRegistration)}
-                aria-invalid={Boolean(errors.fullName)}
-              />
-              {errors.fullName ? (
-                <FieldError errors={[{ message: errors.fullName.message }]} />
-              ) : null}
-            </Field>
-
-            <Field data-invalid={Boolean(errors.phoneNumber)} className="gap-0">
-              <LabeledInput
-                label="Số điện thoại"
-                name="phoneNumber"
-                placeholder="Nhập số điện thoại"
-                autoComplete="tel"
-                disabled
-                readOnly
-                {...omitRegisterName(phoneNumberRegistration)}
-                aria-invalid={Boolean(errors.phoneNumber)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Số điện thoại hiện chưa hỗ trợ cập nhật.
-              </p>
-              {errors.phoneNumber ? (
-                <FieldError errors={[{ message: errors.phoneNumber.message }]} />
-              ) : null}
-            </Field>
-
-            <Field data-invalid={Boolean(errors.email)} className="gap-0">
-              <LabeledInput
-                label="Email"
-                name="email"
-                type="email"
-                disabled
-                readOnly
-                {...omitRegisterName(emailRegistration)}
-                aria-invalid={Boolean(errors.email)}
-              />
-              <p className="text-xs text-muted-foreground">Email hiện chưa hỗ trợ cập nhật.</p>
-              {errors.email ? <FieldError errors={[{ message: errors.email.message }]} /> : null}
-            </Field>
-
-            <Field data-invalid={Boolean(errors.gender)} className="gap-0">
-              <GenderSelect
-                name="gender"
-                label="Giới tính"
-                value={gender as GenderValue}
-                disabled={isBusy}
-                onValueChange={(value: GenderValue) =>
-                  setValue('gender', value, { shouldValidate: true, shouldDirty: true })
-                }
-                invalid={Boolean(errors.gender)}
-              />
-              {errors.gender ? <FieldError errors={[{ message: errors.gender.message }]} /> : null}
-            </Field>
-
-            <Field data-invalid={Boolean(errors.dob)} className="gap-0">
-              <BirthDatePicker
-                label="Ngày sinh"
-                name="dob"
-                placeholder="Ngày sinh..."
-                value={dob}
-                disabled={isBusy}
-                onValueChange={(value: string | undefined) =>
-                  setValue('dob', value, { shouldValidate: true, shouldDirty: true })
-                }
-                invalid={Boolean(errors.dob)}
-              />
-              {errors.dob ? <FieldError errors={[{ message: errors.dob.message }]} /> : null}
-            </Field>
-
+            <LabeledInput
+              label="Họ và tên"
+              name="fullName"
+              placeholder="Nhập họ và tên"
+              disabled={isBusy}
+              error={errors.fullName?.message}
+              invalid={Boolean(errors.fullName)}
+              {...omitRegisterName(fullNameRegistration)}
+            />
+            <LabeledInput
+              label="Số điện thoại"
+              name="phoneNumber"
+              placeholder="Nhập số điện thoại"
+              autoComplete="tel"
+              disabled={isBusy}
+              error={errors.phoneNumber?.message}
+              invalid={Boolean(errors.phoneNumber)}
+              {...omitRegisterName(phoneNumberRegistration)}
+            />
+            <LabeledInput
+              label="Email"
+              name="email"
+              type="email"
+              disabled
+              readOnly
+              hint="Email hiện chưa hỗ trợ cập nhật."
+              error={errors.email?.message}
+              invalid={Boolean(errors.email)}
+              {...omitRegisterName(emailRegistration)}
+            />
+            <GenderSelect
+              name="gender"
+              label="Giới tính"
+              value={gender as GenderValue}
+              disabled={isBusy}
+              onValueChange={(value: GenderValue) =>
+                setValue('gender', value, { shouldValidate: true, shouldDirty: true })
+              }
+              invalid={Boolean(errors.gender)}
+              error={errors.gender?.message}
+            />
+            <BirthDatePicker
+              label="Ngày sinh"
+              name="dob"
+              placeholder="Ngày sinh..."
+              value={dob}
+              disabled={isBusy}
+              onValueChange={(value: string | undefined) =>
+                setValue('dob', value, { shouldValidate: true, shouldDirty: true })
+              }
+              invalid={Boolean(errors.dob)}
+              error={errors.dob?.message}
+            />
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <PrimaryCtaButton
                 type="submit"
@@ -497,45 +469,36 @@ export default function AccountPage(): React.JSX.Element {
             className="mx-auto mt-8 w-full max-w-[820px] space-y-8"
             noValidate
           >
-            <Field data-invalid={Boolean(changePasswordErrors.currentPassword)} className="gap-0">
-              <LabeledInput
-                type="password"
-                label="Mật khẩu hiện tại"
-                name="currentPassword"
-                disabled={isChangingPassword}
-                autoComplete="current-password"
-                {...omitRegisterName(registerChangePassword('currentPassword'))}
-              />
-              {changePasswordErrors.currentPassword ? (
-                <FieldError errors={[{ message: changePasswordErrors.currentPassword.message }]} />
-              ) : null}
-            </Field>
-            <Field data-invalid={Boolean(changePasswordErrors.newPassword)} className="gap-0">
-              <LabeledInput
-                type="password"
-                label="Mật khẩu mới"
-                name="newPassword"
-                disabled={isChangingPassword}
-                autoComplete="new-password"
-                {...omitRegisterName(registerChangePassword('newPassword'))}
-              />
-              {changePasswordErrors.newPassword ? (
-                <FieldError errors={[{ message: changePasswordErrors.newPassword.message }]} />
-              ) : null}
-            </Field>
-            <Field data-invalid={Boolean(changePasswordErrors.confirmPassword)} className="gap-0">
-              <LabeledInput
-                type="password"
-                label="Nhập lại Mật khẩu mới"
-                name="confirmPassword"
-                disabled={isChangingPassword}
-                autoComplete="new-password"
-                {...omitRegisterName(registerChangePassword('confirmPassword'))}
-              />
-              {changePasswordErrors.confirmPassword ? (
-                <FieldError errors={[{ message: changePasswordErrors.confirmPassword.message }]} />
-              ) : null}
-            </Field>
+            <LabeledInput
+              type="password"
+              label="Mật khẩu hiện tại"
+              name="currentPassword"
+              disabled={isChangingPassword}
+              autoComplete="current-password"
+              error={changePasswordErrors.currentPassword?.message}
+              invalid={Boolean(changePasswordErrors.currentPassword)}
+              {...omitRegisterName(registerChangePassword('currentPassword'))}
+            />
+            <LabeledInput
+              type="password"
+              label="Mật khẩu mới"
+              name="newPassword"
+              disabled={isChangingPassword}
+              autoComplete="new-password"
+              error={changePasswordErrors.newPassword?.message}
+              invalid={Boolean(changePasswordErrors.newPassword)}
+              {...omitRegisterName(registerChangePassword('newPassword'))}
+            />
+            <LabeledInput
+              type="password"
+              label="Nhập lại Mật khẩu mới"
+              name="confirmPassword"
+              disabled={isChangingPassword}
+              autoComplete="new-password"
+              error={changePasswordErrors.confirmPassword?.message}
+              invalid={Boolean(changePasswordErrors.confirmPassword)}
+              {...omitRegisterName(registerChangePassword('confirmPassword'))}
+            />
             <PrimaryCtaButton
               type="submit"
               disabled={isChangingPassword}

@@ -16,3 +16,13 @@ export type WishlistItem = {
   createdAt: string;
   product: WishlistProduct;
 };
+
+export type PaginatedWishlistResult = {
+  data: WishlistItem[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};

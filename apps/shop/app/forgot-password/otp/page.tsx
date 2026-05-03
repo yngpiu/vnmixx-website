@@ -1,9 +1,9 @@
 'use client';
 
 import { useForgotPassword, useForgotPasswordVerifyOtp } from '@/modules/auth/hooks/use-auth';
+import { LabeledInput } from '@/modules/common/components/labeled-input';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Field, FieldError } from '@repo/ui/components/ui/field';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -16,9 +16,7 @@ const otpSchema = z.object({
 });
 
 const OTP_INPUT_CLASS_NAME =
-  'h-[48px] w-full box-border rounded-[4px] border border-[#E7E8E9] bg-white px-[15px] py-[15px] ' +
-  'text-[14px] leading-[16px] text-[#57585A] shadow-none placeholder:text-muted-foreground/70 ' +
-  'focus-visible:ring-0 focus-visible:border-[#E7E8E9] disabled:bg-input/50 disabled:opacity-50';
+  'text-center tracking-[0.24em] font-medium placeholder:tracking-normal';
 
 type OtpValues = z.infer<typeof otpSchema>;
 
@@ -131,19 +129,19 @@ export default function ForgotPasswordOtpPage(): React.JSX.Element {
               : '(Mã xác thực đã được gửi tới email của bạn)'}
           </p>
         </div>
-        <Field data-invalid={Boolean(errors.otp)} className="gap-0">
-          <input
-            name="otp"
-            placeholder="Nhập mã xác thực"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            disabled={busy}
-            {...otpFieldProps}
-            aria-invalid={Boolean(errors.otp)}
-            className={OTP_INPUT_CLASS_NAME}
-          />
-          {errors.otp ? <FieldError errors={[{ message: errors.otp.message }]} /> : null}
-        </Field>
+        <LabeledInput
+          label="Mã xác thực"
+          name="otp"
+          placeholder="Nhập mã xác thực"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          disabled={busy}
+          maxLength={6}
+          inputClassName={OTP_INPUT_CLASS_NAME}
+          error={errors.otp?.message}
+          invalid={Boolean(errors.otp)}
+          {...otpFieldProps}
+        />
         {formError ? (
           <p
             className={cn(

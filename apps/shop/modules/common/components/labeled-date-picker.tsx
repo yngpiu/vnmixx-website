@@ -1,7 +1,7 @@
 'use client';
 
 import { Calendar } from '@repo/ui/components/ui/calendar';
-import { FieldLabel } from '@repo/ui/components/ui/field';
+import { Field, FieldError, FieldLabel } from '@repo/ui/components/ui/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/ui/popover';
 import { cn } from '@repo/ui/lib/utils';
 import { ChevronDownIcon } from 'lucide-react';
@@ -38,6 +38,7 @@ export interface LabeledDatePickerProps {
   onValueChange: (value?: string) => void;
   disabled?: boolean;
   invalid?: boolean;
+  error?: string;
   className?: string;
 }
 
@@ -50,6 +51,7 @@ export function LabeledDatePicker({
   onValueChange,
   disabled,
   invalid,
+  error,
   className,
 }: LabeledDatePickerProps): React.JSX.Element {
   const parsedDate = useMemo(() => (value ? parseYyyyMmDdToDate(value) : undefined), [value]);
@@ -72,59 +74,64 @@ export function LabeledDatePicker({
     setOpen(false);
   };
 
+  const hasError = Boolean(invalid || error);
   return (
-    <div className="space-y-2 w-full">
-      <FieldLabel
-        htmlFor={`${name}-picker`}
-        className={cn('text-[14px] leading-[24px] text-[#57585A] font-normal')}
-      >
-        {label}
-      </FieldLabel>
+    <Field data-invalid={hasError} className="gap-0">
+      <div className="space-y-2 w-full">
+        <FieldLabel
+          htmlFor={`${name}-picker`}
+          className={cn('text-[14px] leading-[24px] text-[#57585A] font-normal')}
+        >
+          {label}
+        </FieldLabel>
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button
-            id={`${name}-picker`}
-            type="button"
-            aria-disabled={disabled}
-            disabled={disabled}
-            aria-required={Boolean(_required)}
-            aria-invalid={Boolean(invalid)}
-            className={cn(
-              LABELED_DATE_TRIGGER_CLASS_NAME,
-              'flex w-full items-center justify-between gap-3',
-              disabled ? 'cursor-not-allowed' : undefined,
-              className,
-            )}
-          >
-            <span
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button
+              id={`${name}-picker`}
+              type="button"
+              aria-disabled={disabled}
+              disabled={disabled}
+              aria-required={Boolean(_required)}
+              aria-invalid={hasError}
               className={cn(
-                'min-w-0 truncate',
-                formattedValue ? 'text-foreground' : 'text-muted-foreground/70',
+                LABELED_DATE_TRIGGER_CLASS_NAME,
+                'flex w-full items-center justify-between gap-3',
+                hasError ? 'border-destructive text-destructive' : undefined,
+                disabled ? 'cursor-not-allowed' : undefined,
+                className,
               )}
             >
-              {formattedValue ? formattedValue : placeholder}
-            </span>
-            <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
-          </button>
-        </PopoverTrigger>
+              <span
+                className={cn(
+                  'min-w-0 truncate',
+                  formattedValue ? 'text-foreground' : 'text-muted-foreground/70',
+                )}
+              >
+                {formattedValue ? formattedValue : placeholder}
+              </span>
+              <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
 
-        <PopoverContent
-          className="w-auto p-0 bg-white border border-[#E7E8E9] shadow-none rounded-[4px]"
-          align="start"
-        >
-          <Calendar
-            className="bg-white! p-2!"
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleSelect}
-            initialFocus
-            captionLayout="dropdown"
-            fromYear={1900}
-            toYear={new Date().getFullYear()}
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
+          <PopoverContent
+            className="w-auto p-0 bg-white border border-[#E7E8E9] shadow-none rounded-[4px]"
+            align="start"
+          >
+            <Calendar
+              className="bg-white! p-2!"
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleSelect}
+              initialFocus
+              captionLayout="dropdown"
+              fromYear={1900}
+              toYear={new Date().getFullYear()}
+            />
+          </PopoverContent>
+        </Popover>
+        {error ? <FieldError className="mt-1" errors={[{ message: error }]} /> : null}
+      </div>
+    </Field>
   );
 }

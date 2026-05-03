@@ -93,7 +93,11 @@ export function AccountOrdersPageContent(): React.JSX.Element {
         <Link href="/" className="hover:text-foreground">
           Trang chủ
         </Link>
-        <span className="mx-2">-</span>
+        <span className="mx-2">/</span>
+        <Link href="/me/profile" className="hover:text-foreground">
+          Tài khoản
+        </Link>
+        <span className="mx-2">/</span>
         <span>Quản lý đơn hàng</span>
       </nav>
       <section className="mt-8 grid gap-8 md:grid-cols-[270px_minmax(0,1fr)] md:items-start">
@@ -104,7 +108,7 @@ export function AccountOrdersPageContent(): React.JSX.Element {
           <ul className="space-y-0.5">
             {ACCOUNT_MENU_ITEMS.map((item) => {
               const ItemIcon = item.icon;
-              const isOrderRoute = item.href === '/tai-khoan/don-hang';
+              const isOrderRoute = item.href === '/me/order';
               const isActive = isOrderRoute
                 ? pathname.startsWith(item.href)
                 : pathname === item.href;
@@ -174,7 +178,7 @@ export function AccountOrdersPageContent(): React.JSX.Element {
                       key={order.id}
                       className="cursor-pointer border-b border-border px-5 py-4 transition-colors hover:bg-muted/30"
                       onClick={() =>
-                        router.push(`/tai-khoan/don-hang/${encodeURIComponent(order.orderCode)}`)
+                        router.push(`/me/order/${encodeURIComponent(order.orderCode)}`)
                       }
                       role="link"
                       tabIndex={0}
@@ -183,7 +187,7 @@ export function AccountOrdersPageContent(): React.JSX.Element {
                           return;
                         }
                         event.preventDefault();
-                        router.push(`/tai-khoan/don-hang/${encodeURIComponent(order.orderCode)}`);
+                        router.push(`/me/order/${encodeURIComponent(order.orderCode)}`);
                       }}
                     >
                       <div className="grid gap-2 lg:grid-cols-[150px_170px_190px_1fr_130px] lg:items-center">

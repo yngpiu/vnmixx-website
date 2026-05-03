@@ -54,13 +54,13 @@ function extractErrorMessage(err: unknown): string {
 }
 
 export async function loginAction(
-  email: string,
+  emailOrPhone: string,
   password: string,
 ): Promise<ActionResult<{ accessToken: string; user: UserProfile }>> {
   try {
     const authData = await serverApi.post<AuthResponse>(
       '/auth/login',
-      { email, password },
+      { emailOrPhone, password },
       { skipAuth: true },
     );
     const user = await serverApi.get<UserProfile>('/me/profile', {
@@ -106,14 +106,14 @@ export async function loginActionForm(
   _previousState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const email = String(formData.get('email') ?? '').trim();
+  const emailOrPhone = String(formData.get('emailOrPhone') ?? '').trim();
   const password = String(formData.get('password') ?? '');
 
-  if (!email || !password) {
+  if (!emailOrPhone || !password) {
     return { success: false, error: 'Vui lòng nhập đầy đủ email/SDT và mật khẩu.' };
   }
 
-  const result = await loginAction(email, password);
+  const result = await loginAction(emailOrPhone, password);
   if (!result.success) {
     return { success: false, error: result.error };
   }

@@ -38,6 +38,8 @@ export function PrimaryCtaButton({
   className,
   ...buttonProps
 }: PrimaryCtaButtonProps): React.JSX.Element {
+  const { disabled, ...restButtonProps } = buttonProps;
+  const isDisabled = Boolean(disabled);
   const baseRadius = 'rounded-tl-[16px]! rounded-tr-[0px]! rounded-bl-[0px]! rounded-br-[16px]!';
   const compactBaseRadius =
     'rounded-tl-[12px]! rounded-tr-[0px]! rounded-bl-[0px]! rounded-br-[12px]!';
@@ -79,7 +81,8 @@ export function PrimaryCtaButton({
         'transition-colors duration-150 ease-in-out',
         className,
       )}
-      {...buttonProps}
+      disabled={isDisabled}
+      {...restButtonProps}
     />
   );
 }

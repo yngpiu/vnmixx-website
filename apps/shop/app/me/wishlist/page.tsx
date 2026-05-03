@@ -6,11 +6,25 @@ import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button
 import { ProductCard } from '@/modules/common/components/product-card';
 import { ACCOUNT_MENU_ITEMS } from '@/modules/header/constants/account-menu-items';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
+import { CatalogPaginationNav } from '@/modules/products/components/catalog-pagination-nav';
 import { useMyWishlistQuery } from '@/modules/wishlist/hooks/use-wishlist';
 import type { WishlistItem } from '@/modules/wishlist/types/wishlist';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
+const WISHLIST_PAGE_LIMIT = 12;
+
+function parseWishlistPage(value: string | null): number {
+  if (!value) {
+    return 1;
+  }
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return 1;
+  }
+  return parsed;
+}
 
 function mapWishlistItemToNewArrivalProduct(item: WishlistItem): NewArrivalProduct {
   const prices = item.product.variants.map((variant) => variant.price);
@@ -29,20 +43,20 @@ function mapWishlistItemToNewArrivalProduct(item: WishlistItem): NewArrivalProdu
 
 function WishlistBreadcrumb(): React.JSX.Element {
   return (
-    <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-[14px] leading-6 text-muted-foreground">
-      <Link href="/" className="transition hover:text-foreground">
+    <nav className="mb-6 text-sm text-muted-foreground">
+      <Link href="/" className="hover:text-foreground">
         Trang chủ
       </Link>
-      <span aria-hidden className="text-muted-foreground/80">
-        –
+      <span className="mx-2" aria-hidden>
+        /
       </span>
-      <Link href="/tai-khoan" className="transition hover:text-foreground">
+      <Link href="/me/profile" className="hover:text-foreground">
         Tài khoản
       </Link>
-      <span aria-hidden className="text-muted-foreground/80">
-        –
+      <span className="mx-2" aria-hidden>
+        /
       </span>
-      <span className="font-medium text-foreground">Sản phẩm yêu thích</span>
+      <span className="text-foreground">Sản phẩm yêu thích</span>
     </nav>
   );
 }
@@ -80,10 +94,30 @@ function AccountNavAside(): React.JSX.Element {
 
 export default function AccountWishlistPage(): React.JSX.Element {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
   const isCustomer = Boolean(isAuthSessionReady && user);
-  const wishlistQuery = useMyWishlistQuery({ enabled: isCustomer });
+  const page = parseWishlistPage(searchParams.get('page'));
+  const wishlistQuery = useMyWishlistQuery({
+    enabled: isCustomer,
+    page,
+    limit: WISHLIST_PAGE_LIMIT,
+  });
+  const handlePageChange = (nextPage: number): void => {
+    if (nextPage === page || nextPage < 1) {
+      return;
+    }
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    if (nextPage <= 1) {
+      nextSearchParams.delete('page');
+    } else {
+      nextSearchParams.set('page', String(nextPage));
+    }
+    const queryString = nextSearchParams.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  };
   if (!isAuthSessionReady) {
     return (
       <main className="shop-shell-container pb-16 pt-6 md:pt-8">
@@ -153,7 +187,8 @@ export default function AccountWishlistPage(): React.JSX.Element {
       </main>
     );
   }
-  const items = wishlistQuery.data ?? [];
+  const items = wishlistQuery.data?.data ?? [];
+  const meta = wishlistQuery.data?.meta;
   return (
     <main className="shop-shell-container pb-16 pt-6 md:pt-8">
       <WishlistBreadcrumb />
@@ -174,15 +209,24 @@ export default function AccountWishlistPage(): React.JSX.Element {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-              {items.map((item) => (
-                <ProductCard
-                  key={item.product.id}
-                  product={mapWishlistItemToNewArrivalProduct(item)}
-                  display="listing"
+            <>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                {items.map((item) => (
+                  <ProductCard
+                    key={item.product.id}
+                    product={mapWishlistItemToNewArrivalProduct(item)}
+                    display="listing"
+                  />
+                ))}
+              </div>
+              {meta ? (
+                <CatalogPaginationNav
+                  page={meta.page}
+                  totalPages={meta.totalPages}
+                  onPageChange={handlePageChange}
                 />
-              ))}
-            </div>
+              ) : null}
+            </>
           )}
         </div>
       </section>

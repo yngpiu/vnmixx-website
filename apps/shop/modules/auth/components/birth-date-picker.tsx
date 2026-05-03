@@ -11,6 +11,7 @@ export interface BirthDatePickerProps {
   onValueChange: (value?: string) => void;
   disabled?: boolean;
   invalid?: boolean;
+  error?: string;
   className?: string;
 }
 
@@ -23,6 +24,7 @@ export function BirthDatePicker({
   onValueChange,
   disabled,
   invalid,
+  error,
   className,
 }: BirthDatePickerProps): React.JSX.Element {
   return (
@@ -35,6 +37,7 @@ export function BirthDatePicker({
       onValueChange={onValueChange}
       disabled={disabled}
       invalid={invalid}
+      error={error}
       className={className}
     />
   );

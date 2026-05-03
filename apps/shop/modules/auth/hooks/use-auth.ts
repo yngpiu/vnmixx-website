@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
 type LoginVariables = {
-  email: string;
+  emailOrPhone: string;
   password: string;
 };
 
@@ -41,8 +41,8 @@ export function useLogin() {
   const { setSession } = useAuthStore();
   const router = useRouter();
   return useMutation({
-    mutationFn: async ({ email, password }: LoginVariables) => {
-      const result = await loginAction(email, password);
+    mutationFn: async ({ emailOrPhone, password }: LoginVariables) => {
+      const result = await loginAction(emailOrPhone, password);
       if (!result.success) {
         throw new Error(result.error);
       }

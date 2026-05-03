@@ -4,29 +4,28 @@ import { useLogin } from '@/modules/auth/hooks/use-auth';
 import { LabeledInput } from '@/modules/common/components/labeled-input';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Field, FieldError } from '@repo/ui/components/ui/field';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-const phoneRegex = /^(\+?84[35879]\d{8}|0[35879]\d{8})$/;
+const regexPhoneNumber = /^(03[2-9]|05[6|8|9]|07[0|6-9]|08[1-9]|09[0-9])[0-9]{7}$/;
 
 function normalizePhoneNumber(value: string): string {
-  return value.trim().replace(/[\s-().]/g, '');
+  return value.trim();
 }
 
 function isValidEmailOrPhone(value: string): boolean {
   const normalizedPhone = normalizePhoneNumber(value);
-  if (phoneRegex.test(normalizedPhone)) return true;
-  return z.string().email().safeParse(value.trim()).success;
+  if (regexPhoneNumber.test(normalizedPhone)) return true;
+  return z.email().safeParse(value.trim()).success;
 }
 
 const loginSchema = z.object({
-  email: z
+  emailOrPhone: z
     .string()
-    .min(1, { message: 'Email/SDT không được để trống.' })
+    .min(1, { message: 'Email hoặc số điện thoại không được để trống.' })
     .refine(isValidEmailOrPhone, { message: 'Email hoặc số điện thoại không hợp lệ.' }),
   password: z
     .string()
@@ -46,7 +45,7 @@ export default function LoginPage(): React.JSX.Element {
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      emailOrPhone: '',
       password: '',
     },
   });
@@ -69,14 +68,14 @@ export default function LoginPage(): React.JSX.Element {
     formState: { errors },
   } = form;
 
-  const emailRegistration = register('email');
+  const emailOrPhoneRegistration = register('emailOrPhone');
   const passwordRegistration = register('password');
   const omitRegisterName = <T extends { name?: string }>(registration: T): Omit<T, 'name'> => {
     const { name: registrationName, ...rest } = registration;
     void registrationName;
     return rest;
   };
-  const emailFieldProps = omitRegisterName(emailRegistration);
+  const emailOrPhoneFieldProps = omitRegisterName(emailOrPhoneRegistration);
   const passwordFieldProps = omitRegisterName(passwordRegistration);
 
   return (
@@ -98,35 +97,28 @@ export default function LoginPage(): React.JSX.Element {
             </p>
 
             <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4" noValidate>
-              <Field data-invalid={Boolean(errors.email)} className="gap-0">
-                <LabeledInput
-                  label="Email/SDT"
-                  name="email"
-                  type="text"
-                  autoComplete="email"
-                  placeholder="Nhập email hoặc số điện thoại"
-                  disabled={busy}
-                  {...emailFieldProps}
-                  aria-invalid={Boolean(errors.email)}
-                />
-                {errors.email ? <FieldError errors={[{ message: errors.email.message }]} /> : null}
-              </Field>
-
-              <Field data-invalid={Boolean(errors.password)} className="gap-0">
-                <LabeledInput
-                  label="Mật khẩu"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Nhập mật khẩu"
-                  disabled={busy}
-                  {...passwordFieldProps}
-                  aria-invalid={Boolean(errors.password)}
-                />
-                {errors.password ? (
-                  <FieldError errors={[{ message: errors.password.message }]} />
-                ) : null}
-              </Field>
+              <LabeledInput
+                label="Email hoặc số điện thoại"
+                name="emailOrPhone"
+                type="text"
+                autoComplete="email"
+                placeholder="Nhập email hoặc số điện thoại"
+                disabled={busy}
+                error={errors.emailOrPhone?.message}
+                invalid={Boolean(errors.emailOrPhone)}
+                {...emailOrPhoneFieldProps}
+              />
+              <LabeledInput
+                label="Mật khẩu"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Nhập mật khẩu"
+                disabled={busy}
+                error={errors.password?.message}
+                invalid={Boolean(errors.password)}
+                {...passwordFieldProps}
+              />
 
               <div className="flex items-center justify-end">
                 <Link

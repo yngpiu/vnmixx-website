@@ -7,10 +7,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AccountLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}): React.JSX.Element {
+export default function MeLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return <>{children}</>;
 }

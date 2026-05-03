@@ -12,6 +12,7 @@ export interface GenderSelectProps {
   value?: GenderValue;
   disabled?: boolean;
   invalid?: boolean;
+  error?: string;
   onValueChange: (value: GenderValue) => void;
   className?: string;
   labelClassName?: string;
@@ -30,14 +31,15 @@ export function GenderSelect({
   value,
   disabled,
   invalid,
+  error,
   onValueChange,
   className,
   labelClassName,
 }: GenderSelectProps): React.JSX.Element {
-  const selected = value ?? 'FEMALE';
+  const selected = value;
 
   const selectedLabel = useMemo(() => {
-    return GENDER_OPTIONS.find((o) => o.value === selected)?.label ?? 'Nữ';
+    return GENDER_OPTIONS.find((o) => o.value === selected)?.label ?? 'Chưa chọn';
   }, [selected]);
 
   return (
@@ -48,9 +50,10 @@ export function GenderSelect({
         value={selected}
         onValueChange={onValueChange}
         options={GENDER_OPTIONS}
-        placeholder="Chọn"
+        placeholder="Chọn giới tính"
         disabled={disabled}
         invalid={Boolean(invalid)}
+        error={error}
         required={Boolean(_required)}
         labelClassName={labelClassName}
         triggerClassName={className}

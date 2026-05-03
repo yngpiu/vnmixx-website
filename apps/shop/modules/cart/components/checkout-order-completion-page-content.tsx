@@ -63,7 +63,7 @@ export function CheckoutOrderCompletionPageContent(): React.JSX.Element {
         )}
         <div className="mt-6 flex justify-center">
           <PrimaryCtaButton asChild className="w-auto!">
-            <Link href="/tai-khoan">ĐI ĐẾN TÀI KHOẢN</Link>
+            <Link href="/me/profile">ĐI ĐẾN TÀI KHOẢN</Link>
           </PrimaryCtaButton>
         </div>
       </section>

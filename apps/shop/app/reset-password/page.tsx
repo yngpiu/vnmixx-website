@@ -4,7 +4,6 @@ import { useResetPassword } from '@/modules/auth/hooks/use-auth';
 import { LabeledInput } from '@/modules/common/components/labeled-input';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Field, FieldError } from '@repo/ui/components/ui/field';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -104,32 +103,26 @@ export default function ResetPasswordPage(): React.JSX.Element {
             Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.
           </p>
         ) : null}
-        <Field data-invalid={Boolean(errors.newPassword)} className="gap-0">
-          <LabeledInput
-            type="password"
-            label="Mật khẩu mới"
-            name="newPassword"
-            disabled={busy || !hasRecoveryContext}
-            autoComplete="new-password"
-            {...newPasswordFieldProps}
-          />
-          {errors.newPassword ? (
-            <FieldError errors={[{ message: errors.newPassword.message }]} />
-          ) : null}
-        </Field>
-        <Field data-invalid={Boolean(errors.confirmPassword)} className="gap-0">
-          <LabeledInput
-            type="password"
-            label="Nhập lại mật khẩu mới"
-            name="confirmPassword"
-            disabled={busy || !hasRecoveryContext}
-            autoComplete="new-password"
-            {...confirmPasswordFieldProps}
-          />
-          {errors.confirmPassword ? (
-            <FieldError errors={[{ message: errors.confirmPassword.message }]} />
-          ) : null}
-        </Field>
+        <LabeledInput
+          type="password"
+          label="Mật khẩu mới"
+          name="newPassword"
+          disabled={busy || !hasRecoveryContext}
+          autoComplete="new-password"
+          error={errors.newPassword?.message}
+          invalid={Boolean(errors.newPassword)}
+          {...newPasswordFieldProps}
+        />
+        <LabeledInput
+          type="password"
+          label="Nhập lại mật khẩu mới"
+          name="confirmPassword"
+          disabled={busy || !hasRecoveryContext}
+          autoComplete="new-password"
+          error={errors.confirmPassword?.message}
+          invalid={Boolean(errors.confirmPassword)}
+          {...confirmPasswordFieldProps}
+        />
         {formError ? (
           <p
             className={cn(

@@ -12,11 +12,15 @@ import type { AxiosError } from 'axios';
 import { useCallback, useMemo } from 'react';
 
 export const WISHLIST_QUERY_KEY = ['shop', 'me', 'wishlist'] as const;
+const DEFAULT_WISHLIST_PAGE = 1;
+const DEFAULT_WISHLIST_LIMIT = 100;
 
-export function useMyWishlistQuery(options?: { enabled?: boolean }) {
+export function useMyWishlistQuery(options?: { enabled?: boolean; page?: number; limit?: number }) {
+  const page = options?.page ?? DEFAULT_WISHLIST_PAGE;
+  const limit = options?.limit ?? DEFAULT_WISHLIST_LIMIT;
   return useQuery({
-    queryKey: WISHLIST_QUERY_KEY,
-    queryFn: getMyWishlist,
+    queryKey: [...WISHLIST_QUERY_KEY, page, limit],
+    queryFn: () => getMyWishlist({ page, limit }),
     enabled: options?.enabled,
     staleTime: 1000 * 60,
   });
@@ -71,11 +75,12 @@ export function useWishlistProductToggle(productId: number): {
   const isAuthSessionReady = useAuthSessionReady();
   const isAuthenticatedCustomer = Boolean(isAuthSessionReady && user);
   const wishlistQuery = useMyWishlistQuery({ enabled: isAuthenticatedCustomer });
+  const wishlistItems = wishlistQuery.data?.data ?? [];
   const addMutation = useAddWishlistItemMutation();
   const removeMutation = useRemoveWishlistItemMutation();
   const isFavorite = useMemo(
-    () => wishlistQuery.data?.some((item) => item.product.id === productId) ?? false,
-    [wishlistQuery.data, productId],
+    () => wishlistItems.some((item) => item.product.id === productId),
+    [wishlistItems, productId],
   );
   const isPending = addMutation.isPending || removeMutation.isPending;
   const toggleFavorite = useCallback(async (): Promise<void> => {
