@@ -2,7 +2,7 @@
 
 import { LabeledInputSelect } from '@/modules/common/components/labeled-input-select';
 import { ProductCard } from '@/modules/common/components/product-card';
-import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
+import { buildCategoryHref, buildProductHref } from '@/modules/common/utils/shop-routes';
 import { fetchProductList, fetchShopColors, fetchShopSizes } from '@/modules/products/api/catalog';
 import { CatalogPaginationNav } from '@/modules/products/components/catalog-pagination-nav';
 import { CatalogProductGridSkeleton } from '@/modules/products/components/catalog-product-grid-skeleton';
@@ -33,13 +33,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 type ProductCategoryPageProps = {
   categorySlug: string;
   categoryName: string;
-  parentCategory: { id: number; name: string; slug: string } | null;
+  breadcrumbCategories?: { id: number; name: string; slug: string }[];
 };
 
 export function ProductCategoryPage({
   categorySlug,
   categoryName,
-  parentCategory,
+  breadcrumbCategories = [],
 }: ProductCategoryPageProps): React.JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
@@ -200,6 +200,16 @@ export function ProductCategoryPage({
   const productPayload: PaginatedProductsResult | undefined = productsQuery.data;
   const items = productPayload?.data ?? [];
   const meta = productPayload?.meta;
+  const buildProductHrefWithCategoryContext = useCallback(
+    (productSlug: string): string => {
+      const params = new URLSearchParams({
+        fromCategorySlug: categorySlug,
+        fromCategoryName: categoryName,
+      });
+      return `${buildProductHref({ slug: productSlug })}?${params.toString()}`;
+    },
+    [categoryName, categorySlug],
+  );
   function toggleDraftColor(colorId: number): void {
     setDraftColorIds((previous) =>
       previous.includes(colorId) ? previous.filter((id) => id !== colorId) : [...previous, colorId],
@@ -237,27 +247,27 @@ export function ProductCategoryPage({
   };
   return (
     <main className="shop-shell-container pb-16 pt-6 md:pt-8">
-      <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-[14px] leading-6 text-muted-foreground">
-        <Link href="/" className="transition hover:text-foreground">
+      <nav className="mb-6 text-sm text-muted-foreground">
+        <Link href="/" className="hover:text-foreground">
           Trang chủ
         </Link>
-        <span aria-hidden className="text-muted-foreground/80">
-          –
+        <span className="mx-2" aria-hidden>
+          /
         </span>
-        {parentCategory ? (
-          <>
+        {breadcrumbCategories.map((category) => (
+          <span key={category.id} className="contents">
             <Link
-              href={buildCategoryHref({ slug: parentCategory.slug })}
-              className="transition hover:text-foreground"
+              href={buildCategoryHref({ slug: category.slug })}
+              className="hover:text-foreground"
             >
-              {parentCategory.name}
+              {category.name}
             </Link>
-            <span aria-hidden className="text-muted-foreground/80">
-              –
+            <span className="mx-2" aria-hidden>
+              /
             </span>
-          </>
-        ) : null}
-        <span className="font-medium text-foreground">{categoryName}</span>
+          </span>
+        ))}
+        <span className="text-foreground">{categoryName}</span>
       </nav>
       <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
         <aside className="hidden w-full shrink-0 lg:block lg:sticky lg:top-24 lg:w-[272px] lg:min-w-[260px]">
@@ -305,7 +315,12 @@ export function ProductCategoryPage({
             <>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {items.map((product) => (
-                  <ProductCard key={product.id} product={product} display="listing" />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    display="listing"
+                    productHrefOverride={buildProductHrefWithCategoryContext(product.slug)}
+                  />
                 ))}
               </div>
               {meta ? (

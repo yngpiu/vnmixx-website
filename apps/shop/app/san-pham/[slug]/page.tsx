@@ -10,6 +10,10 @@ import { notFound, redirect } from 'next/navigation';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{
+    fromCategorySlug?: string | string[];
+    fromCategoryName?: string | string[];
+  }>;
 }
 
 export const dynamic = 'force-dynamic';
@@ -69,6 +73,7 @@ const emptyInitialReviews: ShopProductReviewsResult = {
 
 export default async function ProductDetailPage(props: PageProps): Promise<React.JSX.Element> {
   const { slug: routeKey } = await props.params;
+  const searchParams = await props.searchParams;
   const productSlug = parseProductRouteKey(routeKey);
   if (!productSlug) {
     notFound();
@@ -92,11 +97,22 @@ export default async function ProductDetailPage(props: PageProps): Promise<React
         excludedProductId: product.id,
       }).catch((): NewArrivalProduct[] => []),
     ]);
+    const fromCategorySlugRaw = searchParams.fromCategorySlug;
+    const fromCategoryNameRaw = searchParams.fromCategoryName;
+    const fromCategorySlug =
+      typeof fromCategorySlugRaw === 'string' ? fromCategorySlugRaw.trim() : '';
+    const fromCategoryName =
+      typeof fromCategoryNameRaw === 'string' ? fromCategoryNameRaw.trim() : '';
+    const breadcrumbCategory =
+      fromCategorySlug && fromCategoryName
+        ? { slug: fromCategorySlug, name: fromCategoryName }
+        : null;
     return (
       <ProductDetailPageContent
         product={product}
         initialPublicReviews={initialPublicReviews}
         suggestedProducts={suggestedProducts}
+        breadcrumbCategory={breadcrumbCategory}
       />
     );
   } catch (error) {

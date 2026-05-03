@@ -12,6 +12,6 @@ export const metadata: Metadata = {
 
 export default function ProductsPage(): React.JSX.Element {
   return (
-    <ProductCategoryPage categorySlug="" categoryName="Tất cả sản phẩm" parentCategory={null} />
+    <ProductCategoryPage categorySlug="" categoryName="Tất cả sản phẩm" breadcrumbCategories={[]} />
   );
 }

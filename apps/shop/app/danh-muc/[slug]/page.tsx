@@ -17,6 +17,27 @@ type CategoryPayload = CategoryBrief & {
   children: unknown[];
 };
 
+const MAX_BREADCRUMB_DEPTH = 6;
+
+async function fetchCategoryBySlug(slug: string): Promise<CategoryPayload> {
+  return serverApi.get<CategoryPayload>(`/categories/slug/${slug}`, {
+    skipAuth: true,
+  });
+}
+
+async function buildCategoryBreadcrumbParents(category: CategoryPayload): Promise<CategoryBrief[]> {
+  const breadcrumbParents: CategoryBrief[] = [];
+  let cursor = category.parent;
+  let depth = 0;
+  while (cursor && depth < MAX_BREADCRUMB_DEPTH) {
+    breadcrumbParents.unshift(cursor);
+    const next = await fetchCategoryBySlug(cursor.slug);
+    cursor = next.parent;
+    depth += 1;
+  }
+  return breadcrumbParents;
+}
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
@@ -75,19 +96,18 @@ export default async function CategoryListingPage(props: PageProps): Promise<Rea
     notFound();
   }
   try {
-    const category = await serverApi.get<CategoryPayload>(`/categories/slug/${categorySlug}`, {
-      skipAuth: true,
-    });
+    const category = await fetchCategoryBySlug(categorySlug);
     const canonicalPath = buildCategoryHref({ slug: category.slug });
     if (routeKey !== canonicalPath.replace('/danh-muc/', '')) {
       redirect(canonicalPath);
     }
+    const breadcrumbCategories = await buildCategoryBreadcrumbParents(category);
     return (
       <Suspense fallback={<CategoryPageFallback />}>
         <ProductCategoryPage
           categorySlug={category.slug}
           categoryName={category.name}
-          parentCategory={category.parent}
+          breadcrumbCategories={breadcrumbCategories}
         />
       </Suspense>
     );
