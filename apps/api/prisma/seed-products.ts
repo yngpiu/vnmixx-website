@@ -231,6 +231,8 @@ export async function seedProducts(): Promise<void> {
 
           const variantsData: Prisma.ProductVariantCreateManyInput[] = [];
           const imagesData: Prisma.ProductImageCreateManyInput[] = [];
+          /** Partial out-of-stock for storefront smoke test (sizes gạch chéo trong card picker). */
+          const mixSoldOutVariants = j % 8 === 0;
 
           imagesData.push({
             productId: product.id,
@@ -243,6 +245,7 @@ export async function seedProducts(): Promise<void> {
           });
 
           let imgOrder = 1;
+          let variantOrdinal = 0;
 
           for (const colorId of selectedColors) {
             const colorName = colorIdToName.get(colorId) ?? `#${colorId}`;
@@ -265,18 +268,26 @@ export async function seedProducts(): Promise<void> {
             }
 
             for (const sizeId of selectedSizes) {
+              let onHand = faker.number.int({ min: 8, max: 500 });
+              let reserved = faker.number.int({ min: 0, max: Math.min(25, onHand) });
+              reserved = Math.min(reserved, onHand);
+              if (mixSoldOutVariants && variantOrdinal % 4 === 0) {
+                onHand = 0;
+                reserved = 0;
+              }
               variantsData.push({
                 productId: product.id,
                 colorId,
                 sizeId,
                 sku: `${SEED_SKU_PREFIX}${product.id}-C${colorId}-S${sizeId}-${faker.string.alphanumeric(4).toUpperCase()}`,
                 price: variantStartPrice + sizeId * 5000,
-                onHand: faker.number.int({ min: 0, max: 500 }),
-                reserved: faker.number.int({ min: 0, max: 20 }),
+                onHand,
+                reserved,
                 version: 0,
                 createdAt,
                 updatedAt: createdAt,
               });
+              variantOrdinal += 1;
             }
           }
 

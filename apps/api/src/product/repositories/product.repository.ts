@@ -26,13 +26,6 @@ export interface ProductListItemView {
   category: { id: number; name: string; slug: string } | null;
 }
 
-/** Public list aggregation including createdAt — used only to break ties best-selling / favorites sorts. */
-type ProductPublicListAggWithCreatedAt = ProductListItemView & {
-  minPrice: number | null;
-  maxPrice: number | null;
-  createdAt: Date;
-};
-
 export interface ProductAdminListItemView {
   id: number;
   name: string;
@@ -131,6 +124,37 @@ function categoryWhereMatchesSlugTree(slug: string): Prisma.CategoryWhereInput {
   };
 }
 
+/** Prisma select for storefront product list rows (typed payload for `findMany`). */
+const PUBLIC_LIST_GRAPH_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  productCategories: {
+    take: 1,
+    select: {
+      category: { select: { id: true, name: true, slug: true } },
+    },
+  },
+  images: {
+    select: { colorId: true, url: true, sortOrder: true },
+    orderBy: { sortOrder: 'asc' },
+  },
+  variants: {
+    where: { isActive: true, deletedAt: null },
+    orderBy: [{ color: { id: 'asc' } }, { size: { sortOrder: 'asc' } }],
+    select: {
+      id: true,
+      price: true,
+      onHand: true,
+      reserved: true,
+      color: { select: { id: true, name: true, hexCode: true } },
+      size: { select: { id: true, label: true, sortOrder: true } },
+    },
+  },
+} satisfies Prisma.ProductSelect;
+
+type PublicListGraphRow = Prisma.ProductGetPayload<{ select: typeof PUBLIC_LIST_GRAPH_SELECT }>;
+
 /**
  * ProductRepository: Chịu trách nhiệm thao tác dữ liệu sản phẩm trong Database.
  * Sử dụng Prisma Client để thực hiện các truy vấn phức tạp, bao gồm lọc, phân trang,
@@ -140,6 +164,72 @@ function categoryWhereMatchesSlugTree(slug: string): Prisma.CategoryWhereInput {
 // Repository Prisma cho các thao tác dữ liệu liên quan đến sản phẩm.
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private buildPublicListWhereInput(params: {
+    search?: string;
+    categorySlug?: string;
+    colorIds?: number[];
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+  }): Prisma.ProductWhereInput {
+    const { search, categorySlug, colorIds, sizeIds, minPrice, maxPrice } = params;
+    const where: Prisma.ProductWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(search && { name: { contains: search } }),
+      ...(categorySlug && {
+        productCategories: {
+          some: { category: categoryWhereMatchesSlugTree(categorySlug) },
+        },
+      }),
+    };
+    const variantPriceFilter: Prisma.IntFilter = {};
+    if (minPrice !== undefined) {
+      variantPriceFilter.gte = minPrice;
+    }
+    if (maxPrice !== undefined) {
+      variantPriceFilter.lte = maxPrice;
+    }
+    const variantFilter: Prisma.ProductVariantWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(colorIds?.length && { colorId: { in: colorIds } }),
+      ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
+      ...(Object.keys(variantPriceFilter).length > 0 && { price: variantPriceFilter }),
+    };
+    if (colorIds?.length || sizeIds?.length || minPrice !== undefined || maxPrice !== undefined) {
+      where.variants = { some: variantFilter };
+    }
+    return where;
+  }
+
+  private mapProductGraphToPublicListItem(
+    row: PublicListGraphRow,
+  ): ProductListItemView & { minPrice: number | null; maxPrice: number | null } {
+    const prices = row.variants.map((v) => v.price);
+    const minP = prices.length ? Math.min(...prices) : null;
+    const maxP = prices.length ? Math.max(...prices) : null;
+    const colors = buildPublicListColors(row.variants, row.images);
+    return {
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      colors,
+      variants: row.variants,
+      category: row.productCategories[0]?.category ?? null,
+      minPrice: minP,
+      maxPrice: maxP,
+    };
+  }
+
+  private reorderPublicListItemsByIds(
+    items: Array<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>,
+    orderedIds: number[],
+  ): Array<ProductListItemView & { minPrice: number | null; maxPrice: number | null }> {
+    const indexOf = new Map(orderedIds.map((id, index) => [id, index]));
+    return items.slice().sort((a, b) => indexOf.get(a.id)! - indexOf.get(b.id)!);
+  }
 
   // ─── Public ─────────────────────────────────────────────────────────────────
 
@@ -163,90 +253,101 @@ export class ProductRepository {
     if (params.sort === 'most_favorite') {
       return this.findPublicMostFavoriteList(params);
     }
-    const { page, limit, search, categorySlug, colorIds, sizeIds, minPrice, maxPrice, sort } =
-      params;
-
-    const where: Prisma.ProductWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(search && { name: { contains: search } }),
-      ...(categorySlug && {
-        productCategories: {
-          some: { category: categoryWhereMatchesSlugTree(categorySlug) },
-        },
-      }),
-      ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
-      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } }),
-    };
-
-    const variantFilter: Prisma.ProductVariantWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(colorIds?.length && { colorId: { in: colorIds } }),
-      ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
-    };
-
-    if (colorIds?.length || sizeIds?.length) {
-      where.variants = { some: variantFilter };
+    if (params.sort === 'price_asc' || params.sort === 'price_desc') {
+      return this.findPublicPriceSortedList(params);
     }
-
-    // Thực hiện truy vấn đếm tổng số và lấy dữ liệu trong một transaction.
-    const [total, products] = await this.prisma.$transaction([
+    const { page, limit } = params;
+    const where = this.buildPublicListWhereInput(params);
+    const [total, products] = await Promise.all([
       this.prisma.product.count({ where }),
       this.prisma.product.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: this.getPublicSortOrder(sort),
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          productCategories: {
-            take: 1,
-            select: {
-              category: { select: { id: true, name: true, slug: true } },
-            },
-          },
-          images: {
-            select: { colorId: true, url: true, sortOrder: true },
-            orderBy: { sortOrder: 'asc' },
-          },
-          variants: {
-            where: { isActive: true, deletedAt: null },
-            select: {
-              id: true,
-              price: true,
-              onHand: true,
-              reserved: true,
-              color: { select: { id: true, name: true, hexCode: true } },
-              size: { select: { id: true, label: true, sortOrder: true } },
-            },
-          },
-        },
+        orderBy: this.getPublicSortOrder(),
+        select: PUBLIC_LIST_GRAPH_SELECT,
       }),
     ]);
-
-    const data = products.map(({ variants, productCategories, images, ...rest }) => {
-      const prices = variants.map((v) => v.price);
-      const minP = prices.length ? Math.min(...prices) : null;
-      const maxP = prices.length ? Math.max(...prices) : null;
-      const colors = buildPublicListColors(variants, images);
-      return {
-        id: rest.id,
-        name: rest.name,
-        slug: rest.slug,
-        colors,
-        variants,
-        category: productCategories[0]?.category ?? null,
-        minPrice: minP,
-        maxPrice: maxP,
-      };
-    });
+    const data = products.map((row) => this.mapProductGraphToPublicListItem(row));
 
     return {
       data,
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  /** Sort theo MIN(giá biến thể đang hoạt động); Prisma không orderBy aggregate `_min` trên quan hệ kiểu này. */
+  private async findPublicPriceSortedList(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    categorySlug?: string;
+    colorIds?: number[];
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+  }): Promise<
+    PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
+  > {
+    const { page, limit } = params;
+    const isAscending = params.sort === 'price_asc';
+    const where = this.buildPublicListWhereInput(params);
+    const listStubs = await this.prisma.product.findMany({
+      where,
+      select: { id: true, createdAt: true },
+    });
+    const total = listStubs.length;
+    const totalPages = Math.ceil(total / limit) || 0;
+    if (total === 0) {
+      return {
+        data: [],
+        meta: { page, limit, total: 0, totalPages: 0 },
+      };
+    }
+    const productIds = listStubs.map((stub) => stub.id);
+    const minPriceRows = await this.prisma.$queryRaw<
+      Array<{ productId: number; minPrice: bigint | number }>
+    >(
+      Prisma.sql`
+        SELECT product_id AS productId, MIN(price) AS minPrice
+        FROM product_variants
+        WHERE deleted_at IS NULL
+          AND is_active = 1
+          AND product_id IN (${Prisma.join(productIds)})
+        GROUP BY product_id
+      `,
+    );
+    const minVariantPriceByProductId = new Map<number, number>(
+      minPriceRows.map((row) => [row.productId, Number(row.minPrice)]),
+    );
+    const sortKey = (productId: number): number =>
+      minVariantPriceByProductId.get(productId) ??
+      (isAscending ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+    const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
+      const leftKey = sortKey(leftStub.id);
+      const rightKey = sortKey(rightStub.id);
+      if (leftKey !== rightKey) {
+        return isAscending ? leftKey - rightKey : rightKey - leftKey;
+      }
+      return rightStub.createdAt.getTime() - leftStub.createdAt.getTime();
+    });
+    const pageIds = sortedStubs.slice((page - 1) * limit, page * limit).map((stub) => stub.id);
+    if (pageIds.length === 0) {
+      return {
+        data: [],
+        meta: { page, limit, total, totalPages },
+      };
+    }
+    const pageRows = await this.prisma.product.findMany({
+      where: { id: { in: pageIds } },
+      select: PUBLIC_LIST_GRAPH_SELECT,
+    });
+    const mapped = pageRows.map((row) => this.mapProductGraphToPublicListItem(row));
+    const data = this.reorderPublicListItemsByIds(mapped, pageIds);
+    return {
+      data,
+      meta: { page, limit, total, totalPages },
     };
   }
 
@@ -263,88 +364,25 @@ export class ProductRepository {
   }): Promise<
     PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
   > {
-    const { page, limit, search, categorySlug, colorIds, sizeIds, minPrice, maxPrice } = params;
-    const where: Prisma.ProductWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(search && { name: { contains: search } }),
-      ...(categorySlug && {
-        productCategories: {
-          some: { category: categoryWhereMatchesSlugTree(categorySlug) },
-        },
-      }),
-      ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
-      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } }),
-    };
-    const variantFilter: Prisma.ProductVariantWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(colorIds?.length && { colorId: { in: colorIds } }),
-      ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
-    };
-    if (colorIds?.length || sizeIds?.length) {
-      where.variants = { some: variantFilter };
-    }
-    const products = await this.prisma.product.findMany({
+    const { page, limit } = params;
+    const where = this.buildPublicListWhereInput(params);
+    const listStubs = await this.prisma.product.findMany({
       where,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        createdAt: true,
-        productCategories: {
-          take: 1,
-          select: {
-            category: { select: { id: true, name: true, slug: true } },
-          },
-        },
-        images: {
-          select: { colorId: true, url: true, sortOrder: true },
-          orderBy: { sortOrder: 'asc' },
-        },
-        variants: {
-          where: { isActive: true, deletedAt: null },
-          select: {
-            id: true,
-            price: true,
-            onHand: true,
-            reserved: true,
-            color: { select: { id: true, name: true, hexCode: true } },
-            size: { select: { id: true, label: true, sortOrder: true } },
-          },
-        },
-      },
+      select: { id: true, createdAt: true },
     });
-    const mappedProducts = products.map(
-      ({
-        variants,
-        createdAt,
-        productCategories,
-        images,
-        ...rest
-      }): ProductPublicListAggWithCreatedAt => {
-        const prices = variants.map((variant) => variant.price);
-        const resolvedMinPrice = prices.length > 0 ? Math.min(...prices) : null;
-        const resolvedMaxPrice = prices.length > 0 ? Math.max(...prices) : null;
-        const colors = buildPublicListColors(variants, images);
-        return {
-          id: rest.id,
-          name: rest.name,
-          slug: rest.slug,
-          colors,
-          variants,
-          createdAt,
-          category: productCategories[0]?.category ?? null,
-          minPrice: resolvedMinPrice,
-          maxPrice: resolvedMaxPrice,
-        };
-      },
-    );
-    const productIds = mappedProducts.map((product) => product.id);
-    const bestSellingRows =
-      productIds.length > 0
-        ? await this.prisma.$queryRaw<Array<{ productId: number; soldCount: bigint | number }>>(
-            Prisma.sql`
+    const total = listStubs.length;
+    const totalPages = Math.ceil(total / limit) || 0;
+    if (total === 0) {
+      return {
+        data: [],
+        meta: { page, limit, total: 0, totalPages: 0 },
+      };
+    }
+    const productIds = listStubs.map((stub) => stub.id);
+    const bestSellingRows = await this.prisma.$queryRaw<
+      Array<{ productId: number; soldCount: bigint | number }>
+    >(
+      Prisma.sql`
               SELECT pv.product_id AS productId, COALESCE(SUM(oi.quantity), 0) AS soldCount
               FROM order_items oi
               INNER JOIN product_variants pv ON pv.id = oi.variant_id
@@ -353,33 +391,34 @@ export class ProductRepository {
                 AND pv.product_id IN (${Prisma.join(productIds)})
               GROUP BY pv.product_id
             `,
-          )
-        : [];
+    );
     const soldCountByProductId = new Map<number, number>(
       bestSellingRows.map((row) => [row.productId, Number(row.soldCount)]),
     );
-    const sortedProducts = mappedProducts.slice().sort((leftProduct, rightProduct) => {
-      const leftSoldCount = soldCountByProductId.get(leftProduct.id) ?? 0;
-      const rightSoldCount = soldCountByProductId.get(rightProduct.id) ?? 0;
-      if (leftSoldCount !== rightSoldCount) {
-        return rightSoldCount - leftSoldCount;
+    const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
+      const leftSold = soldCountByProductId.get(leftStub.id) ?? 0;
+      const rightSold = soldCountByProductId.get(rightStub.id) ?? 0;
+      if (leftSold !== rightSold) {
+        return rightSold - leftSold;
       }
-      return rightProduct.createdAt.getTime() - leftProduct.createdAt.getTime();
+      return rightStub.createdAt.getTime() - leftStub.createdAt.getTime();
     });
-    const total = sortedProducts.length;
-    const pagedProducts = sortedProducts.slice((page - 1) * limit, page * limit).map((product) => ({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      colors: product.colors,
-      variants: product.variants,
-      category: product.category,
-      minPrice: product.minPrice,
-      maxPrice: product.maxPrice,
-    }));
+    const pageIds = sortedStubs.slice((page - 1) * limit, page * limit).map((stub) => stub.id);
+    if (pageIds.length === 0) {
+      return {
+        data: [],
+        meta: { page, limit, total, totalPages },
+      };
+    }
+    const pageRows = await this.prisma.product.findMany({
+      where: { id: { in: pageIds } },
+      select: PUBLIC_LIST_GRAPH_SELECT,
+    });
+    const mapped = pageRows.map((row) => this.mapProductGraphToPublicListItem(row));
+    const data = this.reorderPublicListItemsByIds(mapped, pageIds);
     return {
-      data: pagedProducts,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      data,
+      meta: { page, limit, total, totalPages },
     };
   }
 
@@ -399,120 +438,58 @@ export class ProductRepository {
   }): Promise<
     PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
   > {
-    const { page, limit, search, categorySlug, colorIds, sizeIds, minPrice, maxPrice } = params;
-    const where: Prisma.ProductWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(search && { name: { contains: search } }),
-      ...(categorySlug && {
-        productCategories: {
-          some: { category: categoryWhereMatchesSlugTree(categorySlug) },
-        },
-      }),
-      ...(minPrice !== undefined && { basePrice: { gte: minPrice } }),
-      ...(maxPrice !== undefined && { basePrice: { lte: maxPrice } }),
-    };
-    const variantFilter: Prisma.ProductVariantWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(colorIds?.length && { colorId: { in: colorIds } }),
-      ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
-    };
-    if (colorIds?.length || sizeIds?.length) {
-      where.variants = { some: variantFilter };
-    }
-    const products = await this.prisma.product.findMany({
+    const { page, limit } = params;
+    const where = this.buildPublicListWhereInput(params);
+    const listStubs = await this.prisma.product.findMany({
       where,
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        createdAt: true,
-        productCategories: {
-          take: 1,
-          select: {
-            category: { select: { id: true, name: true, slug: true } },
-          },
-        },
-        images: {
-          select: { colorId: true, url: true, sortOrder: true },
-          orderBy: { sortOrder: 'asc' },
-        },
-        variants: {
-          where: { isActive: true, deletedAt: null },
-          select: {
-            id: true,
-            price: true,
-            onHand: true,
-            reserved: true,
-            color: { select: { id: true, name: true, hexCode: true } },
-            size: { select: { id: true, label: true, sortOrder: true } },
-          },
-        },
-      },
+      select: { id: true, createdAt: true },
     });
-    const mappedProducts = products.map(
-      ({
-        variants,
-        createdAt,
-        productCategories,
-        images,
-        ...rest
-      }): ProductPublicListAggWithCreatedAt => {
-        const prices = variants.map((variant) => variant.price);
-        const resolvedMinPrice = prices.length > 0 ? Math.min(...prices) : null;
-        const resolvedMaxPrice = prices.length > 0 ? Math.max(...prices) : null;
-        const colors = buildPublicListColors(variants, images);
-        return {
-          id: rest.id,
-          name: rest.name,
-          slug: rest.slug,
-          colors,
-          variants,
-          createdAt,
-          category: productCategories[0]?.category ?? null,
-          minPrice: resolvedMinPrice,
-          maxPrice: resolvedMaxPrice,
-        };
-      },
-    );
-    const productIds = mappedProducts.map((product) => product.id);
-    const favoriteRows =
-      productIds.length > 0
-        ? await this.prisma.$queryRaw<Array<{ productId: number; favCount: bigint | number }>>(
-            Prisma.sql`
+    const total = listStubs.length;
+    const totalPages = Math.ceil(total / limit) || 0;
+    if (total === 0) {
+      return {
+        data: [],
+        meta: { page, limit, total: 0, totalPages: 0 },
+      };
+    }
+    const productIds = listStubs.map((stub) => stub.id);
+    const favoriteRows = await this.prisma.$queryRaw<
+      Array<{ productId: number; favCount: bigint | number }>
+    >(
+      Prisma.sql`
               SELECT w.product_id AS productId, COUNT(*) AS favCount
               FROM wishlists w
               WHERE w.product_id IN (${Prisma.join(productIds)})
               GROUP BY w.product_id
             `,
-          )
-        : [];
+    );
     const favoriteCountByProductId = new Map<number, number>(
       favoriteRows.map((row) => [row.productId, Number(row.favCount)]),
     );
-    const sortedProducts = mappedProducts.slice().sort((leftProduct, rightProduct) => {
-      const leftFavCount = favoriteCountByProductId.get(leftProduct.id) ?? 0;
-      const rightFavCount = favoriteCountByProductId.get(rightProduct.id) ?? 0;
-      if (leftFavCount !== rightFavCount) {
-        return rightFavCount - leftFavCount;
+    const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
+      const leftFav = favoriteCountByProductId.get(leftStub.id) ?? 0;
+      const rightFav = favoriteCountByProductId.get(rightStub.id) ?? 0;
+      if (leftFav !== rightFav) {
+        return rightFav - leftFav;
       }
-      return rightProduct.createdAt.getTime() - leftProduct.createdAt.getTime();
+      return rightStub.createdAt.getTime() - leftStub.createdAt.getTime();
     });
-    const total = sortedProducts.length;
-    const pagedProducts = sortedProducts.slice((page - 1) * limit, page * limit).map((product) => ({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      colors: product.colors,
-      variants: product.variants,
-      category: product.category,
-      minPrice: product.minPrice,
-      maxPrice: product.maxPrice,
-    }));
+    const pageIds = sortedStubs.slice((page - 1) * limit, page * limit).map((stub) => stub.id);
+    if (pageIds.length === 0) {
+      return {
+        data: [],
+        meta: { page, limit, total, totalPages },
+      };
+    }
+    const pageRows = await this.prisma.product.findMany({
+      where: { id: { in: pageIds } },
+      select: PUBLIC_LIST_GRAPH_SELECT,
+    });
+    const mapped = pageRows.map((row) => this.mapProductGraphToPublicListItem(row));
+    const data = this.reorderPublicListItemsByIds(mapped, pageIds);
     return {
-      data: pagedProducts,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      data,
+      meta: { page, limit, total, totalPages },
     };
   }
 
@@ -539,11 +516,27 @@ export class ProductRepository {
             select: IMAGE_SELECT,
             orderBy: { sortOrder: 'asc' },
           },
+          productCategories: {
+            take: 1,
+            orderBy: { categoryId: 'asc' },
+            select: {
+              category: {
+                select: { id: true, name: true, slug: true },
+              },
+            },
+          },
         },
       })
-      .then((product) =>
-        product ? { ...product, category: null } : null,
-      ) as Promise<ProductDetailView | null>;
+      .then((product) => {
+        if (!product) {
+          return null;
+        }
+        const { productCategories, ...productRest } = product;
+        return {
+          ...productRest,
+          category: productCategories[0]?.category ?? null,
+        };
+      }) as Promise<ProductDetailView | null>;
   }
 
   async findBySlug(slug: string): Promise<ProductDetailView | null> {
@@ -568,11 +561,27 @@ export class ProductRepository {
             select: IMAGE_SELECT,
             orderBy: { sortOrder: 'asc' },
           },
+          productCategories: {
+            take: 1,
+            orderBy: { categoryId: 'asc' },
+            select: {
+              category: {
+                select: { id: true, name: true, slug: true },
+              },
+            },
+          },
         },
       })
-      .then((product) =>
-        product ? { ...product, category: null } : null,
-      ) as Promise<ProductDetailView | null>;
+      .then((product) => {
+        if (!product) {
+          return null;
+        }
+        const { productCategories, ...productRest } = product;
+        return {
+          ...productRest,
+          category: productCategories[0]?.category ?? null,
+        };
+      }) as Promise<ProductDetailView | null>;
   }
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
@@ -766,7 +775,6 @@ export class ProductRepository {
   }): Promise<ProductAdminDetailView> {
     const product = await this.prisma.$transaction(async (tx) => {
       // 1. Tạo bản ghi sản phẩm cơ bản.
-      const initialBasePrice = this.calculateMinPriceFromVariants(data.variants);
       const created = await tx.product.create({
         data: {
           name: data.name,
@@ -776,7 +784,6 @@ export class ProductRepository {
           length: data.length,
           width: data.width,
           height: data.height,
-          basePrice: initialBasePrice,
           isActive: data.isActive ?? true,
         },
       });
@@ -862,7 +869,6 @@ export class ProductRepository {
         where: { productId: id, deletedAt: null },
         data: { deletedAt: now },
       }),
-      this.prisma.product.update({ where: { id }, data: { basePrice: null } }),
     ]);
   }
 
@@ -876,7 +882,6 @@ export class ProductRepository {
         where: { productId: id },
         data: { deletedAt: null },
       });
-      await this.refreshProductBasePrice(id, tx);
     });
     return this.findAdminById(id) as Promise<ProductAdminDetailView>;
   }
@@ -915,7 +920,6 @@ export class ProductRepository {
           deletedAt: true,
         },
       });
-      await this.refreshProductBasePrice(productId, tx);
       return createdVariant;
     });
   }
@@ -940,10 +944,6 @@ export class ProductRepository {
     data: { price?: number; onHand?: number; isActive?: boolean },
   ) {
     return this.prisma.$transaction(async (tx) => {
-      const variantRecord = await tx.productVariant.findUniqueOrThrow({
-        where: { id: variantId },
-        select: { productId: true },
-      });
       // Cập nhật các trường dữ liệu được yêu cầu cho biến thể.
       const updatedVariant = await tx.productVariant.update({
         where: { id: variantId },
@@ -956,7 +956,6 @@ export class ProductRepository {
           deletedAt: true,
         },
       });
-      await this.refreshProductBasePrice(variantRecord.productId, tx);
       return updatedVariant;
     });
   }
@@ -1047,42 +1046,7 @@ export class ProductRepository {
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   // Xác định thứ tự sắp xếp cho danh sách sản phẩm công khai.
-  private getPublicSortOrder(sort?: string): Prisma.ProductOrderByWithRelationInput[] {
-    switch (sort) {
-      case 'price_asc':
-        return [{ basePrice: 'asc' }, { createdAt: 'desc' }];
-      case 'price_desc':
-        return [{ basePrice: 'desc' }, { createdAt: 'desc' }];
-      case 'newest':
-      default:
-        return [{ createdAt: 'desc' }];
-    }
-  }
-
-  private calculateMinPriceFromVariants(variants: { price: number }[]): number | null {
-    if (variants.length === 0) {
-      return null;
-    }
-    return variants.reduce(
-      (minPrice, variant) => Math.min(minPrice, variant.price),
-      variants[0].price,
-    );
-  }
-
-  private async refreshProductBasePrice(
-    productId: number,
-    tx: Prisma.TransactionClient = this.prisma,
-  ): Promise<void> {
-    const aggregateResult = await tx.productVariant.aggregate({
-      where: {
-        productId,
-        deletedAt: null,
-      },
-      _min: { price: true },
-    });
-    await tx.product.update({
-      where: { id: productId },
-      data: { basePrice: aggregateResult._min.price ?? null },
-    });
+  private getPublicSortOrder(): Prisma.ProductOrderByWithRelationInput[] {
+    return [{ createdAt: 'desc' }];
   }
 }

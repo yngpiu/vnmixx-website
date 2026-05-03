@@ -5,6 +5,9 @@ import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { ProductCardSlider } from '@/modules/common/components/product-card-slider';
+import { SizeSoldOutDiagonalOverlay } from '@/modules/common/components/size-sold-out-diagonal-overlay';
+import { getVariantAvailableQuantity } from '@/modules/common/utils/get-variant-available-quantity';
+import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 import {
@@ -18,11 +21,12 @@ import type {
   ShopProductDetailVariant,
 } from '@/modules/products/types/product-detail';
 import type { ShopProductReviewsResult } from '@/modules/products/types/product-reviews';
+import { formatCatalogPriceLabel } from '@/modules/products/utils/format-catalog-price-label';
 import { ProductWishlistHeartButton } from '@/modules/wishlist/components/product-wishlist-heart-button';
 import { Button } from '@repo/ui/components/ui/button';
 import { toast } from '@repo/ui/components/ui/sonner';
 import { cn } from '@repo/ui/lib/utils';
-import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
+import { Check, ChevronDown, MinusIcon, PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -31,13 +35,8 @@ type ProductDetailPageContentProps = {
   product: ShopProductDetail;
   initialPublicReviews: ShopProductReviewsResult;
   suggestedProducts: NewArrivalProduct[];
+  breadcrumbCategory?: { slug: string; name: string } | null;
 };
-
-const moneyFormatter = new Intl.NumberFormat('vi-VN');
-
-function formatMoney(value: number): string {
-  return `${moneyFormatter.format(value)}đ`;
-}
 
 function buildUniqueColorsFromVariants(
   variants: readonly ShopProductDetailVariant[],
@@ -59,11 +58,18 @@ function getInitialColorAndSizeLabel(product: ShopProductDetail): {
   sizeLabel: string;
 } {
   const colorId = buildUniqueColorsFromVariants(product.variants)[0]?.id ?? 0;
-  const labels = product.variants
+  const variantsForColor = product.variants
     .filter((variant) => variant.color.id === colorId)
-    .sort((a, b) => a.size.sortOrder - b.size.sortOrder)
-    .map((variant) => variant.size.label);
-  const sizeLabel = [...new Set(labels)][0] ?? '';
+    .sort((a, b) => a.size.sortOrder - b.size.sortOrder);
+  const byLabel = new Map<string, ShopProductDetailVariant>();
+  for (const variant of variantsForColor) {
+    if (!byLabel.has(variant.size.label)) {
+      byLabel.set(variant.size.label, variant);
+    }
+  }
+  const rows = [...byLabel.values()].sort((a, b) => a.size.sortOrder - b.size.sortOrder);
+  const firstInStock = rows.find((v) => getVariantAvailableQuantity(v) > 0);
+  const sizeLabel = firstInStock?.size.label ?? '';
   return { colorId, sizeLabel };
 }
 
@@ -80,6 +86,7 @@ export function ProductDetailPageContent({
   product,
   initialPublicReviews,
   suggestedProducts,
+  breadcrumbCategory = null,
 }: ProductDetailPageContentProps): React.JSX.Element {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -98,17 +105,28 @@ export function ProductDetailPageContent({
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState<boolean>(false);
   const [quantity, setQuantity] = useState<number>(1);
   const gallerySlides = useMemo(() => buildGallerySlides(product), [product]);
-  const sizesForColor = useMemo(() => {
-    const labels = product.variants
+  const sizeRowsForColor = useMemo(() => {
+    const sortedVariants = product.variants
       .filter((variant) => variant.color.id === selectedColorId)
+      .sort((a, b) => a.size.sortOrder - b.size.sortOrder);
+    const byLabel = new Map<string, ShopProductDetailVariant>();
+    for (const variant of sortedVariants) {
+      if (!byLabel.has(variant.size.label)) {
+        byLabel.set(variant.size.label, variant);
+      }
+    }
+    return [...byLabel.values()]
       .sort((a, b) => a.size.sortOrder - b.size.sortOrder)
-      .map((variant) => variant.size.label);
-    return [...new Set(labels)];
+      .map((variant) => ({
+        label: variant.size.label,
+        isOutOfStock: getVariantAvailableQuantity(variant) <= 0,
+      }));
   }, [product.variants, selectedColorId]);
   useEffect(() => {
-    setSelectedSizeLabel(sizesForColor[0] ?? '');
+    const firstInStock = sizeRowsForColor.find((row) => !row.isOutOfStock);
+    setSelectedSizeLabel(firstInStock?.label ?? '');
     setQuantity(1);
-  }, [selectedColorId, sizesForColor]);
+  }, [selectedColorId, sizeRowsForColor]);
   const selectedVariant = useMemo<ShopProductDetailVariant | null>(() => {
     if (!selectedSizeLabel) {
       return null;
@@ -128,13 +146,15 @@ export function ProductDetailPageContent({
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     if (minPrice === maxPrice) {
-      return formatMoney(minPrice);
+      return formatCatalogPriceLabel(minPrice);
     }
-    return `${formatMoney(minPrice)} – ${formatMoney(maxPrice)}`;
+    return `${formatCatalogPriceLabel(minPrice)} – ${formatCatalogPriceLabel(maxPrice)}`;
   }, [product.variants]);
   const displayPriceLabel =
-    selectedVariant !== null ? formatMoney(selectedVariant.price) : priceRangeLabel;
-  const maxQuantity = selectedVariant !== null ? Math.max(1, selectedVariant.onHand) : 1;
+    selectedVariant !== null ? formatCatalogPriceLabel(selectedVariant.price) : priceRangeLabel;
+  const selectedAvailableQty =
+    selectedVariant !== null ? getVariantAvailableQuantity(selectedVariant) : 0;
+  const maxQuantity = selectedAvailableQty <= 0 ? 0 : selectedAvailableQty;
   const requireLoginForCart = (): boolean => {
     if (!isAuthSessionReady) {
       return true;
@@ -149,6 +169,9 @@ export function ProductDetailPageContent({
   const executeAddToCart = async (): Promise<boolean> => {
     if (!selectedVariant) {
       toast.error('Vui lòng chọn màu và kích cỡ.', { position: 'bottom-right' });
+      return false;
+    }
+    if (getVariantAvailableQuantity(selectedVariant) < 1) {
       return false;
     }
     try {
@@ -181,20 +204,21 @@ export function ProductDetailPageContent({
     }
   };
   const selectedColorName = colorOptions.find((color) => color.id === selectedColorId)?.name ?? '—';
+  const resolvedBreadcrumbCategory = breadcrumbCategory ?? product.category;
   return (
     <main className="shop-shell-container pb-16 pt-6 md:pt-8">
       <nav className="mb-6 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Trang chủ
         </Link>
-        {product.category ? (
+        {resolvedBreadcrumbCategory ? (
           <>
             <span className="mx-2">/</span>
             <Link
-              href={buildCategoryHref({ slug: product.category.slug })}
+              href={buildCategoryHref({ slug: resolvedBreadcrumbCategory.slug })}
               className="hover:text-foreground"
             >
-              {product.category.name}
+              {resolvedBreadcrumbCategory.name}
             </Link>
           </>
         ) : null}
@@ -259,27 +283,45 @@ export function ProductDetailPageContent({
               </div>
             </div>
           ) : null}
-          {sizesForColor.length > 0 ? (
+          {sizeRowsForColor.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">Kích cỡ</p>
               <div className="flex flex-wrap gap-x-3 gap-y-3">
-                {sizesForColor.map((sizeLabel) => {
-                  const isSelected = selectedSizeLabel === sizeLabel;
+                {sizeRowsForColor.map((row) => {
+                  const isSelected = selectedSizeLabel === row.label;
+                  const chipClassName =
+                    'inline-flex h-10 shrink-0 items-center justify-center wrap-break-word border border-[#E7E8E9] bg-background px-3 text-center text-[10px] font-medium leading-tight tracking-wide uppercase md:px-4 md:text-xs rounded-br-[10px] rounded-bl-none rounded-tl-[10px] rounded-tr-none';
+                  if (row.isOutOfStock) {
+                    return (
+                      <span
+                        key={row.label}
+                        className={cn(
+                          chipClassName,
+                          'relative isolate cursor-default select-none overflow-hidden opacity-95',
+                        )}
+                        aria-label={`Kích cỡ ${row.label} hết hàng`}
+                      >
+                        <span className="relative z-10 text-muted-foreground">{row.label}</span>
+                        <SizeSoldOutDiagonalOverlay />
+                      </span>
+                    );
+                  }
                   return (
                     <button
-                      key={sizeLabel}
+                      key={row.label}
                       type="button"
-                      aria-label={`Chọn kích cỡ ${sizeLabel}`}
+                      aria-label={`Chọn kích cỡ ${row.label}`}
                       aria-pressed={isSelected}
-                      onClick={() => setSelectedSizeLabel(sizeLabel)}
+                      onClick={() => setSelectedSizeLabel(row.label)}
                       className={cn(
-                        'inline-flex min-h-8 shrink-0 flex-col items-center justify-center wrap-break-word border border-[#E7E8E9] bg-background px-3 py-1.5 text-center text-[10px] font-medium leading-tight tracking-wide uppercase transition md:min-h-9 md:px-4 md:py-2 md:text-xs rounded-br-[10px] rounded-bl-none rounded-tl-[10px] rounded-tr-none',
+                        chipClassName,
+                        'transition',
                         isSelected
                           ? 'border-foreground bg-foreground text-background'
                           : 'text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground',
                       )}
                     >
-                      {sizeLabel}
+                      {row.label}
                     </button>
                   );
                 })}
@@ -288,37 +330,39 @@ export function ProductDetailPageContent({
           ) : null}
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">Số lượng</p>
-            <div className="inline-flex items-center gap-1 rounded-md border border-border p-1">
+            <div className="radius-diagonal-sm inline-flex h-10 items-center overflow-hidden border border-border">
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0"
-                disabled={quantity <= 1}
+                size="icon-sm"
+                className="h-10 w-10 shrink-0 rounded-none text-muted-foreground"
+                disabled={maxQuantity === 0 || quantity <= 1}
                 aria-label="Giảm số lượng"
                 onClick={() => setQuantity((previous) => Math.max(1, previous - 1))}
               >
-                <Minus className="h-4 w-4" />
+                <MinusIcon className="size-4" />
               </Button>
-              <span className="min-w-10 text-center text-sm font-medium tabular-nums">
+              <span className="flex h-10 min-w-10 items-center justify-center text-center text-sm tabular-nums">
                 {quantity}
               </span>
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0"
-                disabled={quantity >= maxQuantity}
+                size="icon-sm"
+                className="h-10 w-10 shrink-0 rounded-none text-muted-foreground"
+                disabled={maxQuantity === 0 || quantity >= maxQuantity}
                 aria-label="Tăng số lượng"
-                onClick={() => setQuantity((previous) => Math.min(maxQuantity, previous + 1))}
+                onClick={() =>
+                  setQuantity((previous) =>
+                    maxQuantity <= 0 ? previous : Math.min(maxQuantity, previous + 1),
+                  )
+                }
               >
-                <Plus className="h-4 w-4" />
+                <PlusIcon className="size-4" />
               </Button>
             </div>
-            {selectedVariant !== null && selectedVariant.onHand <= 5 ? (
-              <p className="text-xs text-muted-foreground">
-                Còn {selectedVariant.onHand} sản phẩm.
-              </p>
+            {selectedVariant !== null && selectedAvailableQty <= 5 && selectedAvailableQty > 0 ? (
+              <p className="text-xs text-muted-foreground">Còn {selectedAvailableQty} sản phẩm.</p>
             ) : null}
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -329,7 +373,7 @@ export function ProductDetailPageContent({
               disabled={
                 selectedVariant === null ||
                 addCartItemMutation.isPending ||
-                selectedVariant.onHand < 1
+                selectedAvailableQty < 1
               }
             >
               Thêm vào giỏ
@@ -342,7 +386,7 @@ export function ProductDetailPageContent({
               disabled={
                 selectedVariant === null ||
                 addCartItemMutation.isPending ||
-                selectedVariant.onHand < 1
+                selectedAvailableQty < 1
               }
             >
               Mua hàng
@@ -394,19 +438,4 @@ export function ProductDetailPageContent({
       ) : null}
     </main>
   );
-}
-
-function isLightHex(hex: string): boolean {
-  const normalized = hex.replace('#', '');
-  if (normalized.length !== 6) {
-    return false;
-  }
-  const r = parseInt(normalized.slice(0, 2), 16);
-  const g = parseInt(normalized.slice(2, 4), 16);
-  const b = parseInt(normalized.slice(4, 6), 16);
-  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) {
-    return false;
-  }
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.72;
 }

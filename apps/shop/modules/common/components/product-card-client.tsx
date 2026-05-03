@@ -5,12 +5,16 @@ import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import type { ProductVariantOption } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
+import { SizeSoldOutDiagonalOverlay } from '@/modules/common/components/size-sold-out-diagonal-overlay';
 import {
   coerceHttpImageSrc,
   resolveListingImageSrc,
 } from '@/modules/common/utils/coerce-http-image-src';
+import { getVariantAvailableQuantity } from '@/modules/common/utils/get-variant-available-quantity';
+import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import { buildProductHref } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct, ProductListColor } from '@/modules/home/types/new-arrival-product';
+import { formatCatalogPriceLabelNullable } from '@/modules/products/utils/format-catalog-price-label';
 import { ProductWishlistHeartButton } from '@/modules/wishlist/components/product-wishlist-heart-button';
 import { Button } from '@repo/ui/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/ui/popover';
@@ -27,26 +31,19 @@ export type ProductCardProps = {
   product: NewArrivalProduct;
   /** Category listing typography; defaults to homepage card. */
   display?: 'compact' | 'listing';
+  productHrefOverride?: string;
 };
-
-const moneyFormatter = new Intl.NumberFormat('vi-VN');
-
-function formatMoney(value: number | null): string {
-  if (value === null) {
-    return 'Liên hệ';
-  }
-  return `${moneyFormatter.format(value)}đ`;
-}
 
 export function ProductCardClient({
   product,
   display = 'compact',
+  productHrefOverride,
 }: ProductCardProps): React.JSX.Element {
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
   const addCartItemMutation = useAddCartItemMutation();
   const productPrice = product.minPrice ?? product.maxPrice;
-  const productHref = buildProductHref({ slug: product.slug });
+  const productHref = productHrefOverride ?? buildProductHref({ slug: product.slug });
   const listColors: ProductListColor[] = product.colors?.length
     ? product.colors
     : EMPTY_PRODUCT_COLORS;
@@ -93,16 +90,22 @@ export function ProductCardClient({
     () => availableVariants.filter((variant) => variant.color.hexCode === selectedColorHexCode),
     [availableVariants, selectedColorHexCode],
   );
-  const sizeOptions = useMemo(
-    () => [
-      ...new Set(
-        (selectedVariantByColor.length > 0 ? selectedVariantByColor : availableVariants).map(
-          (variant) => variant.size.label,
-        ),
-      ),
-    ],
-    [availableVariants, selectedVariantByColor],
-  );
+  const sizePickerRows = useMemo(() => {
+    const source = selectedVariantByColor.length > 0 ? selectedVariantByColor : availableVariants;
+    const byLabel = new Map<string, ProductVariantOption>();
+    for (const variant of source) {
+      const label = variant.size.label;
+      if (!byLabel.has(label)) {
+        byLabel.set(label, variant);
+      }
+    }
+    return Array.from(byLabel.values())
+      .sort((left, right) => left.size.sortOrder - right.size.sortOrder)
+      .map((variant) => ({
+        label: variant.size.label,
+        isOutOfStock: getVariantAvailableQuantity(variant) <= 0,
+      }));
+  }, [availableVariants, selectedVariantByColor]);
   const openVariantPicker = (): void => {
     if (!isAuthSessionReady) {
       return;
@@ -125,6 +128,9 @@ export function ProductCardClient({
       null;
     if (!selectedVariant) {
       toast.error('Không tìm thấy biến thể phù hợp.', { position: 'bottom-right' });
+      return;
+    }
+    if (getVariantAvailableQuantity(selectedVariant) <= 0) {
       return;
     }
     try {
@@ -197,7 +203,10 @@ export function ProductCardClient({
                   {isSelectedColor ? (
                     <Check
                       aria-hidden
-                      className="size-3 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)] dark:drop-shadow-[0_1px_1px_rgba(0,0,0,1)]"
+                      className={cn(
+                        'size-3',
+                        isLightHex(color.hexCode) ? 'text-foreground' : 'text-primary-foreground',
+                      )}
                       strokeWidth={2.75}
                     />
                   ) : null}
@@ -222,7 +231,7 @@ export function ProductCardClient({
           <span
             className={`font-semibold text-foreground ${display === 'listing' ? 'text-[15px] md:text-base' : 'text-base'}`}
           >
-            {formatMoney(productPrice)}
+            {formatCatalogPriceLabelNullable(productPrice)}
           </span>
           <Popover open={isPickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger asChild>
@@ -244,20 +253,31 @@ export function ProductCardClient({
             >
               <div className="space-y-1 p-[clamp(6px,1.8vw,10px)]">
                 <div className="grid grid-cols-1 gap-2">
-                  {sizeOptions.map((size: string) => (
-                    <Button
-                      key={`${product.id}-${size}`}
-                      type="button"
-                      variant="ghost"
-                      className="h-[clamp(28px,7vw,32px)] justify-center rounded-none px-0 text-[clamp(14px,4.2vw,16px)] font-medium text-foreground hover:bg-muted/30"
-                      disabled={addCartItemMutation.isPending}
-                      onClick={() => void handleSelectSize(size)}
-                    >
-                      {size}
-                    </Button>
-                  ))}
+                  {sizePickerRows.map((row) =>
+                    row.isOutOfStock ? (
+                      <span
+                        key={`${product.id}-${row.label}`}
+                        className="relative isolate flex h-[clamp(28px,7vw,32px)] cursor-default select-none items-center justify-center overflow-hidden rounded-none px-0 text-[clamp(14px,4.2vw,16px)] font-medium"
+                        aria-label={`Kích cỡ ${row.label} hết hàng`}
+                      >
+                        <span className="relative z-10 text-muted-foreground">{row.label}</span>
+                        <SizeSoldOutDiagonalOverlay roundedClass="rounded-none" />
+                      </span>
+                    ) : (
+                      <Button
+                        key={`${product.id}-${row.label}`}
+                        type="button"
+                        variant="ghost"
+                        className="h-[clamp(28px,7vw,32px)] justify-center rounded-none px-0 text-[clamp(14px,4.2vw,16px)] font-medium text-foreground hover:bg-muted/30"
+                        disabled={addCartItemMutation.isPending}
+                        onClick={() => void handleSelectSize(row.label)}
+                      >
+                        {row.label}
+                      </Button>
+                    ),
+                  )}
                 </div>
-                {sizeOptions.length === 0 ? (
+                {sizePickerRows.length === 0 ? (
                   <p className="text-center text-xs text-muted-foreground">
                     Sản phẩm chưa có biến thể khả dụng.
                   </p>

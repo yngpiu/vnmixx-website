@@ -31,6 +31,7 @@ export type NewArrivalProduct = {
     size: {
       id: number;
       label: string;
+      /** Listing sort order from API (required for size picker ordering). */
       sortOrder: number;
     };
   }[];

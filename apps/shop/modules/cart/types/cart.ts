@@ -64,6 +64,7 @@ export interface ProductVariantOption {
   size: {
     id: number;
     label: string;
+    sortOrder: number;
   };
 }
 
