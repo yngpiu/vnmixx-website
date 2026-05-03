@@ -62,23 +62,6 @@ export class ChatCustomerController {
     );
   }
 
-  // Truy xuất thông tin cuộc hội thoại đang hoạt động của khách hàng hiện tại.
-  @ApiOperation({ summary: 'Lấy cuộc hội thoại hỗ trợ hiện tại' })
-  @ApiOkResponse({
-    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ChatDetailResponseDto) }),
-  })
-  @ApiNotFoundResponse({ description: 'Chưa có cuộc hội thoại nào.' })
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @Get('active')
-  async getActiveChat(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<ChatDetailResponseDto | null>> {
-    return ok(
-      await this.chatService.findChatByCustomer(user.id),
-      'Lấy cuộc hội thoại hỗ trợ thành công.',
-    );
-  }
-
   // Lấy danh sách tin nhắn trong cuộc hội thoại của khách hàng với phân trang cursor.
   @ApiOperation({ summary: 'Lấy danh sách tin nhắn cuộc hội thoại' })
   @ApiOkResponse({

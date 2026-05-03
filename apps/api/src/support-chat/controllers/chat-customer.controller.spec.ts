@@ -10,7 +10,6 @@ describe('ChatCustomerController', () => {
   beforeEach(async () => {
     service = {
       findOrCreateChat: jest.fn(),
-      findChatByCustomer: jest.fn(),
       getMessages: jest.fn(),
       isCustomerOwner: jest.fn(),
     };
@@ -41,25 +40,6 @@ describe('ChatCustomerController', () => {
       const result = await controller.findOrCreateChat(user);
       expect(result.data).toBe(mockChat);
       expect(service.findOrCreateChat).toHaveBeenCalledWith(10);
-    });
-  });
-
-  describe('getActiveChat', () => {
-    it('should return active chat if exists', async () => {
-      const mockChat = { id: 1 };
-      service.findChatByCustomer.mockResolvedValue(mockChat);
-      const user = { id: 10 } as any;
-
-      const result = await controller.getActiveChat(user);
-      expect(result.data).toBe(mockChat);
-    });
-
-    it('should return null if no active chat', async () => {
-      service.findChatByCustomer.mockResolvedValue(null);
-      const user = { id: 10 } as any;
-
-      const result = await controller.getActiveChat(user);
-      expect(result.data).toBeNull();
     });
   });
 

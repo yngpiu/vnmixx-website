@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import {
   ApiExtraModels,
   ApiInternalServerErrorResponse,
@@ -48,18 +48,5 @@ export class CategoryController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findBySlug(@Param('slug') slug: string): Promise<SuccessPayload<CategoryDetailDto>> {
     return ok(await this.categoryService.findBySlug(slug), 'Lấy chi tiết danh mục thành công.');
-  }
-
-  // Lấy chi tiết danh mục theo ID để hiển thị trang danh mục cụ thể kèm các danh mục con.
-  @ApiOperation({ summary: 'Lấy chi tiết danh mục theo ID, bao gồm danh mục con trực tiếp' })
-  @ApiOkResponse({ schema: buildSuccessResponseSchema({ $ref: getSchemaPath(CategoryDetailDto) }) })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy danh mục.' })
-  @Public()
-  @Get(':id')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async findById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<SuccessPayload<CategoryDetailDto>> {
-    return ok(await this.categoryService.findPublicById(id), 'Lấy chi tiết danh mục thành công.');
   }
 }

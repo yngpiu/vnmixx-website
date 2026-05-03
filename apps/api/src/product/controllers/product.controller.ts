@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
   ApiExtraModels,
   ApiInternalServerErrorResponse,
@@ -64,20 +64,5 @@ export class ProductController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findBySlug(@Param('slug') slug: string): Promise<SuccessPayload<ProductDetailResponseDto>> {
     return ok(await this.productService.findBySlug(slug), 'Lấy chi tiết sản phẩm thành công.');
-  }
-
-  // Truy vấn chi tiết một sản phẩm theo ID.
-  @ApiOperation({ summary: 'Lấy chi tiết sản phẩm theo ID' })
-  @ApiOkResponse({
-    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ProductDetailResponseDto) }),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy sản phẩm.' })
-  @Public()
-  @Get(':id')
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async findById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<SuccessPayload<ProductDetailResponseDto>> {
-    return ok(await this.productService.findPublicById(id), 'Lấy chi tiết sản phẩm thành công.');
   }
 }

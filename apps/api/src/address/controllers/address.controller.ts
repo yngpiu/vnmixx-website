@@ -63,22 +63,6 @@ export class AddressController {
     return ok(await this.addressService.findAll(user.id), 'Lấy danh sách địa chỉ thành công.');
   }
 
-  // Lấy thông tin chi tiết của một địa chỉ cụ thể theo ID.
-  @ApiOperation({ summary: 'Lấy địa chỉ theo ID' })
-  @ApiOkResponse({
-    description: 'Lấy chi tiết địa chỉ thành công.',
-    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(AddressResponseDto) }),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy địa chỉ.' })
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @Get(':id')
-  async findOne(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<AddressResponseDto>> {
-    return ok(await this.addressService.findById(id, user.id), 'Lấy chi tiết địa chỉ thành công.');
-  }
-
   // Thêm một địa chỉ mới vào sổ địa chỉ của khách hàng.
   @ApiOperation({ summary: 'Tạo địa chỉ mới' })
   @ApiCreatedResponse({

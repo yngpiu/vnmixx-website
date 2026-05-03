@@ -127,16 +127,4 @@ export class CartController {
   ): Promise<void> {
     await this.cartService.removeItem(user.id, itemId);
   }
-
-  // Làm sạch toàn bộ giỏ hàng của khách hàng.
-  @ApiOperation({ summary: 'Xóa toàn bộ giỏ hàng' })
-  @ApiNoContentResponse({
-    description: 'Xóa toàn bộ giỏ hàng thành công.',
-  })
-  @Delete()
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  async clearCart(@CurrentUser() user: AuthenticatedUser): Promise<void> {
-    await this.cartService.clearCart(user.id);
-  }
 }
