@@ -1,6 +1,7 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { OrderStatus, Prisma, PrismaClient } from '../generated/prisma/client';
+import { SEED_CONFIG } from './seed-constants';
 import { clampDate, resolveSeedAsOfDate } from './seed-date-range';
 
 const REVIEW_TITLES = [
@@ -62,17 +63,14 @@ export async function seedProductReviews(): Promise<void> {
     }
 
     const asOf = resolveSeedAsOfDate();
-    const reviewProbability = Math.min(
-      1,
-      Math.max(0, parseFloat(process.env.SEED_REVIEW_ORDER_FRACTION ?? '0.52')),
-    );
+    const reviewProbability = Math.min(1, Math.max(0, SEED_CONFIG.reviewOrderFraction));
 
     console.log('Fetching delivered orders...');
     const deliveredOrders = await prisma.order.findMany({
       where: { status: OrderStatus.DELIVERED },
       include: { items: { include: { variant: true } } },
       orderBy: { createdAt: 'asc' },
-      take: Number(process.env.SEED_REVIEW_MAX_ORDERS ?? 25_000),
+      take: SEED_CONFIG.reviewMaxOrders,
     });
 
     if (deliveredOrders.length === 0) {

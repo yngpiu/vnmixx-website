@@ -1,23 +1,15 @@
+import { SEED_CONFIG } from './seed-constants';
+
 /** Ngày trong một năm (seed), không năm nhuận — đủ cho phân bổ demo. */
 export const SEED_DAYS_PER_YEAR = 365;
 export const SEED_MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Mốc “hôm nay” cho toàn bộ seed (đồng bộ dashboard / demo).
- * Mặc định: 28/4/2026 cuối ngày +07.
- * Ghi đè: `SEED_AS_OF=2026-04-28` hoặc chuỗi ISO đầy đủ.
+ * Giá trị: `SEED_CONFIG.asOfIso` trong `seed-constants.ts`.
  */
 export function resolveSeedAsOfDate(): Date {
-  const raw = process.env.SEED_AS_OF?.trim();
-  if (!raw) {
-    return new Date('2026-04-28T23:59:59.999+07:00');
-  }
-  const short = /^\d{4}-\d{2}-\d{2}$/;
-  const parsed = short.test(raw) ? new Date(`${raw}T23:59:59.999+07:00`) : new Date(raw);
-  if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`SEED_AS_OF không hợp lệ: "${raw}"`);
-  }
-  return parsed;
+  return new Date(SEED_CONFIG.asOfIso);
 }
 
 export function yearsBefore(asOf: Date, years: number): Date {

@@ -1,7 +1,9 @@
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { AddressType, PrismaClient } from '../generated/prisma/client';
 
-const ADDRESS_CUSTOMER_LIMIT = Number(process.env.SEED_ADDRESS_CUSTOMER_COUNT ?? 350);
+import { SEED_CONFIG } from './seed-constants';
+
+const ADDRESS_CUSTOMER_LIMIT = SEED_CONFIG.addressCustomerLimit;
 
 async function wipeSeedAddresses(prisma: PrismaClient): Promise<void> {
   await prisma.address.deleteMany({});

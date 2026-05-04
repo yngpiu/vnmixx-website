@@ -6,13 +6,16 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   AuditLogStatus,
   type OrderStatus,
+  type PaymentMethod,
   type PaymentStatus,
 } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { MailService } from '../../mail/services/mail.service';
 import { PrismaService } from '../../prisma/services/prisma.service';
 import { GhnService, type GhnCreateOrderData } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
@@ -35,6 +38,8 @@ export class OrderAdminService {
     private readonly ghn: GhnService,
     private readonly shipping: ShippingService,
     private readonly auditLogService: AuditLogService,
+    private readonly mail: MailService,
+    private readonly config: ConfigService,
   ) {}
 
   // Truy vấn danh sách đơn hàng toàn hệ thống với các bộ lọc
@@ -96,9 +101,20 @@ export class OrderAdminService {
           packageWidth: true,
           packageHeight: true,
           subtotal: true,
+          shippingFee: true,
+          discountAmount: true,
           total: true,
+          customer: { select: { email: true, fullName: true } },
           items: {
-            select: { id: true, variantId: true, productName: true, quantity: true, price: true },
+            select: {
+              id: true,
+              variantId: true,
+              productName: true,
+              colorName: true,
+              sizeLabel: true,
+              quantity: true,
+              price: true,
+            },
           },
           payments: {
             select: { id: true, method: true, status: true },
@@ -262,6 +278,20 @@ export class OrderAdminService {
         status: AuditLogStatus.SUCCESS,
         beforeData,
         afterData: result,
+      });
+      await this.sendOrderConfirmedEmailSafely({
+        customerEmail: order.customer.email,
+        orderCode,
+        recipientName: order.shippingFullName,
+        shippingSummary: toAddress,
+        paymentMethod: payment?.method,
+        ghnOrderCode: ghnResult.order_code,
+        expectedDeliveryTime: new Date(ghnResult.expected_delivery_time),
+        items: order.items,
+        subtotal: order.subtotal,
+        shippingFee: order.shippingFee,
+        discountAmount: order.discountAmount,
+        total: order.total,
       });
       return result;
     } catch (error) {
@@ -541,5 +571,122 @@ export class OrderAdminService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Gửi email xác nhận đơn cho khách (best-effort: lỗi gửi mail không ảnh hưởng trạng thái đơn).
+   */
+  private async sendOrderConfirmedEmailSafely(payload: {
+    readonly customerEmail: string;
+    readonly orderCode: string;
+    readonly recipientName: string;
+    readonly shippingSummary: string;
+    readonly paymentMethod: PaymentMethod | undefined;
+    readonly ghnOrderCode: string;
+    readonly expectedDeliveryTime: Date;
+    readonly items: ReadonlyArray<{
+      id: number;
+      variantId: number;
+      productName: string;
+      colorName: string;
+      sizeLabel: string;
+      quantity: number;
+      price: number;
+    }>;
+    readonly subtotal: number;
+    readonly shippingFee: number;
+    readonly discountAmount: number;
+    readonly total: number;
+  }): Promise<void> {
+    try {
+      const orderDetailUrl = this.resolveShopOrderDetailUrl(payload.orderCode);
+      const items = payload.items.map((item) => {
+        const parts = this.collectVariantLabelParts(item.colorName, item.sizeLabel);
+        const variantSummary = parts.join(' · ');
+        return {
+          productName: item.productName,
+          variantSummary,
+          quantity: item.quantity,
+          lineTotalFormatted: this.formatVnd(item.price * item.quantity),
+        };
+      });
+      const itemsTextBlock = payload.items
+        .map((item) => {
+          const parts = this.collectVariantLabelParts(item.colorName, item.sizeLabel);
+          const variant = parts.length > 0 ? ` (${parts.join(' · ')})` : '';
+          return `- ${item.productName}${variant} ×${item.quantity}: ${this.formatVnd(item.price * item.quantity)}`;
+        })
+        .join('\n');
+      const hasDiscount = payload.discountAmount > 0;
+      await this.mail.sendMailWithTemplate(payload.customerEmail, 'ORDER_CONFIRMED', {
+        orderCode: payload.orderCode,
+        recipientName: payload.recipientName,
+        shippingSummary: payload.shippingSummary,
+        paymentMethodLabel: this.formatPaymentMethodLabel(payload.paymentMethod),
+        ghnOrderCode: payload.ghnOrderCode,
+        expectedDeliveryText: this.formatExpectedDelivery(payload.expectedDeliveryTime),
+        items,
+        itemsTextBlock,
+        subtotalFormatted: this.formatVnd(payload.subtotal),
+        shippingFeeFormatted: this.formatVnd(payload.shippingFee),
+        hasDiscount,
+        discountFormatted: this.formatVnd(payload.discountAmount),
+        totalFormatted: this.formatVnd(payload.total),
+        orderDetailUrl,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Gửi email xác nhận đơn ${payload.orderCode} thất bại: ${message}`);
+    }
+  }
+
+  private formatVnd(amount: number): string {
+    return `${new Intl.NumberFormat('vi-VN').format(amount)} đ`;
+  }
+
+  private collectVariantLabelParts(colorName: string, sizeLabel: string): string[] {
+    return [colorName, sizeLabel].filter((p) => {
+      return p && String(p).trim() !== '';
+    });
+  }
+
+  private resolveShopOrderDetailUrl(orderCode: string): string {
+    const raw = this.config.get<string>('SHOP_APP_BASE_URL')?.trim() ?? '';
+    if (!raw) {
+      return '';
+    }
+    try {
+      const base = new URL(raw).href.replace(/\/+$/, '');
+      return `${base}/me/order/${encodeURIComponent(orderCode)}`;
+    } catch {
+      this.logger.warn(
+        'SHOP_APP_BASE_URL không phải URL hợp lệ; bỏ qua liên kết trong email đơn hàng.',
+      );
+      return '';
+    }
+  }
+
+  private formatPaymentMethodLabel(method: PaymentMethod | undefined): string {
+    if (method === 'COD') {
+      return 'Thanh toán khi nhận hàng (COD)';
+    }
+    if (method === 'BANK_TRANSFER_QR') {
+      return 'Chuyển khoản QR';
+    }
+    return 'Khác';
+  }
+
+  private formatExpectedDelivery(date: Date): string {
+    if (Number.isNaN(date.getTime())) {
+      return '—';
+    }
+    return date.toLocaleString('vi-VN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 }

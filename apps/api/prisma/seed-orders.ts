@@ -8,6 +8,7 @@ import {
   Prisma,
   PrismaClient,
 } from '../generated/prisma/client';
+import { SEED_CONFIG } from './seed-constants';
 import {
   clampDate,
   resolveSeedAsOfDate,
@@ -15,7 +16,7 @@ import {
   yearsBefore,
 } from './seed-date-range';
 
-const ORDER_COUNT = Number(process.env.SEED_ORDER_COUNT ?? 1000);
+const ORDER_COUNT = SEED_CONFIG.orderCount;
 
 /** Phân bổ ~3 năm: 20% năm cũ nhất, 30% năm giữa, 50% năm gần nhất (tính từ `rangeStart` đến `asOf`). */
 function generateOrderDates(rangeStart: Date, asOf: Date, count: number): Date[] {
@@ -99,7 +100,7 @@ export async function seedOrders(): Promise<void> {
     const sortedDates = generateOrderDates(rangeStart, asOf, ORDER_COUNT);
 
     console.log(
-      `Seeding ${ORDER_COUNT} orders in [${rangeStart.toISOString()} … ${asOf.toISOString()}] (SEED_AS_OF=${process.env.SEED_AS_OF ?? 'default 2026-04-28'})...`,
+      `Seeding ${ORDER_COUNT} orders in [${rangeStart.toISOString()} … ${asOf.toISOString()}] (anchor ${asOf.toISOString()})...`,
     );
 
     let orderSeq = 0;

@@ -2,6 +2,7 @@ import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { hash } from 'bcrypt';
 import { CustomerStatus, Gender, Prisma, PrismaClient } from '../generated/prisma/client';
+import { SEED_CONFIG } from './seed-constants';
 import {
   clampDate,
   resolveSeedAsOfDate,
@@ -10,9 +11,7 @@ import {
 } from './seed-date-range';
 
 const BCRYPT_ROUNDS = 10;
-const CUSTOMER_COUNT = Number(process.env.SEED_CUSTOMER_COUNT ?? 500);
-
-const seedPassword = () => process.env.SEED_CUSTOMER_PASSWORD ?? '12345678';
+const CUSTOMER_COUNT = SEED_CONFIG.customerCount;
 
 function pravatarUrl(seed: string): string {
   return `https://i.pravatar.cc/150?u=${encodeURIComponent(seed)}`;
@@ -27,7 +26,7 @@ export async function seedCustomers(): Promise<void> {
   const prisma = new PrismaClient({ adapter });
 
   try {
-    const hashedPassword = await hash(seedPassword(), BCRYPT_ROUNDS);
+    const hashedPassword = await hash(SEED_CONFIG.devSeedPassword, BCRYPT_ROUNDS);
     let created = 0;
 
     faker.seed(456);

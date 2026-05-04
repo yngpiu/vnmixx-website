@@ -4,9 +4,11 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { AuditLogStatus } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { MailService } from '../../mail/services/mail.service';
 import { PrismaService } from '../../prisma/services/prisma.service';
 import { GhnService } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
@@ -41,6 +43,7 @@ describe('OrderAdminService', () => {
   let orderRepo: jest.Mocked<OrderRepository>;
   let ghn: jest.Mocked<GhnService>;
   let auditLogService: jest.Mocked<AuditLogService>;
+  let mail: jest.Mocked<MailService>;
 
   beforeEach(async () => {
     prisma = {
@@ -87,6 +90,18 @@ describe('OrderAdminService', () => {
             write: jest.fn(),
           },
         },
+        {
+          provide: MailService,
+          useValue: {
+            sendMailWithTemplate: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('https://shop.test'),
+          },
+        },
       ],
     }).compile();
 
@@ -94,6 +109,7 @@ describe('OrderAdminService', () => {
     orderRepo = module.get(OrderRepository);
     ghn = module.get(GhnService);
     auditLogService = module.get(AuditLogService);
+    mail = module.get(MailService);
 
     // Suppress expected error logs
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
@@ -144,6 +160,8 @@ describe('OrderAdminService', () => {
       status: 'PENDING_CONFIRMATION',
       total: 100000,
       subtotal: 90000,
+      shippingFee: 10000,
+      discountAmount: 0,
       packageWeight: 1000,
       packageLength: 10,
       packageWidth: 10,
@@ -154,7 +172,18 @@ describe('OrderAdminService', () => {
       shippingWard: 'Ward 1',
       shippingDistrict: 'District 1',
       shippingCity: 'City 1',
-      items: [{ id: 1, variantId: 1, productName: 'Product', quantity: 1, price: 100000 }],
+      customer: { email: 'customer@test.com', fullName: 'John Customer' },
+      items: [
+        {
+          id: 1,
+          variantId: 1,
+          productName: 'Product',
+          colorName: 'Đen',
+          sizeLabel: 'M',
+          quantity: 1,
+          price: 100000,
+        },
+      ],
       payments: [{ method: 'COD', status: 'PENDING' }],
     };
 
@@ -220,6 +249,15 @@ describe('OrderAdminService', () => {
       );
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ status: AuditLogStatus.SUCCESS }),
+      );
+      expect(mail.sendMailWithTemplate).toHaveBeenCalledWith(
+        'customer@test.com',
+        'ORDER_CONFIRMED',
+        expect.objectContaining({
+          orderCode,
+          ghnOrderCode: 'GHN123',
+          recipientName: 'John Doe',
+        }),
       );
     });
 

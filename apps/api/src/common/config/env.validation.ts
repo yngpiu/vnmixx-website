@@ -20,6 +20,8 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
+  /** Base URL shop (không dấu / cuối), dùng cho link trong email đơn hàng. Ví dụ: https://vnmixx.shop */
+  SHOP_APP_BASE_URL: z.string().optional(),
   GHN_API_URL: z.string().url().optional(),
   GHN_TOKEN: z.string().optional(),
   GHN_SHOP_ID: z.coerce.number().optional(),

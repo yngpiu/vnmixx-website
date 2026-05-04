@@ -1,6 +1,7 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { ChatSenderType, CustomerStatus, PrismaClient } from '../generated/prisma/client';
+import { SEED_CONFIG } from './seed-constants';
 import { clampDate, resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const DEMO_MESSAGES = [
@@ -10,7 +11,7 @@ const DEMO_MESSAGES = [
   'Em đã ghi nhận, đơn đang ở trạng thái đang xử lý và sẽ giao trước thứ 6 ạ.',
 ];
 
-const DEMO_CHAT_COUNT = Number(process.env.SEED_SUPPORT_CHAT_COUNT ?? 48);
+const DEMO_CHAT_COUNT = SEED_CONFIG.supportChatCount;
 
 export async function seedSupportChats(): Promise<void> {
   if (!process.env.DATABASE_URL) {
@@ -123,7 +124,7 @@ export async function seedSupportChats(): Promise<void> {
     }
 
     console.log(
-      `Seed support chat done: chats=${seededChats}, assignments=${seededAssignments}, messages=${seededMessages} (cửa sổ ~3 năm tới SEED_AS_OF).`,
+      `Seed support chat done: chats=${seededChats}, assignments=${seededAssignments}, messages=${seededMessages} (cửa sổ ~3 năm tới mốc anchor).`,
     );
   } finally {
     await prisma.$disconnect();

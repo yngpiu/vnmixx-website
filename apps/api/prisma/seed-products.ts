@@ -1,9 +1,10 @@
 import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { Prisma, PrismaClient } from '../generated/prisma/client';
+import { SEED_CONFIG } from './seed-constants';
 import { resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
-const PRODUCT_COUNT = Number(process.env.SEED_PRODUCT_COUNT ?? 200);
+const PRODUCT_COUNT = SEED_CONFIG.productCount;
 const SEED_SKU_PREFIX = 'VNMIXX-';
 
 /** Number of picsum placeholders per variant color (front/back/detail… for list + PDP). */

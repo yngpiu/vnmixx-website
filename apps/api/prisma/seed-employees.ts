@@ -2,10 +2,9 @@ import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { hash } from 'bcrypt';
 import { EmployeeStatus, PrismaClient } from '../generated/prisma/client';
+import { SEED_CONFIG } from './seed-constants';
 
 const BCRYPT_ROUNDS = 10;
-
-const seedPassword = () => process.env.SEED_EMPLOYEE_PASSWORD ?? '12345678';
 
 function pravatarUrl(seed: string): string {
   return `https://i.pravatar.cc/150?u=${encodeURIComponent(seed)}`;
@@ -29,7 +28,7 @@ export async function seedEmployees(): Promise<void> {
   const prisma = new PrismaClient({ adapter });
 
   try {
-    const hashedPassword = await hash(seedPassword(), BCRYPT_ROUNDS);
+    const hashedPassword = await hash(SEED_CONFIG.devSeedPassword, BCRYPT_ROUNDS);
     const roles = await prisma.role.findMany({ select: { id: true, name: true } });
     const roleIdByName = new Map(roles.map((r) => [r.name, r.id]));
 

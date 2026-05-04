@@ -5,10 +5,11 @@ import {
   InventoryVoucherType,
   PrismaClient,
 } from '../generated/prisma/client';
+import { SEED_CONFIG } from './seed-constants';
 import { clampDate, resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const SEED_VOUCHER_PREFIX = 'SEED-INV-';
-const VOUCHER_COUNT = Number(process.env.SEED_INVENTORY_VOUCHER_COUNT ?? 72);
+const VOUCHER_COUNT = SEED_CONFIG.inventoryVoucherCount;
 
 async function wipeSeedInventoryVouchers(prisma: PrismaClient): Promise<void> {
   await prisma.inventoryMovement.deleteMany({
