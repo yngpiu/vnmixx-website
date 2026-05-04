@@ -2,18 +2,22 @@
 
 import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
+import {
+  CHECKOUT_STEP_FRAME_CLASS,
+  CheckoutProgressSteps,
+} from '@/modules/cart/components/checkout-progress-steps';
 import { useCartQuery, useRemoveCartItemMutation } from '@/modules/cart/hooks/use-cart';
 import { useDebouncedCartQuantityUpdate } from '@/modules/cart/hooks/use-debounced-cart-quantity';
 import type { CartItem } from '@/modules/cart/types/cart';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
 import { Button } from '@repo/ui/components/ui/button';
+import { cn } from '@repo/ui/lib/utils';
 import { MinusIcon, PlusIcon, ShoppingBagIcon, Trash2Icon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN');
-const CHECKOUT_STEPS = ['Giỏ hàng', 'Đặt hàng', 'Thanh toán', 'Hoàn thành đơn'] as const;
 
 function formatMoney(value: number): string {
   return `${moneyFormatter.format(value)}đ`;
@@ -21,25 +25,6 @@ function formatMoney(value: number): string {
 
 function getItemTotal(item: CartItem): number {
   return item.variant.price * item.quantity;
-}
-
-function CartProgressSteps(): React.JSX.Element {
-  return (
-    <div className="border border-border px-6 py-8">
-      <div className="relative grid grid-cols-4 items-start text-center">
-        <span className="absolute left-0 right-0 top-[7px] h-px bg-border" aria-hidden />
-        {CHECKOUT_STEPS.map((step, index) => (
-          <div key={step} className="relative z-10 flex flex-col items-center gap-3">
-            <span
-              className={`size-3 rounded-full border ${index === 0 ? 'border-foreground bg-foreground' : 'border-border bg-background'}`}
-              aria-hidden
-            />
-            <span className="text-[13px] leading-5 text-muted-foreground">{step}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function CartTableHeader(): React.JSX.Element {
@@ -143,7 +128,7 @@ function CartSummaryPanel({
   totalPrice: number;
 }): React.JSX.Element {
   return (
-    <aside className="h-fit border border-border p-4">
+    <aside className={cn('h-fit', CHECKOUT_STEP_FRAME_CLASS)}>
       <h3 className="text-[24px] leading-none font-semibold text-foreground">Tổng tiền giỏ hàng</h3>
       <div className="mt-5 space-y-4 border-b border-border pb-5 text-[16px] leading-none">
         <div className="flex items-center justify-between">
@@ -216,7 +201,7 @@ export function CartPageContent(): React.JSX.Element {
   return (
     <main className="shop-shell-container py-8">
       {items.length === 0 ? (
-        <section className="rounded-lg border border-dashed p-10 text-center">
+        <section className={cn(CHECKOUT_STEP_FRAME_CLASS, 'border-dashed text-center')}>
           <ShoppingBagIcon className="mx-auto mb-3 size-8 text-muted-foreground" />
           <p className="mb-4 text-muted-foreground">Giỏ hàng của bạn đang trống.</p>
           <PrimaryCtaButton asChild>
@@ -225,9 +210,9 @@ export function CartPageContent(): React.JSX.Element {
         </section>
       ) : (
         <section className="space-y-6">
-          <CartProgressSteps />
+          <CheckoutProgressSteps currentStep={0} />
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px]">
-            <div>
+            <div className={CHECKOUT_STEP_FRAME_CLASS}>
               <h1 className="mb-5 text-[24px] leading-none font-semibold text-foreground">
                 Giỏ hàng của bạn <span className="text-rose-700">{totalQuantity} Sản Phẩm</span>
               </h1>

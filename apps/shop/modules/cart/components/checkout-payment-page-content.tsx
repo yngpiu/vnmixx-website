@@ -2,13 +2,17 @@
 
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { cancelMyOrder, getMyOrderDetail } from '@/modules/cart/api/checkout';
-import { CheckoutProgressSteps } from '@/modules/cart/components/checkout-progress-steps';
+import {
+  CHECKOUT_STEP_FRAME_CLASS,
+  CheckoutProgressSteps,
+} from '@/modules/cart/components/checkout-progress-steps';
 import {
   createOrderPaymentSocket,
   type OrderPaymentUpdatedEvent,
 } from '@/modules/cart/lib/order-payment-socket';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { toast } from '@repo/ui/components/ui/sonner';
+import { cn } from '@repo/ui/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DownloadIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -165,7 +169,7 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
       <div className="mb-6">
         <CheckoutProgressSteps currentStep={2} />
       </div>
-      <section className="rounded-md border border-border p-6 text-center">
+      <section className={cn(CHECKOUT_STEP_FRAME_CLASS, 'text-center')}>
         <h1 className="text-2xl font-semibold">Thanh toán đơn hàng</h1>
         {orderCode.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">
