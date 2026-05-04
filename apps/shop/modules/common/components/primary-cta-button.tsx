@@ -67,6 +67,7 @@ export function PrimaryCtaButton({
 
   return (
     <Button
+      {...restButtonProps}
       type={buttonProps.type ?? 'button'}
       variant="default"
       size={buttonProps.size ?? (pagination ? 'default' : isIconOnly ? 'icon' : 'default')}
@@ -82,7 +83,6 @@ export function PrimaryCtaButton({
         className,
       )}
       disabled={isDisabled}
-      {...restButtonProps}
     />
   );
 }
