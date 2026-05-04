@@ -3,7 +3,6 @@
 import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
-import { useGuestCart } from '@/modules/cart/hooks/use-guest-cart';
 import type { ProductVariantOption } from '@/modules/cart/types/cart';
 import {
   coerceHttpImageSrc,
@@ -43,7 +42,6 @@ export function useProductCardController(
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
   const addCartItemMutation = useAddCartItemMutation();
-  const { addItem: addGuestCartItem } = useGuestCart();
   const listColors: ProductListColor[] = product.colors?.length
     ? product.colors
     : EMPTY_PRODUCT_COLORS;
@@ -116,6 +114,12 @@ export function useProductCardController(
     if (!isAuthSessionReady) {
       return;
     }
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để thêm vào giỏ hàng', {
+        position: 'bottom-right',
+      });
+      return;
+    }
     const selectedVariant: ProductVariantOption | null =
       selectedVariantByColor.find((variant) => variant.size.label === size) ??
       availableVariants.find((variant) => variant.size.label === size) ??
@@ -125,17 +129,6 @@ export function useProductCardController(
       return;
     }
     if (getVariantAvailableQuantity(selectedVariant) <= 0) {
-      return;
-    }
-    if (!user) {
-      addGuestCartItem({
-        variantId: selectedVariant.id,
-        quantity: 1,
-      });
-      setPickerOpen(false);
-      toast.success('Đã lưu tạm vào giỏ hàng. Đăng nhập để đồng bộ giỏ hàng.', {
-        position: 'bottom-right',
-      });
       return;
     }
     try {

@@ -3,7 +3,6 @@
 import { useAuthSessionReady } from '@/modules/auth/providers/auth-provider';
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { useAddCartItemMutation } from '@/modules/cart/hooks/use-cart';
-import { useGuestCart } from '@/modules/cart/hooks/use-guest-cart';
 import { getVariantAvailableQuantity } from '@/modules/common/utils/get-variant-available-quantity';
 import type {
   ShopProductDetail,
@@ -87,7 +86,6 @@ export function useProductDetailController({
   const user = useAuthStore((state) => state.user);
   const isAuthSessionReady = useAuthSessionReady();
   const addCartItemMutation = useAddCartItemMutation();
-  const { addItem: addGuestCartItem } = useGuestCart();
   const colorOptions = useMemo(
     () => buildUniqueColorsFromVariants(product.variants),
     [product.variants],
@@ -160,8 +158,12 @@ export function useProductDetailController({
   const selectedAvailableQty =
     selectedVariant !== null ? getVariantAvailableQuantity(selectedVariant) : 0;
   const maxQuantity = selectedAvailableQty <= 0 ? 0 : selectedAvailableQty;
-  const requireAuthSessionReady = (): boolean => {
+  const requireLoginForCart = (): boolean => {
     if (!isAuthSessionReady) {
+      return true;
+    }
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để thêm vào giỏ hàng', { position: 'bottom-right' });
       return true;
     }
     return false;
@@ -173,16 +175,6 @@ export function useProductDetailController({
     }
     if (getVariantAvailableQuantity(selectedVariant) < 1) {
       return false;
-    }
-    if (!user) {
-      addGuestCartItem({
-        variantId: selectedVariant.id,
-        quantity,
-      });
-      toast.success('Đã lưu tạm vào giỏ hàng. Đăng nhập để đồng bộ giỏ hàng.', {
-        position: 'bottom-right',
-      });
-      return true;
     }
     try {
       await addCartItemMutation.mutateAsync({
@@ -199,13 +191,13 @@ export function useProductDetailController({
     }
   };
   const handleAddToCart = async (): Promise<void> => {
-    if (requireAuthSessionReady()) {
+    if (requireLoginForCart()) {
       return;
     }
     await executeAddToCart();
   };
   const handleBuyNow = async (): Promise<void> => {
-    if (requireAuthSessionReady()) {
+    if (requireLoginForCart()) {
       return;
     }
     const okResult = await executeAddToCart();

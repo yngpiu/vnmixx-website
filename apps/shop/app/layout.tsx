@@ -1,7 +1,6 @@
 import { COOKIE_ACCESS_TOKEN, SHOP_SITE_URL } from '@/config/constants';
 import { AuthProvider } from '@/modules/auth/providers/auth-provider';
 import { CartDrawer } from '@/modules/cart/components/cart-drawer';
-import { GuestCartSync } from '@/modules/cart/components/guest-cart-sync';
 import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { ShopHeader } from '@/modules/header/components/shop-header';
 import { SupportChatFabSheet } from '@/modules/support-chat/components/support-chat-fab-sheet';
@@ -50,7 +49,6 @@ export default async function RootLayout({
       <body className={`${montserrat.className} min-h-dvh flex flex-col`}>
         <QueryProvider>
           <AuthProvider accessToken={accessToken}>
-            <GuestCartSync />
             <ShopHeader />
             <main className="flex-1 pb-16 md:pb-0">{children}</main>
             <ShopFooter />
