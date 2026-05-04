@@ -75,13 +75,15 @@ export function useWishlistProductToggle(productId: number): {
   const isAuthSessionReady = useAuthSessionReady();
   const isAuthenticatedCustomer = Boolean(isAuthSessionReady && user);
   const wishlistQuery = useMyWishlistQuery({ enabled: isAuthenticatedCustomer });
-  const wishlistItems = wishlistQuery.data?.data ?? [];
   const addMutation = useAddWishlistItemMutation();
   const removeMutation = useRemoveWishlistItemMutation();
-  const isFavorite = useMemo(
-    () => wishlistItems.some((item) => item.product.id === productId),
-    [wishlistItems, productId],
-  );
+  const isFavorite = useMemo(() => {
+    const items = wishlistQuery.data?.data;
+    if (!items) {
+      return false;
+    }
+    return items.some((item) => item.product.id === productId);
+  }, [wishlistQuery.data, productId]);
   const isPending = addMutation.isPending || removeMutation.isPending;
   const toggleFavorite = useCallback(async (): Promise<void> => {
     if (isFavorite) {
