@@ -306,7 +306,6 @@ export class OrderAdminService {
               delta: -item.quantity,
               onHandAfter: nextOnHand,
               reservedAfter: nextReserved,
-              note: 'Xuất kho khi admin xác nhận đơn',
             },
           });
         }
@@ -427,9 +426,6 @@ export class OrderAdminService {
           data: { orderId: order.id, status: 'CANCELLED' },
         });
 
-        const isPendingOrder =
-          order.status === 'PENDING_PAYMENT' || order.status === 'PENDING_CONFIRMATION';
-
         // 4. Hoàn lại tồn kho: Nhả phần Reserved hoặc tăng lại On Hand tùy theo trạng thái đơn
         for (const item of order.items) {
           const variant = await tx.productVariant.findUnique({
@@ -472,9 +468,6 @@ export class OrderAdminService {
                 delta: -releaseQty,
                 onHandAfter: variant.onHand,
                 reservedAfter: nextReserved,
-                note: isPendingOrder
-                  ? 'Nhả giữ tồn kho khi admin hủy đơn chờ xử lý'
-                  : 'Nhả phần giữ tồn còn lại khi admin hủy đơn',
               },
             });
           }
@@ -489,9 +482,6 @@ export class OrderAdminService {
                 delta: onHandIncrement,
                 onHandAfter: nextOnHand,
                 reservedAfter: nextReserved,
-                note: isPendingOrder
-                  ? 'Hoàn tồn kho do dữ liệu giữ hàng không đủ khi hủy đơn'
-                  : 'Hoàn tồn kho khi admin hủy đơn sau xác nhận',
               },
             });
           }

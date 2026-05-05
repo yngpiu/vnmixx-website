@@ -69,6 +69,12 @@ const PERMISSIONS: { name: string; description: string }[] = [
     update: 'Đánh giá: cập nhật',
     delete: 'Đánh giá: xóa',
   }),
+  ...crud('inventory', {
+    create: 'Kho: tạo phiếu nhập/xuất và ghi nhận biến động tồn',
+    read: 'Kho: xem tồn kho, lịch sử biến động, danh sách/chi tiết phiếu',
+    update: 'Kho: cập nhật dữ liệu kho (dành cho luồng mở rộng)',
+    delete: 'Kho: xóa dữ liệu kho (dành cho luồng mở rộng)',
+  }),
   { name: 'support-chat.read', description: 'Chat hỗ trợ: xem danh sách và tin nhắn' },
   { name: 'support-chat.create', description: 'Chat hỗ trợ: nhận phân công và gửi tin nhắn' },
 ];

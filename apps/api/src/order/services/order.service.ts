@@ -19,11 +19,7 @@ import { ShippingService } from '../../shipping/services/shipping.service';
 import type { CreateOrderDto, ListMyOrdersQueryDto } from '../dto';
 import { SepayWebhookDto } from '../dto/sepay-webhook.dto';
 import { OrderPaymentGateway } from '../gateway/order-payment.gateway';
-import type {
-  OrderDetailView,
-  OrderListItemView,
-  OrderPaymentStatusView,
-} from '../repositories/order.repository';
+import type { OrderDetailView, OrderListItemView } from '../repositories/order.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { SepayService } from './sepay.service';
 
@@ -221,18 +217,6 @@ export class OrderService {
     const order = await this.orderRepo.findByOrderCode(orderCode, customerId);
     if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
     return order;
-  }
-
-  async findMyPaymentStatus(
-    customerId: number,
-    orderCode: string,
-  ): Promise<OrderPaymentStatusView> {
-    await this.expirePendingQrOrderIfNeeded(customerId, orderCode);
-    const paymentStatus = await this.orderRepo.findMyPaymentStatus(customerId, orderCode);
-    if (!paymentStatus) {
-      throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
-    }
-    return paymentStatus;
   }
 
   async handleSepayWebhook(
@@ -668,7 +652,6 @@ export class OrderService {
           delta: item.quantity,
           onHandAfter: v.onHand,
           reservedAfter: v.reserved + item.quantity,
-          note: 'Giữ hàng khi tạo đơn hàng',
         },
       });
     }
@@ -723,7 +706,6 @@ export class OrderService {
           delta: -releaseQty,
           onHandAfter: v.onHand + restoreQty,
           reservedAfter: v.reserved - releaseQty,
-          note: 'Hoàn tồn kho khi hủy đơn hàng',
         },
       });
     }

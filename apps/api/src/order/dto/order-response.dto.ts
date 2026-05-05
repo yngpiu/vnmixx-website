@@ -248,20 +248,6 @@ export class OrderDetailResponseDto extends OrderListItemResponseDto {
   statusHistories: StatusHistoryDto[];
 }
 
-export class OrderPaymentStatusResponseDto {
-  @ApiProperty({ example: 'VNM260410A1B2C' })
-  orderCode: string;
-
-  @ApiProperty({ example: 'PENDING_PAYMENT' })
-  orderStatus: string;
-
-  @ApiProperty({ example: 'PENDING' })
-  paymentStatus: string;
-
-  @ApiPropertyOptional({ type: QrCheckoutInfoDto, nullable: true })
-  checkoutSession: QrCheckoutInfoDto | null;
-}
-
 /**
  * OrderAdminListItemResponseDto: DTO tóm tắt đơn hàng kèm thông tin khách hàng cho Admin.
  */

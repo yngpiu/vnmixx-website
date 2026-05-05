@@ -82,13 +82,6 @@ export interface OrderDetailView extends OrderListItemView {
   statusHistories: StatusHistoryView[];
 }
 
-export interface OrderPaymentStatusView {
-  orderCode: string;
-  orderStatus: string;
-  paymentStatus: string;
-  checkoutSession: CheckoutInfoView | null;
-}
-
 export interface OrderAdminListItemView extends OrderListItemView {
   customer: { id: number; fullName: string; email: string; phoneNumber: string };
 }
@@ -188,10 +181,6 @@ const ORDER_ADMIN_DETAIL_SELECT = {
   customerId: true,
   customer: { select: CUSTOMER_BRIEF_SELECT },
 } as const;
-
-type PaymentSelectRow = Prisma.PaymentGetPayload<{
-  select: typeof PAYMENT_SELECT;
-}>;
 
 // ─── Repository ──────────────────────────────────────────
 
@@ -383,37 +372,6 @@ export class OrderRepository {
       ...withPaymentStatus,
       payments: withPaymentStatus.payment ? [this.mapPaymentView(withPaymentStatus.payment)] : [],
       checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payment),
-    };
-  }
-
-  /**
-   * Truy vấn trạng thái thanh toán hiện tại của đơn hàng.
-   */
-  async findMyPaymentStatus(
-    customerId: number,
-    orderCode: string,
-  ): Promise<OrderPaymentStatusView | null> {
-    // Lấy thông tin thanh toán mới nhất để kiểm tra trạng thái QR hoặc COD.
-    const row = await this.prisma.order.findFirst({
-      where: { customerId, orderCode },
-      select: {
-        orderCode: true,
-        status: true,
-        payment: { select: PAYMENT_SELECT },
-      },
-    });
-
-    if (!row) {
-      return null;
-    }
-
-    const latestPayment = row.payment as PaymentSelectRow | null;
-
-    return {
-      orderCode: row.orderCode,
-      orderStatus: row.status,
-      paymentStatus: latestPayment?.status ?? 'PENDING',
-      checkoutSession: this.deriveCheckoutInfo(latestPayment),
     };
   }
 

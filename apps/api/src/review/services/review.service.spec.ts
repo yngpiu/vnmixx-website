@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReviewVisibility } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
@@ -12,8 +12,6 @@ describe('ReviewService', () => {
 
   beforeEach(async () => {
     repo = {
-      findByProductCustomerAndOrderItem: jest.fn(),
-      create: jest.fn(),
       countReviews: jest.fn(),
       findAdminReviews: jest.fn(),
       findById: jest.fn(),
@@ -23,12 +21,7 @@ describe('ReviewService', () => {
     };
 
     prisma = {
-      product: {
-        findUnique: jest.fn(),
-      },
-      orderItem: {
-        findFirst: jest.fn(),
-      },
+      product: { findFirst: jest.fn() },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -50,89 +43,6 @@ describe('ReviewService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
-  });
-
-  describe('createProductReview', () => {
-    const customerId = 1;
-    const productId = 100;
-    const dto = { orderItemId: 101, rating: 5, content: 'Great product' };
-
-    it('should throw NotFoundException if product not found, deleted or inactive', async () => {
-      prisma.product.findUnique.mockResolvedValue(null);
-      await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
-        NotFoundException,
-      );
-
-      prisma.product.findUnique.mockResolvedValue({
-        id: productId,
-        deletedAt: new Date(),
-        isActive: true,
-      });
-      await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
-        NotFoundException,
-      );
-
-      prisma.product.findUnique.mockResolvedValue({
-        id: productId,
-        deletedAt: null,
-        isActive: false,
-      });
-      await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw ConflictException if review already exists', async () => {
-      prisma.product.findUnique.mockResolvedValue({
-        id: productId,
-        deletedAt: null,
-        isActive: true,
-      });
-      repo.findByProductCustomerAndOrderItem.mockResolvedValue({ id: 1 });
-
-      await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
-        ConflictException,
-      );
-    });
-
-    it('should throw BadRequestException if product not purchased/delivered', async () => {
-      prisma.product.findUnique.mockResolvedValue({
-        id: productId,
-        deletedAt: null,
-        isActive: true,
-      });
-      repo.findByProductCustomerAndOrderItem.mockResolvedValue(null);
-      prisma.orderItem.findFirst.mockResolvedValue(null);
-
-      await expect(service.createProductReview(customerId, productId, dto)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should create review successfully with optional fields', async () => {
-      prisma.product.findUnique.mockResolvedValue({
-        id: productId,
-        deletedAt: null,
-        isActive: true,
-      });
-      repo.findByProductCustomerAndOrderItem.mockResolvedValue(null);
-      prisma.orderItem.findFirst.mockResolvedValue({ id: dto.orderItemId });
-      const dtoWithOptionals = { ...dto, content: undefined };
-
-      await service.createProductReview(customerId, productId, dtoWithOptionals as any);
-
-      expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          productId,
-          customerId,
-          orderItemId: dto.orderItemId,
-          rating: dto.rating,
-          title: null,
-          content: null,
-          status: ReviewVisibility.VISIBLE,
-        }),
-      );
-    });
   });
 
   describe('getAdminReviews', () => {

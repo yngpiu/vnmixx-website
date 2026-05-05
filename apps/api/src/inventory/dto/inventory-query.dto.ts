@@ -137,11 +137,6 @@ export class InventoryVoucherItemDto {
   @IsInt()
   @Min(0)
   unitPrice: number;
-
-  @ApiPropertyOptional({ example: 'Lô hàng bổ sung đợt 1' })
-  @IsString()
-  @IsOptional()
-  note?: string;
 }
 
 export class CreateInventoryVoucherDto {

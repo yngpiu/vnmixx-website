@@ -25,7 +25,6 @@ import {
   ListMyOrdersQueryDto,
   OrderDetailResponseDto,
   OrderListResponseDto,
-  OrderPaymentStatusResponseDto,
 } from '../dto';
 import { OrderService } from '../services/order.service';
 
@@ -33,7 +32,7 @@ import { OrderService } from '../services/order.service';
 @ApiBearerAuth('access-token')
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
-@ApiExtraModels(OrderDetailResponseDto, OrderListResponseDto, OrderPaymentStatusResponseDto)
+@ApiExtraModels(OrderDetailResponseDto, OrderListResponseDto)
 @RequireUserType('CUSTOMER')
 @Controller('me/orders')
 // Tiếp nhận các yêu cầu liên quan đến đơn hàng từ phía khách hàng.
@@ -90,23 +89,6 @@ export class OrderController {
       await this.orderService.findMyOrderByCode(user.id, orderCode),
       'Lấy chi tiết đơn hàng thành công.',
     );
-  }
-
-  // Kiểm tra trạng thái thanh toán mới nhất của một đơn hàng cụ thể.
-  @ApiOperation({ summary: 'Lấy trạng thái thanh toán của đơn hàng' })
-  @ApiOkResponse({
-    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderPaymentStatusResponseDto) }),
-  })
-  @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
-  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
-  @Get(':orderCode/payment-status')
-  async findMyPaymentStatus(
-    @Param('orderCode') orderCode: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<SuccessPayload<OrderPaymentStatusResponseDto>> {
-    const paymentStatus = await this.orderService.findMyPaymentStatus(user.id, orderCode);
-
-    return ok(paymentStatus, 'Lấy trạng thái thanh toán thành công.');
   }
 
   // Cho phép khách hàng tự hủy đơn khi đơn vẫn đang trong trạng thái chờ thanh toán hoặc chờ xác nhận.
