@@ -21,6 +21,7 @@ export type NewArrivalProduct = {
   variants?: {
     id: number;
     price: number;
+    compareAtPrice: number | null;
     onHand: number;
     reserved: number;
     color: {

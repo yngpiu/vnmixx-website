@@ -90,10 +90,12 @@ type VariantDraft = {
   sizeId: number;
   sku: string;
   price: string;
+  compareAtPrice: string;
   onHand: string;
 };
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const QUICK_DISCOUNT_OPTIONS = Array.from({ length: 19 }, (_, index) => (index + 1) * 5);
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 const quillModules = {
   toolbar: [
@@ -179,6 +181,7 @@ export function NewProductForm() {
         sizeId: s0.id,
         sku: '',
         price: '0',
+        compareAtPrice: '',
         onHand: '0',
       },
     ]);
@@ -220,6 +223,20 @@ export function NewProductForm() {
         setFormError(`Biến thể #${i + 1}: Tồn kho không hợp lệ.`);
         return null;
       }
+      const compareAtPriceRaw = v.compareAtPrice.trim();
+      if (compareAtPriceRaw.length === 0) {
+        setFormError(`Biến thể #${i + 1}: Giá niêm yết là bắt buộc.`);
+        return null;
+      }
+      const compareAtPrice = Number.parseInt(compareAtPriceRaw, 10);
+      if (!Number.isFinite(compareAtPrice) || compareAtPrice < 0) {
+        setFormError(`Biến thể #${i + 1}: Giá niêm yết không hợp lệ.`);
+        return null;
+      }
+      if (compareAtPrice < price) {
+        setFormError(`Biến thể #${i + 1}: Giá niêm yết phải lớn hơn hoặc bằng giá bán.`);
+        return null;
+      }
       const key = `${v.colorId}-${v.sizeId}`;
       if (combos.has(key)) {
         setFormError(`Trùng tổ hợp màu + size ở biến thể #${i + 1}.`);
@@ -231,6 +248,7 @@ export function NewProductForm() {
         sizeId: v.sizeId,
         sku,
         price,
+        compareAtPrice,
         onHand,
       });
     }
@@ -304,7 +322,10 @@ export function NewProductForm() {
     const c = colors[0]?.id;
     const s = sizes[0]?.id;
     if (c == null || s == null) return;
-    setVariants((prev) => [...prev, { colorId: c, sizeId: s, sku: '', price: '0', onHand: '0' }]);
+    setVariants((prev) => [
+      ...prev,
+      { colorId: c, sizeId: s, sku: '', price: '0', compareAtPrice: '', onHand: '0' },
+    ]);
   };
 
   const removeVariantRow = (index: number) => {
@@ -313,6 +334,25 @@ export function NewProductForm() {
 
   const updateVariant = (index: number, patch: Partial<VariantDraft>) => {
     setVariants((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
+  const applyQuickDiscount = (index: number, discountPercent: number) => {
+    setVariants((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) {
+          return row;
+        }
+        const compareAtPriceBase = Number.parseInt(row.compareAtPrice, 10);
+        if (!Number.isFinite(compareAtPriceBase) || compareAtPriceBase < 0) {
+          return row;
+        }
+        const discountedPrice = Math.round((compareAtPriceBase * (100 - discountPercent)) / 100);
+        return {
+          ...row,
+          compareAtPrice: String(compareAtPriceBase),
+          price: String(discountedPrice),
+        };
+      }),
+    );
   };
 
   if (colorsQuery.isError || sizesQuery.isError) {
@@ -591,7 +631,8 @@ export function NewProductForm() {
                   <TableHead className="min-w-30 pl-5">Màu</TableHead>
                   <TableHead className="min-w-26">Size</TableHead>
                   <TableHead className="min-w-34">SKU</TableHead>
-                  <TableHead className="min-w-26">Giá (đ)</TableHead>
+                  <TableHead className="min-w-30">Giá niêm yết (đ)</TableHead>
+                  <TableHead className="min-w-34">Giá bán (đ)</TableHead>
                   <TableHead className="min-w-22">Tồn</TableHead>
                   <TableHead className="w-12 pr-5 text-right" />
                 </TableRow>
@@ -653,11 +694,46 @@ export function NewProductForm() {
                       <Input
                         type="number"
                         min={0}
-                        value={row.price}
-                        onChange={(e) => updateVariant(index, { price: e.target.value })}
+                        value={row.compareAtPrice}
+                        onChange={(e) => updateVariant(index, { compareAtPrice: e.target.value })}
                         disabled={busy}
                         className="h-9"
+                        placeholder="Nhập giá niêm yết"
                       />
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <div className="space-y-1.5">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={row.price}
+                          onChange={(e) => updateVariant(index, { price: e.target.value })}
+                          disabled={busy || row.compareAtPrice.trim().length === 0}
+                          className="h-9"
+                          placeholder="Nhập giá bán"
+                        />
+                        <Select
+                          value=""
+                          onValueChange={(value) =>
+                            applyQuickDiscount(index, Number.parseInt(value, 10))
+                          }
+                          disabled={busy || row.compareAtPrice.trim().length === 0}
+                        >
+                          <SelectTrigger className="h-8 w-full min-w-22">
+                            <SelectValue placeholder="Chọn nhanh % giảm" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {QUICK_DISCOUNT_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={`${index}-discount-${option}`}
+                                value={String(option)}
+                              >
+                                Giảm {option}%
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
                     <TableCell className="align-middle">
                       <Input

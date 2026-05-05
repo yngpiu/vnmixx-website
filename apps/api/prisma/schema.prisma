@@ -396,6 +396,7 @@ model ProductVariant {
   barcode     String?   @unique(map: "uk_variants_barcode") @db.VarChar(64)
   unit        String    @default("pcs") @db.VarChar(20)
   price       Int       @db.UnsignedInt
+  compareAtPrice Int?   @map("compare_at_price") @db.UnsignedInt
   onHand      Int       @default(0) @map("on_hand") @db.UnsignedInt
   reserved    Int       @default(0) @db.UnsignedInt
   version     Int       @default(0) @db.UnsignedInt

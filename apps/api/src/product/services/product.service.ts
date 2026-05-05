@@ -392,12 +392,13 @@ export class ProductService {
   ): Promise<void> {
     const updatePayload = {
       ...(variant.price !== undefined && { price: variant.price }),
+      ...(variant.compareAtPrice !== undefined && { compareAtPrice: variant.compareAtPrice }),
       ...(variant.onHand !== undefined && { onHand: variant.onHand }),
       ...(variant.isActive !== undefined && { isActive: variant.isActive }),
     };
     if (Object.keys(updatePayload).length === 0) {
       throw new BadRequestException(
-        `Biến thể #${variantId} thiếu dữ liệu cập nhật. Hãy gửi price, onHand hoặc isActive.`,
+        `Biến thể #${variantId} thiếu dữ liệu cập nhật. Hãy gửi price, compareAtPrice, onHand hoặc isActive.`,
       );
     }
     await this.variantService.updateVariant(productId, slug, variantId, updatePayload);
@@ -422,6 +423,7 @@ export class ProductService {
       sizeId: variant.sizeId,
       sku: variant.sku,
       price: variant.price,
+      ...(variant.compareAtPrice !== undefined && { compareAtPrice: variant.compareAtPrice }),
       onHand: variant.onHand,
     };
   }

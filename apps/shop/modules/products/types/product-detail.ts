@@ -12,6 +12,7 @@ export type ShopProductDetailVariant = {
   sizeId: number;
   sku: string;
   price: number;
+  compareAtPrice: number | null;
   onHand: number;
   reserved: number;
   color: { id: number; name: string; hexCode: string };

@@ -38,6 +38,8 @@ type UseProductDetailControllerReturn = {
   sizeRowsForColor: SizeRow[];
   selectedVariant: ShopProductDetailVariant | null;
   displayPriceLabel: string;
+  compareAtPriceLabel: string | null;
+  discountPercentLabel: string | null;
   selectedAvailableQty: number;
   maxQuantity: number;
   isAddToCartPending: boolean;
@@ -155,6 +157,21 @@ export function useProductDetailController({
   }, [product.variants]);
   const displayPriceLabel =
     selectedVariant !== null ? formatCatalogPriceLabel(selectedVariant.price) : priceRangeLabel;
+  const selectedCompareAtPrice = selectedVariant?.compareAtPrice ?? null;
+  const hasDiscount =
+    selectedVariant !== null &&
+    selectedCompareAtPrice !== null &&
+    selectedCompareAtPrice > selectedVariant.price;
+  const compareAtPriceLabel =
+    hasDiscount && selectedCompareAtPrice !== null
+      ? formatCatalogPriceLabel(selectedCompareAtPrice)
+      : null;
+  const discountPercentLabel =
+    hasDiscount && selectedVariant !== null && selectedCompareAtPrice !== null
+      ? `-${Math.round(
+          ((selectedCompareAtPrice - selectedVariant.price) / selectedCompareAtPrice) * 100,
+        )}%`
+      : null;
   const selectedAvailableQty =
     selectedVariant !== null ? getVariantAvailableQuantity(selectedVariant) : 0;
   const maxQuantity = selectedAvailableQty <= 0 ? 0 : selectedAvailableQty;
@@ -219,6 +236,8 @@ export function useProductDetailController({
     sizeRowsForColor,
     selectedVariant,
     displayPriceLabel,
+    compareAtPriceLabel,
+    discountPercentLabel,
     selectedAvailableQty,
     maxQuantity,
     isAddToCartPending: addCartItemMutation.isPending,

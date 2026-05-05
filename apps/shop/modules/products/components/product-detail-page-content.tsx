@@ -45,6 +45,8 @@ export function ProductDetailPageContent({
     sizeRowsForColor,
     selectedVariant,
     displayPriceLabel,
+    compareAtPriceLabel,
+    discountPercentLabel,
     selectedAvailableQty,
     maxQuantity,
     isAddToCartPending,
@@ -94,7 +96,23 @@ export function ProductDetailPageContent({
               </div>
             </div>
           </div>
-          <p className="text-lg font-semibold text-foreground md:text-xl">{displayPriceLabel}</p>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-end gap-2">
+              <p className="text-2xl font-semibold text-foreground md:text-3xl">
+                {displayPriceLabel}
+              </p>
+              {compareAtPriceLabel ? (
+                <p className="text-base text-muted-foreground line-through md:text-lg">
+                  {compareAtPriceLabel}
+                </p>
+              ) : null}
+            </div>
+            {discountPercentLabel ? (
+              <span className=" bg-[#e1692d] px-2 py-0.5 text-sm font-semibold text-white">
+                {discountPercentLabel}
+              </span>
+            ) : null}
+          </div>
           {colorOptions.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">

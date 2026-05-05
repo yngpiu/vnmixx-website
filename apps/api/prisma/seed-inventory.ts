@@ -139,7 +139,6 @@ export async function seedInventory(): Promise<void> {
               delta: type === InventoryVoucherType.IMPORT ? quantity : -quantity,
               onHandAfter: nextOnHand,
               reservedAfter: fresh.reserved,
-              note: `Seed phiếu ${code}`,
               createdAt: issuedAt,
             },
           });

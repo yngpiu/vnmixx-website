@@ -101,6 +101,7 @@ export class ProductVariantService {
       beforeData = variant;
       const result = await this.repository.updateVariant(variantId, {
         ...(dto.price !== undefined && { price: dto.price }),
+        ...(dto.compareAtPrice !== undefined && { compareAtPrice: dto.compareAtPrice }),
         ...(dto.onHand !== undefined && { onHand: dto.onHand }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       });

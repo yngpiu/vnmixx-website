@@ -393,7 +393,6 @@ export async function seedOrders(): Promise<void> {
                     delta: -item.quantity,
                     onHandAfter,
                     reservedAfter: 0,
-                    note: `Xuất kho đơn hàng ${orderCode}`,
                     createdAt: stockEventAt,
                   },
                 });

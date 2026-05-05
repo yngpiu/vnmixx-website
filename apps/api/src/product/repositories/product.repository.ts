@@ -18,6 +18,7 @@ export interface ProductListItemView {
   variants: {
     id: number;
     price: number;
+    compareAtPrice: number | null;
     onHand: number;
     reserved: number;
     color: { id: number; name: string; hexCode: string };
@@ -56,6 +57,7 @@ export interface ProductDetailView {
     sizeId: number;
     sku: string;
     price: number;
+    compareAtPrice: number | null;
     onHand: number;
     reserved: number;
     color: { id: number; name: string; hexCode: string };
@@ -97,6 +99,7 @@ const VARIANT_PUBLIC_SELECT = {
   sizeId: true,
   sku: true,
   price: true,
+  compareAtPrice: true,
   onHand: true,
   reserved: true,
   color: { select: { id: true, name: true, hexCode: true } },
@@ -145,6 +148,7 @@ const PUBLIC_LIST_GRAPH_SELECT = {
     select: {
       id: true,
       price: true,
+      compareAtPrice: true,
       onHand: true,
       reserved: true,
       color: { select: { id: true, name: true, hexCode: true } },
@@ -764,6 +768,7 @@ export class ProductRepository {
       sizeId: number;
       sku: string;
       price: number;
+      compareAtPrice?: number;
       onHand: number;
     }[];
     images: {
@@ -797,6 +802,7 @@ export class ProductRepository {
             sizeId: v.sizeId,
             sku: v.sku,
             price: v.price,
+            compareAtPrice: v.compareAtPrice ?? null,
             onHand: v.onHand,
             reserved: 0,
             version: 0,
@@ -896,6 +902,7 @@ export class ProductRepository {
       sizeId: number;
       sku: string;
       price: number;
+      compareAtPrice?: number;
       onHand: number;
     },
   ) {
@@ -908,6 +915,7 @@ export class ProductRepository {
           sizeId: data.sizeId,
           sku: data.sku,
           price: data.price,
+          compareAtPrice: data.compareAtPrice ?? null,
           onHand: data.onHand,
           reserved: 0,
           version: 0,
@@ -941,7 +949,7 @@ export class ProductRepository {
   // Cập nhật thông tin của một biến thể.
   async updateVariant(
     variantId: number,
-    data: { price?: number; onHand?: number; isActive?: boolean },
+    data: { price?: number; compareAtPrice?: number; onHand?: number; isActive?: boolean },
   ) {
     return this.prisma.$transaction(async (tx) => {
       // Cập nhật các trường dữ liệu được yêu cầu cho biến thể.

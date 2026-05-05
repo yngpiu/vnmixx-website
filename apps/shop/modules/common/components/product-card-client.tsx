@@ -29,6 +29,20 @@ export function ProductCardClient({
   productHrefOverride,
 }: ProductCardProps): React.JSX.Element {
   const productPrice = product.minPrice ?? product.maxPrice;
+  const cheapestVariant = (product.variants ?? []).reduce<
+    NonNullable<NewArrivalProduct['variants']>[number] | null
+  >((currentCheapest, variant) => {
+    if (currentCheapest === null || variant.price < currentCheapest.price) {
+      return variant;
+    }
+    return currentCheapest;
+  }, null);
+  const compareAtPrice =
+    cheapestVariant !== null &&
+    cheapestVariant.compareAtPrice !== null &&
+    cheapestVariant.compareAtPrice > cheapestVariant.price
+      ? cheapestVariant.compareAtPrice
+      : null;
   const productHref = productHrefOverride ?? buildProductHref({ slug: product.slug });
   const {
     listColors,
@@ -100,14 +114,16 @@ export function ProductCardClient({
                   }}
                 >
                   {isSelectedColor ? (
-                    <Check
-                      aria-hidden
-                      className={cn(
-                        'size-3',
-                        isLightHex(color.hexCode) ? 'text-foreground' : 'text-primary-foreground',
-                      )}
-                      strokeWidth={2.75}
-                    />
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <Check
+                        aria-hidden
+                        className={cn(
+                          'size-3',
+                          isLightHex(color.hexCode) ? 'text-foreground' : 'text-primary-foreground',
+                        )}
+                        strokeWidth={2.75}
+                      />
+                    </span>
                   ) : null}
                 </button>
               );
@@ -127,11 +143,18 @@ export function ProductCardClient({
           </h3>
         </Link>
         <div className="flex items-center justify-between gap-3">
-          <span
-            className={`font-semibold text-foreground ${display === 'listing' ? 'text-[15px] md:text-base' : 'text-base'}`}
-          >
-            {formatCatalogPriceLabelNullable(productPrice)}
-          </span>
+          <div className="flex flex-wrap items-end gap-1.5">
+            <span
+              className={`font-semibold text-foreground ${display === 'listing' ? 'text-[15px] md:text-base' : 'text-base'}`}
+            >
+              {formatCatalogPriceLabelNullable(productPrice)}
+            </span>
+            {compareAtPrice !== null ? (
+              <span className="text-[13px] text-muted-foreground line-through">
+                {formatCatalogPriceLabelNullable(compareAtPrice)}
+              </span>
+            ) : null}
+          </div>
           <Popover open={isPickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger asChild>
               <PrimaryCtaButton

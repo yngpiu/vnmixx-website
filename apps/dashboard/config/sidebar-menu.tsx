@@ -3,7 +3,6 @@
 import { ADMIN_MODULES, adminModulePath, type AdminModuleSlug } from '@/config/admin-modules';
 import { dashboardRoutes } from '@/config/routes';
 import {
-  BarChart3Icon,
   ClipboardListIcon,
   ImageIcon,
   LayoutDashboardIcon,
@@ -85,11 +84,6 @@ export const sidebarSections: SidebarSection[] = [
       moduleNav('sizes', RulerIcon),
       moduleNav('customers', UsersIcon),
       moduleNav('inventory', TruckIcon),
-      {
-        title: 'Ưu đãi',
-        url: dashboardRoutes.analytics,
-        icon: <BarChart3Icon className="size-4 shrink-0" />,
-      },
       {
         title: 'Đánh giá',
         url: dashboardRoutes.reviews,
