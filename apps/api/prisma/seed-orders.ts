@@ -17,6 +17,15 @@ import {
 } from './seed-date-range';
 
 const ORDER_COUNT = SEED_CONFIG.orderCount;
+type CreatedOrderItem = {
+  id: number;
+  variantId: number;
+  quantity: number;
+};
+type CreatedOrderWithItems = {
+  id: number;
+  items: CreatedOrderItem[];
+};
 
 /** Phân bổ ~3 năm: 20% năm cũ nhất, 30% năm giữa, 50% năm gần nhất (tính từ `rangeStart` đến `asOf`). */
 function generateOrderDates(rangeStart: Date, asOf: Date, count: number): Date[] {
@@ -172,7 +181,6 @@ export async function seedOrders(): Promise<void> {
             const mm = String(orderCreatedAt.getUTCMonth() + 1).padStart(2, '0');
             const dd = String(orderCreatedAt.getUTCDate()).padStart(2, '0');
             const orderCode = `S${yy}${mm}${dd}${orderSeq.toString(36).toUpperCase().padStart(5, '0').slice(-5)}`;
-            const paymentCode = `DH${orderCode}`;
 
             let subtotal = 0;
             const orderItemsData: Prisma.OrderItemCreateManyOrderInput[] = selectedVariants.map(
@@ -266,10 +274,9 @@ export async function seedOrders(): Promise<void> {
             const matchedAt = new Date(orderUpdatedAt);
             const paidAt = paymentStatus === PaymentStatus.SUCCESS ? matchedAt : null;
 
-            const order = await tx.order.create({
+            const order = (await tx.order.create({
               data: {
                 orderCode,
-                paymentCode,
                 customerId: customer.id,
                 status,
                 shippingFullName: customer.fullName,
@@ -287,7 +294,7 @@ export async function seedOrders(): Promise<void> {
                 statusHistories: { create: histories },
               },
               include: { items: true },
-            });
+            })) as CreatedOrderWithItems;
 
             const paymentData: Prisma.PaymentUncheckedCreateInput = {
               orderId: order.id,
@@ -310,11 +317,10 @@ export async function seedOrders(): Promise<void> {
               accountNumber: paymentMethod === PaymentMethod.BANK_TRANSFER_QR ? '0903252427' : null,
               accountName: paymentMethod === PaymentMethod.BANK_TRANSFER_QR ? 'BUI TAN VIET' : null,
               qrTemplate: paymentMethod === PaymentMethod.BANK_TRANSFER_QR ? 'compact' : null,
-              transferContent:
-                paymentMethod === PaymentMethod.BANK_TRANSFER_QR ? paymentCode : null,
+              transferContent: paymentMethod === PaymentMethod.BANK_TRANSFER_QR ? orderCode : null,
               qrImageUrl:
                 paymentMethod === PaymentMethod.BANK_TRANSFER_QR
-                  ? `https://qr.sepay.vn/img?bank=MBBank&acc=0903252427&template=compact&amount=${total}&des=${paymentCode}`
+                  ? `https://qr.sepay.vn/img?bank=MBBank&acc=0903252427&template=compact&amount=${total}&des=${orderCode}`
                   : null,
               amount: total,
               amountPaid: paymentStatus === PaymentStatus.SUCCESS ? total : 0,
@@ -325,7 +331,6 @@ export async function seedOrders(): Promise<void> {
                 paymentStatus !== PaymentStatus.CANCELLED
                   ? new Date(orderCreatedAt.getTime() + 15 * 60 * 1000)
                   : null,
-              lastPayloadReceivedAt: paymentStatus === PaymentStatus.SUCCESS ? paidAt : null,
               createdAt: orderCreatedAt,
               updatedAt: paidAt ?? orderUpdatedAt,
             };
@@ -341,20 +346,12 @@ export async function seedOrders(): Promise<void> {
               await tx.sepayTransaction.create({
                 data: {
                   sepayTransactionId: 900000 + order.id,
-                  gateway: 'MBBank',
-                  transactionDate: paidAt ?? matchedAt,
-                  accountNumber: '0903252427',
-                  subAccount: null,
-                  transferType: 'IN',
                   transferAmount: total,
-                  accumulated: faker.number.int({ min: total, max: total * 20 }),
-                  code: null,
-                  content: paymentCode,
+                  content: orderCode,
                   referenceCode: `MBVCB.${faker.number.int({ min: 100000000, max: 999999999 })}`,
-                  description: `Thanh toan don hang ${orderCode}`,
                   orderId: order.id,
                   paymentId: payment.id,
-                  matchedPaymentCode: paymentCode,
+                  matchedOrderCode: orderCode,
                   matchStatus: 'MATCHED',
                   rawPayload: {
                     id: 900000 + order.id,
@@ -362,7 +359,7 @@ export async function seedOrders(): Promise<void> {
                     transactionDate: (paidAt ?? matchedAt).toISOString(),
                     accountNumber: '0903252427',
                     code: null,
-                    content: paymentCode,
+                    content: orderCode,
                     transferType: 'in',
                     transferAmount: total,
                     accumulated: total,

@@ -52,7 +52,6 @@ export interface OrderAdminListItem {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   subtotal: number;
-  discountAmount: number;
   shippingFee: number;
   total: number;
   createdAt: string;
@@ -88,7 +87,6 @@ export interface OrderAdminDetail extends OrderAdminListItem {
   note: string | null;
   ghnOrderCode: string | null;
   expectedDeliveryTime: string | null;
-  couponCode: string | null;
   updatedAt: string;
   payments: PaymentAdmin[];
   statusHistories: StatusHistoryAdmin[];

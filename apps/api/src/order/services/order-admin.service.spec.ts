@@ -161,7 +161,6 @@ describe('OrderAdminService', () => {
       total: 100000,
       subtotal: 90000,
       shippingFee: 10000,
-      discountAmount: 0,
       packageWeight: 1000,
       packageLength: 10,
       packageWidth: 10,

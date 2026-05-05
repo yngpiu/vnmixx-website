@@ -54,7 +54,6 @@ export interface OrderListItemView {
   status: string;
   paymentStatus: string;
   subtotal: number;
-  discountAmount: number;
   shippingFee: number;
   total: number;
   createdAt: Date;
@@ -62,7 +61,6 @@ export interface OrderListItemView {
 }
 
 export interface OrderDetailView extends OrderListItemView {
-  paymentCode: string;
   shippingFullName: string;
   shippingPhoneNumber: string;
   shippingCity: string;
@@ -88,7 +86,6 @@ export interface OrderPaymentStatusView {
   orderCode: string;
   orderStatus: string;
   paymentStatus: string;
-  paymentCode: string;
   checkoutSession: CheckoutInfoView | null;
 }
 
@@ -145,21 +142,15 @@ const ORDER_LIST_SELECT = {
   orderCode: true,
   status: true,
   subtotal: true,
-  discountAmount: true,
   shippingFee: true,
   total: true,
   createdAt: true,
   items: { select: ORDER_ITEM_SELECT },
-  payments: {
-    select: { status: true },
-    orderBy: { createdAt: 'desc' as const },
-    take: 1,
-  },
+  payment: { select: { status: true } },
 } as const;
 
 const ORDER_DETAIL_SELECT = {
   ...ORDER_LIST_SELECT,
-  paymentCode: true,
   shippingFullName: true,
   shippingPhoneNumber: true,
   shippingCity: true,
@@ -176,7 +167,7 @@ const ORDER_DETAIL_SELECT = {
   ghnOrderCode: true,
   expectedDeliveryTime: true,
   updatedAt: true,
-  payments: { select: PAYMENT_SELECT, orderBy: { createdAt: 'desc' as const } },
+  payment: { select: PAYMENT_SELECT },
   statusHistories: { select: STATUS_HISTORY_SELECT, orderBy: { createdAt: 'desc' as const } },
 } as const;
 
@@ -212,10 +203,10 @@ type PaymentSelectRow = Prisma.PaymentGetPayload<{
 export class OrderRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private withDerivedPaymentStatus<T extends { payments: { status: string }[] }>(
+  private withDerivedPaymentStatus<T extends { payment: { status: string } | null }>(
     order: T,
   ): T & { paymentStatus: string } {
-    const paymentStatus = order.payments[0]?.status ?? 'PENDING';
+    const paymentStatus = order.payment?.status ?? 'PENDING';
     return {
       ...order,
       paymentStatus,
@@ -265,8 +256,8 @@ export class OrderRepository {
       status: string;
       expiredAt: Date | null;
     },
-  >(payments: T[]): CheckoutInfoView | null {
-    const qrPayment = payments.find((payment) => payment.method === 'BANK_TRANSFER_QR');
+  >(payment: T | null): CheckoutInfoView | null {
+    const qrPayment = payment?.method === 'BANK_TRANSFER_QR' ? payment : null;
     if (
       !qrPayment?.provider ||
       !qrPayment.bankCode ||
@@ -369,8 +360,8 @@ export class OrderRepository {
     const withPaymentStatus = this.withDerivedPaymentStatus(row);
     return {
       ...withPaymentStatus,
-      payments: withPaymentStatus.payments.map((payment) => this.mapPaymentView(payment)),
-      checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payments),
+      payments: withPaymentStatus.payment ? [this.mapPaymentView(withPaymentStatus.payment)] : [],
+      checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payment),
     };
   }
 
@@ -390,8 +381,8 @@ export class OrderRepository {
     const withPaymentStatus = this.withDerivedPaymentStatus(row);
     return {
       ...withPaymentStatus,
-      payments: withPaymentStatus.payments.map((payment) => this.mapPaymentView(payment)),
-      checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payments),
+      payments: withPaymentStatus.payment ? [this.mapPaymentView(withPaymentStatus.payment)] : [],
+      checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payment),
     };
   }
 
@@ -408,12 +399,7 @@ export class OrderRepository {
       select: {
         orderCode: true,
         status: true,
-        paymentCode: true,
-        payments: {
-          select: PAYMENT_SELECT,
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
+        payment: { select: PAYMENT_SELECT },
       },
     });
 
@@ -421,15 +407,13 @@ export class OrderRepository {
       return null;
     }
 
-    const payments = row.payments as PaymentSelectRow[];
-    const latestPayment = payments[0];
+    const latestPayment = row.payment as PaymentSelectRow | null;
 
     return {
       orderCode: row.orderCode,
       orderStatus: row.status,
       paymentStatus: latestPayment?.status ?? 'PENDING',
-      paymentCode: row.paymentCode,
-      checkoutSession: this.deriveCheckoutInfo(payments),
+      checkoutSession: this.deriveCheckoutInfo(latestPayment),
     };
   }
 
@@ -447,7 +431,7 @@ export class OrderRepository {
     const where: Prisma.OrderWhereInput = {};
     if (params.status) where.status = params.status;
     if (params.paymentStatus) {
-      where.payments = { some: { status: params.paymentStatus } };
+      where.payment = { is: { status: params.paymentStatus } };
     }
     if (params.customerId) where.customerId = params.customerId;
     if (params.search) {

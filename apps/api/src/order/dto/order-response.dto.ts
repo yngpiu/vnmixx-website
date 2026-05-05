@@ -173,9 +173,6 @@ export class OrderListItemResponseDto {
   @ApiProperty({ example: 498000 })
   subtotal: number;
 
-  @ApiProperty({ example: 0 })
-  discountAmount: number;
-
   @ApiProperty({ example: 30000 })
   shippingFee: number;
 
@@ -193,9 +190,6 @@ export class OrderListItemResponseDto {
  * OrderDetailResponseDto: DTO chi tiết đầy đủ một đơn hàng dành cho khách hàng.
  */
 export class OrderDetailResponseDto extends OrderListItemResponseDto {
-  @ApiProperty({ example: 'DHVNM260410A1B2C' })
-  paymentCode: string;
-
   @ApiProperty({ example: 'Nguyễn Văn A' })
   shippingFullName: string;
 
@@ -263,9 +257,6 @@ export class OrderPaymentStatusResponseDto {
 
   @ApiProperty({ example: 'PENDING' })
   paymentStatus: string;
-
-  @ApiProperty({ example: 'DHVNM260410A1B2C' })
-  paymentCode: string;
 
   @ApiPropertyOptional({ type: QrCheckoutInfoDto, nullable: true })
   checkoutSession: QrCheckoutInfoDto | null;

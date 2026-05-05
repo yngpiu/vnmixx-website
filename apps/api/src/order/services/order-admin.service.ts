@@ -26,6 +26,57 @@ import {
   type OrderAdminListItemView,
 } from '../repositories/order.repository';
 
+type AdminOrderItemRecord = {
+  id: number;
+  variantId: number;
+  productName: string;
+  colorName: string;
+  sizeLabel: string;
+  quantity: number;
+  price: number;
+};
+type AdminOrderPaymentRecord = {
+  id: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  amount?: number;
+};
+type ConfirmOrderRecord = {
+  id: number;
+  status: OrderStatus;
+  shippingFullName: string;
+  shippingPhoneNumber: string;
+  shippingAddressLine: string;
+  shippingWard: string;
+  shippingDistrict: string;
+  shippingCity: string;
+  serviceTypeId: number | null;
+  requiredNote: string;
+  note: string | null;
+  packageWeight: number;
+  packageLength: number;
+  packageWidth: number;
+  packageHeight: number;
+  subtotal: number;
+  shippingFee: number;
+  total: number;
+  customer: { email: string; fullName: string };
+  items: AdminOrderItemRecord[];
+  payment: AdminOrderPaymentRecord | null;
+};
+type CancelOrderRecord = {
+  id: number;
+  status: OrderStatus;
+  ghnOrderCode: string | null;
+  items: Array<{ id: number; variantId: number; quantity: number }>;
+  payment: { id: number; status: PaymentStatus } | null;
+};
+type ConfirmPaymentOrderRecord = {
+  id: number;
+  status: OrderStatus;
+  payment: AdminOrderPaymentRecord | null;
+};
+
 // Dịch vụ quản lý đơn hàng dành cho nhân viên/quản trị viên
 // Vai trò: Thực hiện xác nhận đơn, tạo vận đơn, hủy đơn và quản lý thanh toán
 @Injectable()
@@ -82,7 +133,7 @@ export class OrderAdminService {
     let createdGhnOrderCode: string | null = null;
     try {
       // 1. Lấy thông tin chi tiết đơn hàng hiện tại
-      const order = await this.prisma.order.findUnique({
+      const order = (await this.prisma.order.findUnique({
         where: { orderCode },
         select: {
           id: true,
@@ -102,7 +153,6 @@ export class OrderAdminService {
           packageHeight: true,
           subtotal: true,
           shippingFee: true,
-          discountAmount: true,
           total: true,
           customer: { select: { email: true, fullName: true } },
           items: {
@@ -116,13 +166,9 @@ export class OrderAdminService {
               price: true,
             },
           },
-          payments: {
-            select: { id: true, method: true, status: true },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
+          payment: { select: { id: true, method: true, status: true } },
         },
-      });
+      })) as ConfirmOrderRecord | null;
 
       if (!order) {
         throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
@@ -131,8 +177,8 @@ export class OrderAdminService {
       beforeData = {
         orderCode,
         status: order.status,
-        paymentMethod: order.payments[0]?.method,
-        paymentStatus: order.payments[0]?.status,
+        paymentMethod: order.payment?.method,
+        paymentStatus: order.payment?.status,
       };
 
       // 2. Kiểm tra trạng thái đơn hàng (phải là PENDING_CONFIRMATION)
@@ -143,7 +189,7 @@ export class OrderAdminService {
       }
 
       // 3. Nếu là chuyển khoản, yêu cầu phải được xác nhận thanh toán trước
-      const payment = order.payments[0];
+      const payment = order.payment;
       if (payment?.method === 'BANK_TRANSFER_QR' && payment.status !== 'SUCCESS') {
         throw new BadRequestException(
           'Cần xác nhận thanh toán chuyển khoản trước khi xử lý đơn hàng.',
@@ -290,7 +336,6 @@ export class OrderAdminService {
         items: order.items,
         subtotal: order.subtotal,
         shippingFee: order.shippingFee,
-        discountAmount: order.discountAmount,
         total: order.total,
       });
       return result;
@@ -329,16 +374,16 @@ export class OrderAdminService {
     let beforeData: Record<string, unknown> | undefined;
     try {
       // 1. Kiểm tra sự tồn tại và trạng thái hiện tại của đơn hàng
-      const order = await this.prisma.order.findUnique({
+      const order = (await this.prisma.order.findUnique({
         where: { orderCode },
         select: {
           id: true,
           status: true,
           ghnOrderCode: true,
           items: { select: { id: true, variantId: true, quantity: true } },
-          payments: { select: { id: true, status: true }, orderBy: { createdAt: 'desc' } },
+          payment: { select: { id: true, status: true } },
         },
-      });
+      })) as CancelOrderRecord | null;
 
       if (!order) {
         throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
@@ -488,18 +533,14 @@ export class OrderAdminService {
     let beforeData: Record<string, unknown> | undefined;
     try {
       // 1. Kiểm tra đơn hàng và bản ghi thanh toán tương ứng
-      const order = await this.prisma.order.findUnique({
+      const order = (await this.prisma.order.findUnique({
         where: { orderCode },
         select: {
           id: true,
           status: true,
-          payments: {
-            select: { id: true, method: true, status: true, amount: true },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
+          payment: { select: { id: true, method: true, status: true, amount: true } },
         },
-      });
+      })) as ConfirmPaymentOrderRecord | null;
 
       if (!order) {
         throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
@@ -507,11 +548,11 @@ export class OrderAdminService {
 
       beforeData = {
         orderCode,
-        paymentMethod: order.payments[0]?.method,
-        paymentRecordStatus: order.payments[0]?.status,
+        paymentMethod: order.payment?.method,
+        paymentRecordStatus: order.payment?.status,
       };
 
-      const payment = order.payments[0];
+      const payment = order.payment;
       // 2. Chỉ cho phép xác nhận cho phương thức chuyển khoản QR
       if (!payment || payment.method !== 'BANK_TRANSFER_QR') {
         throw new BadRequestException('Chỉ có thể xác nhận thanh toán cho đơn chuyển khoản.');
@@ -595,7 +636,6 @@ export class OrderAdminService {
     }>;
     readonly subtotal: number;
     readonly shippingFee: number;
-    readonly discountAmount: number;
     readonly total: number;
   }): Promise<void> {
     try {
@@ -617,7 +657,6 @@ export class OrderAdminService {
           return `- ${item.productName}${variant} ×${item.quantity}: ${this.formatVnd(item.price * item.quantity)}`;
         })
         .join('\n');
-      const hasDiscount = payload.discountAmount > 0;
       await this.mail.sendMailWithTemplate(payload.customerEmail, 'ORDER_CONFIRMED', {
         orderCode: payload.orderCode,
         recipientName: payload.recipientName,
@@ -629,8 +668,6 @@ export class OrderAdminService {
         itemsTextBlock,
         subtotalFormatted: this.formatVnd(payload.subtotal),
         shippingFeeFormatted: this.formatVnd(payload.shippingFee),
-        hasDiscount,
-        discountFormatted: this.formatVnd(payload.discountAmount),
         totalFormatted: this.formatVnd(payload.total),
         orderDetailUrl,
       });

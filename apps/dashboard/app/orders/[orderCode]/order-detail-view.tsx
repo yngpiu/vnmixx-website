@@ -134,7 +134,7 @@ export function OrderDetailView() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Tổng quan thanh toán</CardTitle>
-            <CardDescription>Tiền hàng, ship, giảm</CardDescription>
+            <CardDescription>Tiền hàng và phí vận chuyển</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
             <div className="flex justify-between gap-2">
@@ -142,19 +142,9 @@ export function OrderDetailView() {
               <span className="tabular-nums font-medium">{formatVnd(order.subtotal)}</span>
             </div>
             <div className="flex justify-between gap-2">
-              <span className="text-muted-foreground">Giảm giá</span>
-              <span className="tabular-nums">{formatVnd(order.discountAmount)}</span>
-            </div>
-            <div className="flex justify-between gap-2">
               <span className="text-muted-foreground">Phí vận chuyển</span>
               <span className="tabular-nums">{formatVnd(order.shippingFee)}</span>
             </div>
-            {order.couponCode ? (
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Mã giảm</span>
-                <span className="font-mono text-xs">{order.couponCode}</span>
-              </div>
-            ) : null}
             <Separator className="my-2" />
             <div className="flex justify-between gap-2 text-base">
               <span className="font-medium">Tổng cộng</span>

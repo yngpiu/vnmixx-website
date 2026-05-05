@@ -60,7 +60,7 @@ export class ReviewService {
         order: {
           customerId,
           status: 'DELIVERED',
-          payments: { some: { status: 'SUCCESS' } },
+          payment: { is: { status: 'SUCCESS' } },
         },
       },
       select: { id: true },

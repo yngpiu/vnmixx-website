@@ -101,7 +101,6 @@ describe('OrderService', () => {
         {
           provide: SepayService,
           useValue: {
-            buildPaymentCode: jest.fn().mockImplementation((orderCode: string) => `DH${orderCode}`),
             buildQrPaymentFields: jest.fn().mockReturnValue({
               provider: 'SEPAY',
               bankCode: 'MBBank',
@@ -115,7 +114,7 @@ describe('OrderService', () => {
               expiresAt: new Date('2026-04-25T10:15:00.000Z'),
             }),
             verifyWebhookAuthorization: jest.fn(),
-            extractPaymentCode: jest.fn(),
+            extractOrderCode: jest.fn(),
           },
         },
       ],
@@ -193,7 +192,6 @@ describe('OrderService', () => {
             customerId: 1,
             shippingFee: 30000,
             total: 130000,
-            paymentCode: 'DHORD-123',
             status: 'PENDING_CONFIRMATION',
           }),
         }),

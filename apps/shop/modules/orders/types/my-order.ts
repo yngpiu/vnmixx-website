@@ -26,7 +26,6 @@ export interface MyOrderListItem {
   status: MyOrderStatus;
   paymentStatus: MyPaymentStatus;
   subtotal: number;
-  discountAmount: number;
   shippingFee: number;
   total: number;
   createdAt: string;
@@ -66,7 +65,6 @@ export interface MyOrderDetail extends MyOrderListItem {
   note: string | null;
   ghnOrderCode: string | null;
   expectedDeliveryTime: string | null;
-  couponCode: string | null;
   updatedAt: string;
   payments: MyOrderPayment[];
 }
