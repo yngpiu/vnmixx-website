@@ -38,6 +38,12 @@ export class CreateProductVariantDto {
   @Min(0, { message: 'Giá không được âm' })
   price: number;
 
+  @ApiPropertyOptional({ example: 499000, nullable: true })
+  @IsInt({ message: 'Giá niêm yết phải là số nguyên' })
+  @Min(0, { message: 'Giá niêm yết không được âm' })
+  @IsOptional()
+  compareAtPrice?: number;
+
   @ApiProperty({ example: 50, description: 'Tồn kho thực tế ban đầu' })
   @IsInt({ message: 'Số lượng tồn kho phải là số nguyên' })
   @Min(0, { message: 'Số lượng tồn kho không được âm' })

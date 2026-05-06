@@ -40,7 +40,6 @@ export type CreateVoucherItemInput = {
   variantId: number;
   quantity: number;
   unitPrice: number;
-  note?: string;
 };
 
 export type CreatedVoucherDetail = {
@@ -58,7 +57,6 @@ export type CreatedVoucherDetail = {
     quantity: number;
     unitPrice: number;
     lineAmount: number;
-    note: string | null;
     variant: { sku: string; product: { name: string } };
   }>;
 };
@@ -154,7 +152,6 @@ export class InventoryRepository {
       delta: number;
       onHandAfter: number;
       reservedAfter: number;
-      note: string | null;
       createdAt: Date;
       voucherId: number | null;
       voucher: { code: string } | null;
@@ -174,7 +171,6 @@ export class InventoryRepository {
         delta: true,
         onHandAfter: true,
         reservedAfter: true,
-        note: true,
         createdAt: true,
         voucherId: true,
         voucher: { select: { code: true } },
@@ -284,7 +280,6 @@ export class InventoryRepository {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             lineAmount,
-            note: item.note?.trim() || null,
           },
         });
         await tx.inventoryMovement.create({
@@ -296,7 +291,6 @@ export class InventoryRepository {
             delta: params.type === 'IMPORT' ? item.quantity : -item.quantity,
             onHandAfter: nextOnHand,
             reservedAfter: variant.reserved,
-            note: item.note?.trim() || params.voucherNote || null,
           },
         });
       }
@@ -319,7 +313,6 @@ export class InventoryRepository {
               quantity: true,
               unitPrice: true,
               lineAmount: true,
-              note: true,
               variant: {
                 select: {
                   sku: true,
@@ -394,7 +387,6 @@ export class InventoryRepository {
             quantity: true,
             unitPrice: true,
             lineAmount: true,
-            note: true,
             variant: {
               select: {
                 sku: true,

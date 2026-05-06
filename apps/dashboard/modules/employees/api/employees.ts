@@ -4,6 +4,7 @@ import type {
   EmployeeDetail,
   EmployeeListResponse,
   ListEmployeesParams,
+  ResetEmployeePasswordPayload,
   UpdateEmployeePayload,
 } from '@/modules/employees/types/employee';
 export type { ListEmployeesParams } from '@/modules/employees/types/employee';
@@ -40,4 +41,11 @@ export async function deleteEmployee(id: number): Promise<void> {
 export async function restoreEmployee(id: number): Promise<EmployeeDetail> {
   const { data } = await apiClient.patch<EmployeeDetail>(`/admin/employees/${id}/restore`);
   return data;
+}
+
+export async function resetEmployeePassword(
+  id: number,
+  payload: ResetEmployeePasswordPayload,
+): Promise<void> {
+  await apiClient.patch(`/admin/employees/${id}/password`, payload);
 }

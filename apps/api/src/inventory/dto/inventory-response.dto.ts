@@ -115,9 +115,6 @@ export class InventoryMovementItemDto {
   @ApiProperty()
   reservedAfter: number;
 
-  @ApiProperty({ nullable: true })
-  note: string | null;
-
   @ApiProperty()
   createdAt: Date;
 
@@ -207,9 +204,6 @@ export class InventoryVoucherItemResponseDto {
 
   @ApiProperty()
   lineAmount: number;
-
-  @ApiProperty({ nullable: true })
-  note: string | null;
 }
 
 export class InventoryVoucherDetailResponseDto {

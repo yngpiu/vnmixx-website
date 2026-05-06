@@ -159,7 +159,9 @@ export async function seedProducts(): Promise<void> {
     });
 
     if (leafCategories.length === 0) {
-      throw new Error('Không có danh mục lá. Chạy seed danh mục trước: seedCategories().');
+      throw new Error(
+        'Không có danh mục lá. Chạy seedCategories() hoặc import prisma/data/catalog-products-categories-*.sql.',
+      );
     }
 
     faker.seed(789);
@@ -272,6 +274,14 @@ export async function seedProducts(): Promise<void> {
               let onHand = faker.number.int({ min: 8, max: 500 });
               let reserved = faker.number.int({ min: 0, max: Math.min(25, onHand) });
               reserved = Math.min(reserved, onHand);
+              const price = variantStartPrice + sizeId * 5000;
+              const hasDiscount = faker.datatype.boolean({ probability: 0.55 });
+              const discountPercent = faker.helpers.arrayElement([
+                10, 15, 20, 25, 30, 35, 40, 50, 60,
+              ]);
+              const compareAtPrice = hasDiscount
+                ? Math.ceil((price * 100) / (100 - discountPercent) / 1000) * 1000
+                : price;
               if (mixSoldOutVariants && variantOrdinal % 4 === 0) {
                 onHand = 0;
                 reserved = 0;
@@ -281,7 +291,8 @@ export async function seedProducts(): Promise<void> {
                 colorId,
                 sizeId,
                 sku: `${SEED_SKU_PREFIX}${product.id}-C${colorId}-S${sizeId}-${faker.string.alphanumeric(4).toUpperCase()}`,
-                price: variantStartPrice + sizeId * 5000,
+                price,
+                compareAtPrice,
                 onHand,
                 reserved,
                 version: 0,

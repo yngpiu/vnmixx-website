@@ -20,7 +20,6 @@ enum AddressType {
 }
 
 enum OrderStatus {
-  PENDING_PAYMENT
   PENDING_CONFIRMATION
   PROCESSING
   AWAITING_SHIPMENT
@@ -40,11 +39,6 @@ enum PaymentStatus {
   FAILED
   EXPIRED
   CANCELLED
-}
-
-enum SepayTransferType {
-  IN
-  OUT
 }
 
 enum SepayMatchStatus {
@@ -401,6 +395,7 @@ model ProductVariant {
   barcode     String?   @unique(map: "uk_variants_barcode") @db.VarChar(64)
   unit        String    @default("pcs") @db.VarChar(20)
   price       Int       @db.UnsignedInt
+  compareAtPrice Int?   @map("compare_at_price") @db.UnsignedInt
   onHand      Int       @default(0) @map("on_hand") @db.UnsignedInt
   reserved    Int       @default(0) @db.UnsignedInt
   version     Int       @default(0) @db.UnsignedInt
@@ -452,7 +447,6 @@ model InventoryVoucherItem {
   quantity   Int      @db.UnsignedInt
   unitPrice  Int      @map("unit_price") @db.UnsignedInt
   lineAmount Int      @map("line_amount") @db.UnsignedInt
-  note       String?  @db.VarChar(255)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
 
@@ -550,7 +544,6 @@ model Wishlist {
 model Order {
   id                    Int          @id @default(autoincrement()) @db.UnsignedInt
   orderCode             String       @unique(map: "uk_orders_code") @map("order_code") @db.VarChar(20)
-  paymentCode           String       @unique(map: "uk_orders_payment_code") @map("payment_code") @db.VarChar(64)
   customerId            Int          @map("customer_id") @db.UnsignedInt
   status                OrderStatus  @default(PENDING_CONFIRMATION)
   shippingFullName      String       @map("shipping_full_name") @db.VarChar(100)
@@ -571,7 +564,6 @@ model Order {
   packageWidth          Int          @default(0) @map("package_width") @db.UnsignedSmallInt
   packageHeight         Int          @default(0) @map("package_height") @db.UnsignedSmallInt
   subtotal              Int          @db.UnsignedInt
-  discountAmount        Int          @default(0) @map("discount_amount") @db.UnsignedInt
   shippingFee           Int          @default(0) @map("shipping_fee") @db.UnsignedInt
   total                 Int          @db.UnsignedInt
   createdAt             DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
@@ -580,7 +572,7 @@ model Order {
   customer           Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   items              OrderItem[]
   statusHistories    OrderStatusHistory[]
-  payments           Payment[]
+  payment            Payment?
   sepayTransactions  SepayTransaction[]
   inventoryMovements InventoryMovement[]
 
@@ -646,7 +638,6 @@ model Payment {
   amountPaid            Int           @default(0) @map("amount_paid") @db.UnsignedInt
   paidAt                DateTime?     @map("paid_at") @db.Timestamp(0)
   expiredAt             DateTime?     @map("expired_at") @db.Timestamp(0)
-  lastPayloadReceivedAt DateTime?     @map("last_payload_received_at") @db.Timestamp(0)
   createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
 
@@ -661,20 +652,12 @@ model Payment {
 model SepayTransaction {
   id                 Int               @id @default(autoincrement()) @db.UnsignedInt
   sepayTransactionId Int               @unique(map: "uk_sepay_transactions_sepay_id") @map("sepay_transaction_id") @db.UnsignedInt
-  gateway            String            @db.VarChar(100)
-  transactionDate    DateTime          @map("transaction_date") @db.Timestamp(0)
-  accountNumber      String?           @map("account_number") @db.VarChar(100)
-  subAccount         String?           @map("sub_account") @db.VarChar(250)
-  transferType       SepayTransferType @map("transfer_type")
   transferAmount     Int               @map("transfer_amount") @db.UnsignedInt
-  accumulated        Int?              @db.UnsignedInt
-  code               String?           @db.VarChar(250)
   content            String            @db.VarChar(1000)
   referenceCode      String?           @map("reference_code") @db.VarChar(255)
-  description        String?           @db.Text
   orderId            Int?              @map("order_id") @db.UnsignedInt
   paymentId          Int?              @map("payment_id") @db.UnsignedInt
-  matchedPaymentCode String?           @map("matched_payment_code") @db.VarChar(64)
+  matchedOrderCode   String?           @map("matched_order_code") @db.VarChar(64)
   matchStatus        SepayMatchStatus  @default(UNMATCHED) @map("match_status")
   rawPayload         Json              @map("raw_payload")
   receivedAt         DateTime          @default(now()) @map("received_at") @db.Timestamp(0)
@@ -685,9 +668,8 @@ model SepayTransaction {
 
   @@index([orderId], map: "idx_sepay_transactions_order")
   @@index([paymentId], map: "idx_sepay_transactions_payment")
-  @@index([matchedPaymentCode], map: "idx_sepay_transactions_payment_code")
+  @@index([matchedOrderCode], map: "idx_sepay_transactions_order_code")
   @@index([referenceCode], map: "idx_sepay_transactions_reference")
-  @@index([transferType, receivedAt], map: "idx_sepay_transactions_type_received")
   @@map("sepay_transactions")
 }
 
@@ -703,7 +685,6 @@ model InventoryMovement {
   delta         Int                   @db.Int
   onHandAfter   Int                   @map("on_hand_after") @db.UnsignedInt
   reservedAfter Int                   @map("reserved_after") @db.UnsignedInt
-  note          String?               @db.VarChar(255)
   createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamp(0)
 
   variant   ProductVariant    @relation(fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)

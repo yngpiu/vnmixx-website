@@ -11,7 +11,15 @@ import {
 } from './seed-date-range';
 
 const BCRYPT_ROUNDS = 10;
-const CUSTOMER_COUNT = SEED_CONFIG.customerCount;
+
+function resolveCustomerSeedCount(): number {
+  const raw = process.env.SEED_CUSTOMER_COUNT;
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 1) return Math.min(n, 50_000);
+  }
+  return SEED_CONFIG.customerCount;
+}
 
 function pravatarUrl(seed: string): string {
   return `https://i.pravatar.cc/150?u=${encodeURIComponent(seed)}`;
@@ -26,6 +34,7 @@ export async function seedCustomers(): Promise<void> {
   const prisma = new PrismaClient({ adapter });
 
   try {
+    const customerCount = resolveCustomerSeedCount();
     const hashedPassword = await hash(SEED_CONFIG.devSeedPassword, BCRYPT_ROUNDS);
     let created = 0;
 
@@ -39,7 +48,7 @@ export async function seedCustomers(): Promise<void> {
     const rangeStart = yearsBefore(asOf, 3);
     const { y1, y2 } = seedWindowThirdBoundaries(rangeStart, asOf);
 
-    for (let i = 0; i < CUSTOMER_COUNT; i += 1) {
+    for (let i = 0; i < customerCount; i += 1) {
       const isMale = faker.datatype.boolean();
       const gender = isMale ? Gender.MALE : Gender.FEMALE;
       const fullName = faker.person.fullName({ sex: isMale ? 'male' : 'female' });

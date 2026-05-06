@@ -2,22 +2,34 @@
 
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { cancelMyOrder, getMyOrderDetail } from '@/modules/cart/api/checkout';
-import { CheckoutProgressSteps } from '@/modules/cart/components/checkout-progress-steps';
+import {
+  CHECKOUT_STEP_FRAME_CLASS,
+  CheckoutProgressSteps,
+} from '@/modules/cart/components/checkout-progress-steps';
 import {
   createOrderPaymentSocket,
   type OrderPaymentUpdatedEvent,
 } from '@/modules/cart/lib/order-payment-socket';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { toast } from '@repo/ui/components/ui/sonner';
+import { cn } from '@repo/ui/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { DownloadIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN');
 
 function formatMoney(value: number): string {
   return `${moneyFormatter.format(value)}đ`;
+}
+
+function buildQrDownloadHref(qrImageUrl: string, orderCode: string): string {
+  const params = new URLSearchParams();
+  params.set('url', qrImageUrl);
+  params.set('filename', `qr-thanh-toan-${orderCode}`);
+  return `/api/checkout/qr-download?${params.toString()}`;
 }
 
 export function CheckoutPaymentPageContent(): React.JSX.Element {
@@ -54,6 +66,51 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
   const shouldShowTerminalState = isPaymentFailed || isPaymentExpired || isOrderCancelled;
   const orderData = orderQuery.data;
   const checkoutSession = orderData?.checkoutSession;
+  const [isClientReady, setIsClientReady] = useState(false);
+  const [isQrDownloadPending, setIsQrDownloadPending] = useState(false);
+  const qrImageUrlForDownload = checkoutSession?.qrImageUrl;
+  const orderCodeForDownload = orderData?.orderCode;
+  const executeCheckoutQrDownload = useCallback(async (): Promise<void> => {
+    if (!qrImageUrlForDownload || !orderCodeForDownload) {
+      return;
+    }
+    setIsQrDownloadPending(true);
+    try {
+      const response = await fetch(
+        buildQrDownloadHref(qrImageUrlForDownload, orderCodeForDownload),
+      );
+      if (!response.ok) {
+        toast.error('Không tải được mã QR. Vui lòng thử lại.');
+        return;
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get('Content-Disposition');
+      let filename = `qr-thanh-toan-${orderCodeForDownload}.png`;
+      const quotedMatch = disposition?.match(/filename="([^"]+)"/);
+      const looseMatch = disposition?.match(/filename=([^;\s]+)/);
+      if (quotedMatch?.[1]) {
+        filename = quotedMatch[1];
+      } else if (looseMatch?.[1]) {
+        filename = looseMatch[1].replace(/^UTF-8''/i, '');
+      }
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      anchor.rel = 'noopener';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      toast.error('Không tải được mã QR. Vui lòng thử lại.');
+    } finally {
+      setIsQrDownloadPending(false);
+    }
+  }, [orderCodeForDownload, qrImageUrlForDownload]);
+  useEffect(() => {
+    setIsClientReady(true);
+  }, []);
   useEffect(() => {
     if (orderCode.length === 0) {
       return;
@@ -112,7 +169,7 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
       <div className="mb-6">
         <CheckoutProgressSteps currentStep={2} />
       </div>
-      <section className="rounded-md border border-border p-6 text-center">
+      <section className={cn(CHECKOUT_STEP_FRAME_CLASS, 'text-center')}>
         <h1 className="text-2xl font-semibold">Thanh toán đơn hàng</h1>
         {orderCode.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">
@@ -130,7 +187,7 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
               tự động xác nhận thanh toán.
             </p>
             <div className="space-y-5">
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-4">
                 <div className="relative h-[320px] w-[320px] border border-border p-2">
                   <Image
                     src={checkoutSession.qrImageUrl}
@@ -140,6 +197,19 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
                     className="object-contain p-2"
                   />
                 </div>
+                <PrimaryCtaButton
+                  type="button"
+                  ctaVariant="filled"
+                  ctaSize="compact"
+                  className="w-auto! shrink-0 normal-case! font-medium!"
+                  disabled={isQrDownloadPending}
+                  onClick={() => void executeCheckoutQrDownload()}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <DownloadIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {isQrDownloadPending ? 'Đang tải...' : 'Tải xuống mã QR'}
+                  </span>
+                </PrimaryCtaButton>
               </div>
               <div className="space-y-2 text-sm leading-6">
                 <p>
@@ -171,19 +241,26 @@ export function CheckoutPaymentPageContent(): React.JSX.Element {
           </p>
         )}
         <div className="mt-6 flex justify-center">
-          <PrimaryCtaButton
-            ctaVariant="outline"
-            className="w-auto!"
-            onClick={() => cancelOrderMutation.mutate()}
-            disabled={
-              cancelOrderMutation.isPending ||
-              orderQuery.isLoading ||
-              isPaymentSuccess ||
-              shouldShowTerminalState
-            }
-          >
-            {cancelOrderMutation.isPending ? 'ĐANG HỦY...' : 'HỦY ĐƠN HÀNG'}
-          </PrimaryCtaButton>
+          {!isClientReady ? (
+            <PrimaryCtaButton ctaVariant="outline" className="w-auto!" disabled type="button">
+              HỦY ĐƠN HÀNG
+            </PrimaryCtaButton>
+          ) : (
+            <PrimaryCtaButton
+              ctaVariant="outline"
+              className="w-auto!"
+              type="button"
+              onClick={() => cancelOrderMutation.mutate()}
+              disabled={
+                cancelOrderMutation.isPending ||
+                orderQuery.isLoading ||
+                isPaymentSuccess ||
+                shouldShowTerminalState
+              }
+            >
+              {cancelOrderMutation.isPending ? 'ĐANG HỦY...' : 'HỦY ĐƠN HÀNG'}
+            </PrimaryCtaButton>
+          )}
         </div>
       </section>
     </main>

@@ -4,12 +4,15 @@ import { SEED_CONFIG } from './seed-constants';
 export const SEED_DAYS_PER_YEAR = 365;
 export const SEED_MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/**
- * Mốc “hôm nay” cho toàn bộ seed (đồng bộ dashboard / demo).
- * Giá trị: `SEED_CONFIG.asOfIso` trong `seed-constants.ts`.
- */
 export function resolveSeedAsOfDate(): Date {
-  return new Date(SEED_CONFIG.asOfIso);
+  const asOfRaw = process.env.SEED_AS_OF_ISO?.trim() ?? SEED_CONFIG.asOfIso;
+  if (asOfRaw.length > 0) {
+    const asOf = new Date(asOfRaw);
+    if (!Number.isNaN(asOf.getTime())) {
+      return asOf;
+    }
+  }
+  return new Date();
 }
 
 export function yearsBefore(asOf: Date, years: number): Date {

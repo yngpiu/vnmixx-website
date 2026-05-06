@@ -132,12 +132,6 @@ export const MAIL_TEMPLATES = {
                 <td style="padding:6px 0">Phí vận chuyển</td>
                 <td style="padding:6px 0;text-align:right;font-weight:600">{{shippingFeeFormatted}}</td>
               </tr>
-              {{#if hasDiscount}}
-              <tr>
-                <td style="padding:6px 0">Giảm giá</td>
-                <td style="padding:6px 0;text-align:right;font-weight:600;color:#b91c1c">-{{discountFormatted}}</td>
-              </tr>
-              {{/if}}
               <tr>
                 <td style="padding:12px 0 6px;font-size:16px;font-weight:700;color:#111827">Tổng thanh toán</td>
                 <td style="padding:12px 0 6px;text-align:right;font-size:16px;font-weight:700;color:#111827">{{totalFormatted}}</td>
@@ -174,8 +168,7 @@ Chi tiết:
 
 Tạm tính: {{subtotalFormatted}}
 Phí vận chuyển: {{shippingFeeFormatted}}
-{{#if hasDiscount}}Giảm giá: -{{discountFormatted}}
-{{/if}}Tổng: {{totalFormatted}}
+Tổng: {{totalFormatted}}
 {{#if orderDetailUrl}}
 Xem đơn: {{orderDetailUrl}}
 {{/if}}

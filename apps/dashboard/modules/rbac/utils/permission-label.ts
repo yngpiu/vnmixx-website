@@ -18,6 +18,7 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   size: 'Kích cỡ',
   media: 'Bộ sưu tập',
   review: 'Đánh giá',
+  'support-chat': 'Chat hỗ trợ',
   profile: 'Hồ sơ',
 };
 

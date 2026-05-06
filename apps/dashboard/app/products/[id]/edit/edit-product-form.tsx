@@ -56,6 +56,7 @@ type VariantDraft = {
   sizeId: number;
   sku: string;
   price: string;
+  compareAtPrice: string;
   onHand: string;
   isActive: boolean;
 };
@@ -94,6 +95,7 @@ function formatCategoryPath(leafId: number, byId: Map<number, CategoryAdmin>): s
 }
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const QUICK_DISCOUNT_OPTIONS = Array.from({ length: 19 }, (_, index) => (index + 1) * 5);
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 const quillModules = {
   toolbar: [
@@ -154,6 +156,7 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         sizeId: variant.sizeId,
         sku: variant.sku,
         price: String(variant.price),
+        compareAtPrice: variant.compareAtPrice == null ? '' : String(variant.compareAtPrice),
         onHand: String(variant.onHand),
         isActive: variant.isActive,
       })),
@@ -226,6 +229,20 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         setFormError(`Biến thể #${index + 1}: Tồn kho không hợp lệ.`);
         return null;
       }
+      const compareAtPriceRaw = variant.compareAtPrice.trim();
+      if (compareAtPriceRaw.length === 0) {
+        setFormError(`Biến thể #${index + 1}: Giá niêm yết là bắt buộc.`);
+        return null;
+      }
+      const compareAtPrice = Number.parseInt(compareAtPriceRaw, 10);
+      if (!Number.isFinite(compareAtPrice) || compareAtPrice < 0) {
+        setFormError(`Biến thể #${index + 1}: Giá niêm yết không hợp lệ.`);
+        return null;
+      }
+      if (compareAtPrice < price) {
+        setFormError(`Biến thể #${index + 1}: Giá niêm yết phải lớn hơn hoặc bằng giá bán.`);
+        return null;
+      }
       const key = `${variant.colorId}-${variant.sizeId}`;
       if (combos.has(key)) {
         setFormError(`Trùng tổ hợp màu + size ở biến thể #${index + 1}.`);
@@ -254,6 +271,7 @@ export function EditProductForm({ productId }: EditProductFormProps) {
           sizeId: variant.sizeId,
           sku: variant.sku.trim(),
           price: Number.parseInt(variant.price, 10),
+          compareAtPrice: Number.parseInt(variant.compareAtPrice, 10),
           onHand: Number.parseInt(variant.onHand, 10),
           isActive: variant.isActive,
         })),
@@ -321,6 +339,7 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         sizeId: defaultSizeId,
         sku: '',
         price: '0',
+        compareAtPrice: '',
         onHand: '0',
         isActive: true,
       },
@@ -331,6 +350,25 @@ export function EditProductForm({ productId }: EditProductFormProps) {
   };
   const updateVariant = (index: number, patch: Partial<VariantDraft>) => {
     setVariants((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+  };
+  const applyQuickDiscount = (index: number, discountPercent: number) => {
+    setVariants((prev) =>
+      prev.map((row, i) => {
+        if (i !== index) {
+          return row;
+        }
+        const compareAtPriceBase = Number.parseInt(row.compareAtPrice, 10);
+        if (!Number.isFinite(compareAtPriceBase) || compareAtPriceBase < 0) {
+          return row;
+        }
+        const discountedPrice = Math.round((compareAtPriceBase * (100 - discountPercent)) / 100);
+        return {
+          ...row,
+          compareAtPrice: String(compareAtPriceBase),
+          price: String(discountedPrice),
+        };
+      }),
+    );
   };
 
   if (detailQuery.isError || categoriesQuery.isError || colorsQuery.isError || sizesQuery.isError) {
@@ -587,7 +625,8 @@ export function EditProductForm({ productId }: EditProductFormProps) {
                   <TableHead className="min-w-30 pl-5">Màu</TableHead>
                   <TableHead className="min-w-26">Size</TableHead>
                   <TableHead className="min-w-34">SKU</TableHead>
-                  <TableHead className="min-w-26">Giá (đ)</TableHead>
+                  <TableHead className="min-w-30">Giá niêm yết (đ)</TableHead>
+                  <TableHead className="min-w-34">Giá bán (đ)</TableHead>
                   <TableHead className="min-w-22">Tồn</TableHead>
                   <TableHead className="w-12 pr-5 text-right" />
                 </TableRow>
@@ -649,11 +688,48 @@ export function EditProductForm({ productId }: EditProductFormProps) {
                       <Input
                         type="number"
                         min={0}
-                        value={row.price}
-                        onChange={(event) => updateVariant(index, { price: event.target.value })}
+                        value={row.compareAtPrice}
+                        onChange={(event) =>
+                          updateVariant(index, { compareAtPrice: event.target.value })
+                        }
                         disabled={busy}
                         className="h-9"
+                        placeholder="Nhập giá niêm yết"
                       />
+                    </TableCell>
+                    <TableCell className="align-middle">
+                      <div className="space-y-1.5">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={row.price}
+                          onChange={(event) => updateVariant(index, { price: event.target.value })}
+                          disabled={busy || row.compareAtPrice.trim().length === 0}
+                          className="h-9"
+                          placeholder="Nhập giá bán"
+                        />
+                        <Select
+                          value=""
+                          onValueChange={(value) =>
+                            applyQuickDiscount(index, Number.parseInt(value, 10))
+                          }
+                          disabled={busy || row.compareAtPrice.trim().length === 0}
+                        >
+                          <SelectTrigger className="h-8 w-full min-w-22">
+                            <SelectValue placeholder="Chọn nhanh % giảm" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {QUICK_DISCOUNT_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={`${index}-discount-${option}`}
+                                value={String(option)}
+                              >
+                                Giảm {option}%
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
                     <TableCell className="align-middle">
                       <Input

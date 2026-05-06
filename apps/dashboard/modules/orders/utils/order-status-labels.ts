@@ -1,7 +1,6 @@
 import type { OrderStatus, PaymentStatus } from '@/modules/orders/types/order-admin';
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  PENDING_PAYMENT: 'Chờ thanh toán',
   PENDING_CONFIRMATION: 'Chờ xác nhận',
   PROCESSING: 'Đang xử lý',
   AWAITING_SHIPMENT: 'Chờ giao hàng',
@@ -19,8 +18,6 @@ const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
 };
 
 const ORDER_STATUS_BADGE_CLASSES: Record<OrderStatus, string> = {
-  PENDING_PAYMENT:
-    'border-transparent bg-amber-50 text-amber-900 hover:bg-amber-100 dark:bg-amber-950/70 dark:text-amber-100 dark:hover:bg-amber-900/60',
   PENDING_CONFIRMATION:
     'border-transparent bg-yellow-50 text-yellow-900 hover:bg-yellow-100 dark:bg-yellow-950/70 dark:text-yellow-100 dark:hover:bg-yellow-900/60',
   PROCESSING:

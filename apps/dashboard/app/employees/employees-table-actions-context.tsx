@@ -6,6 +6,7 @@ import { createContext, useContext, type ReactNode } from 'react';
 type EmployeesTableActionsContextValue = {
   openEmployeeDetail: (employee: EmployeeListItem) => void;
   openEditRoles: (employee: EmployeeListItem) => void;
+  openResetPassword: (employee: EmployeeListItem) => void;
   openToggleActive: (employee: EmployeeListItem) => void;
   openDeleteEmployee: (employee: EmployeeListItem) => void;
   openRestoreEmployee: (employee: EmployeeListItem) => void;
@@ -17,6 +18,7 @@ export function EmployeesTableActionsProvider({
   children,
   openEmployeeDetail,
   openEditRoles,
+  openResetPassword,
   openToggleActive,
   openDeleteEmployee,
   openRestoreEmployee,
@@ -24,6 +26,7 @@ export function EmployeesTableActionsProvider({
   children: ReactNode;
   openEmployeeDetail: (employee: EmployeeListItem) => void;
   openEditRoles: (employee: EmployeeListItem) => void;
+  openResetPassword: (employee: EmployeeListItem) => void;
   openToggleActive: (employee: EmployeeListItem) => void;
   openDeleteEmployee: (employee: EmployeeListItem) => void;
   openRestoreEmployee: (employee: EmployeeListItem) => void;
@@ -33,6 +36,7 @@ export function EmployeesTableActionsProvider({
       value={{
         openEmployeeDetail,
         openEditRoles,
+        openResetPassword,
         openToggleActive,
         openDeleteEmployee,
         openRestoreEmployee,

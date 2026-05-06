@@ -9,17 +9,36 @@ type SeedBannerInput = {
   sortOrder: number;
 };
 
-async function resolveLeafCategoryIds(prisma: PrismaClient): Promise<number[]> {
+/** Leaf slugs from `catalog-products-categories-no-banners-20260506-082617.sql` (stable banner targets). */
+const BANNER_LEAF_SLUGS = [
+  'chan-vay-chu-A',
+  'ao-thun-nu',
+  'quan-jean-nam',
+  'dam',
+  'ao-so-mi-nam',
+] as const;
+
+async function resolveBannerCategoryIds(prisma: PrismaClient): Promise<number[]> {
   const rows = await prisma.category.findMany({
     where: {
+      slug: { in: [...BANNER_LEAF_SLUGS] },
       deletedAt: null,
       isActive: true,
-      children: { none: {} },
     },
-    orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
-    select: { id: true },
+    select: { id: true, slug: true },
   });
-  return rows.map((row) => row.id);
+  const bySlug = new Map(rows.map((r) => [r.slug, r.id] as const));
+  const ids: number[] = [];
+  for (const slug of BANNER_LEAF_SLUGS) {
+    const id = bySlug.get(slug);
+    if (id === undefined) {
+      throw new Error(
+        `Thiếu category slug="${slug}". Chạy seedCategories() hoặc import catalog SQL.`,
+      );
+    }
+    ids.push(id);
+  }
+  return ids;
 }
 
 export async function seedBanners(): Promise<void> {
@@ -29,10 +48,7 @@ export async function seedBanners(): Promise<void> {
   const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
   const prisma = new PrismaClient({ adapter });
   try {
-    const leafCategoryIds = await resolveLeafCategoryIds(prisma);
-    if (leafCategoryIds.length < 5) {
-      throw new Error('Cần ít nhất 5 danh mục lá để seed banner.');
-    }
+    const leafCategoryIds = await resolveBannerCategoryIds(prisma);
     const seedRows: SeedBannerInput[] = [
       {
         placement: 'HERO_SLIDER',

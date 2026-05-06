@@ -22,9 +22,8 @@ export class ListMyOrdersQueryDto {
   limit?: number = 20;
 
   @ApiPropertyOptional({
-    example: 'PENDING_PAYMENT',
+    example: 'PENDING_CONFIRMATION',
     enum: [
-      'PENDING_PAYMENT',
       'PENDING_CONFIRMATION',
       'PROCESSING',
       'AWAITING_SHIPMENT',
@@ -35,7 +34,6 @@ export class ListMyOrdersQueryDto {
   })
   @IsEnum(
     [
-      'PENDING_PAYMENT',
       'PENDING_CONFIRMATION',
       'PROCESSING',
       'AWAITING_SHIPMENT',
@@ -70,9 +68,8 @@ export class ListAdminOrdersQueryDto {
   limit?: number = 20;
 
   @ApiPropertyOptional({
-    example: 'PENDING_PAYMENT',
+    example: 'PENDING_CONFIRMATION',
     enum: [
-      'PENDING_PAYMENT',
       'PENDING_CONFIRMATION',
       'PROCESSING',
       'AWAITING_SHIPMENT',
@@ -83,7 +80,6 @@ export class ListAdminOrdersQueryDto {
   })
   @IsEnum(
     [
-      'PENDING_PAYMENT',
       'PENDING_CONFIRMATION',
       'PROCESSING',
       'AWAITING_SHIPMENT',

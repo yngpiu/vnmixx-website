@@ -1,7 +1,6 @@
 import type { MyOrderStatus } from '@/modules/orders/types/my-order';
 
 const ORDER_STATUS_LABELS: Record<MyOrderStatus, string> = {
-  PENDING_PAYMENT: 'Chờ thanh toán',
   PENDING_CONFIRMATION: 'Chờ xác nhận',
   PROCESSING: 'Đang xử lý',
   AWAITING_SHIPMENT: 'Chờ giao hàng',

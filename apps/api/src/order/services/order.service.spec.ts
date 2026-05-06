@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/services/prisma.service';
 import { GhnAvailableService, GhnFeeData, GhnService } from '../../shipping/services/ghn.service';
 import { ShippingService } from '../../shipping/services/shipping.service';
 import { CreateOrderDto, ListMyOrdersQueryDto } from '../dto';
+import { OrderPaymentGateway } from '../gateway/order-payment.gateway';
 import {
   OrderDetailView,
   OrderListItemView,
@@ -101,7 +102,6 @@ describe('OrderService', () => {
         {
           provide: SepayService,
           useValue: {
-            buildPaymentCode: jest.fn().mockImplementation((orderCode: string) => `DH${orderCode}`),
             buildQrPaymentFields: jest.fn().mockReturnValue({
               provider: 'SEPAY',
               bankCode: 'MBBank',
@@ -115,7 +115,13 @@ describe('OrderService', () => {
               expiresAt: new Date('2026-04-25T10:15:00.000Z'),
             }),
             verifyWebhookAuthorization: jest.fn(),
-            extractPaymentCode: jest.fn(),
+            extractOrderCode: jest.fn(),
+          },
+        },
+        {
+          provide: OrderPaymentGateway,
+          useValue: {
+            emitOrderPaymentUpdated: jest.fn(),
           },
         },
       ],
@@ -193,7 +199,6 @@ describe('OrderService', () => {
             customerId: 1,
             shippingFee: 30000,
             total: 130000,
-            paymentCode: 'DHORD-123',
             status: 'PENDING_CONFIRMATION',
           }),
         }),

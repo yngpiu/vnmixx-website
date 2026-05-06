@@ -66,7 +66,7 @@ describe('ProductImageService', () => {
       const result = await service.createImage(1, 'slug', dto);
 
       expect(result).toEqual(mockImage);
-      expect(cacheService.invalidateProductCache).toHaveBeenCalledWith('slug');
+      expect(cacheService.invalidateProductCache).toHaveBeenCalledWith(1);
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'product.image.create', status: AuditLogStatus.SUCCESS }),
       );

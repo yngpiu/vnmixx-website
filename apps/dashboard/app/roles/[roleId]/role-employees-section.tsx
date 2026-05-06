@@ -93,6 +93,9 @@ export function RoleEmployeesSection({ roleId }: RoleEmployeesSectionProps) {
   const openEditRoles = useCallback((employee: EmployeeListItem) => {
     setEmployeeDialog({ id: employee.id, mode: 'roles' });
   }, []);
+  const openResetPassword = useCallback((employee: EmployeeListItem) => {
+    setEmployeeDialog({ id: employee.id, mode: 'password' });
+  }, []);
 
   const openToggleActive = useCallback((employee: EmployeeListItem) => {
     setEmployeeDialog({ id: employee.id, mode: 'active' });
@@ -157,6 +160,7 @@ export function RoleEmployeesSection({ roleId }: RoleEmployeesSectionProps) {
     <EmployeesTableActionsProvider
       openEmployeeDetail={openEmployeeDetail}
       openEditRoles={openEditRoles}
+      openResetPassword={openResetPassword}
       openToggleActive={openToggleActive}
       openDeleteEmployee={openDeleteEmployee}
       openRestoreEmployee={openRestoreEmployee}

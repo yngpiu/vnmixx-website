@@ -202,7 +202,6 @@ export class InventoryAdminService {
       delta: number;
       onHandAfter: number;
       reservedAfter: number;
-      note: string | null;
       createdAt: Date;
       employeeName: string | null;
       voucherId: number | null;
@@ -235,7 +234,6 @@ export class InventoryAdminService {
         delta: row.delta,
         onHandAfter: row.onHandAfter,
         reservedAfter: row.reservedAfter,
-        note: row.note ?? null,
         createdAt: row.createdAt,
         employeeName: row.employee?.fullName ?? null,
         voucherId: row.voucherId ?? null,
@@ -260,7 +258,6 @@ export class InventoryAdminService {
         variantId: number;
         quantity: number;
         unitPrice: number;
-        note?: string;
       }>;
     },
     employeeId: number,
@@ -281,7 +278,6 @@ export class InventoryAdminService {
       quantity: number;
       unitPrice: number;
       lineAmount: number;
-      note: string | null;
     }>;
   }> {
     if (!params.items.length) {
@@ -320,7 +316,6 @@ export class InventoryAdminService {
         variantId: item.variantId,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        note: item.note,
       })),
     });
     return {
@@ -340,7 +335,6 @@ export class InventoryAdminService {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         lineAmount: item.lineAmount,
-        note: item.note ?? null,
       })),
     };
   }
@@ -409,7 +403,6 @@ export class InventoryAdminService {
       quantity: number;
       unitPrice: number;
       lineAmount: number;
-      note: string | null;
     }>;
   }> {
     const voucher = await this.inventoryRepository.findInventoryVoucherDetailById(voucherId);
@@ -433,7 +426,6 @@ export class InventoryAdminService {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         lineAmount: item.lineAmount,
-        note: item.note ?? null,
       })),
     };
   }

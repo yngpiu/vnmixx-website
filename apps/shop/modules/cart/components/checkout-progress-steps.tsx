@@ -2,10 +2,13 @@
 
 const CHECKOUT_STEPS = ['Giỏ hàng', 'Đặt hàng', 'Thanh toán', 'Hoàn thành đơn'] as const;
 
+/** Border + padding + square corners — match every checkout panel to the step bar shell. */
+export const CHECKOUT_STEP_FRAME_CLASS = 'border border-border px-6 py-8';
+
 export function CheckoutProgressSteps(props: { currentStep: number }): React.JSX.Element {
   const { currentStep } = props;
   return (
-    <div className="border border-border px-6 py-8">
+    <div className={CHECKOUT_STEP_FRAME_CLASS}>
       <div className="px-3">
         <div className="relative grid grid-cols-4 items-start text-center">
           <span

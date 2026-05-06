@@ -44,7 +44,7 @@ export function OrdersRowActions({ order }: { order: OrderAdminListItem }) {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setActionsOpen(true)}>
-            Thao tác nghiệp vụ…
+            Chuyển trạng thái…
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -52,7 +52,7 @@ export function OrdersRowActions({ order }: { order: OrderAdminListItem }) {
         orderCode={order.orderCode}
         open={actionsOpen}
         onOpenChange={setActionsOpen}
-        title={`Thao tác · ${order.orderCode}`}
+        title={`Chuyển trạng thái · ${order.orderCode}`}
       />
     </>
   );

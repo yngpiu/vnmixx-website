@@ -47,6 +47,12 @@ export class UpsertProductVariantDto {
   @IsOptional()
   price?: number;
 
+  @ApiPropertyOptional({ example: 499000, nullable: true })
+  @IsInt({ message: 'Giá niêm yết phải là số nguyên' })
+  @Min(0, { message: 'Giá niêm yết không được âm' })
+  @IsOptional()
+  compareAtPrice?: number;
+
   @ApiPropertyOptional({ example: 50, description: 'Cập nhật tồn kho thực tế (on hand)' })
   @IsInt({ message: 'Số lượng tồn kho phải là số nguyên' })
   @Min(0, { message: 'Số lượng tồn kho không được âm' })

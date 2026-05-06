@@ -1,7 +1,10 @@
 'use client';
 
 import type { CustomerAddress } from '@/modules/account/types/address';
-import { CheckoutProgressSteps } from '@/modules/cart/components/checkout-progress-steps';
+import {
+  CHECKOUT_STEP_FRAME_CLASS,
+  CheckoutProgressSteps,
+} from '@/modules/cart/components/checkout-progress-steps';
 import { useCheckoutPageController } from '@/modules/cart/hooks/use-checkout-page-controller';
 import type { CartItem } from '@/modules/cart/types/cart';
 import type { CheckoutPaymentMethod } from '@/modules/cart/types/checkout';
@@ -15,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
+import { cn } from '@repo/ui/lib/utils';
 import { ShoppingBagIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -139,7 +143,7 @@ export function CheckoutPageContent(): React.JSX.Element {
   if (items.length === 0) {
     return (
       <main className="shop-shell-container py-8">
-        <section className="rounded-lg border border-dashed p-10 text-center">
+        <section className={cn(CHECKOUT_STEP_FRAME_CLASS, 'border-dashed text-center')}>
           <ShoppingBagIcon className="mx-auto mb-3 size-8 text-muted-foreground" />
           <p className="mb-4 text-muted-foreground">Giỏ hàng của bạn đang trống.</p>
           <PrimaryCtaButton asChild>
@@ -154,7 +158,7 @@ export function CheckoutPageContent(): React.JSX.Element {
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_390px]">
         <div className="space-y-6">
           <CheckoutProgressSteps currentStep={1} />
-          <section className="space-y-4 border border-border p-5">
+          <section className={cn('space-y-4', CHECKOUT_STEP_FRAME_CLASS)}>
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-xl font-semibold">Địa chỉ giao hàng</h2>
               {addresses.length > 0 ? (
@@ -197,7 +201,7 @@ export function CheckoutPageContent(): React.JSX.Element {
               </PrimaryCtaButton>
             </div>
           </section>
-          <section className="space-y-3 border border-border p-5">
+          <section className={cn('space-y-3', CHECKOUT_STEP_FRAME_CLASS)}>
             <h2 className="text-xl font-semibold">Phương thức thanh toán</h2>
             <PaymentMethodOption
               value="COD"
@@ -214,7 +218,7 @@ export function CheckoutPageContent(): React.JSX.Element {
               onChange={setPaymentMethod}
             />
           </section>
-          <section className="border border-border p-5">
+          <section className={CHECKOUT_STEP_FRAME_CLASS}>
             <h2 className="mb-4 text-xl font-semibold">Giỏ hàng của bạn</h2>
             <header className="grid grid-cols-[1fr_130px_130px] items-center border-b border-border pb-4 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
               <span>Tên sản phẩm</span>
@@ -261,7 +265,7 @@ export function CheckoutPageContent(): React.JSX.Element {
             </div>
           </section>
         </div>
-        <aside className="h-fit border border-border p-4">
+        <aside className={cn('h-fit', CHECKOUT_STEP_FRAME_CLASS)}>
           <h3 className="text-[24px] leading-none font-semibold text-foreground">
             Tóm tắt đơn hàng
           </h3>

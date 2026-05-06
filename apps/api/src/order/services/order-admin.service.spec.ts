@@ -161,7 +161,6 @@ describe('OrderAdminService', () => {
       total: 100000,
       subtotal: 90000,
       shippingFee: 10000,
-      discountAmount: 0,
       packageWeight: 1000,
       packageLength: 10,
       packageWidth: 10,
@@ -184,7 +183,7 @@ describe('OrderAdminService', () => {
           price: 100000,
         },
       ],
-      payments: [{ method: 'COD', status: 'PENDING' }],
+      payment: { id: 1, method: 'COD', status: 'PENDING', amount: 100000 },
     };
 
     it('should successfully confirm order', async () => {
@@ -319,7 +318,7 @@ describe('OrderAdminService', () => {
       // keep current status before admin cancel
       ghnOrderCode: 'GHN123',
       items: [{ id: 1, variantId: 1, quantity: 1 }],
-      payments: [{ id: 1, status: 'SUCCESS' }],
+      payment: { id: 1, method: 'COD', status: 'SUCCESS', amount: 100000 },
     };
 
     it('should successfully cancel order', async () => {
@@ -376,7 +375,7 @@ describe('OrderAdminService', () => {
       id: 1,
       orderCode,
       status: 'PENDING_PAYMENT',
-      payments: [{ id: 1, method: 'BANK_TRANSFER_QR', status: 'PENDING', amount: 100000 }],
+      payment: { id: 1, method: 'BANK_TRANSFER_QR', status: 'PENDING', amount: 100000 },
     };
 
     it('should successfully confirm payment', async () => {
@@ -406,10 +405,57 @@ describe('OrderAdminService', () => {
     it('should throw BadRequestException if not bank transfer', async () => {
       prisma.order.findUnique.mockResolvedValue({
         ...orderData,
-        payments: [{ method: 'COD' }],
+        payment: { id: 1, method: 'COD', status: 'PENDING', amount: 100000 },
       } as any);
 
       await expect(service.confirmPayment(orderCode)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('updateOrderStatus', () => {
+    const orderCode = 'ORD123';
+
+    it('should update status and create history', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 1, status: 'PROCESSING' } as any);
+      orderRepo.findAdminByOrderCode.mockResolvedValue({
+        orderCode,
+        status: 'AWAITING_SHIPMENT',
+      } as any);
+
+      const result = await service.updateOrderStatus(orderCode, 'AWAITING_SHIPMENT' as any);
+
+      expect(result.status).toBe('AWAITING_SHIPMENT');
+      expect(prisma.order.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { status: 'AWAITING_SHIPMENT' },
+      });
+      expect(prisma.orderStatusHistory.create).toHaveBeenCalledWith({
+        data: { orderId: 1, status: 'AWAITING_SHIPMENT' },
+      });
+      expect(auditLogService.write).toHaveBeenCalledWith(
+        expect.objectContaining({ status: AuditLogStatus.SUCCESS }),
+      );
+    });
+
+    it('should return current detail when target status is unchanged', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 1, status: 'PROCESSING' } as any);
+      orderRepo.findAdminByOrderCode.mockResolvedValue({ orderCode, status: 'PROCESSING' } as any);
+
+      const result = await service.updateOrderStatus(orderCode, 'PROCESSING' as any);
+
+      expect(result.status).toBe('PROCESSING');
+      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(prisma.orderStatusHistory.create).not.toHaveBeenCalled();
+    });
+
+    it('should throw when transition is invalid', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 1, status: 'DELIVERED' } as any);
+
+      await expect(service.updateOrderStatus(orderCode, 'PROCESSING' as any)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(prisma.orderStatusHistory.create).not.toHaveBeenCalled();
     });
   });
 });

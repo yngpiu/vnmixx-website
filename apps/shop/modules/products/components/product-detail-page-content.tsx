@@ -6,6 +6,7 @@ import { SizeSoldOutDiagonalOverlay } from '@/modules/common/components/size-sol
 import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
+import { ProductDescription } from '@/modules/products/components/product-description';
 import { ProductDetailGallery } from '@/modules/products/components/product-detail-gallery';
 import { ProductDetailReviewSummary } from '@/modules/products/components/product-detail-review-summary';
 import { ProductDetailReviewsSection } from '@/modules/products/components/product-detail-reviews-section';
@@ -22,14 +23,12 @@ type ProductDetailPageContentProps = {
   product: ShopProductDetail;
   initialPublicReviews: ShopProductReviewsResult;
   suggestedProducts: NewArrivalProduct[];
-  breadcrumbCategory?: { slug: string; name: string } | null;
 };
 
 export function ProductDetailPageContent({
   product,
   initialPublicReviews,
   suggestedProducts,
-  breadcrumbCategory = null,
 }: ProductDetailPageContentProps): React.JSX.Element {
   const {
     colorOptions,
@@ -45,6 +44,8 @@ export function ProductDetailPageContent({
     sizeRowsForColor,
     selectedVariant,
     displayPriceLabel,
+    compareAtPriceLabel,
+    discountPercentLabel,
     selectedAvailableQty,
     maxQuantity,
     isAddToCartPending,
@@ -52,21 +53,20 @@ export function ProductDetailPageContent({
     handleBuyNow,
   } = useProductDetailController({ product });
   const selectedColorName = colorOptions.find((color) => color.id === selectedColorId)?.name ?? '—';
-  const resolvedBreadcrumbCategory = breadcrumbCategory ?? product.category;
   return (
     <main className="shop-shell-container pb-16 pt-6 md:pt-8">
       <nav className="mb-6 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">
           Trang chủ
         </Link>
-        {resolvedBreadcrumbCategory ? (
+        {product.category ? (
           <>
             <span className="mx-2">/</span>
             <Link
-              href={buildCategoryHref({ slug: resolvedBreadcrumbCategory.slug })}
+              href={buildCategoryHref({ slug: product.category.slug })}
               className="hover:text-foreground"
             >
-              {resolvedBreadcrumbCategory.name}
+              {product.category.name}
             </Link>
           </>
         ) : null}
@@ -94,7 +94,23 @@ export function ProductDetailPageContent({
               </div>
             </div>
           </div>
-          <p className="text-lg font-semibold text-foreground md:text-xl">{displayPriceLabel}</p>
+          <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-end gap-2">
+              <p className="text-2xl font-semibold text-foreground md:text-3xl">
+                {displayPriceLabel}
+              </p>
+              {compareAtPriceLabel ? (
+                <p className="text-base text-muted-foreground line-through md:text-lg">
+                  {compareAtPriceLabel}
+                </p>
+              ) : null}
+            </div>
+            {discountPercentLabel ? (
+              <span className=" bg-[#e1692d] px-2 py-0.5 text-sm font-semibold text-white">
+                {discountPercentLabel}
+              </span>
+            ) : null}
+          </div>
           {colorOptions.length > 0 ? (
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">
@@ -240,11 +256,11 @@ export function ProductDetailPageContent({
               </h2>
               <div
                 className={cn(
-                  'overflow-hidden whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground transition-[max-height] duration-300',
+                  'overflow-hidden text-sm leading-relaxed text-muted-foreground transition-[max-height] duration-300',
                   isDescriptionExpanded ? 'max-h-[999px]' : 'max-h-24',
                 )}
               >
-                {product.description}
+                <ProductDescription source={product.description} />
               </div>
               <div className="relative mt-4 flex items-center justify-center">
                 <div className="h-px w-full bg-border" />

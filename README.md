@@ -83,6 +83,15 @@ cp .env.example .env
 
 Sau đó cập nhật các giá trị password trong `.env`.
 
+Các biến bắt buộc tối thiểu trước khi deploy production:
+
+- `JWT_SECRET`
+- `CORS_ORIGIN` (ví dụ `https://vnmixx.shop`)
+- `SHOP_APP_BASE_URL` (ví dụ `https://vnmixx.shop`)
+- `DASHBOARD_NEXT_PUBLIC_API_BASE_URL`
+- `SHOP_NEXT_PUBLIC_API_BASE_URL`
+- `SHOP_NEXT_PUBLIC_SITE_URL`
+
 ```bash
 pnpm docker:prod:up
 ```

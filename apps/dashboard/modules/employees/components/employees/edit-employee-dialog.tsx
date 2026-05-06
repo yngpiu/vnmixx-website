@@ -4,10 +4,14 @@ import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import {
   deleteEmployee,
   getEmployee,
+  resetEmployeePassword,
   restoreEmployee,
   updateEmployee,
 } from '@/modules/employees/api/employees';
-import type { UpdateEmployeePayload } from '@/modules/employees/types/employee';
+import type {
+  ResetEmployeePasswordPayload,
+  UpdateEmployeePayload,
+} from '@/modules/employees/types/employee';
 import { listRoles } from '@/modules/rbac/api/roles';
 import { Button } from '@repo/ui/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
@@ -27,6 +31,7 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';
+import { Input } from '@repo/ui/components/ui/input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -34,14 +39,25 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 const EDIT_EMPLOYEE_ROLES_FORM_ID = 'edit-employee-roles-form';
+const EDIT_EMPLOYEE_PASSWORD_FORM_ID = 'edit-employee-password-form';
 
 const editRolesSchema = z.object({
   roleId: z.number().int().positive(),
 });
 
 type EditRolesFormValues = z.infer<typeof editRolesSchema>;
+const editPasswordSchema = z
+  .object({
+    newPassword: z.string().min(8, 'Mật khẩu mới phải có ít nhất 8 ký tự').max(72),
+    confirmPassword: z.string().min(8, 'Xác nhận mật khẩu phải có ít nhất 8 ký tự').max(72),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Xác nhận mật khẩu không khớp',
+  });
+type EditPasswordFormValues = z.infer<typeof editPasswordSchema>;
 
-export type EmployeeDialogMode = 'roles' | 'active' | 'delete' | 'restore';
+export type EmployeeDialogMode = 'roles' | 'password' | 'active' | 'delete' | 'restore';
 
 type EditEmployeeDialogProps = {
   employeeId: number | null;
@@ -61,6 +77,9 @@ export function EditEmployeeDialog({
   const rolesForm = useForm<EditRolesFormValues>({
     defaultValues: { roleId: 0 },
   });
+  const passwordForm = useForm<EditPasswordFormValues>({
+    defaultValues: { newPassword: '', confirmPassword: '' },
+  });
 
   const {
     formState: { errors: rolesErrors },
@@ -70,6 +89,14 @@ export function EditEmployeeDialog({
     setError: setRolesError,
     clearErrors: clearRolesErrors,
   } = rolesForm;
+  const {
+    register: registerPassword,
+    formState: { errors: passwordErrors },
+    reset: resetPasswordForm,
+    handleSubmit: handleSubmitPassword,
+    setError: setPasswordError,
+    clearErrors: clearPasswordErrors,
+  } = passwordForm;
 
   const detailQuery = useQuery({
     queryKey: ['employees', 'detail', employeeId],
@@ -82,9 +109,11 @@ export function EditEmployeeDialog({
   useEffect(() => {
     if (!open) {
       resetRoles({ roleId: 0 });
+      resetPasswordForm({ newPassword: '', confirmPassword: '' });
       clearRolesErrors();
+      clearPasswordErrors();
     }
-  }, [open, resetRoles, clearRolesErrors]);
+  }, [open, resetRoles, resetPasswordForm, clearRolesErrors, clearPasswordErrors]);
 
   useEffect(() => {
     if (!open || mode !== 'roles' || !detail || employeeId !== detail.id) return;
@@ -152,11 +181,30 @@ export function EditEmployeeDialog({
       toast.error(apiErrorMessage(err));
     },
   });
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: ResetEmployeePasswordPayload }) =>
+      resetEmployeePassword(id, payload),
+    onSuccess: () => {
+      toast.success('Đã đổi mật khẩu nhân viên.');
+      onOpenChange(false);
+    },
+    onError: (err) => {
+      if (mode === 'password') {
+        setPasswordError('root', { message: apiErrorMessage(err) });
+      } else {
+        toast.error(apiErrorMessage(err));
+      }
+    },
+  });
 
   const isPending =
-    updateMutation.isPending || deleteMutation.isPending || restoreMutation.isPending;
+    updateMutation.isPending ||
+    deleteMutation.isPending ||
+    restoreMutation.isPending ||
+    resetPasswordMutation.isPending;
   const isDeleted = Boolean(detail?.deletedAt);
   const rolesFormDisabled = isPending || isDeleted || detailQuery.isLoading;
+  const passwordFormDisabled = isPending || isDeleted || detailQuery.isLoading;
   const activeFormDisabled = isPending || isDeleted || detailQuery.isLoading;
   const deleteFormDisabled = isPending || isDeleted || detailQuery.isLoading;
   const restoreFormDisabled = isPending || detailQuery.isLoading || !detail?.deletedAt;
@@ -184,6 +232,24 @@ export function EditEmployeeDialog({
       payload: { status: detail.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' },
     });
   };
+  const submitPassword = (values: EditPasswordFormValues) => {
+    if (employeeId == null || mode !== 'password') return;
+    clearPasswordErrors();
+    const parsed = editPasswordSchema.safeParse(values);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0];
+        if (key === 'newPassword' || key === 'confirmPassword') {
+          passwordForm.setError(key, { message: issue.message });
+        }
+      }
+      return;
+    }
+    resetPasswordMutation.mutate({
+      id: employeeId,
+      payload: { newPassword: parsed.data.newPassword },
+    });
+  };
 
   const submitDelete = () => {
     if (employeeId == null || mode !== 'delete') return;
@@ -198,20 +264,25 @@ export function EditEmployeeDialog({
   const title =
     mode === 'roles'
       ? `Sửa vai trò nhân viên #${employeeId}`
-      : mode === 'active'
-        ? detail?.status === 'ACTIVE'
-          ? `Vô hiệu hóa nhân viên #${employeeId}?`
-          : `Kích hoạt nhân viên #${employeeId}?`
-        : mode === 'delete'
-          ? `Xác nhận xóa mềm nhân viên #${employeeId}?`
-          : mode === 'restore'
-            ? `Khôi phục nhân viên #${employeeId}?`
-            : '';
+      : mode === 'password'
+        ? `Đổi mật khẩu nhân viên #${employeeId}`
+        : mode === 'active'
+          ? detail?.status === 'ACTIVE'
+            ? `Vô hiệu hóa nhân viên #${employeeId}?`
+            : `Kích hoạt nhân viên #${employeeId}?`
+          : mode === 'delete'
+            ? `Xác nhận xóa mềm nhân viên #${employeeId}?`
+            : mode === 'restore'
+              ? `Khôi phục nhân viên #${employeeId}?`
+              : '';
 
   const loading = Boolean(detailQuery.isLoading && employeeId != null);
   const error = detailQuery.isError;
   const deletedBlock = Boolean(isDeleted && detail && mode !== 'restore');
   const rolesBlock = Boolean(detail && !detailQuery.isLoading && !isDeleted && mode === 'roles');
+  const passwordBlock = Boolean(
+    detail && !detailQuery.isLoading && !isDeleted && mode === 'password',
+  );
   const activeBlock = Boolean(detail && !detailQuery.isLoading && !isDeleted && mode === 'active');
   const deleteBlock = Boolean(detail && !detailQuery.isLoading && !isDeleted && mode === 'delete');
   const restoreDeletedBlock = Boolean(
@@ -329,6 +400,48 @@ export function EditEmployeeDialog({
             </form>
           ) : null}
 
+          {passwordBlock && detail ? (
+            <form
+              id={EDIT_EMPLOYEE_PASSWORD_FORM_ID}
+              onSubmit={handleSubmitPassword(submitPassword)}
+              noValidate
+            >
+              <FieldGroup className="gap-4">
+                {passwordErrors.root ? (
+                  <Field data-invalid>
+                    <FieldError className="mt-1" errors={[passwordErrors.root]} />
+                  </Field>
+                ) : null}
+                <Card size="sm">
+                  <CardHeader>
+                    <CardTitle>{detail.fullName}</CardTitle>
+                    <CardDescription>{detail.email}</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Field data-invalid={Boolean(passwordErrors.newPassword)}>
+                  <FieldLabel>Mật khẩu mới</FieldLabel>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={passwordFormDisabled}
+                    {...registerPassword('newPassword')}
+                  />
+                  <FieldError className="mt-1" errors={[passwordErrors.newPassword]} />
+                </Field>
+                <Field data-invalid={Boolean(passwordErrors.confirmPassword)}>
+                  <FieldLabel>Xác nhận mật khẩu mới</FieldLabel>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={passwordFormDisabled}
+                    {...registerPassword('confirmPassword')}
+                  />
+                  <FieldError className="mt-1" errors={[passwordErrors.confirmPassword]} />
+                </Field>
+              </FieldGroup>
+            </form>
+          ) : null}
+
           {activeBlock && detail ? (
             <p className="text-sm text-muted-foreground">
               {detail.status === 'ACTIVE' ? (
@@ -388,6 +501,25 @@ export function EditEmployeeDialog({
               </Button>
               <Button type="submit" form={EDIT_EMPLOYEE_ROLES_FORM_ID} disabled={rolesFormDisabled}>
                 {isPending ? 'Đang lưu…' : 'Lưu vai trò'}
+              </Button>
+            </>
+          ) : null}
+          {passwordBlock ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => onOpenChange(false)}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                form={EDIT_EMPLOYEE_PASSWORD_FORM_ID}
+                disabled={passwordFormDisabled}
+              >
+                {resetPasswordMutation.isPending ? 'Đang lưu…' : 'Lưu mật khẩu'}
               </Button>
             </>
           ) : null}

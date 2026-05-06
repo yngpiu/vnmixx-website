@@ -13,8 +13,9 @@ interface AuthResponse {
   refreshToken: string;
 }
 
-const PUBLIC_AUTH_PATHS = ['/login', '/signup', '/otp'];
-const PROTECTED_PATHS = ['/me'];
+const PUBLIC_AUTH_PATHS = ['/login', '/signup', '/otp', '/forgot-password', '/reset-password'];
+/** Require a valid session (access or refresh → refresh). Guest is redirected to /login. */
+const PROTECTED_PATHS = ['/me', '/cart', '/checkout'];
 
 function isPathMatched(pathname: string, paths: string[]): boolean {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));

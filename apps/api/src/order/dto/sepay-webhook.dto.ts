@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class SepayWebhookDto {
   @ApiProperty({ example: 123456 })
@@ -27,9 +27,9 @@ export class SepayWebhookDto {
   @IsString()
   subAccount?: string | null;
 
-  @ApiProperty({ example: 'in', enum: ['in', 'out'] })
-  @IsEnum(['in', 'out'] as const)
-  transferType: 'in' | 'out';
+  @ApiProperty({ example: 'in', enum: ['in'] })
+  @IsIn(['in'] as const)
+  transferType: 'in';
 
   @ApiProperty({ example: 500000 })
   @Type(() => Number)

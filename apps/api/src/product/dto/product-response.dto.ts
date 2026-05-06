@@ -68,6 +68,9 @@ class ProductVariantDto {
   @ApiProperty({ example: 299000 })
   price: number;
 
+  @ApiPropertyOptional({ example: 499000, nullable: true })
+  compareAtPrice: number | null;
+
   @ApiProperty({ example: 50, description: 'Tồn kho thực tế' })
   onHand: number;
 
@@ -137,6 +140,9 @@ export class ProductListVariantResponseDto {
 
   @ApiProperty({ example: 299000 })
   price: number;
+
+  @ApiPropertyOptional({ example: 499000, nullable: true })
+  compareAtPrice: number | null;
 
   @ApiProperty({ example: 24 })
   onHand: number;

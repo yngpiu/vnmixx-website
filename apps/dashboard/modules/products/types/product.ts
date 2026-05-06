@@ -47,6 +47,7 @@ export type ProductAdminVariant = {
   };
   sku: string;
   price: number;
+  compareAtPrice: number | null;
   onHand: number;
   reserved: number;
   isActive: boolean;
@@ -85,6 +86,7 @@ export type CreateProductVariantInput = {
   sizeId: number;
   sku: string;
   price: number;
+  compareAtPrice?: number;
   onHand: number;
 };
 
@@ -129,6 +131,7 @@ export type UpdateProductBody = {
     sizeId?: number;
     sku?: string;
     price?: number;
+    compareAtPrice?: number;
     onHand?: number;
     isActive?: boolean;
   }[];

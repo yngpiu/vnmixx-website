@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 interface BuildQrPaymentParams {
   amount: number;
-  paymentCode: string;
+  orderCode: string;
 }
 
 const SEPAY_VIETINBANK_PREFIX = 'SEVQR';
@@ -14,14 +14,10 @@ export class SepayService {
 
   constructor(private readonly config: ConfigService) {}
 
-  buildPaymentCode(orderCode: string): string {
-    return `DH${orderCode}`.toUpperCase();
-  }
-
   buildQrPaymentFields(params: BuildQrPaymentParams) {
     const settings = this.getRequiredSettings();
     const expiredAt = new Date(Date.now() + settings.checkoutExpireMinutes * 60_000);
-    const transferContent = this.buildTransferContent(params.paymentCode);
+    const transferContent = this.buildTransferContent(params.orderCode);
     const qrImageUrl = this.buildQrImageUrl({
       bankCode: settings.bankCode,
       accountNumber: settings.accountNumber,
@@ -52,7 +48,7 @@ export class SepayService {
     return authHeader.trim() === `Apikey ${apiKey}`;
   }
 
-  extractPaymentCode(content?: string | null): string | null {
+  extractOrderCode(content?: string | null): string | null {
     if (!content) {
       return null;
     }
@@ -81,8 +77,8 @@ export class SepayService {
     return url.toString();
   }
 
-  private buildTransferContent(paymentCode: string): string {
-    return `${SEPAY_VIETINBANK_PREFIX} ${paymentCode}`;
+  private buildTransferContent(orderCode: string): string {
+    return `${SEPAY_VIETINBANK_PREFIX} ${orderCode}`;
   }
 
   private getRequiredSettings(): {

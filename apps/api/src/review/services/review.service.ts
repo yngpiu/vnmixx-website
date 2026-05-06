@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, ReviewVisibility } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 import type {
@@ -11,7 +6,6 @@ import type {
   AdminReviewsListResponseDto,
   ListAdminReviewsQueryDto,
 } from '../dto/admin-review.dto';
-import type { CreateProductReviewDto } from '../dto/create-product-review.dto';
 import { ReviewRepository } from '../repositories/review.repository';
 
 @Injectable()
@@ -21,68 +15,6 @@ export class ReviewService {
     private readonly reviewRepo: ReviewRepository,
     private readonly prisma: PrismaService, // Dùng để truy vấn bảng Product và OrderItem
   ) {}
-
-  // Ghi nhận đánh giá mới của khách hàng cho sản phẩm.
-  async createProductReview(
-    customerId: number,
-    productId: number,
-    dto: CreateProductReviewDto,
-  ): Promise<void> {
-    if (!Number.isInteger(dto.rating) || dto.rating < 1 || dto.rating > 5) {
-      throw new BadRequestException('rating phải nằm trong khoảng từ 1 đến 5.');
-    }
-
-    // 1. Kiểm tra sản phẩm có tồn tại và đang hoạt động không.
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
-      select: { id: true, isActive: true, deletedAt: true },
-    });
-
-    if (!product || product.deletedAt || !product.isActive) {
-      throw new NotFoundException(`Không tìm thấy sản phẩm #${productId}`);
-    }
-
-    // 2. Kiểm tra xem khách hàng đã đánh giá đúng order item này chưa.
-    const existingReview = await this.reviewRepo.findByProductCustomerAndOrderItem(
-      productId,
-      customerId,
-      dto.orderItemId,
-    );
-    if (existingReview) {
-      throw new ConflictException('Bạn đã đánh giá biến thể này trong lần mua này.');
-    }
-
-    // 3. Kiểm tra điều kiện mua hàng theo đúng order item: đúng khách, đúng sản phẩm, đã giao + thanh toán.
-    const purchasedOrderItem = await this.prisma.orderItem.findFirst({
-      where: {
-        id: dto.orderItemId,
-        variant: { productId },
-        order: {
-          customerId,
-          status: 'DELIVERED',
-          payments: { some: { status: 'SUCCESS' } },
-        },
-      },
-      select: { id: true },
-    });
-
-    if (!purchasedOrderItem) {
-      throw new BadRequestException(
-        'Bạn chỉ có thể đánh giá đúng biến thể đã nhận hàng và thanh toán thành công.',
-      );
-    }
-
-    // 4. Thực hiện tạo đánh giá.
-    await this.reviewRepo.create({
-      productId,
-      customerId,
-      orderItemId: dto.orderItemId,
-      rating: dto.rating,
-      title: null,
-      content: dto.content ?? null,
-      status: ReviewVisibility.VISIBLE,
-    });
-  }
 
   /**
    * Paginated visible reviews for storefront, by product ID, with aggregate stats.

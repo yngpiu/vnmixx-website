@@ -13,6 +13,7 @@ import {
 } from '@repo/ui/components/ui/dropdown-menu';
 import type { Row } from '@tanstack/react-table';
 import {
+  KeyRoundIcon,
   MoreHorizontalIcon,
   RotateCcwIcon,
   ScanEyeIcon,
@@ -30,6 +31,7 @@ export function EmployeesRowActions({ row }: EmployeesRowActionsProps) {
   const {
     openEmployeeDetail,
     openEditRoles,
+    openResetPassword,
     openToggleActive,
     openDeleteEmployee,
     openRestoreEmployee,
@@ -89,6 +91,16 @@ export function EmployeesRowActions({ row }: EmployeesRowActionsProps) {
               Sửa vai trò
               <DropdownMenuShortcut>
                 <UserCogIcon className="size-4" />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                openResetPassword(row.original);
+              }}
+            >
+              Đổi mật khẩu
+              <DropdownMenuShortcut>
+                <KeyRoundIcon className="size-4" />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

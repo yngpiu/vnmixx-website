@@ -10,7 +10,7 @@ import {
   ApiUnauthorizedResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
-import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   buildSuccessResponseSchema,
@@ -53,6 +53,7 @@ export class InventoryAdminController {
   })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Get('low-stock')
+  @RequirePermissions('inventory.read')
   async getLowStock(
     @Query() query: InventoryLowStockQueryDto,
   ): Promise<SuccessPayload<InventoryLowStockResponseDto>> {
@@ -68,6 +69,7 @@ export class InventoryAdminController {
   })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Get()
+  @RequirePermissions('inventory.read')
   async listInventory(
     @Query() query: InventoryListQueryDto,
   ): Promise<SuccessPayload<InventoryListResponseDto>> {
@@ -83,6 +85,7 @@ export class InventoryAdminController {
   })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Get('movements')
+  @RequirePermissions('inventory.read')
   async listMovements(
     @Query() query: InventoryMovementListQueryDto,
   ): Promise<SuccessPayload<InventoryMovementListResponseDto>> {
@@ -98,6 +101,7 @@ export class InventoryAdminController {
   })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Post('vouchers')
+  @RequirePermissions('inventory.create')
   async createVoucher(
     @Body() body: CreateInventoryVoucherDto,
     @CurrentUser() user: AuthenticatedUser,
@@ -114,6 +118,7 @@ export class InventoryAdminController {
   })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Get('vouchers')
+  @RequirePermissions('inventory.read')
   async listVouchers(
     @Query() query: ListInventoryVouchersQueryDto,
   ): Promise<SuccessPayload<InventoryVoucherListResponseDto>> {
@@ -129,6 +134,7 @@ export class InventoryAdminController {
   })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Get('vouchers/:voucherId')
+  @RequirePermissions('inventory.read')
   async getVoucherById(
     @Param('voucherId', ParseIntPipe) voucherId: number,
   ): Promise<SuccessPayload<InventoryVoucherDetailResponseDto>> {

@@ -1,7 +1,5 @@
 'use client';
 
-'use client';
-
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import type { ShopColorOption, ShopSizeOption } from '@/modules/products/api/catalog';
@@ -10,6 +8,12 @@ import { CATALOG_PRICE_RANGE_MAX } from '@/modules/products/constants/catalog';
 import { formatCatalogPriceLabel } from '@/modules/products/utils/format-catalog-price-label';
 import { Skeleton } from '@repo/ui/components/ui/skeleton';
 import { Slider } from '@repo/ui/components/ui/slider';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
 import { Check } from 'lucide-react';
 
@@ -85,33 +89,42 @@ export function CategoryCatalogFiltersPanel({
             ))}
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2.5">
-            {colorOptions.map((color) => {
-              const isSelected = draftColorIds.includes(color.id);
-              return (
-                <button
-                  key={color.id}
-                  type="button"
-                  title={color.name}
-                  aria-label={`Lọc màu ${color.name}`}
-                  aria-pressed={isSelected}
-                  onClick={() => onToggleDraftColor(color.id)}
-                  className="relative flex size-6 shrink-0 items-center justify-center rounded-full transition md:size-[26px]"
-                  style={{ backgroundColor: color.hexCode }}
-                >
-                  {isSelected ? (
-                    <Check
-                      className={cn(
-                        'h-3.5 w-3.5 drop-shadow',
-                        isLightHex(color.hexCode) ? 'text-foreground' : 'text-primary-foreground',
-                      )}
-                      strokeWidth={2.5}
-                    />
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
+          <TooltipProvider>
+            <div className="flex flex-wrap gap-2.5">
+              {colorOptions.map((color) => {
+                const isSelected = draftColorIds.includes(color.id);
+                return (
+                  <Tooltip key={color.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`Lọc màu ${color.name}`}
+                        aria-pressed={isSelected}
+                        onClick={() => onToggleDraftColor(color.id)}
+                        className="relative flex size-6 shrink-0 items-center justify-center rounded-full transition md:size-[26px]"
+                        style={{ backgroundColor: color.hexCode }}
+                      >
+                        {isSelected ? (
+                          <Check
+                            className={cn(
+                              'h-3.5 w-3.5 drop-shadow',
+                              isLightHex(color.hexCode)
+                                ? 'text-foreground'
+                                : 'text-primary-foreground',
+                            )}
+                            strokeWidth={2.5}
+                          />
+                        ) : null}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>{color.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </TooltipProvider>
         )}
       </CatalogFilterSection>
       <CatalogFilterSection title="Mức giá">
