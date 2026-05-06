@@ -16,8 +16,9 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
+RUN pnpm --filter api exec prisma generate
 RUN pnpm --filter api build
 
 EXPOSE 4000
 
-CMD ["pnpm", "--filter", "api", "start:prod"]
+CMD ["node", "apps/api/dist/src/main.js"]

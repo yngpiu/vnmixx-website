@@ -27,4 +27,4 @@ RUN pnpm --filter shop build
 
 EXPOSE 3001
 
-CMD ["pnpm", "--filter", "shop", "start", "--", "--port", "3001"]
+CMD ["pnpm", "--filter", "shop", "exec", "next", "start", "--port", "3001"]

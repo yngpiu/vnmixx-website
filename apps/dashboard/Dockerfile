@@ -25,4 +25,4 @@ RUN pnpm --filter dashboard build
 
 EXPOSE 3000
 
-CMD ["pnpm", "--filter", "dashboard", "start", "--", "--port", "3000"]
+CMD ["pnpm", "--filter", "dashboard", "exec", "next", "start", "--port", "3000"]
