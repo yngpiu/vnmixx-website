@@ -76,6 +76,14 @@ type ConfirmPaymentOrderRecord = {
   status: OrderStatus;
   payment: AdminOrderPaymentRecord | null;
 };
+const ALLOWED_MANUAL_STATUS_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
+  PENDING_CONFIRMATION: ['PROCESSING', 'CANCELLED'],
+  PROCESSING: ['AWAITING_SHIPMENT', 'CANCELLED'],
+  AWAITING_SHIPMENT: ['SHIPPED', 'CANCELLED'],
+  SHIPPED: ['DELIVERED'],
+  DELIVERED: [],
+  CANCELLED: [],
+};
 
 // Dịch vụ quản lý đơn hàng dành cho nhân viên/quản trị viên
 // Vai trò: Thực hiện xác nhận đơn, tạo vận đơn, hủy đơn và quản lý thanh toán
@@ -563,18 +571,6 @@ export class OrderAdminService {
             paidAt: new Date(),
           },
         });
-        const orderUpdated =
-          order.status === 'PENDING_PAYMENT'
-            ? await tx.order.updateMany({
-                where: { id: order.id, status: 'PENDING_PAYMENT' },
-                data: { status: 'PENDING_CONFIRMATION' },
-              })
-            : { count: 0 };
-        if (orderUpdated.count > 0) {
-          await tx.orderStatusHistory.create({
-            data: { orderId: order.id, status: 'PENDING_CONFIRMATION' },
-          });
-        }
       });
 
       this.logger.log(`Thanh toán chuyển khoản cho đơn hàng ${orderCode} đã được xác nhận`);
@@ -594,6 +590,64 @@ export class OrderAdminService {
       await this.auditLogService.write({
         ...auditContext,
         action: 'order.confirm-payment',
+        resourceType: 'order',
+        resourceId: orderCode,
+        status: AuditLogStatus.FAILED,
+        beforeData,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  async updateOrderStatus(
+    orderCode: string,
+    status: OrderStatus,
+    auditContext: AuditRequestContext = {},
+  ): Promise<OrderAdminDetailView> {
+    let beforeData: Record<string, unknown> | undefined;
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: { orderCode },
+        select: { id: true, status: true },
+      });
+      if (!order) {
+        throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
+      }
+      beforeData = { orderCode, status: order.status };
+      if (order.status === status) {
+        return (await this.orderRepo.findAdminByOrderCode(orderCode)) as OrderAdminDetailView;
+      }
+      const allowedStatuses = ALLOWED_MANUAL_STATUS_TRANSITIONS[order.status] ?? [];
+      if (!allowedStatuses.includes(status)) {
+        throw new BadRequestException(
+          `Không thể chuyển trạng thái từ ${order.status} sang ${status}.`,
+        );
+      }
+      await this.prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status },
+        });
+        await tx.orderStatusHistory.create({
+          data: { orderId: order.id, status },
+        });
+      });
+      const result = (await this.orderRepo.findAdminByOrderCode(orderCode)) as OrderAdminDetailView;
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'order.update-status-manual',
+        resourceType: 'order',
+        resourceId: orderCode,
+        status: AuditLogStatus.SUCCESS,
+        beforeData,
+        afterData: result,
+      });
+      return result;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'order.update-status-manual',
         resourceType: 'order',
         resourceId: orderCode,
         status: AuditLogStatus.FAILED,

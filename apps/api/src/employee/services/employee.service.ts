@@ -9,6 +9,7 @@ import { AuditLogStatus, EmployeeStatus, Prisma } from '../../../generated/prism
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { EmployeeAuthzCacheService } from '../../auth/services/employee-authz-cache.service';
+import { TokenService } from '../../auth/services/token.service';
 import {
   getPrismaErrorTargets,
   isPrismaErrorCode,
@@ -37,6 +38,7 @@ export class EmployeeService {
     private readonly employeeAuthzCache: EmployeeAuthzCacheService,
     private readonly auditLogService: AuditLogService,
     private readonly redis: RedisService,
+    private readonly tokenService: TokenService,
   ) {}
 
   // Lấy danh sách nhân viên có phân trang, tìm kiếm và lọc tiêu chí
@@ -254,6 +256,46 @@ export class EmployeeService {
       await this.auditLogService.write({
         ...auditContext,
         action: 'employee.restore',
+        resourceType: 'employee',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  // Đặt lại mật khẩu nhân viên bởi quản trị viên và thu hồi các phiên đăng nhập đang hoạt động.
+  async resetPassword(
+    id: number,
+    newPassword: string,
+    auditContext: AuditRequestContext = {},
+  ): Promise<void> {
+    const beforeData = await this.findById(id);
+    try {
+      const hashedPassword = await hash(newPassword, BCRYPT_ROUNDS);
+      const updated = await this.employeeRepo.update(id, { hashedPassword });
+      if (!updated) {
+        throw new NotFoundException(`Không tìm thấy nhân viên #${id}`);
+      }
+      await Promise.all([
+        this.employeeAuthzCache.invalidate(id),
+        this.redis.del(EMPLOYEE_CACHE_KEYS.DETAIL(id)),
+        this.tokenService.revokeAllSessions(id, 'EMPLOYEE'),
+      ]);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'employee.password.reset',
+        resourceType: 'employee',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData,
+      });
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'employee.password.reset',
         resourceType: 'employee',
         resourceId: String(id),
         status: AuditLogStatus.FAILED,

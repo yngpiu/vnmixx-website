@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -25,6 +25,7 @@ import {
   ListAdminOrdersQueryDto,
   OrderAdminDetailResponseDto,
   OrderAdminListResponseDto,
+  UpdateOrderStatusDto,
 } from '../dto';
 import { OrderAdminService } from '../services/order-admin.service';
 
@@ -133,6 +134,30 @@ export class OrderAdminController {
         buildAuditRequestContext(request, user),
       ),
       'Xác nhận thanh toán thành công.',
+    );
+  }
+
+  @ApiOperation({ summary: 'Cập nhật trạng thái đơn hàng thủ công (tạm thời)' })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(OrderAdminDetailResponseDto) }),
+  })
+  @ApiBadRequestResponse({ description: 'Trạng thái không hợp lệ.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy đơn hàng.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Patch(':orderCode/status')
+  async updateOrderStatus(
+    @Param('orderCode') orderCode: string,
+    @Body('status') status: UpdateOrderStatusDto['status'],
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<SuccessPayload<OrderAdminDetailResponseDto>> {
+    return ok(
+      await this.orderAdminService.updateOrderStatus(
+        orderCode,
+        status,
+        buildAuditRequestContext(request, user),
+      ),
+      'Cập nhật trạng thái đơn hàng thành công.',
     );
   }
 }

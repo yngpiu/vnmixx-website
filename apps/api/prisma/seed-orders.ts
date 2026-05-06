@@ -16,7 +16,16 @@ import {
   yearsBefore,
 } from './seed-date-range';
 
-const ORDER_COUNT = SEED_CONFIG.orderCount;
+function resolveOrderSeedCount(): number {
+  const raw = process.env.SEED_ORDER_COUNT;
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.min(parsed, 50_000);
+    }
+  }
+  return SEED_CONFIG.orderCount;
+}
 type CreatedOrderItem = {
   id: number;
   variantId: number;
@@ -27,7 +36,7 @@ type CreatedOrderWithItems = {
   items: CreatedOrderItem[];
 };
 
-/** Phân bổ ~3 năm: 20% năm cũ nhất, 30% năm giữa, 50% năm gần nhất (tính từ `rangeStart` đến `asOf`). */
+/** Phân bổ ~2 năm: 20% kỳ đầu, 30% kỳ giữa, 50% kỳ gần nhất (tính từ `rangeStart` đến `asOf`). */
 function generateOrderDates(rangeStart: Date, asOf: Date, count: number): Date[] {
   const dates: Date[] = [];
   const { y1, y2 } = seedWindowThirdBoundaries(rangeStart, asOf);
@@ -94,7 +103,7 @@ export async function seedOrders(): Promise<void> {
     });
 
     if (variants.length === 0) {
-      console.log('No variants found. Run seedProducts first.');
+      console.log('No variants found. Import catalog SQL hoặc chạy seedProducts.');
       return;
     }
 
@@ -103,20 +112,21 @@ export async function seedOrders(): Promise<void> {
     });
 
     const asOf = resolveSeedAsOfDate();
-    const rangeStart = yearsBefore(asOf, 3);
+    const rangeStart = yearsBefore(asOf, 2);
+    const orderCount = resolveOrderSeedCount();
 
     faker.seed(321);
-    const sortedDates = generateOrderDates(rangeStart, asOf, ORDER_COUNT);
+    const sortedDates = generateOrderDates(rangeStart, asOf, orderCount);
 
     console.log(
-      `Seeding ${ORDER_COUNT} orders in [${rangeStart.toISOString()} … ${asOf.toISOString()}] (anchor ${asOf.toISOString()})...`,
+      `Seeding ${orderCount} orders in [${rangeStart.toISOString()} … ${asOf.toISOString()}] (full 2-year window, anchor ${asOf.toISOString()})...`,
     );
 
     let orderSeq = 0;
     const BATCH_SIZE = 100;
 
-    for (let i = 0; i < ORDER_COUNT; i += BATCH_SIZE) {
-      const batchEnd = Math.min(i + BATCH_SIZE, ORDER_COUNT);
+    for (let i = 0; i < orderCount; i += BATCH_SIZE) {
+      const batchEnd = Math.min(i + BATCH_SIZE, orderCount);
 
       await prisma.$transaction(
         async (tx) => {
@@ -138,8 +148,7 @@ export async function seedOrders(): Promise<void> {
                     { status: OrderStatus.SHIPPED, weight: 10 },
                     { status: OrderStatus.AWAITING_SHIPMENT, weight: 8 },
                     { status: OrderStatus.PROCESSING, weight: 8 },
-                    { status: OrderStatus.PENDING_CONFIRMATION, weight: 7 },
-                    { status: OrderStatus.PENDING_PAYMENT, weight: 10 },
+                    { status: OrderStatus.PENDING_CONFIRMATION, weight: 17 },
                     { status: OrderStatus.CANCELLED, weight: 5 },
                   ]
                 : [
@@ -165,7 +174,7 @@ export async function seedOrders(): Promise<void> {
 
             const paymentStatus =
               paymentMethod === PaymentMethod.BANK_TRANSFER_QR
-                ? status === OrderStatus.PENDING_PAYMENT
+                ? status === OrderStatus.PENDING_CONFIRMATION
                   ? PaymentStatus.PENDING
                   : status === OrderStatus.CANCELLED
                     ? PaymentStatus.CANCELLED
@@ -205,27 +214,11 @@ export async function seedOrders(): Promise<void> {
             const shippingFee = faker.helpers.arrayElement([20000, 30000, 40000, 50000]);
             const total = subtotal + shippingFee;
 
-            const initialStatus =
-              paymentMethod === PaymentMethod.BANK_TRANSFER_QR
-                ? OrderStatus.PENDING_PAYMENT
-                : OrderStatus.PENDING_CONFIRMATION;
+            const initialStatus = OrderStatus.PENDING_CONFIRMATION;
             const histories: Prisma.OrderStatusHistoryCreateManyOrderInput[] = [
               { status: initialStatus, createdAt: orderCreatedAt },
             ];
             let workflowTime = orderCreatedAt;
-
-            if (
-              paymentMethod === PaymentMethod.BANK_TRANSFER_QR &&
-              status !== OrderStatus.PENDING_PAYMENT
-            ) {
-              workflowTime = new Date(
-                orderCreatedAt.getTime() + faker.number.int({ min: 1, max: 24 }) * 3600000,
-              );
-              histories.push({
-                status: OrderStatus.PENDING_CONFIRMATION,
-                createdAt: workflowTime,
-              });
-            }
 
             if (status === OrderStatus.CANCELLED) {
               workflowTime = new Date(
@@ -405,10 +398,10 @@ export async function seedOrders(): Promise<void> {
           timeout: 30_000,
         },
       );
-      console.log(`Created ${Math.min(i + BATCH_SIZE, ORDER_COUNT)} orders...`);
+      console.log(`Created ${Math.min(i + BATCH_SIZE, orderCount)} orders...`);
     }
 
-    console.log(`Seed orders done: ${ORDER_COUNT} orders created.`);
+    console.log(`Seed orders done: ${orderCount} orders created.`);
   } finally {
     await prisma.$disconnect();
   }

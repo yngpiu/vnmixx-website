@@ -59,7 +59,6 @@ export function InventoryManagementView() {
   const [draftItems, setDraftItems] = useState<VoucherLineDraft[]>([]);
   const [voucherCode, setVoucherCode] = useState('');
   const [issuedAt, setIssuedAt] = useState(DEFAULT_ISSUED_AT());
-  const [note, setNote] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [voucherHistoryOpen, setVoucherHistoryOpen] = useState(false);
   const [selectedVoucherId, setSelectedVoucherId] = useState<number | null>(null);
@@ -122,7 +121,6 @@ export function InventoryManagementView() {
 
   useEffect(() => {
     if (!voucherOpen) {
-      setNote('');
       setDraftItems([]);
       setVoucherCode('');
       setIssuedAt(DEFAULT_ISSUED_AT());
@@ -136,7 +134,6 @@ export function InventoryManagementView() {
         code: voucherCode.trim(),
         type: voucherType,
         issuedAt: new Date(issuedAt).toISOString(),
-        note: note.trim() || undefined,
         items: draftItems.map((item) => ({
           variantId: item.variantId,
           quantity: item.quantity,
@@ -380,8 +377,6 @@ export function InventoryManagementView() {
         type={voucherType}
         voucherCode={voucherCode}
         setVoucherCode={setVoucherCode}
-        note={note}
-        setNote={setNote}
         issuedAt={issuedAt}
         setIssuedAt={setIssuedAt}
         items={draftItems}

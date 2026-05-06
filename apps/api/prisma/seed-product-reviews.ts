@@ -2,7 +2,7 @@ import { fakerVI as faker } from '@faker-js/faker';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { OrderStatus, Prisma, PrismaClient } from '../generated/prisma/client';
 import { SEED_CONFIG } from './seed-constants';
-import { clampDate, resolveSeedAsOfDate } from './seed-date-range';
+import { clampDate, resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
 const REVIEW_TITLES = [
   'Vượt mong đợi',
@@ -39,6 +39,28 @@ const REVIEW_COMMENTS = [
   'Thực sự thất vọng, chất vải không giống mô tả.',
 ];
 
+function resolveReviewOrderFraction(): number {
+  const raw = process.env.SEED_REVIEW_ORDER_FRACTION;
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const parsed = Number.parseFloat(raw);
+    if (Number.isFinite(parsed)) {
+      return Math.min(1, Math.max(0, parsed));
+    }
+  }
+  return Math.min(1, Math.max(0, SEED_CONFIG.reviewOrderFraction));
+}
+
+function resolveReviewMaxOrders(): number {
+  const raw = process.env.SEED_REVIEW_MAX_ORDERS;
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.min(parsed, 100_000);
+    }
+  }
+  return SEED_CONFIG.reviewMaxOrders;
+}
+
 export async function seedProductReviews(): Promise<void> {
   if (!process.env.DATABASE_URL) {
     throw new Error('Thiếu DATABASE_URL');
@@ -63,14 +85,19 @@ export async function seedProductReviews(): Promise<void> {
     }
 
     const asOf = resolveSeedAsOfDate();
-    const reviewProbability = Math.min(1, Math.max(0, SEED_CONFIG.reviewOrderFraction));
+    const rangeStart = yearsBefore(asOf, 2);
+    const reviewProbability = resolveReviewOrderFraction();
+    const reviewMaxOrders = resolveReviewMaxOrders();
 
     console.log('Fetching delivered orders...');
     const deliveredOrders = await prisma.order.findMany({
-      where: { status: OrderStatus.DELIVERED },
+      where: {
+        status: OrderStatus.DELIVERED,
+        createdAt: { gte: rangeStart, lte: asOf },
+      },
       include: { items: { include: { variant: true } } },
       orderBy: { createdAt: 'asc' },
-      take: SEED_CONFIG.reviewMaxOrders,
+      take: reviewMaxOrders,
     });
 
     if (deliveredOrders.length === 0) {
@@ -145,7 +172,9 @@ export async function seedProductReviews(): Promise<void> {
       });
     }
 
-    console.log(`Seeding ${reviewsToCreate.length} product reviews...`);
+    console.log(
+      `Seeding ${reviewsToCreate.length} product reviews from delivered orders in full 2-year window...`,
+    );
 
     const BATCH_SIZE = 1000;
     for (let i = 0; i < reviewsToCreate.length; i += BATCH_SIZE) {

@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
 import { Input } from '@repo/ui/components/ui/input';
-import { Textarea } from '@repo/ui/components/ui/textarea';
 import { useMemo } from 'react';
 import { InventoryVoucherLineItems, type VoucherLineDraft } from './inventory-voucher-line-items';
 import { InventoryVoucherSummary } from './inventory-voucher-summary';
@@ -20,8 +19,6 @@ type InventoryVoucherDialogProps = {
   type: InventoryVoucherType;
   voucherCode: string;
   setVoucherCode: (value: string) => void;
-  note: string;
-  setNote: (value: string) => void;
   issuedAt: string;
   setIssuedAt: (value: string) => void;
   items: VoucherLineDraft[];
@@ -39,8 +36,6 @@ export function InventoryVoucherDialog({
   type,
   voucherCode,
   setVoucherCode,
-  note,
-  setNote,
   issuedAt,
   setIssuedAt,
   items,
@@ -88,26 +83,6 @@ export function InventoryVoucherDialog({
                 type="datetime-local"
                 value={issuedAt}
                 onChange={(event) => setIssuedAt(event.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">Kho nhập/xuất</label>
-              <Input value="Kho chính" disabled />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">Đối tác</label>
-              <Input
-                value={type === 'IMPORT' ? 'Nhà cung cấp mặc định' : 'Xuất nội bộ / khách lẻ'}
-                disabled
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium">Ghi chú</label>
-              <Textarea
-                rows={4}
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                placeholder="Nhập ghi chú chứng từ..."
               />
             </div>
           </div>

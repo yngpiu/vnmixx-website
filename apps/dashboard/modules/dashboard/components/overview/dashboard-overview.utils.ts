@@ -77,7 +77,6 @@ export function formatCompactVnd(value: number): string {
 
 export function getDashboardOrderStatusLabel(status: string): string {
   const labels: Record<string, string> = {
-    PENDING_PAYMENT: 'Chờ thanh toán',
     PENDING_CONFIRMATION: 'Chờ xác nhận',
     PROCESSING: 'Đang xử lý',
     AWAITING_SHIPMENT: 'Chờ giao',
@@ -91,8 +90,6 @@ export function getDashboardOrderStatusLabel(status: string): string {
 
 export function getDashboardOrderStatusClassName(status: string): string {
   const classNames: Record<string, string> = {
-    PENDING_PAYMENT:
-      'border-transparent bg-amber-50 text-amber-900 dark:bg-amber-950/70 dark:text-amber-100',
     PENDING_CONFIRMATION:
       'border-transparent bg-blue-50 text-blue-900 dark:bg-blue-950/70 dark:text-blue-100',
     PROCESSING:

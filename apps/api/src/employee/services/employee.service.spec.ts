@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { AuditLogStatus, EmployeeStatus, Prisma } from '../../../generated/prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { EmployeeAuthzCacheService } from '../../auth/services/employee-authz-cache.service';
+import { TokenService } from '../../auth/services/token.service';
 import { RoleRepository } from '../../rbac/repositories/role.repository';
 import { RedisService } from '../../redis/services/redis.service';
 import { EmployeeRepository } from '../repositories/employee.repository';
@@ -18,6 +19,7 @@ describe('EmployeeService', () => {
   let employeeAuthzCache: jest.Mocked<EmployeeAuthzCacheService>;
   let auditLogService: jest.Mocked<AuditLogService>;
   let redis: jest.Mocked<RedisService>;
+  let tokenService: jest.Mocked<TokenService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -59,6 +61,12 @@ describe('EmployeeService', () => {
             del: jest.fn(),
           },
         },
+        {
+          provide: TokenService,
+          useValue: {
+            revokeAllSessions: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -68,6 +76,7 @@ describe('EmployeeService', () => {
     employeeAuthzCache = module.get(EmployeeAuthzCacheService);
     auditLogService = module.get(AuditLogService);
     redis = module.get(RedisService);
+    tokenService = module.get(TokenService);
 
     jest.clearAllMocks();
   });
@@ -287,6 +296,31 @@ describe('EmployeeService', () => {
       employeeRepo.restore.mockResolvedValue(null);
 
       await expect(service.restore(id)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should reset password and revoke sessions', async () => {
+      const id = 2;
+      const beforeData = { id } as any;
+      redis.getOrSet.mockImplementation(async (_key, _ttl, cb) => cb());
+      employeeRepo.findById.mockResolvedValue(beforeData);
+      employeeRepo.update.mockResolvedValue(beforeData);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('new_hashed_password');
+
+      await service.resetPassword(id, 'new_password_123');
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('new_password_123', 10);
+      expect(employeeRepo.update).toHaveBeenCalledWith(id, {
+        hashedPassword: 'new_hashed_password',
+      });
+      expect(tokenService.revokeAllSessions).toHaveBeenCalledWith(id, 'EMPLOYEE');
+      expect(auditLogService.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: AuditLogStatus.SUCCESS,
+          action: 'employee.password.reset',
+        }),
+      );
     });
   });
 });

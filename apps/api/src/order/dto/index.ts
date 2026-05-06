@@ -7,3 +7,4 @@ export {
   OrderDetailResponseDto,
   OrderListResponseDto,
 } from './order-response.dto';
+export { UpdateOrderStatusDto } from './update-order-status.dto';

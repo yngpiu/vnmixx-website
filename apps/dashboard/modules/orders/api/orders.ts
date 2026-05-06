@@ -3,6 +3,7 @@ import type {
   ListAdminOrdersParams,
   OrderAdminDetail,
   OrderAdminListResponse,
+  OrderStatus,
 } from '@/modules/orders/types/order-admin';
 export type { ListAdminOrdersParams } from '@/modules/orders/types/order-admin';
 
@@ -37,6 +38,17 @@ export async function cancelAdminOrder(orderCode: string): Promise<OrderAdminDet
 export async function confirmAdminOrderPayment(orderCode: string): Promise<OrderAdminDetail> {
   const { data } = await apiClient.patch<OrderAdminDetail>(
     `/admin/orders/${encodeURIComponent(orderCode)}/confirm-payment`,
+  );
+  return data;
+}
+
+export async function updateAdminOrderStatus(
+  orderCode: string,
+  status: OrderStatus,
+): Promise<OrderAdminDetail> {
+  const { data } = await apiClient.patch<OrderAdminDetail>(
+    `/admin/orders/${encodeURIComponent(orderCode)}/status`,
+    { status },
   );
   return data;
 }

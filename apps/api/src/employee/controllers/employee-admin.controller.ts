@@ -42,6 +42,7 @@ import {
   EmployeeDetailResponseDto,
   EmployeeListResponseDto,
   ListEmployeesQueryDto,
+  ResetEmployeePasswordDto,
   UpdateEmployeeDto,
 } from '../dto';
 import { EmployeeService } from '../services/employee.service';
@@ -187,6 +188,29 @@ export class EmployeeAdminController {
     return ok(
       await this.employeeService.restore(id, buildAuditRequestContext(request, user)),
       'Khôi phục nhân viên thành công.',
+    );
+  }
+
+  @ApiOperation({ summary: 'Đặt lại mật khẩu nhân viên' })
+  @ApiNoContentResponse({
+    description: 'Đặt lại mật khẩu nhân viên thành công.',
+  })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy nhân viên.' })
+  @ApiBadRequestResponse({ description: 'Dữ liệu mật khẩu không hợp lệ.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @RequirePermissions('employee.update')
+  @Patch(':id/password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resetPassword(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ResetEmployeePasswordDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    await this.employeeService.resetPassword(
+      id,
+      dto.newPassword,
+      buildAuditRequestContext(request, user),
     );
   }
 }

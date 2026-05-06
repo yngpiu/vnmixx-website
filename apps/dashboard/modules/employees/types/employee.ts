@@ -47,6 +47,10 @@ export type UpdateEmployeePayload = {
   roleId?: number;
 };
 
+export type ResetEmployeePasswordPayload = {
+  newPassword: string;
+};
+
 export type ListEmployeesParams = {
   page?: number;
   limit?: number;

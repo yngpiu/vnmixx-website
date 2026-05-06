@@ -1,5 +1,4 @@
 export type MyOrderStatus =
-  | 'PENDING_PAYMENT'
   | 'PENDING_CONFIRMATION'
   | 'PROCESSING'
   | 'AWAITING_SHIPMENT'

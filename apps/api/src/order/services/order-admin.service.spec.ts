@@ -411,4 +411,51 @@ describe('OrderAdminService', () => {
       await expect(service.confirmPayment(orderCode)).rejects.toThrow(BadRequestException);
     });
   });
+
+  describe('updateOrderStatus', () => {
+    const orderCode = 'ORD123';
+
+    it('should update status and create history', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 1, status: 'PROCESSING' } as any);
+      orderRepo.findAdminByOrderCode.mockResolvedValue({
+        orderCode,
+        status: 'AWAITING_SHIPMENT',
+      } as any);
+
+      const result = await service.updateOrderStatus(orderCode, 'AWAITING_SHIPMENT' as any);
+
+      expect(result.status).toBe('AWAITING_SHIPMENT');
+      expect(prisma.order.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { status: 'AWAITING_SHIPMENT' },
+      });
+      expect(prisma.orderStatusHistory.create).toHaveBeenCalledWith({
+        data: { orderId: 1, status: 'AWAITING_SHIPMENT' },
+      });
+      expect(auditLogService.write).toHaveBeenCalledWith(
+        expect.objectContaining({ status: AuditLogStatus.SUCCESS }),
+      );
+    });
+
+    it('should return current detail when target status is unchanged', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 1, status: 'PROCESSING' } as any);
+      orderRepo.findAdminByOrderCode.mockResolvedValue({ orderCode, status: 'PROCESSING' } as any);
+
+      const result = await service.updateOrderStatus(orderCode, 'PROCESSING' as any);
+
+      expect(result.status).toBe('PROCESSING');
+      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(prisma.orderStatusHistory.create).not.toHaveBeenCalled();
+    });
+
+    it('should throw when transition is invalid', async () => {
+      prisma.order.findUnique.mockResolvedValue({ id: 1, status: 'DELIVERED' } as any);
+
+      await expect(service.updateOrderStatus(orderCode, 'PROCESSING' as any)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.order.update).not.toHaveBeenCalled();
+      expect(prisma.orderStatusHistory.create).not.toHaveBeenCalled();
+    });
+  });
 });

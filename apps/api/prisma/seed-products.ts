@@ -159,7 +159,9 @@ export async function seedProducts(): Promise<void> {
     });
 
     if (leafCategories.length === 0) {
-      throw new Error('Không có danh mục lá. Chạy seed danh mục trước: seedCategories().');
+      throw new Error(
+        'Không có danh mục lá. Chạy seedCategories() hoặc import prisma/data/catalog-products-categories-*.sql.',
+      );
     }
 
     faker.seed(789);

@@ -112,7 +112,7 @@ export function OrderDetailView() {
             description={`Tạo ${dateTimeFormatter.format(new Date(order.createdAt))} · Cập nhật ${dateTimeFormatter.format(new Date(order.updatedAt))}`}
           />
           <Button type="button" onClick={() => setActionsOpen(true)}>
-            Thao tác nghiệp vụ
+            Chuyển trạng thái
           </Button>
         </div>
       </div>
@@ -299,7 +299,7 @@ export function OrderDetailView() {
         orderCode={order.orderCode}
         open={actionsOpen}
         onOpenChange={setActionsOpen}
-        title={`Thao tác · ${order.orderCode}`}
+        title={`Chuyển trạng thái · ${order.orderCode}`}
         onAfterMutation={() => {
           void detailQuery.refetch();
         }}

@@ -1,7 +1,6 @@
 /** Khớp DTO admin đơn hàng từ `apps/api` (OrderAdmin*). */
 
 export type OrderStatus =
-  | 'PENDING_PAYMENT'
   | 'PENDING_CONFIRMATION'
   | 'PROCESSING'
   | 'AWAITING_SHIPMENT'

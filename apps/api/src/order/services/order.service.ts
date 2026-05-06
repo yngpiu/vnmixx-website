@@ -143,7 +143,7 @@ export class OrderService {
   }
 
   // Hủy đơn hàng bởi khách hàng
-  // Chỉ cho phép hủy khi đơn đang chờ thanh toán hoặc chờ xác nhận
+  // Chỉ cho phép hủy khi đơn đang chờ xác nhận
   async cancelMyOrder(customerId: number, orderCode: string): Promise<OrderDetailView> {
     // 1. Kiểm tra sự tồn tại và trạng thái của đơn hàng
     const order = await this.prisma.order.findFirst({
@@ -156,10 +156,8 @@ export class OrderService {
     });
 
     if (!order) throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
-    if (!['PENDING_PAYMENT', 'PENDING_CONFIRMATION'].includes(order.status)) {
-      throw new BadRequestException(
-        'Chỉ có thể hủy đơn hàng ở trạng thái chờ thanh toán hoặc chờ xác nhận.',
-      );
+    if (order.status !== 'PENDING_CONFIRMATION') {
+      throw new BadRequestException('Chỉ có thể hủy đơn hàng ở trạng thái chờ xác nhận.');
     }
 
     // 2. Thực hiện cập nhật trạng thái và hoàn lại số lượng sản phẩm vào kho
@@ -321,17 +319,6 @@ export class OrderService {
         return;
       }
 
-      const orderUpdated = await tx.order.updateMany({
-        where: { id: order.id, status: 'PENDING_PAYMENT' },
-        data: { status: 'PENDING_CONFIRMATION' },
-      });
-
-      if (orderUpdated.count > 0) {
-        await tx.orderStatusHistory.create({
-          data: { orderId: order.id, status: 'PENDING_CONFIRMATION' },
-        });
-      }
-
       await tx.sepayTransaction.update({
         where: { id: loggedTransaction.id },
         data: {
@@ -442,10 +429,7 @@ export class OrderService {
           0,
         );
         const total = subtotal + params.shippingInfo.fee;
-        const initialOrderStatus =
-          params.dto.paymentMethod === 'BANK_TRANSFER_QR'
-            ? 'PENDING_PAYMENT'
-            : 'PENDING_CONFIRMATION';
+        const initialOrderStatus = 'PENDING_CONFIRMATION';
 
         // Sử dụng IsolationLevel Serializable để đảm bảo tính nhất quán của tồn kho
         await this.prisma.$transaction(
@@ -555,7 +539,7 @@ export class OrderService {
       where: {
         customerId,
         orderCode,
-        status: 'PENDING_PAYMENT',
+        status: 'PENDING_CONFIRMATION',
         payment: {
           is: {
             method: 'BANK_TRANSFER_QR',

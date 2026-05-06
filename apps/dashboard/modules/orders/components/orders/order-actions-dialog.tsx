@@ -2,17 +2,23 @@
 
 import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
 import { formatVnd } from '@/modules/common/utils/format-vnd';
+import { getAdminOrder, updateAdminOrderStatus } from '@/modules/orders/api/orders';
+import type { OrderStatus, PaymentMethod } from '@/modules/orders/types/order-admin';
 import {
-  cancelAdminOrder,
-  confirmAdminOrder,
-  confirmAdminOrderPayment,
-  getAdminOrder,
-} from '@/modules/orders/api/orders';
-import type { OrderAdminDetail, PaymentMethod } from '@/modules/orders/types/order-admin';
-import {
+  ORDER_STATUS_FILTER_OPTIONS,
   getOrderStatusLabel,
   getPaymentStatusLabel,
 } from '@/modules/orders/utils/order-status-labels';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@repo/ui/components/ui/alert-dialog';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -22,37 +28,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2Icon } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-function canConfirmPayment(order: OrderAdminDetail): boolean {
-  const payment = order.payments[0];
-  return Boolean(payment?.method === 'BANK_TRANSFER_QR' && payment.status !== 'SUCCESS');
-}
-
-function canConfirmOrder(order: OrderAdminDetail): boolean {
-  if (order.status !== 'PENDING_CONFIRMATION') {
-    return false;
-  }
-  const payment = order.payments[0];
-  if (!payment) {
-    return true;
-  }
-  if (payment.method === 'COD') {
-    return true;
-  }
-  if (payment.method === 'BANK_TRANSFER_QR' && payment.status === 'SUCCESS') {
-    return true;
-  }
-  return false;
-}
-
-function canCancelOrder(order: OrderAdminDetail): boolean {
-  const blocked: OrderAdminDetail['status'][] = ['DELIVERED', 'CANCELLED'];
-  return !blocked.includes(order.status);
-}
+const ALLOWED_NEXT_STATUSES: Record<OrderStatus, readonly OrderStatus[]> = {
+  PENDING_CONFIRMATION: ['PROCESSING', 'CANCELLED'],
+  PROCESSING: ['AWAITING_SHIPMENT', 'CANCELLED'],
+  AWAITING_SHIPMENT: ['SHIPPED', 'CANCELLED'],
+  SHIPPED: ['DELIVERED'],
+  DELIVERED: [],
+  CANCELLED: [],
+};
 
 export function OrderActionsDialog(props: {
   orderCode: string;
@@ -69,32 +64,27 @@ export function OrderActionsDialog(props: {
     enabled: open && orderCode.length > 0,
   });
   const order = detailQuery.data;
+  const [nextStatus, setNextStatus] = useState<OrderStatus | undefined>(undefined);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  useEffect(() => {
+    if (order?.status) {
+      const firstAllowed = ALLOWED_NEXT_STATUSES[order.status]?.[0];
+      setNextStatus(firstAllowed);
+    }
+  }, [order?.status]);
   const invalidate = async (): Promise<void> => {
     await queryClient.invalidateQueries({ queryKey: ['orders', 'admin'] });
     onAfterMutation?.();
   };
-  const confirmPayMutation = useMutation({
-    mutationFn: () => confirmAdminOrderPayment(orderCode),
-    onSuccess: async () => {
-      toast.success('Đã xác nhận thanh toán chuyển khoản.');
-      await invalidate();
-      onOpenChange(false);
+  const updateStatusMutation = useMutation({
+    mutationFn: () => {
+      if (!nextStatus) {
+        throw new Error('Vui lòng chọn trạng thái.');
+      }
+      return updateAdminOrderStatus(orderCode, nextStatus);
     },
-    onError: (err) => toast.error(apiErrorMessage(err)),
-  });
-  const confirmOrderMutation = useMutation({
-    mutationFn: () => confirmAdminOrder(orderCode),
     onSuccess: async () => {
-      toast.success('Đã xác nhận đơn và tạo vận đơn GHN.');
-      await invalidate();
-      onOpenChange(false);
-    },
-    onError: (err) => toast.error(apiErrorMessage(err)),
-  });
-  const cancelMutation = useMutation({
-    mutationFn: () => cancelAdminOrder(orderCode),
-    onSuccess: async () => {
-      toast.success('Đã hủy đơn hàng.');
+      toast.success('Đã cập nhật trạng thái đơn hàng.');
       await invalidate();
       onOpenChange(false);
     },
@@ -106,16 +96,21 @@ export function OrderActionsDialog(props: {
     if (m === 'BANK_TRANSFER_QR') return 'Chuyển khoản';
     return '—';
   }, [order]);
-  const isMutating =
-    confirmPayMutation.isPending || confirmOrderMutation.isPending || cancelMutation.isPending;
+  const isMutating = updateStatusMutation.isPending;
+  const allowedOptions = useMemo(() => {
+    if (!order) {
+      return [];
+    }
+    const allowedStatuses = new Set(ALLOWED_NEXT_STATUSES[order.status] ?? []);
+    return ORDER_STATUS_FILTER_OPTIONS.filter((option) => allowedStatuses.has(option.value));
+  }, [order]);
+  const isUpdateDisabled = !order || !nextStatus || isMutating;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{title ?? `Thao tác đơn hàng`}</DialogTitle>
-          <DialogDescription>
-            Các thao tác tuân theo quy tắc nghiệp vụ trên server (GHN, tồn kho, thanh toán).
-          </DialogDescription>
+          <DialogTitle>{title ?? `Chuyển trạng thái đơn hàng`}</DialogTitle>
+          <DialogDescription>Chọn trạng thái mới và cập nhật thủ công.</DialogDescription>
         </DialogHeader>
         {detailQuery.isLoading ? (
           <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
@@ -137,46 +132,37 @@ export function OrderActionsDialog(props: {
               </p>
             </div>
             <div className="flex flex-col gap-2">
+              <Select
+                value={nextStatus}
+                onValueChange={(value) => setNextStatus(value as OrderStatus)}
+                disabled={isMutating || allowedOptions.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allowedOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {allowedOptions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Đơn này không có trạng thái kế tiếp hợp lệ.
+                </p>
+              ) : null}
               <Button
                 type="button"
-                variant="secondary"
-                disabled={!canConfirmPayment(order) || isMutating}
-                onClick={() => confirmPayMutation.mutate()}
+                disabled={isUpdateDisabled}
+                onClick={() => setConfirmOpen(true)}
               >
-                {confirmPayMutation.isPending ? (
+                {updateStatusMutation.isPending ? (
                   <Loader2Icon className="size-4 animate-spin" />
                 ) : null}
-                Xác nhận thanh toán chuyển khoản
+                Cập nhật trạng thái
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Chỉ áp dụng khi đơn dùng chuyển khoản và thanh toán chưa thành công.
-              </p>
-              <Button
-                type="button"
-                disabled={!canConfirmOrder(order) || isMutating}
-                onClick={() => confirmOrderMutation.mutate()}
-              >
-                {confirmOrderMutation.isPending ? (
-                  <Loader2Icon className="size-4 animate-spin" />
-                ) : null}
-                Xác nhận đơn &amp; tạo vận đơn GHN
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Chỉ khi đơn ở trạng thái chờ xử lý. Hệ thống tự dùng thông số kiện đã tính sẵn để
-                tạo vận đơn GHN.
-              </p>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={!canCancelOrder(order) || isMutating}
-                onClick={() => cancelMutation.mutate()}
-              >
-                {cancelMutation.isPending ? <Loader2Icon className="size-4 animate-spin" /> : null}
-                Hủy đơn hàng
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Không thể hủy khi đã giao, đã hủy hoặc hoàn trả. Có thể gọi hủy vận đơn GHN nếu có.
-              </p>
             </div>
           </div>
         ) : null}
@@ -185,6 +171,30 @@ export function OrderActionsDialog(props: {
             Đóng
           </Button>
         </DialogFooter>
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận chuyển trạng thái?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {order && nextStatus
+                  ? `Đơn ${order.orderCode} sẽ chuyển từ "${getOrderStatusLabel(order.status)}" sang "${getOrderStatusLabel(nextStatus)}".`
+                  : 'Bạn có chắc chắn muốn chuyển trạng thái?'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel type="button" disabled={isMutating}>
+                Hủy
+              </AlertDialogCancel>
+              <AlertDialogAction
+                type="button"
+                disabled={isUpdateDisabled}
+                onClick={() => updateStatusMutation.mutate()}
+              >
+                Xác nhận
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );

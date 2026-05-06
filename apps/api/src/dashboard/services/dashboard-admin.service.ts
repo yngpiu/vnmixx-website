@@ -56,7 +56,6 @@ type SummaryMetric = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING_PAYMENT: 'Chờ thanh toán',
   PENDING_CONFIRMATION: 'Chờ xác nhận',
   PROCESSING: 'Đang xử lý',
   AWAITING_SHIPMENT: 'Chờ giao',
