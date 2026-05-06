@@ -74,6 +74,98 @@ function buildProductsQuery(params: {
   return searchParams.toString();
 }
 
+function buildFacetColorsQuery(params: {
+  categorySlug?: string;
+  search?: string;
+  sizeIds?: number[];
+  minPrice?: number;
+  maxPrice?: number;
+}): string {
+  const searchParams = new URLSearchParams();
+  if (params.categorySlug) {
+    searchParams.set('categorySlug', params.categorySlug);
+  }
+  const normalizedSearch = params.search?.trim();
+  if (normalizedSearch) {
+    searchParams.set('search', normalizedSearch);
+  }
+  if (params.minPrice !== undefined) {
+    searchParams.set('minPrice', String(params.minPrice));
+  }
+  if (params.maxPrice !== undefined) {
+    searchParams.set('maxPrice', String(params.maxPrice));
+  }
+  for (const sizeId of params.sizeIds ?? []) {
+    searchParams.append('sizeIds', String(sizeId));
+  }
+  return searchParams.toString();
+}
+
+export async function fetchShopCatalogColorFacets(params: {
+  categorySlug?: string;
+  search?: string;
+  sizeIds?: number[];
+  minPrice?: number;
+  maxPrice?: number;
+}): Promise<ShopColorOption[]> {
+  const query = buildFacetColorsQuery(params);
+  const url =
+    query.length > 0
+      ? `${API_BASE_URL}/products/facet-colors?${query}`
+      : `${API_BASE_URL}/products/facet-colors`;
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+  });
+  return parseJsonResponse<ShopColorOption[]>(response);
+}
+
+function buildFacetSizesQuery(params: {
+  categorySlug?: string;
+  search?: string;
+  colorIds?: number[];
+  minPrice?: number;
+  maxPrice?: number;
+}): string {
+  const searchParams = new URLSearchParams();
+  if (params.categorySlug) {
+    searchParams.set('categorySlug', params.categorySlug);
+  }
+  const normalizedSearch = params.search?.trim();
+  if (normalizedSearch) {
+    searchParams.set('search', normalizedSearch);
+  }
+  if (params.minPrice !== undefined) {
+    searchParams.set('minPrice', String(params.minPrice));
+  }
+  if (params.maxPrice !== undefined) {
+    searchParams.set('maxPrice', String(params.maxPrice));
+  }
+  for (const colorId of params.colorIds ?? []) {
+    searchParams.append('colorIds', String(colorId));
+  }
+  return searchParams.toString();
+}
+
+export async function fetchShopCatalogSizeFacets(params: {
+  categorySlug?: string;
+  search?: string;
+  colorIds?: number[];
+  minPrice?: number;
+  maxPrice?: number;
+}): Promise<ShopSizeOption[]> {
+  const query = buildFacetSizesQuery(params);
+  const url =
+    query.length > 0
+      ? `${API_BASE_URL}/products/facet-sizes?${query}`
+      : `${API_BASE_URL}/products/facet-sizes`;
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+  });
+  return parseJsonResponse<ShopSizeOption[]>(response);
+}
+
 /**
  * Loads a page of products for the storefront (public API).
  */
@@ -104,22 +196,6 @@ export async function fetchProductList(params: {
     data: items,
     meta: parsed.meta,
   };
-}
-
-export async function fetchShopColors(): Promise<ShopColorOption[]> {
-  const response = await fetch(`${API_BASE_URL}/colors`, {
-    headers: { 'Content-Type': 'application/json' },
-    cache: 'no-store',
-  });
-  return parseJsonResponse<ShopColorOption[]>(response);
-}
-
-export async function fetchShopSizes(): Promise<ShopSizeOption[]> {
-  const response = await fetch(`${API_BASE_URL}/sizes`, {
-    headers: { 'Content-Type': 'application/json' },
-    cache: 'no-store',
-  });
-  return parseJsonResponse<ShopSizeOption[]>(response);
 }
 
 /**

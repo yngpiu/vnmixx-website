@@ -28,15 +28,16 @@ describe('ProductCacheService', () => {
     expect(service).toBeDefined();
   });
 
-  it('invalidateProductCache should delete detail and list patterns', async () => {
-    await service.invalidateProductCache('test-slug');
-    expect(redis.del).toHaveBeenCalledWith('prod:slug:test-slug');
+  it('invalidateProductCache should delete detail, list, and color facet patterns', async () => {
+    await service.invalidateProductCache(99);
+    expect(redis.del).toHaveBeenCalledWith('prod:id:99');
     expect(redis.deleteByPattern).toHaveBeenCalledWith('prod:list:*');
+    expect(redis.deleteByPattern).toHaveBeenCalledWith('prod:cf:*');
+    expect(redis.deleteByPattern).toHaveBeenCalledWith('prod:sf:*');
   });
 
-  it('deleteSlugCache should delete specific slug', async () => {
-    await service.deleteSlugCache('test-slug');
-    expect(redis.del).toHaveBeenCalledWith('prod:slug:test-slug');
+  it('deleteSlugCache should resolve without throwing', async () => {
+    await expect(service.deleteSlugCache()).resolves.toBeUndefined();
   });
 
   it('hashQuery should return same hash for same params in different order', () => {

@@ -19,6 +19,8 @@ import {
   CreateVariantDto,
   ListAdminProductsQueryDto,
   ListProductsQueryDto,
+  ProductColorFacetsQueryDto,
+  ProductSizeFacetsQueryDto,
   UpdateProductDto,
 } from '../dto';
 import { PRODUCT_CACHE_KEYS, PRODUCT_CACHE_TTL } from '../product.cache';
@@ -75,6 +77,44 @@ export class ProductService {
       PRODUCT_CACHE_KEYS.PRODUCT_LIST(hash),
       PRODUCT_CACHE_TTL.PRODUCT_LIST,
       () => this.repository.findPublicList(params),
+    );
+  }
+
+  // Distinct variant colors matching catalog facet context (sizes/price/search/category).
+  findPublicColorFacets(
+    query: ProductColorFacetsQueryDto,
+  ): Promise<Array<{ id: number; name: string; hexCode: string }>> {
+    const params = {
+      search: query.search,
+      categorySlug: query.categorySlug,
+      sizeIds: query.sizeIds,
+      minPrice: query.minPrice,
+      maxPrice: query.maxPrice,
+    };
+    const hash = this.cacheService.hashQuery(params);
+    return this.redis.getOrSet(
+      PRODUCT_CACHE_KEYS.COLOR_FACET(hash),
+      PRODUCT_CACHE_TTL.COLOR_FACET,
+      () => this.repository.findPublicColorFacetColors(params),
+    );
+  }
+
+  // Distinct variant sizes matching catalog facet context (colors/price/search/category).
+  findPublicSizeFacets(
+    query: ProductSizeFacetsQueryDto,
+  ): Promise<Array<{ id: number; label: string; sortOrder: number }>> {
+    const params = {
+      search: query.search,
+      categorySlug: query.categorySlug,
+      colorIds: query.colorIds,
+      minPrice: query.minPrice,
+      maxPrice: query.maxPrice,
+    };
+    const hash = this.cacheService.hashQuery(params);
+    return this.redis.getOrSet(
+      PRODUCT_CACHE_KEYS.SIZE_FACET(hash),
+      PRODUCT_CACHE_TTL.SIZE_FACET,
+      () => this.repository.findPublicSizeFacetSizes(params),
     );
   }
 

@@ -15,6 +15,8 @@ export class ProductCacheService {
     await Promise.all([
       this.redis.del(PRODUCT_CACHE_KEYS.PRODUCT_ID(productId)),
       this.redis.deleteByPattern(PRODUCT_CACHE_PATTERNS.ALL_PRODUCT_LISTS),
+      this.redis.deleteByPattern(PRODUCT_CACHE_PATTERNS.ALL_COLOR_FACETS),
+      this.redis.deleteByPattern(PRODUCT_CACHE_PATTERNS.ALL_SIZE_FACETS),
     ]);
   }
 

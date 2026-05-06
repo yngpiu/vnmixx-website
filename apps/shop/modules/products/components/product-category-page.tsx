@@ -2,7 +2,7 @@
 
 import { LabeledInputSelect } from '@/modules/common/components/labeled-input-select';
 import { ProductCard } from '@/modules/common/components/product-card';
-import { buildCategoryHref, buildProductHref } from '@/modules/common/utils/shop-routes';
+import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import { CatalogPaginationNav } from '@/modules/products/components/catalog-pagination-nav';
 import { CatalogProductGridSkeleton } from '@/modules/products/components/catalog-product-grid-skeleton';
 import { CategoryCatalogFiltersPanel } from '@/modules/products/components/category-catalog-filters-panel';
@@ -13,7 +13,6 @@ import type { ProductListSortOption } from '@/modules/products/types/product-lis
 import { Button } from '@repo/ui/components/ui/button';
 import { SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
-import { useCallback } from 'react';
 
 type ProductCategoryPageProps = {
   categorySlug: string;
@@ -51,16 +50,6 @@ export function ProductCategoryPage({
   const productPayload = productsQuery.data;
   const items = productPayload?.data ?? [];
   const meta = productPayload?.meta;
-  const buildProductHrefWithCategoryContext = useCallback(
-    (productSlug: string): string => {
-      const params = new URLSearchParams({
-        fromCategorySlug: categorySlug,
-        fromCategoryName: categoryName,
-      });
-      return `${buildProductHref({ slug: productSlug })}?${params.toString()}`;
-    },
-    [categoryName, categorySlug],
-  );
   const filtersPanelProps = {
     sortedSizes,
     isSizesLoading: sizesQuery.isLoading,
@@ -144,12 +133,7 @@ export function ProductCategoryPage({
             <>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {items.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    display="listing"
-                    productHrefOverride={buildProductHrefWithCategoryContext(product.slug)}
-                  />
+                  <ProductCard key={product.id} product={product} display="listing" />
                 ))}
               </div>
               {meta ? (

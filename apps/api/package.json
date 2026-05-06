@@ -8,7 +8,11 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env ./node_modules/@nestjs/cli/bin/nest.js start --watch",
     "build": "nest build",
+    "db:push:force-reset": "prisma db push --force-reset",
+    "db:seed:foundation": "node --env-file-if-exists=.env --import tsx prisma/seed-foundation.ts",
     "db:seed": "node --env-file-if-exists=.env --import tsx prisma/seed.ts",
+    "seed:ivy": "node --env-file-if-exists=.env --import tsx prisma/seed-ivy-from-json.ts",
+    "crawl:ivy": "pnpm exec tsx ../../temp/crawl/ivy/scripts/crawl-pilot.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node --env-file-if-exists=.env ./node_modules/@nestjs/cli/bin/nest.js start",
     "start:dev": "node --env-file-if-exists=.env ./node_modules/@nestjs/cli/bin/nest.js start --watch",

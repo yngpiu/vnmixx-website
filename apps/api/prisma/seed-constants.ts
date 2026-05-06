@@ -18,3 +18,12 @@ export const SEED_CONFIG = {
   /** Dev-only password for seeded customer and employee logins. */
   devSeedPassword: '12345678',
 } as const;
+
+/**
+ * Gói seed “nền” (RBAC, địa lý, ít khách, …) trước khi nạp catalog Ivy — không 200 SP / đơn ảo.
+ * Ghi đè tạm bằng env: `SEED_CUSTOMER_COUNT`, `SEED_MEDIA_COUNT`, `SEED_ADDRESS_CUSTOMER_LIMIT`.
+ */
+export const SEED_FOUNDATION = {
+  customerCount: 16,
+  mediaCount: 48,
+} as const;

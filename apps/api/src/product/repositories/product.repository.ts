@@ -169,6 +169,57 @@ type PublicListGraphRow = Prisma.ProductGetPayload<{ select: typeof PUBLIC_LIST_
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Product-level predicates shared by storefront catalog list and variant aggregations. */
+  private buildPublicCatalogProductBaseWhere(params: {
+    search?: string;
+    categorySlug?: string;
+  }): Prisma.ProductWhereInput {
+    const trimmedSearch = params.search?.trim();
+    return {
+      isActive: true,
+      deletedAt: null,
+      ...(trimmedSearch && { name: { contains: trimmedSearch } }),
+      ...(params.categorySlug && {
+        productCategories: {
+          some: { category: categoryWhereMatchesSlugTree(params.categorySlug) },
+        },
+      }),
+    };
+  }
+
+  /**
+   * Active variants shown on listing cards / used for MIN price when facets apply.
+   * Without color/size/slab filters → all active variants; with filters → only matching variants
+   * so giá và thứ tự sort theo giá không lệch nhau trên catalogue.
+   */
+  private buildPublicCatalogVariantGraphWhere(params: {
+    colorIds?: number[];
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+  }): Prisma.ProductVariantWhereInput {
+    const variantPriceFilter: Prisma.IntFilter = {};
+    if (params.minPrice !== undefined) {
+      variantPriceFilter.gte = params.minPrice;
+    }
+    if (params.maxPrice !== undefined) {
+      variantPriceFilter.lte = params.maxPrice;
+    }
+    const hasFacetConstraint = !!(
+      params.colorIds?.length ||
+      params.sizeIds?.length ||
+      Object.keys(variantPriceFilter).length > 0
+    );
+    return {
+      isActive: true,
+      deletedAt: null,
+      ...(hasFacetConstraint && params.colorIds?.length && { colorId: { in: params.colorIds } }),
+      ...(hasFacetConstraint && params.sizeIds?.length && { sizeId: { in: params.sizeIds } }),
+      ...(hasFacetConstraint &&
+        Object.keys(variantPriceFilter).length > 0 && { price: variantPriceFilter }),
+    };
+  }
+
   private buildPublicListWhereInput(params: {
     search?: string;
     categorySlug?: string;
@@ -177,35 +228,36 @@ export class ProductRepository {
     minPrice?: number;
     maxPrice?: number;
   }): Prisma.ProductWhereInput {
-    const { search, categorySlug, colorIds, sizeIds, minPrice, maxPrice } = params;
-    const where: Prisma.ProductWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(search && { name: { contains: search } }),
-      ...(categorySlug && {
-        productCategories: {
-          some: { category: categoryWhereMatchesSlugTree(categorySlug) },
-        },
-      }),
-    };
-    const variantPriceFilter: Prisma.IntFilter = {};
-    if (minPrice !== undefined) {
-      variantPriceFilter.gte = minPrice;
-    }
-    if (maxPrice !== undefined) {
-      variantPriceFilter.lte = maxPrice;
-    }
-    const variantFilter: Prisma.ProductVariantWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(colorIds?.length && { colorId: { in: colorIds } }),
-      ...(sizeIds?.length && { sizeId: { in: sizeIds } }),
-      ...(Object.keys(variantPriceFilter).length > 0 && { price: variantPriceFilter }),
-    };
-    if (colorIds?.length || sizeIds?.length || minPrice !== undefined || maxPrice !== undefined) {
+    const where: Prisma.ProductWhereInput = this.buildPublicCatalogProductBaseWhere(params);
+    const variantFilter = this.buildPublicCatalogVariantGraphWhere(params);
+    if (
+      params.colorIds?.length ||
+      params.sizeIds?.length ||
+      params.minPrice !== undefined ||
+      params.maxPrice !== undefined
+    ) {
       where.variants = { some: variantFilter };
     }
     return where;
+  }
+
+  /** Listing graph shape; variant `where` matches storefront facet context. */
+  private resolvePublicListGraphSelect(params: {
+    search?: string;
+    categorySlug?: string;
+    colorIds?: number[];
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+  }): typeof PUBLIC_LIST_GRAPH_SELECT {
+    const variantWhere = this.buildPublicCatalogVariantGraphWhere(params);
+    return {
+      ...PUBLIC_LIST_GRAPH_SELECT,
+      variants: {
+        ...PUBLIC_LIST_GRAPH_SELECT.variants,
+        where: variantWhere,
+      },
+    } as typeof PUBLIC_LIST_GRAPH_SELECT;
   }
 
   private mapProductGraphToPublicListItem(
@@ -236,6 +288,104 @@ export class ProductRepository {
   }
 
   // ─── Public ─────────────────────────────────────────────────────────────────
+
+  // Màu sắc còn xuất hiện trong biến thể active sau khi áp category/search/giá/size — không áp filter màu.
+  async findPublicColorFacetColors(params: {
+    search?: string;
+    categorySlug?: string;
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+  }): Promise<{ id: number; name: string; hexCode: string }[]> {
+    const variantPriceFilter: Prisma.IntFilter = {};
+    if (params.minPrice !== undefined) {
+      variantPriceFilter.gte = params.minPrice;
+    }
+    if (params.maxPrice !== undefined) {
+      variantPriceFilter.lte = params.maxPrice;
+    }
+    const trimmedSearch = params.search?.trim();
+    const productWhere: Prisma.ProductWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(trimmedSearch && { name: { contains: trimmedSearch } }),
+      ...(params.categorySlug && {
+        productCategories: {
+          some: { category: categoryWhereMatchesSlugTree(params.categorySlug) },
+        },
+      }),
+    };
+    const variantWhere: Prisma.ProductVariantWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(params.sizeIds?.length && { sizeId: { in: params.sizeIds } }),
+      ...(Object.keys(variantPriceFilter).length > 0 && { price: variantPriceFilter }),
+      product: productWhere,
+    };
+    const grouped = await this.prisma.productVariant.groupBy({
+      by: ['colorId'],
+      where: variantWhere,
+    });
+    const colorIds = grouped.map((row) => row.colorId);
+    if (colorIds.length === 0) {
+      return [];
+    }
+    const colors = await this.prisma.color.findMany({
+      where: { id: { in: colorIds } },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, hexCode: true },
+    });
+    return colors;
+  }
+
+  // Kích cỡ còn xuất hiện trong biến thể active sau khi áp category/search/giá/màu — không áp filter size.
+  async findPublicSizeFacetSizes(params: {
+    search?: string;
+    categorySlug?: string;
+    colorIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+  }): Promise<{ id: number; label: string; sortOrder: number }[]> {
+    const variantPriceFilter: Prisma.IntFilter = {};
+    if (params.minPrice !== undefined) {
+      variantPriceFilter.gte = params.minPrice;
+    }
+    if (params.maxPrice !== undefined) {
+      variantPriceFilter.lte = params.maxPrice;
+    }
+    const trimmedSearch = params.search?.trim();
+    const productWhere: Prisma.ProductWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(trimmedSearch && { name: { contains: trimmedSearch } }),
+      ...(params.categorySlug && {
+        productCategories: {
+          some: { category: categoryWhereMatchesSlugTree(params.categorySlug) },
+        },
+      }),
+    };
+    const variantWhere: Prisma.ProductVariantWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(params.colorIds?.length && { colorId: { in: params.colorIds } }),
+      ...(Object.keys(variantPriceFilter).length > 0 && { price: variantPriceFilter }),
+      product: productWhere,
+    };
+    const grouped = await this.prisma.productVariant.groupBy({
+      by: ['sizeId'],
+      where: variantWhere,
+    });
+    const sizeIds = grouped.map((row) => row.sizeId);
+    if (sizeIds.length === 0) {
+      return [];
+    }
+    const sizes = await this.prisma.size.findMany({
+      where: { id: { in: sizeIds } },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, label: true, sortOrder: true },
+    });
+    return sizes;
+  }
 
   // Tìm kiếm danh sách sản phẩm công khai với các bộ lọc và phân trang.
   async findPublicList(params: {
@@ -269,7 +419,7 @@ export class ProductRepository {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: this.getPublicSortOrder(),
-        select: PUBLIC_LIST_GRAPH_SELECT,
+        select: this.resolvePublicListGraphSelect(params),
       }),
     ]);
     const data = products.map((row) => this.mapProductGraphToPublicListItem(row));
@@ -280,7 +430,10 @@ export class ProductRepository {
     };
   }
 
-  /** Sort theo MIN(giá biến thể đang hoạt động); Prisma không orderBy aggregate `_min` trên quan hệ kiểu này. */
+  /**
+   * Sort theo MIN(giá) trong tập biến thể active đang được catalogue dùng (cùng facet màu/size/slab với listing).
+   * Trước đây SQL raw lấy MIN trên mọi biến thể nên khi có lọc facet thứ tự có thể lệch với giá trên card.
+   */
   private async findPublicPriceSortedList(params: {
     page: number;
     limit: number;
@@ -310,24 +463,25 @@ export class ProductRepository {
       };
     }
     const productIds = listStubs.map((stub) => stub.id);
-    const minPriceRows = await this.prisma.$queryRaw<
-      Array<{ productId: number; minPrice: bigint | number }>
-    >(
-      Prisma.sql`
-        SELECT product_id AS productId, MIN(price) AS minPrice
-        FROM product_variants
-        WHERE deleted_at IS NULL
-          AND is_active = 1
-          AND product_id IN (${Prisma.join(productIds)})
-        GROUP BY product_id
-      `,
-    );
+    const variantCatalogWhere = this.buildPublicCatalogVariantGraphWhere(params);
+    const groupedMinPrices = await this.prisma.productVariant.groupBy({
+      by: ['productId'],
+      where: {
+        ...variantCatalogWhere,
+        productId: { in: productIds },
+      },
+      _min: { price: true },
+    });
     const minVariantPriceByProductId = new Map<number, number>(
-      minPriceRows.map((row) => [row.productId, Number(row.minPrice)]),
+      groupedMinPrices.map((row) => [row.productId, row._min.price ?? Number.NaN]),
     );
-    const sortKey = (productId: number): number =>
-      minVariantPriceByProductId.get(productId) ??
-      (isAscending ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY);
+    const sortKey = (productId: number): number => {
+      const minP = minVariantPriceByProductId.get(productId);
+      if (minP !== undefined && !Number.isNaN(minP)) {
+        return minP;
+      }
+      return isAscending ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+    };
     const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
       const leftKey = sortKey(leftStub.id);
       const rightKey = sortKey(rightStub.id);
@@ -345,7 +499,7 @@ export class ProductRepository {
     }
     const pageRows = await this.prisma.product.findMany({
       where: { id: { in: pageIds } },
-      select: PUBLIC_LIST_GRAPH_SELECT,
+      select: this.resolvePublicListGraphSelect(params),
     });
     const mapped = pageRows.map((row) => this.mapProductGraphToPublicListItem(row));
     const data = this.reorderPublicListItemsByIds(mapped, pageIds);
@@ -416,7 +570,7 @@ export class ProductRepository {
     }
     const pageRows = await this.prisma.product.findMany({
       where: { id: { in: pageIds } },
-      select: PUBLIC_LIST_GRAPH_SELECT,
+      select: this.resolvePublicListGraphSelect(params),
     });
     const mapped = pageRows.map((row) => this.mapProductGraphToPublicListItem(row));
     const data = this.reorderPublicListItemsByIds(mapped, pageIds);
@@ -487,7 +641,7 @@ export class ProductRepository {
     }
     const pageRows = await this.prisma.product.findMany({
       where: { id: { in: pageIds } },
-      select: PUBLIC_LIST_GRAPH_SELECT,
+      select: this.resolvePublicListGraphSelect(params),
     });
     const mapped = pageRows.map((row) => this.mapProductGraphToPublicListItem(row));
     const data = this.reorderPublicListItemsByIds(mapped, pageIds);

@@ -1,6 +1,10 @@
 'use client';
 
-import { fetchProductList, fetchShopColors, fetchShopSizes } from '@/modules/products/api/catalog';
+import {
+  fetchProductList,
+  fetchShopCatalogColorFacets,
+  fetchShopCatalogSizeFacets,
+} from '@/modules/products/api/catalog';
 import {
   CATALOG_LIST_PAGE_LIMIT,
   CATALOG_PRICE_RANGE_MAX,
@@ -93,15 +97,53 @@ export function useCategoryCatalogController({
   useEffect(() => {
     setDraftPriceRange([appliedMinPrice, appliedMaxPrice]);
   }, [appliedMinPrice, appliedMaxPrice]);
+  const facetColorQueryParams = useMemo(
+    () => ({
+      categorySlug: categorySlug.trim() ? categorySlug : undefined,
+      search: appliedSearch || undefined,
+      sizeIds: appliedSizeIds.length > 0 ? appliedSizeIds : undefined,
+      minPrice: appliedMinPrice > 0 ? appliedMinPrice : undefined,
+      maxPrice: appliedMaxPrice < CATALOG_PRICE_RANGE_MAX ? appliedMaxPrice : undefined,
+    }),
+    [categorySlug, appliedSearch, appliedSizeIds, appliedMinPrice, appliedMaxPrice],
+  );
   const colorsQuery = useQuery({
-    queryKey: ['shop', 'catalog', 'colors'],
-    queryFn: fetchShopColors,
-    staleTime: 1000 * 60 * 30,
+    queryKey: [
+      'shop',
+      'catalog',
+      'facet-colors',
+      facetColorQueryParams.categorySlug ?? '',
+      facetColorQueryParams.search ?? '',
+      (facetColorQueryParams.sizeIds ?? []).join(','),
+      facetColorQueryParams.minPrice ?? '',
+      facetColorQueryParams.maxPrice ?? '',
+    ],
+    queryFn: () => fetchShopCatalogColorFacets(facetColorQueryParams),
+    staleTime: 1000 * 60 * 5,
   });
+  const facetSizeQueryParams = useMemo(
+    () => ({
+      categorySlug: categorySlug.trim() ? categorySlug : undefined,
+      search: appliedSearch || undefined,
+      colorIds: appliedColorIds.length > 0 ? appliedColorIds : undefined,
+      minPrice: appliedMinPrice > 0 ? appliedMinPrice : undefined,
+      maxPrice: appliedMaxPrice < CATALOG_PRICE_RANGE_MAX ? appliedMaxPrice : undefined,
+    }),
+    [categorySlug, appliedSearch, appliedColorIds, appliedMinPrice, appliedMaxPrice],
+  );
   const sizesQuery = useQuery({
-    queryKey: ['shop', 'catalog', 'sizes'],
-    queryFn: fetchShopSizes,
-    staleTime: 1000 * 60 * 30,
+    queryKey: [
+      'shop',
+      'catalog',
+      'facet-sizes',
+      facetSizeQueryParams.categorySlug ?? '',
+      facetSizeQueryParams.search ?? '',
+      (facetSizeQueryParams.colorIds ?? []).join(','),
+      facetSizeQueryParams.minPrice ?? '',
+      facetSizeQueryParams.maxPrice ?? '',
+    ],
+    queryFn: () => fetchShopCatalogSizeFacets(facetSizeQueryParams),
+    staleTime: 1000 * 60 * 5,
   });
   const listQueryKey = useMemo(
     () => [

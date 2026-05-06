@@ -3,7 +3,14 @@ import { AddressType, PrismaClient } from '../generated/prisma/client';
 
 import { SEED_CONFIG } from './seed-constants';
 
-const ADDRESS_CUSTOMER_LIMIT = SEED_CONFIG.addressCustomerLimit;
+function resolveAddressCustomerLimit(): number {
+  const raw = process.env.SEED_ADDRESS_CUSTOMER_LIMIT;
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 1) return Math.min(n, 50_000);
+  }
+  return SEED_CONFIG.addressCustomerLimit;
+}
 
 async function wipeSeedAddresses(prisma: PrismaClient): Promise<void> {
   await prisma.address.deleteMany({});
@@ -21,10 +28,11 @@ export async function seedAddresses(): Promise<void> {
     await wipeSeedAddresses(prisma);
     console.log('Cleared existing address data.');
 
+    const addressCustomerLimit = resolveAddressCustomerLimit();
     const customers = await prisma.customer.findMany({
       where: { deletedAt: null },
       orderBy: { id: 'asc' },
-      take: ADDRESS_CUSTOMER_LIMIT,
+      take: addressCustomerLimit,
     });
 
     const wards = await prisma.ward.findMany({

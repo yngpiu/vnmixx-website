@@ -4,7 +4,14 @@ import { Prisma, PrismaClient } from '../generated/prisma/client';
 import { SEED_CONFIG } from './seed-constants';
 import { resolveSeedAsOfDate, yearsBefore } from './seed-date-range';
 
-const MEDIA_COUNT = SEED_CONFIG.mediaCount;
+function resolveMediaSeedCount(): number {
+  const raw = process.env.SEED_MEDIA_COUNT;
+  if (typeof raw === 'string' && raw.trim().length > 0) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 1) return Math.min(n, 5000);
+  }
+  return SEED_CONFIG.mediaCount;
+}
 
 export async function seedMedia(): Promise<void> {
   if (!process.env.DATABASE_URL) {
@@ -52,13 +59,14 @@ export async function seedMedia(): Promise<void> {
     });
     const uploaderIds = employees.map((e) => e.id);
 
+    const mediaCount = resolveMediaSeedCount();
     faker.seed(444);
     const asOf = resolveSeedAsOfDate();
     const rangeStart = yearsBefore(asOf, 3);
 
     const files: Prisma.MediaFileCreateManyInput[] = [];
 
-    for (let i = 0; i < MEDIA_COUNT; i++) {
+    for (let i = 0; i < mediaCount; i += 1) {
       const folder = faker.helpers.arrayElement(folders);
       const isImage = faker.datatype.boolean({ probability: 0.9 });
       const extension = isImage
