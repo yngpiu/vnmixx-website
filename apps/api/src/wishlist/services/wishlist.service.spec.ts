@@ -105,6 +105,16 @@ describe('WishlistService', () => {
       expect(repo.add).toHaveBeenCalledWith(customerId, productId);
       expect(redis.deleteByPattern).toHaveBeenCalled();
     });
+
+    it('should throw BadRequestException on foreign key violation', async () => {
+      repo.productExists.mockResolvedValue(true);
+      const error = new Prisma.PrismaClientKnownRequestError('Bad request', {
+        code: 'P2003',
+        clientVersion: '1.0',
+      });
+      repo.add.mockRejectedValue(error);
+      await expect(service.add(customerId, productId)).rejects.toThrow('Không thể thêm sản phẩm');
+    });
   });
 
   describe('remove', () => {
@@ -129,6 +139,15 @@ describe('WishlistService', () => {
 
       expect(repo.remove).toHaveBeenCalledWith(customerId, productId);
       expect(redis.deleteByPattern).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException on invalid relation when removing', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Bad request', {
+        code: 'P2003',
+        clientVersion: '1.0',
+      });
+      repo.remove.mockRejectedValue(error);
+      await expect(service.remove(customerId, productId)).rejects.toThrow('Không thể xóa sản phẩm');
     });
   });
 });

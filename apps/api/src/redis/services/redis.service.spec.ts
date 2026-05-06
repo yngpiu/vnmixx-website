@@ -65,6 +65,15 @@ describe('RedisService', () => {
       expect(factory).toHaveBeenCalled();
       expect(client.setex).toHaveBeenCalledWith('key', 60, JSON.stringify({ data: 'new' }));
     });
+
+    it('should delete bad cached json and rebuild cache', async () => {
+      client.get.mockResolvedValue('{bad-json');
+      const factory = jest.fn().mockResolvedValue({ data: 'rebuilt' });
+      const result = await service.getOrSet('invalid-key', 60, factory);
+      expect(result).toEqual({ data: 'rebuilt' });
+      expect(client.del).toHaveBeenCalledWith('invalid-key');
+      expect(factory).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('del', () => {
@@ -93,6 +102,77 @@ describe('RedisService', () => {
 
       expect(client.scanStream).toHaveBeenCalledWith({ match: 'test:*', count: 100 });
       expect(client.del).toHaveBeenCalledTimes(2);
+    });
+
+    it('should skip delete when scan result has no keys', async () => {
+      const mockStream = {
+        [Symbol.asyncIterator]: async function* () {
+          yield Promise.resolve([]);
+        },
+      };
+      client.scanStream.mockReturnValue(mockStream as any);
+      await service.deleteByPattern('empty:*');
+      expect(client.scanStream).toHaveBeenCalledWith({ match: 'empty:*', count: 100 });
+      expect(client.del).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('module lifecycle', () => {
+    it('should connect on module init when status is wait', async () => {
+      client.status = 'wait';
+      await service.onModuleInit();
+      expect(client.connect).toHaveBeenCalled();
+    });
+
+    it('should not connect on module init when status is ready', async () => {
+      client.status = 'ready';
+      await service.onModuleInit();
+      expect(client.connect).not.toHaveBeenCalled();
+    });
+
+    it('should disconnect on destroy when status is wait', async () => {
+      client.status = 'wait';
+      await service.onModuleDestroy();
+      expect(client.disconnect).toHaveBeenCalled();
+      expect(client.quit).not.toHaveBeenCalled();
+    });
+
+    it('should quit on destroy when status is connected', async () => {
+      client.status = 'ready';
+      await service.onModuleDestroy();
+      expect(client.quit).toHaveBeenCalled();
+    });
+
+    it('should skip disconnect on destroy when status is end', async () => {
+      client.status = 'end';
+      await service.onModuleDestroy();
+      expect(client.disconnect).not.toHaveBeenCalled();
+      expect(client.quit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('constructor configuration', () => {
+    it('should initialize redis with REDIS_URL when provided', async () => {
+      jest.clearAllMocks();
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          RedisService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn((key: string, fallback?: unknown) => {
+                if (key === 'REDIS_URL') return 'redis://localhost:6379';
+                return fallback;
+              }),
+            },
+          },
+        ],
+      }).compile();
+      module.get<RedisService>(RedisService);
+      expect(Redis).toHaveBeenCalledWith(
+        'redis://localhost:6379',
+        expect.objectContaining({ lazyConnect: true }),
+      );
     });
   });
 });

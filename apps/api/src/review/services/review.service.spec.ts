@@ -12,6 +12,9 @@ describe('ReviewService', () => {
 
   beforeEach(async () => {
     repo = {
+      aggregateVisibleReviewStatsByProductId: jest.fn(),
+      findPublicVisibleReviewsByProductId: jest.fn(),
+      countVisibleReviewsByStarRating: jest.fn(),
       countReviews: jest.fn(),
       findAdminReviews: jest.fn(),
       findById: jest.fn(),
@@ -98,6 +101,61 @@ describe('ReviewService', () => {
           status: ReviewVisibility.HIDDEN,
           OR: expect.any(Array),
         }),
+      );
+    });
+  });
+
+  describe('listPublicReviewsByProductId', () => {
+    it('should throw when product not found', async () => {
+      prisma.product.findFirst.mockResolvedValue(null);
+      await expect(service.listPublicReviewsByProductId(999, 1, 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should return paginated public reviews with masked author names', async () => {
+      prisma.product.findFirst.mockResolvedValue({ id: 1 });
+      repo.aggregateVisibleReviewStatsByProductId.mockResolvedValue({
+        reviewCount: 2,
+        averageRating: 4.5,
+      });
+      repo.findPublicVisibleReviewsByProductId.mockResolvedValue([
+        {
+          id: 1,
+          rating: 5,
+          title: 'Great',
+          content: 'Nice',
+          createdAt: new Date(),
+          customerFullName: 'Nguyen Van A',
+        },
+        {
+          id: 2,
+          rating: 4,
+          title: null,
+          content: null,
+          createdAt: new Date(),
+          customerFullName: 'An',
+        },
+      ]);
+      repo.countVisibleReviewsByStarRating.mockResolvedValue({
+        star1: 0,
+        star2: 0,
+        star3: 0,
+        star4: 1,
+        star5: 1,
+      });
+      const result = await service.listPublicReviewsByProductId(1, 1, 10);
+      expect(result.reviewCount).toBe(2);
+      expect(result.data[0].authorDisplayName).toBe('Nguyen A.');
+      expect(result.data[1].authorDisplayName).toBe('A*');
+    });
+  });
+
+  describe('listPublicReviewsByProductSlug', () => {
+    it('should throw if product slug is missing', async () => {
+      prisma.product.findFirst.mockResolvedValue(null);
+      await expect(service.listPublicReviewsByProductSlug('missing-slug', 1, 10)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });

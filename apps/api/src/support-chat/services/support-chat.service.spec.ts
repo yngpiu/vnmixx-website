@@ -126,6 +126,18 @@ describe('SupportChatService', () => {
   });
 
   describe('sendMessage', () => {
+    it('should throw not found when chat does not exist', async () => {
+      repository.existsById.mockResolvedValue(false);
+      await expect(
+        service.sendMessage({
+          chatId: 999,
+          senderType: ChatSenderType.CUSTOMER,
+          senderId: 10,
+          content: 'Hello',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
     it('should send message and map sender name correctly', async () => {
       const input = {
         chatId: 1,
@@ -153,6 +165,99 @@ describe('SupportChatService', () => {
       expect(result.id).toBe(100);
       expect(result.senderName).toBe('John Doe');
       expect(repository.createMessage).toHaveBeenCalledWith(input);
+    });
+
+    it('should resolve employee sender name', async () => {
+      repository.existsById.mockResolvedValue(true);
+      repository.createMessage.mockResolvedValue({
+        id: 101,
+        chatId: 1,
+        senderType: ChatSenderType.EMPLOYEE,
+        senderCustomerId: null,
+        senderEmployeeId: 2,
+        content: 'Support',
+        createdAt: new Date(),
+      });
+      repository.findEmployeeNames.mockResolvedValue([{ id: 2, fullName: 'Agent A' }]);
+      const result = await service.sendMessage({
+        chatId: 1,
+        senderType: ChatSenderType.EMPLOYEE,
+        senderId: 2,
+        content: 'Support',
+      });
+      expect(result.senderName).toBe('Agent A');
+    });
+  });
+
+  describe('findChatByCustomer', () => {
+    it('should return null when customer has no chat', async () => {
+      repository.findByCustomerId.mockResolvedValue(null);
+      await expect(service.findChatByCustomer(100)).resolves.toBeNull();
+    });
+  });
+
+  describe('getMessages', () => {
+    it('should throw not found when chat does not exist', async () => {
+      repository.existsById.mockResolvedValue(false);
+      await expect(service.getMessages(1, {} as any)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return messages with hasMore and nextCursor', async () => {
+      repository.existsById.mockResolvedValue(true);
+      const createdAt = new Date();
+      repository.findMessages.mockResolvedValue([
+        {
+          id: 3,
+          chatId: 1,
+          senderType: ChatSenderType.CUSTOMER,
+          senderCustomerId: 10,
+          senderEmployeeId: null,
+          content: 'A',
+          createdAt,
+        },
+        {
+          id: 2,
+          chatId: 1,
+          senderType: ChatSenderType.EMPLOYEE,
+          senderCustomerId: null,
+          senderEmployeeId: 2,
+          content: 'B',
+          createdAt,
+        },
+      ]);
+      repository.findCustomerNames.mockResolvedValue([{ id: 10, fullName: 'Customer 10' }]);
+      repository.findEmployeeNames.mockResolvedValue([{ id: 2, fullName: 'Employee 2' }]);
+      const result = await service.getMessages(1, { limit: 1 } as any);
+      expect(result.hasMore).toBe(true);
+      expect(result.nextCursor).toBe(3);
+      expect(result.items[0].senderName).toBe('Customer 10');
+    });
+  });
+
+  describe('getAdminChats', () => {
+    it('should list chats with assignedToMe and trimmed search', async () => {
+      repository.count.mockResolvedValue(1);
+      repository.findMany.mockResolvedValue([
+        {
+          id: 1,
+          customerId: 10,
+          customer: {
+            fullName: 'Customer',
+            email: 'c@example.com',
+            phoneNumber: '0909',
+          },
+          messages: [{ content: 'Latest', createdAt: new Date() }],
+          assignments: [{ employee: { fullName: 'Agent A' } }],
+          createdAt: new Date(),
+        },
+      ]);
+      const result = await service.getAdminChats(
+        { assignedToMe: true, search: '  abc  ', page: 1, pageSize: 20 } as any,
+        22,
+      );
+      expect(repository.count).toHaveBeenCalledWith(22, 'abc');
+      expect(result.total).toBe(1);
+      expect(result.items[0].assignedEmployeeNames).toEqual(['Agent A']);
     });
   });
 

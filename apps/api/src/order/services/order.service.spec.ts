@@ -18,6 +18,8 @@ describe('OrderService', () => {
   let prisma: jest.Mocked<PrismaService>;
   let orderRepo: jest.Mocked<OrderRepository>;
   let ghnService: jest.Mocked<GhnService>;
+  let sepayService: jest.Mocked<SepayService>;
+  let orderPaymentGateway: jest.Mocked<OrderPaymentGateway>;
 
   const mockAddress = {
     id: 1,
@@ -68,6 +70,11 @@ describe('OrderService', () => {
             order: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
             orderItem: { createMany: jest.fn() },
             payment: { create: jest.fn() },
+            sepayTransaction: {
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+            },
             orderStatusHistory: { create: jest.fn() },
             productVariant: { findUnique: jest.fn(), updateMany: jest.fn(), findMany: jest.fn() },
             inventoryMovement: { create: jest.fn() },
@@ -131,6 +138,8 @@ describe('OrderService', () => {
     prisma = module.get(PrismaService);
     orderRepo = module.get(OrderRepository);
     ghnService = module.get(GhnService);
+    sepayService = module.get(SepayService);
+    orderPaymentGateway = module.get(OrderPaymentGateway);
   });
 
   afterEach(() => {
@@ -341,6 +350,136 @@ describe('OrderService', () => {
       expect(orderRepo.findByCustomerId).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ page: 1, limit: 10 }),
+      );
+    });
+  });
+
+  describe('findMyOrderByCode', () => {
+    it('should return order when no pending QR expiry condition', async () => {
+      (prisma.order.findFirst as jest.Mock).mockResolvedValue(null);
+      orderRepo.findByOrderCode.mockResolvedValue({
+        orderCode: 'ORD-100',
+      } as unknown as OrderDetailView);
+      const result = await service.findMyOrderByCode(1, 'ORD-100');
+      expect(result.orderCode).toBe('ORD-100');
+      expect(orderRepo.findByOrderCode).toHaveBeenCalledWith('ORD-100', 1);
+    });
+
+    it('should expire pending QR order and emit gateway event', async () => {
+      const expiredAt = new Date(Date.now() - 60_000);
+      (prisma.order.findFirst as jest.Mock).mockResolvedValue({
+        id: 1,
+        items: [{ variantId: 1, quantity: 1 }],
+        payment: { id: 10, method: 'BANK_TRANSFER_QR', status: 'PENDING', expiredAt },
+      });
+      const tx = {
+        order: { update: jest.fn() },
+        payment: { updateMany: jest.fn() },
+        orderStatusHistory: { create: jest.fn() },
+        productVariant: {
+          findMany: jest.fn().mockResolvedValue([{ id: 1, onHand: 10, reserved: 1, version: 1 }]),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+        inventoryMovement: { create: jest.fn() },
+      };
+      prisma.$transaction.mockImplementation(async (cb) => cb(tx as any));
+      orderRepo.findByOrderCode.mockResolvedValue({
+        orderCode: 'ORD-EXPIRED',
+      } as unknown as OrderDetailView);
+      await service.findMyOrderByCode(1, 'ORD-EXPIRED');
+      expect(tx.payment.updateMany).toHaveBeenCalledWith({
+        where: { orderId: 1, status: 'PENDING' },
+        data: { status: 'EXPIRED', expiredAt },
+      });
+      expect(orderPaymentGateway.emitOrderPaymentUpdated).toHaveBeenCalledWith(
+        1,
+        'ORD-EXPIRED',
+        'EXPIRED',
+      );
+    });
+  });
+
+  describe('handleSepayWebhook', () => {
+    const payload = {
+      id: 1001,
+      transferAmount: 130000,
+      content: 'DHORD-123',
+      referenceCode: 'SEPAY-REF',
+    } as any;
+
+    it('should reject unauthorized webhook', async () => {
+      sepayService.verifyWebhookAuthorization.mockReturnValue(false);
+      await expect(service.handleSepayWebhook(undefined, payload)).rejects.toThrow(
+        'Webhook SePay không hợp lệ.',
+      );
+    });
+
+    it('should return duplicate when transaction already exists', async () => {
+      sepayService.verifyWebhookAuthorization.mockReturnValue(true);
+      (prisma.sepayTransaction.findUnique as jest.Mock).mockResolvedValue({ id: 1 });
+      const result = await service.handleSepayWebhook('Apikey x', payload);
+      expect(result).toEqual({ duplicate: true, matched: false });
+    });
+
+    it('should return unmatched when order code cannot be extracted', async () => {
+      sepayService.verifyWebhookAuthorization.mockReturnValue(true);
+      (prisma.sepayTransaction.findUnique as jest.Mock).mockResolvedValue(null);
+      sepayService.extractOrderCode.mockReturnValue(null);
+      (prisma.sepayTransaction.create as jest.Mock).mockResolvedValue({ id: 9 });
+      const result = await service.handleSepayWebhook('Apikey x', payload);
+      expect(result).toEqual({ duplicate: false, matched: false });
+      expect(prisma.sepayTransaction.update).toHaveBeenCalled();
+    });
+
+    it('should return unmatched when no payment record matches', async () => {
+      sepayService.verifyWebhookAuthorization.mockReturnValue(true);
+      (prisma.sepayTransaction.findUnique as jest.Mock).mockResolvedValue(null);
+      sepayService.extractOrderCode.mockReturnValue('ORD-X');
+      (prisma.sepayTransaction.create as jest.Mock).mockResolvedValue({ id: 9 });
+      (prisma.order.findFirst as jest.Mock).mockResolvedValue(null);
+      const result = await service.handleSepayWebhook('Apikey x', payload);
+      expect(result).toEqual({ duplicate: false, matched: false });
+    });
+
+    it('should ignore non-pending payment', async () => {
+      sepayService.verifyWebhookAuthorization.mockReturnValue(true);
+      (prisma.sepayTransaction.findUnique as jest.Mock).mockResolvedValue(null);
+      sepayService.extractOrderCode.mockReturnValue('ORD-123');
+      (prisma.sepayTransaction.create as jest.Mock).mockResolvedValue({ id: 9 });
+      (prisma.order.findFirst as jest.Mock).mockResolvedValue({
+        id: 1,
+        customerId: 2,
+        orderCode: 'ORD-123',
+        status: 'PENDING_CONFIRMATION',
+        payment: { id: 88, status: 'SUCCESS', method: 'BANK_TRANSFER_QR' },
+      });
+      const result = await service.handleSepayWebhook('Apikey x', payload);
+      expect(result).toEqual({ duplicate: false, matched: false, orderCode: 'ORD-123' });
+    });
+
+    it('should mark payment success and emit gateway event', async () => {
+      sepayService.verifyWebhookAuthorization.mockReturnValue(true);
+      (prisma.sepayTransaction.findUnique as jest.Mock).mockResolvedValue(null);
+      sepayService.extractOrderCode.mockReturnValue('ORD-123');
+      (prisma.sepayTransaction.create as jest.Mock).mockResolvedValue({ id: 9 });
+      (prisma.order.findFirst as jest.Mock).mockResolvedValue({
+        id: 1,
+        customerId: 2,
+        orderCode: 'ORD-123',
+        status: 'PENDING_CONFIRMATION',
+        payment: { id: 88, status: 'PENDING', method: 'BANK_TRANSFER_QR' },
+      });
+      const tx = {
+        payment: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+        sepayTransaction: { update: jest.fn() },
+      };
+      prisma.$transaction.mockImplementation(async (cb) => cb(tx as any));
+      const result = await service.handleSepayWebhook('Apikey x', payload);
+      expect(result).toEqual({ duplicate: false, matched: true, orderCode: 'ORD-123' });
+      expect(orderPaymentGateway.emitOrderPaymentUpdated).toHaveBeenCalledWith(
+        2,
+        'ORD-123',
+        'SUCCESS',
       );
     });
   });
