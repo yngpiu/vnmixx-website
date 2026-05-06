@@ -74,6 +74,8 @@ export function ProductCardClient({
               alt={product.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+              loading="lazy"
+              fetchPriority="auto"
               className={cn(
                 'pointer-events-none object-cover transition duration-300 group-hover:scale-[1.02]',
                 showListingAlternateImage ? 'opacity-0' : 'opacity-100',
@@ -85,6 +87,8 @@ export function ProductCardClient({
                 alt=""
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+                loading="lazy"
+                fetchPriority="low"
                 className={cn(
                   'pointer-events-none absolute inset-0 object-cover transition-opacity duration-300 group-hover:scale-[1.02]',
                   showListingAlternateImage ? 'opacity-100' : 'opacity-0',

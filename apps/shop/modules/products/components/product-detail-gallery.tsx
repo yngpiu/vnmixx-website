@@ -2,7 +2,15 @@
 
 import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type JSX } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type JSX,
+} from 'react';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -44,6 +52,7 @@ export function ProductDetailGallery({
 }: ProductDetailGalleryProps): JSX.Element {
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
   const [mainSwiper, setMainSwiper] = useState<SwiperType | null>(null);
+  const preloadedSlideIdsRef = useRef<Set<number>>(new Set<number>());
   const firstSlideIndexByColorId = useMemo(() => buildFirstSlideIndexByColorId(slides), [slides]);
   const [initialMainSlideIndex] = useState(
     () => buildFirstSlideIndexByColorId(slides).get(selectedColorId) ?? 0,
@@ -64,6 +73,50 @@ export function ProductDetailGallery({
     }
     slideMainToColor(selectedColorId);
   }, [mainSwiper, selectedColorId, slideMainToColor]);
+  useEffect(() => {
+    preloadedSlideIdsRef.current.clear();
+  }, [slides]);
+  useEffect(() => {
+    const slidesToPreload = [...firstSlideIndexByColorId.entries()]
+      .filter(([colorId]) => colorId !== selectedColorId)
+      .map(([, slideIndex]) => slides[slideIndex])
+      .filter(
+        (slide): slide is ProductDetailGallerySlide =>
+          slide !== undefined && !preloadedSlideIdsRef.current.has(slide.id),
+      )
+      .slice(0, 2);
+    if (slidesToPreload.length === 0) {
+      return;
+    }
+    const preloadSlides = (): void => {
+      slidesToPreload.forEach((slide) => {
+        const source = coerceHttpImageSrc(slide.url);
+        if (!source) {
+          return;
+        }
+        const image = new window.Image();
+        image.decoding = 'async';
+        image.src = source;
+        preloadedSlideIdsRef.current.add(slide.id);
+      });
+    };
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    if (typeof idleWindow.requestIdleCallback === 'function') {
+      const idleHandle = idleWindow.requestIdleCallback(() => preloadSlides(), { timeout: 1200 });
+      return () => {
+        if (typeof idleWindow.cancelIdleCallback === 'function') {
+          idleWindow.cancelIdleCallback(idleHandle);
+        }
+      };
+    }
+    const timeoutHandle = window.setTimeout(() => preloadSlides(), 400);
+    return () => {
+      window.clearTimeout(timeoutHandle);
+    };
+  }, [firstSlideIndexByColorId, selectedColorId, slides]);
   const thumbsSwiperParam =
     thumbsSwiper && !(thumbsSwiper as unknown as { destroyed?: boolean }).destroyed
       ? thumbsSwiper
@@ -120,6 +173,8 @@ export function ProductDetailGallery({
                   fill
                   sizes="(max-width: 768px) 100vw, (max-width: 1280px) 58vw, 48vw"
                   className="object-cover"
+                  priority={index === initialMainSlideIndex}
+                  fetchPriority={index === initialMainSlideIndex ? 'high' : 'auto'}
                   loading={index === initialMainSlideIndex ? 'eager' : 'lazy'}
                   draggable={false}
                 />

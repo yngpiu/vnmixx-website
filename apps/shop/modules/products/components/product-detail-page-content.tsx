@@ -1,7 +1,6 @@
 'use client';
 
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
-import { ProductCardSlider } from '@/modules/common/components/product-card-slider';
 import { SizeSoldOutDiagonalOverlay } from '@/modules/common/components/size-sold-out-diagonal-overlay';
 import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
@@ -9,7 +8,6 @@ import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product
 import { ProductDescription } from '@/modules/products/components/product-description';
 import { ProductDetailGallery } from '@/modules/products/components/product-detail-gallery';
 import { ProductDetailReviewSummary } from '@/modules/products/components/product-detail-review-summary';
-import { ProductDetailReviewsSection } from '@/modules/products/components/product-detail-reviews-section';
 import { useProductDetailController } from '@/modules/products/hooks/use-product-detail-controller';
 import type { ShopProductDetail } from '@/modules/products/types/product-detail';
 import type { ShopProductReviewsResult } from '@/modules/products/types/product-reviews';
@@ -17,7 +15,24 @@ import { ProductWishlistHeartButton } from '@/modules/wishlist/components/produc
 import { Button } from '@repo/ui/components/ui/button';
 import { cn } from '@repo/ui/lib/utils';
 import { Check, ChevronDown, MinusIcon, PlusIcon } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+
+const ProductDetailReviewsSection = dynamic(
+  () =>
+    import('@/modules/products/components/product-detail-reviews-section').then(
+      (module) => module.ProductDetailReviewsSection,
+    ),
+  { ssr: false },
+);
+
+const ProductCardSlider = dynamic(
+  () =>
+    import('@/modules/common/components/product-card-slider').then(
+      (module) => module.ProductCardSlider,
+    ),
+  { ssr: false },
+);
 
 type ProductDetailPageContentProps = {
   product: ShopProductDetail;
