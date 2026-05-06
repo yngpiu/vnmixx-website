@@ -127,7 +127,7 @@ export function ProductDetailPageContent({
                       aria-label={`Chọn màu ${color.name}`}
                       aria-pressed={isSelected}
                       onClick={() => setSelectedColorId(color.id)}
-                      className="relative flex h-10 w-10 items-center justify-center rounded-full transition"
+                      className="relative flex h-10 w-10 items-center justify-center rounded-full border border-border transition"
                       style={{ backgroundColor: color.hexCode }}
                     >
                       {isSelected ? (

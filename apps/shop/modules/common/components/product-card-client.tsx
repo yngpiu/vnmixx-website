@@ -106,7 +106,7 @@ export function ProductCardClient({
                   type="button"
                   aria-label={`Hiển thị ảnh màu ${color.name}`}
                   aria-pressed={isSelectedColor}
-                  className="relative flex size-[17px] shrink-0 items-center justify-center rounded-full outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                  className="relative flex size-[17px] shrink-0 items-center justify-center rounded-full border border-border outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
                   style={{ backgroundColor: color.hexCode }}
                   onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
                     event.preventDefault();
