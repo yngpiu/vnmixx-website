@@ -8,6 +8,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { buildSocketIoCorsOptions } from '../../common/websocket/socket-io-cors';
 import { WsJwtGuard } from '../../support-chat/ws-jwt.guard';
 import { OrderRepository } from '../repositories/order.repository';
 
@@ -22,7 +23,8 @@ interface WatchOrderPaymentPayload {
 
 @WebSocketGateway({
   namespace: '/order-payment',
-  cors: { origin: '*', credentials: true },
+  path: '/socket.io',
+  cors: buildSocketIoCorsOptions(),
 })
 export class OrderPaymentGateway {
   @WebSocketServer()

@@ -11,7 +11,7 @@ function buildSupportChatSocketOrigin(): string {
 /** Socket.IO client for namespace `/support-chat` (auth via `handshake.auth.token`). */
 export function createSupportChatSocket(accessToken: string): SupportChatSocket {
   return io(`${buildSupportChatSocketOrigin()}/support-chat`, {
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'],
     autoConnect: false,
     withCredentials: true,
     auth: {

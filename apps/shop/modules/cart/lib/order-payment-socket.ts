@@ -15,7 +15,7 @@ function buildOrderPaymentSocketOrigin(): string {
 
 export function createOrderPaymentSocket(accessToken: string): OrderPaymentSocket {
   return io(`${buildOrderPaymentSocketOrigin()}/order-payment`, {
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'],
     autoConnect: false,
     withCredentials: true,
     auth: {

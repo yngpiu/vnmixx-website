@@ -10,7 +10,7 @@ function buildSupportChatSocketUrl(): string {
 
 export function createSupportChatSocket(accessToken: string): SupportChatSocket {
   return io(`${buildSupportChatSocketUrl()}/support-chat`, {
-    transports: ['websocket'],
+    transports: ['polling', 'websocket'],
     autoConnect: false,
     withCredentials: true,
     auth: {

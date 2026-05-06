@@ -101,10 +101,46 @@ Trên VPS, reverse proxy (Nginx/Caddy/Traefik…) cần map host header về cá
 - `api.vnmixx.shop`:
   - Proxy đến `http://127.0.0.1:4000`
 
+Riêng Socket.IO dùng endpoint `/socket.io/`; nếu dùng Nginx, cần bật HTTP/1.1 upgrade để WebSocket trả `101 Switching Protocols` thay vì `400 Bad Request`:
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+server {
+    server_name api.vnmixx.shop;
+
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:4000/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+        proxy_buffering off;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
 Đồng thời cập nhật env:
 
 - `.env` (root):
-  - `CORS_ORIGIN=https://vnmixx.shop`
+  - `CORS_ORIGIN=https://vnmixx.shop,https://dashboard.vnmixx.shop`
   - (nếu dashboard gọi API từ browser, có thể thêm origin khác nếu cần)
 - `apps/api/.env`:
   - `SHOP_APP_BASE_URL=https://vnmixx.shop`

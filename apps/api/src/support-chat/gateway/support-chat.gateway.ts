@@ -11,6 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatSenderType } from '../../../generated/prisma/client';
+import { buildSocketIoCorsOptions } from '../../common/websocket/socket-io-cors';
 import type { ChatMessageResponseDto } from '../dto/chat-response.dto';
 import { SupportChatService } from '../services/support-chat.service';
 import { WsJwtGuard } from '../ws-jwt.guard';
@@ -36,7 +37,8 @@ interface ClientAuthData {
  */
 @WebSocketGateway({
   namespace: '/support-chat',
-  cors: { origin: '*', credentials: true },
+  path: '/socket.io',
+  cors: buildSocketIoCorsOptions(),
 })
 export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
