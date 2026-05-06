@@ -24,6 +24,7 @@ export function HomePromoBannerStrip({
               alt={banner.title ?? banner.category.name}
               fill
               sizes="(max-width: 1280px) 100vw, 1280px"
+              quality={70}
               className="object-cover transition-transform duration-300 group-hover:scale-[1.01]"
             />
           </div>

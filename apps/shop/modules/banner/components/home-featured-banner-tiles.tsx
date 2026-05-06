@@ -26,6 +26,7 @@ export function HomeFeaturedBannerTiles({
                 alt={banner.title ?? banner.category.name}
                 fill
                 sizes="(max-width: 768px) 50vw, 25vw"
+                quality={70}
                 className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
             </div>
