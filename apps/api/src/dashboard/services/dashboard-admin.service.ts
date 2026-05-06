@@ -66,6 +66,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const DEFAULT_TIMEZONE = 'Asia/Ho_Chi_Minh';
+const DEFAULT_TIMEZONE_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 @Injectable()
 export class DashboardAdminService {
@@ -533,30 +534,50 @@ export class DashboardAdminService {
 
   private buildBucketKeys(start: Date, end: Date, groupBy: 'day' | 'month' | 'year'): string[] {
     const keys: string[] = [];
+    const startInTimezone = new Date(start.getTime() + DEFAULT_TIMEZONE_OFFSET_MS);
+    const endInTimezone = new Date(end.getTime() + DEFAULT_TIMEZONE_OFFSET_MS);
     if (groupBy === 'year') {
-      const startYear = start.getFullYear();
-      const endYear = end.getFullYear();
+      const startYear = startInTimezone.getUTCFullYear();
+      const endYear = endInTimezone.getUTCFullYear();
       for (let year = startYear; year <= endYear; year += 1) {
         keys.push(String(year));
       }
       return keys;
     }
     if (groupBy === 'month') {
-      const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-      const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+      const cursor = new Date(
+        Date.UTC(startInTimezone.getUTCFullYear(), startInTimezone.getUTCMonth(), 1),
+      );
+      const endMonth = new Date(
+        Date.UTC(endInTimezone.getUTCFullYear(), endInTimezone.getUTCMonth(), 1),
+      );
       while (cursor <= endMonth) {
-        keys.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`);
-        cursor.setMonth(cursor.getMonth() + 1);
+        keys.push(
+          `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}`,
+        );
+        cursor.setUTCMonth(cursor.getUTCMonth() + 1);
       }
       return keys;
     }
-    const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-    const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+    const cursor = new Date(
+      Date.UTC(
+        startInTimezone.getUTCFullYear(),
+        startInTimezone.getUTCMonth(),
+        startInTimezone.getUTCDate(),
+      ),
+    );
+    const endDate = new Date(
+      Date.UTC(
+        endInTimezone.getUTCFullYear(),
+        endInTimezone.getUTCMonth(),
+        endInTimezone.getUTCDate(),
+      ),
+    );
     while (cursor <= endDate) {
       keys.push(
-        `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`,
+        `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}-${String(cursor.getUTCDate()).padStart(2, '0')}`,
       );
-      cursor.setDate(cursor.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
     return keys;
   }
