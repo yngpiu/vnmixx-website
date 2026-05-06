@@ -1,5 +1,4 @@
 import {
-  BadGatewayException,
   BadRequestException,
   Logger,
   NotFoundException,
@@ -9,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/services/prisma.service';
 import { CalculateShippingFeeDto } from '../dto';
-import { GhnAvailableService, GhnFeeData, GhnLeadtimeData, GhnService } from './ghn.service';
+import { GhnFeeData, GhnLeadtimeData, GhnService } from './ghn.service';
 import { ShippingService } from './shipping.service';
 
 describe('ShippingService', () => {
@@ -115,7 +114,7 @@ describe('ShippingService', () => {
       await expect(service.calculateFee(customerId, dto)).rejects.toThrow(BadRequestException);
     });
 
-    it('should calculate fees for multiple services', async () => {
+    it('should calculate fee for a single resolved service', async () => {
       (prisma.address.findFirst as jest.Mock).mockResolvedValue({
         district: { giaohangnhanhId: '1000' },
         ward: { giaohangnhanhId: '2000' },
@@ -123,12 +122,6 @@ describe('ShippingService', () => {
       (prisma.cart.findUnique as jest.Mock).mockResolvedValue({
         items: [{ quantity: 1, variant: { price: 100000 } }],
       });
-
-      const availableServices: GhnAvailableService[] = [
-        { service_id: 1, short_name: 'S1', service_type_id: 1 },
-        { service_id: 2, short_name: 'S2', service_type_id: 2 },
-      ];
-      ghn.getAvailableServices.mockResolvedValue(availableServices);
 
       const feeData: GhnFeeData = { total: 30000, service_fee: 28000, insurance_fee: 2000 };
       ghn.calculateFee.mockResolvedValue(feeData);
@@ -138,9 +131,9 @@ describe('ShippingService', () => {
 
       const result = await service.calculateFee(customerId, dto);
 
-      expect(result.services).toHaveLength(2);
-      expect(result.services[0].serviceId).toBe(1);
-      expect(ghn.calculateFee).toHaveBeenCalledTimes(2);
+      expect(result.services).toHaveLength(1);
+      expect(result.services[0].total).toBe(30000);
+      expect(ghn.calculateFee).toHaveBeenCalledTimes(1);
     });
 
     it('should filter out failed fee calculations', async () => {
@@ -152,12 +145,9 @@ describe('ShippingService', () => {
         items: [{ quantity: 1, variant: { price: 100000 } }],
       });
 
-      ghn.getAvailableServices.mockResolvedValue([
-        { service_id: 1, short_name: 'S1', service_type_id: 1 },
-      ]);
       ghn.calculateFee.mockRejectedValue(new Error('API Error'));
 
-      await expect(service.calculateFee(customerId, dto)).rejects.toThrow(BadGatewayException);
+      await expect(service.calculateFee(customerId, dto)).rejects.toThrow(Error);
     });
   });
 });

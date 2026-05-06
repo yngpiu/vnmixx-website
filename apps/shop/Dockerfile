@@ -18,6 +18,11 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
+ARG NEXT_PUBLIC_API_BASE_URL=http://api:4000
+ARG NEXT_PUBLIC_SITE_URL=https://vnmixx.shop
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
 RUN pnpm --filter shop build
 
 EXPOSE 3001

@@ -237,7 +237,7 @@ describe('ProductService', () => {
 
       await service.update(1, { slug: 'new-slug' });
 
-      expect(cacheService.deleteSlugCache).toHaveBeenCalledWith('new-slug');
+      expect(cacheService.invalidateProductCache).toHaveBeenCalledWith(mockProduct.id);
     });
 
     it('should upsert variants and images in update payload', async () => {

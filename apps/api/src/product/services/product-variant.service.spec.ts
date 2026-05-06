@@ -78,7 +78,7 @@ describe('ProductVariantService', () => {
       const result = await service.createVariant(1, 'slug', dto);
 
       expect(result).toEqual(mockVariant);
-      expect(cacheService.invalidateProductCache).toHaveBeenCalledWith('slug');
+      expect(cacheService.invalidateProductCache).toHaveBeenCalledWith(1);
       expect(auditLogService.write).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'product.variant.create',

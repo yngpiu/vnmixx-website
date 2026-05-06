@@ -21,13 +21,21 @@ type CategoriesEnvelope = {
 const PRODUCTS_PAGE_LIMIT = 200;
 const PRODUCTS_MAX_PAGES = 50;
 
-async function fetchActiveCategories(): Promise<Array<{ slug: string }>> {
-  const response = await fetch(`${API_BASE_URL}/categories`, { next: { revalidate: 3600 } });
-  if (!response.ok) {
-    return [];
+async function safeFetchJson<T>(url: string): Promise<T | null> {
+  try {
+    const response = await fetch(url, { next: { revalidate: 3600 } });
+    if (!response.ok) {
+      return null;
+    }
+    return (await response.json()) as T;
+  } catch {
+    return null;
   }
-  const payload = (await response.json()) as CategoriesEnvelope;
-  if (!payload.success) {
+}
+
+async function fetchActiveCategories(): Promise<Array<{ slug: string }>> {
+  const payload = await safeFetchJson<CategoriesEnvelope>(`${API_BASE_URL}/categories`);
+  if (!payload || !payload.success) {
     return [];
   }
   return payload.data
@@ -45,14 +53,10 @@ async function fetchAllProducts(): Promise<Array<{ slug: string }>> {
       limit: String(PRODUCTS_PAGE_LIMIT),
       sort: 'newest',
     });
-    const response = await fetch(`${API_BASE_URL}/products?${searchParams.toString()}`, {
-      next: { revalidate: 3600 },
-    });
-    if (!response.ok) {
-      break;
-    }
-    const payload = (await response.json()) as PaginatedProductsEnvelope;
-    if (!payload.success) {
+    const payload = await safeFetchJson<PaginatedProductsEnvelope>(
+      `${API_BASE_URL}/products?${searchParams.toString()}`,
+    );
+    if (!payload || !payload.success) {
       break;
     }
     for (const product of payload.data ?? []) {

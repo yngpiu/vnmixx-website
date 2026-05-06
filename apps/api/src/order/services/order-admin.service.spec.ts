@@ -183,7 +183,7 @@ describe('OrderAdminService', () => {
           price: 100000,
         },
       ],
-      payments: [{ method: 'COD', status: 'PENDING' }],
+      payment: { id: 1, method: 'COD', status: 'PENDING', amount: 100000 },
     };
 
     it('should successfully confirm order', async () => {
@@ -318,7 +318,7 @@ describe('OrderAdminService', () => {
       // keep current status before admin cancel
       ghnOrderCode: 'GHN123',
       items: [{ id: 1, variantId: 1, quantity: 1 }],
-      payments: [{ id: 1, status: 'SUCCESS' }],
+      payment: { id: 1, method: 'COD', status: 'SUCCESS', amount: 100000 },
     };
 
     it('should successfully cancel order', async () => {
@@ -375,7 +375,7 @@ describe('OrderAdminService', () => {
       id: 1,
       orderCode,
       status: 'PENDING_PAYMENT',
-      payments: [{ id: 1, method: 'BANK_TRANSFER_QR', status: 'PENDING', amount: 100000 }],
+      payment: { id: 1, method: 'BANK_TRANSFER_QR', status: 'PENDING', amount: 100000 },
     };
 
     it('should successfully confirm payment', async () => {
@@ -405,7 +405,7 @@ describe('OrderAdminService', () => {
     it('should throw BadRequestException if not bank transfer', async () => {
       prisma.order.findUnique.mockResolvedValue({
         ...orderData,
-        payments: [{ method: 'COD' }],
+        payment: { id: 1, method: 'COD', status: 'PENDING', amount: 100000 },
       } as any);
 
       await expect(service.confirmPayment(orderCode)).rejects.toThrow(BadRequestException);
