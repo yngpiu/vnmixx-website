@@ -1,5 +1,3 @@
-'use client';
-
 import type { PublicBanner } from '@/modules/banner/types/banner';
 import { buildBannerHref } from '@/modules/banner/utils/build-banner-href';
 import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';

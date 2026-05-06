@@ -56,6 +56,7 @@ export function HomeBannerSlider({ banners }: HomeBannerSliderProps): React.JSX.
                 sizes="(max-width: 1280px) 100vw, 1280px"
                 className="object-cover"
                 priority={slideIndex === 0}
+                fetchPriority={slideIndex === 0 ? 'high' : 'auto'}
               />
             </div>
           </Link>
