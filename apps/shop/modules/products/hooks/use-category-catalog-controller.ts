@@ -8,6 +8,8 @@ import {
 import {
   CATALOG_LIST_PAGE_LIMIT,
   CATALOG_PRICE_RANGE_MAX,
+  CATALOG_SEARCH_SORT_OPTIONS,
+  CATALOG_SORT_OPTIONS,
 } from '@/modules/products/constants/catalog';
 import type {
   PaginatedProductsResult,
@@ -30,6 +32,8 @@ type UseCategoryCatalogControllerParams = {
 type UseCategoryCatalogControllerReturn = {
   page: number;
   sort: ProductListSortOption;
+  hasSearchQuery: boolean;
+  sortOptions: { value: ProductListSortOption; label: string }[];
   productsQuery: ReturnType<typeof useQuery<PaginatedProductsResult>>;
   colorsQuery: ReturnType<typeof useQuery>;
   sizesQuery: ReturnType<typeof useQuery>;
@@ -57,8 +61,12 @@ export function useCategoryCatalogController({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const page = parseCatalogPage(searchParams.get('page'));
-  const sort = parseCatalogSort(searchParams.get('sort'));
+  const rawSort = searchParams.get('sort');
   const appliedSearch = searchParams.get('q')?.trim() ?? searchParams.get('search')?.trim() ?? '';
+  const hasSearchQuery = appliedSearch.length > 0;
+  const parsedSort = parseCatalogSort(rawSort);
+  const sort: ProductListSortOption =
+    hasSearchQuery && (!rawSort || rawSort.trim().length === 0) ? 'relevance' : parsedSort;
   const appliedColorIds = useMemo(
     () => parseCatalogIdsFromSearch('colorIds', searchParams),
     [searchParams],
@@ -280,6 +288,8 @@ export function useCategoryCatalogController({
   return {
     page,
     sort,
+    hasSearchQuery,
+    sortOptions: hasSearchQuery ? CATALOG_SEARCH_SORT_OPTIONS : CATALOG_SORT_OPTIONS,
     productsQuery,
     colorsQuery,
     sizesQuery,

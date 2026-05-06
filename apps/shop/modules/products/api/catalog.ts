@@ -21,6 +21,23 @@ type ApiSuccessEnvelope<T> = {
   message?: string;
 };
 
+export async function fetchTrendingSearchKeywords(params?: { limit?: number }): Promise<string[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.limit !== undefined) {
+    searchParams.set('limit', String(params.limit));
+  }
+  const query = searchParams.toString();
+  const url =
+    query.length > 0
+      ? `${API_BASE_URL}/products/trending-searches?${query}`
+      : `${API_BASE_URL}/products/trending-searches`;
+  const response = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
+  });
+  return parseJsonResponse<string[]>(response);
+}
+
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   const json = (await response.json()) as
     | ApiSuccessEnvelope<T>

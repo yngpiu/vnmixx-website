@@ -7,6 +7,7 @@ import {
   MobileBottomNavMenuSheet,
   type MobileBottomNavMenuItem,
 } from '@/modules/header/components/mobile-bottom-nav-menu-sheet';
+import { MobileSearchSheet } from '@/modules/header/components/mobile-search-sheet';
 import { ACCOUNT_MENU_ITEMS } from '@/modules/header/constants/account-menu-items';
 import { useSupportChatDrawerStore } from '@/modules/support-chat/stores/support-chat-drawer-store';
 import { Button } from '@repo/ui/components/ui/button';
@@ -24,7 +25,12 @@ type MobileBottomLink =
   | {
       label: string;
       icon: React.ComponentType<{ className?: string }>;
-      type: 'support-chat' | 'account-menu' | 'account-pending' | 'account-hydrate-shell';
+      type:
+        | 'search-sheet'
+        | 'support-chat'
+        | 'account-menu'
+        | 'account-pending'
+        | 'account-hydrate-shell';
     };
 
 export function MobileBottomNav(): React.JSX.Element {
@@ -34,6 +40,7 @@ export function MobileBottomNav(): React.JSX.Element {
   const openSupportChatDrawer = useSupportChatDrawerStore((state) => state.openDrawer);
   const [hasMounted, setHasMounted] = useState<boolean>(false);
   const [isAccountSheetOpen, setAccountSheetOpen] = useState<boolean>(false);
+  const [isSearchSheetOpen, setSearchSheetOpen] = useState<boolean>(false);
   useEffect(() => {
     setHasMounted(true);
   }, []);
@@ -54,7 +61,7 @@ export function MobileBottomNav(): React.JSX.Element {
     },
   ];
   const mobileBottomLinks: MobileBottomLink[] = [
-    { label: 'Tìm kiếm', href: '/search', icon: SearchIcon, type: 'link' },
+    { label: 'Tìm kiếm', icon: SearchIcon, type: 'search-sheet' },
     !hasMounted
       ? { label: 'Tài khoản', icon: UserRoundIcon, type: 'account-hydrate-shell' }
       : !isAuthSessionReady
@@ -67,17 +74,30 @@ export function MobileBottomNav(): React.JSX.Element {
   return (
     <>
       <nav className="fixed right-0 bottom-0 left-0 z-40 border-t bg-background/95 backdrop-blur md:hidden">
-        <ul className="grid h-16 grid-cols-3">
+        <ul className="grid h-14 grid-cols-3 sm:h-16">
           {mobileBottomLinks.map((item) => (
             <li key={item.label}>
               {item.type === 'link' ? (
                 <Link
                   href={item.href}
-                  className="text-muted-foreground flex h-full flex-col items-center justify-center gap-1 text-xs"
+                  className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex h-full w-full flex-col items-center justify-center gap-0 sm:gap-1 text-xs transition-colors"
                 >
-                  <item.icon className="size-4 stroke-[1.75]" />
-                  <span>{item.label}</span>
+                  <item.icon className="size-5 stroke-[1.75]" />
+                  <span className="hidden sm:inline">{item.label}</span>
                 </Link>
+              ) : item.type === 'search-sheet' ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-muted-foreground h-full w-full rounded-none px-0 py-0 text-xs"
+                  onClick={() => setSearchSheetOpen(true)}
+                  aria-label="Mở tìm kiếm"
+                >
+                  <span className="flex h-full flex-col items-center justify-center gap-0 sm:gap-1">
+                    <item.icon className="size-5 stroke-[1.75]" />
+                    <span className="hidden sm:inline">{item.label}</span>
+                  </span>
+                </Button>
               ) : item.type === 'account-menu' ? (
                 <Button
                   type="button"
@@ -86,9 +106,9 @@ export function MobileBottomNav(): React.JSX.Element {
                   onClick={() => setAccountSheetOpen(true)}
                   aria-label="Mở menu tài khoản"
                 >
-                  <span className="flex h-full flex-col items-center justify-center gap-1">
-                    <item.icon className="size-4 stroke-[1.75]" />
-                    <span>{item.label}</span>
+                  <span className="flex h-full flex-col items-center justify-center gap-0 sm:gap-1">
+                    <item.icon className="size-5 stroke-[1.75]" />
+                    <span className="hidden sm:inline">{item.label}</span>
                   </span>
                 </Button>
               ) : item.type === 'account-hydrate-shell' ? (
@@ -96,10 +116,10 @@ export function MobileBottomNav(): React.JSX.Element {
                   role="status"
                   aria-busy="true"
                   aria-label="Đang tải"
-                  className="text-muted-foreground flex h-full cursor-default flex-col items-center justify-center gap-1 text-xs opacity-80"
+                  className="text-muted-foreground flex h-full cursor-default flex-col items-center justify-center gap-0 sm:gap-1 text-xs opacity-80"
                 >
-                  <item.icon className="size-4 stroke-[1.75]" />
-                  <span>{item.label}</span>
+                  <item.icon className="size-5 stroke-[1.75]" />
+                  <span className="hidden sm:inline">{item.label}</span>
                 </div>
               ) : item.type === 'account-pending' ? (
                 <Button
@@ -110,9 +130,9 @@ export function MobileBottomNav(): React.JSX.Element {
                   className="text-muted-foreground h-full w-full cursor-wait rounded-none px-0 py-0 text-xs opacity-80"
                   aria-label="Đang tải"
                 >
-                  <span className="flex h-full flex-col items-center justify-center gap-1">
-                    <item.icon className="size-4 stroke-[1.75]" />
-                    <span>{item.label}</span>
+                  <span className="flex h-full flex-col items-center justify-center gap-0 sm:gap-1">
+                    <item.icon className="size-5 stroke-[1.75]" />
+                    <span className="hidden sm:inline">{item.label}</span>
                   </span>
                 </Button>
               ) : (
@@ -123,9 +143,9 @@ export function MobileBottomNav(): React.JSX.Element {
                   onClick={openSupportChatDrawer}
                   aria-label="Mở chat hỗ trợ"
                 >
-                  <span className="flex h-full flex-col items-center justify-center gap-1">
-                    <item.icon className="size-4 stroke-[1.75]" />
-                    <span>{item.label}</span>
+                  <span className="flex h-full flex-col items-center justify-center gap-0 sm:gap-1">
+                    <item.icon className="size-5 stroke-[1.75]" />
+                    <span className="hidden sm:inline">{item.label}</span>
                   </span>
                 </Button>
               )}
@@ -139,6 +159,7 @@ export function MobileBottomNav(): React.JSX.Element {
         onOpenChange={setAccountSheetOpen}
         items={accountMenuItems}
       />
+      <MobileSearchSheet isOpen={isSearchSheetOpen} onOpenChange={setSearchSheetOpen} />
     </>
   );
 }

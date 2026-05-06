@@ -34,6 +34,23 @@ services:
       timeout: 3s
       retries: 10
 
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    container_name: vnmixx-meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-dev-meili-master-key}
+    ports:
+      - '${MEILISEARCH_PORT:-7700}:7700'
+    volumes:
+      - meilisearch_data:/meili_data
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:7700/health']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   mysql_data:
   redis_data:
+  meilisearch_data:

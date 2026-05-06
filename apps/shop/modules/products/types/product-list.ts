@@ -1,6 +1,7 @@
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
 
 export type ProductListSortOption =
+  | 'relevance'
   | 'newest'
   | 'best_selling'
   | 'most_favorite'

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { AuditLogStatus } from '../../../generated/prisma/client';
@@ -33,20 +34,71 @@ import {
 } from '../repositories/product.repository';
 import { ProductCacheService } from './product-cache.service';
 import { ProductImageService } from './product-image.service';
+import { ProductSearchService } from './product-search.service';
 import { ProductVariantService } from './product-variant.service';
 
 // Quản lý logic cốt lõi của sản phẩm: thông tin cơ bản, biến thể và hình ảnh
 // Tích hợp Redis Cache để tối ưu hiệu năng và Audit Log để theo dõi lịch sử thay đổi
 @Injectable()
 export class ProductService {
+  private readonly logger = new Logger(ProductService.name);
+  private static readonly SEARCH_TRENDING_KEY_PREFIX = 'search:top:products:';
+  private static readonly SEARCH_TRENDING_DAILY_TTL_SECONDS = 8 * 24 * 60 * 60;
+  private static readonly SEARCH_TRENDING_QUERY_MAX_LENGTH = 120;
   constructor(
     private readonly repository: ProductRepository,
     private readonly cacheService: ProductCacheService,
     private readonly variantService: ProductVariantService,
     private readonly imageService: ProductImageService,
+    private readonly productSearchService: ProductSearchService,
     private readonly auditLogService: AuditLogService,
     private readonly redis: RedisService,
   ) {}
+
+  private async getRankedProductIdsForSearch(search: string | undefined): Promise<number[] | null> {
+    const normalizedSearch = search?.trim();
+    if (!normalizedSearch) {
+      return null;
+    }
+    return this.productSearchService.searchProductIds(normalizedSearch);
+  }
+
+  async trackPublicSearchKeyword(
+    rawSearch: string | undefined,
+    page: number | undefined,
+  ): Promise<void> {
+    if ((page ?? 1) !== 1) {
+      return;
+    }
+    const normalizedKeyword = this.normalizeTrendingKeyword(rawSearch);
+    if (!normalizedKeyword) {
+      return;
+    }
+    const todayKey = `${ProductService.SEARCH_TRENDING_KEY_PREFIX}${this.formatDateKey(new Date())}`;
+    try {
+      const redisClient = this.redis.getClient();
+      await redisClient.zincrby(todayKey, 1, normalizedKeyword);
+      await redisClient.expire(todayKey, ProductService.SEARCH_TRENDING_DAILY_TTL_SECONDS);
+    } catch (error) {
+      this.logger.warn(
+        `Unable to track search keyword "${normalizedKeyword}": ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  async findTrendingSearches7d(limitInput: number | undefined): Promise<string[]> {
+    const safeLimit = this.resolveTrendingLimit(limitInput);
+    const redisClient = this.redis.getClient();
+    const rollingKeys = this.buildRecentRollingKeys(7);
+    const tempKey = `${ProductService.SEARCH_TRENDING_KEY_PREFIX}tmp:7d:${Date.now()}`;
+    const hasAnyData = await redisClient.exists(...rollingKeys);
+    if (!hasAnyData) {
+      return [];
+    }
+    await redisClient.zunionstore(tempKey, rollingKeys.length, ...rollingKeys, 'AGGREGATE', 'SUM');
+    await redisClient.expire(tempKey, 30);
+    return redisClient.zrevrange(tempKey, 0, safeLimit - 1);
+  }
 
   // ─── Công khai (Khách hàng) ──────────────────────────────────────────────────
 
@@ -70,6 +122,44 @@ export class ProductService {
       maxPrice: query.maxPrice,
       sort: query.sort,
     };
+    const canUseSearchEngine = Boolean(params.search?.trim());
+    if (canUseSearchEngine) {
+      const hash = this.cacheService.hashQuery(params);
+      return this.redis.getOrSet(
+        PRODUCT_CACHE_KEYS.PRODUCT_LIST(hash),
+        PRODUCT_CACHE_TTL.PRODUCT_LIST,
+        async () => {
+          const rankedIds = await this.getRankedProductIdsForSearch(params.search);
+          if (!rankedIds) {
+            return this.repository.findPublicList(params);
+          }
+          if (rankedIds.length === 0) {
+            return {
+              data: [],
+              meta: { page: params.page, limit: params.limit, total: 0, totalPages: 0 },
+            };
+          }
+          const isRelevanceSort = params.sort === 'relevance';
+          if (isRelevanceSort) {
+            return this.repository.findPublicListBySearchRank({
+              page: params.page,
+              limit: params.limit,
+              categorySlug: params.categorySlug,
+              colorIds: params.colorIds,
+              sizeIds: params.sizeIds,
+              minPrice: params.minPrice,
+              maxPrice: params.maxPrice,
+              rankedProductIds: rankedIds,
+            });
+          }
+          return this.repository.findPublicList({
+            ...params,
+            search: undefined,
+            constrainedProductIds: rankedIds,
+          });
+        },
+      );
+    }
 
     // Dùng mã băm của params làm key để cache các kết quả tìm kiếm khác nhau
     const hash = this.cacheService.hashQuery(params);
@@ -95,7 +185,20 @@ export class ProductService {
     return this.redis.getOrSet(
       PRODUCT_CACHE_KEYS.COLOR_FACET(hash),
       PRODUCT_CACHE_TTL.COLOR_FACET,
-      () => this.repository.findPublicColorFacetColors(params),
+      async () => {
+        const rankedIds = await this.getRankedProductIdsForSearch(params.search);
+        if (!rankedIds) {
+          return this.repository.findPublicColorFacetColors(params);
+        }
+        if (rankedIds.length === 0) {
+          return [];
+        }
+        return this.repository.findPublicColorFacetColors({
+          ...params,
+          search: undefined,
+          constrainedProductIds: rankedIds,
+        });
+      },
     );
   }
 
@@ -114,7 +217,20 @@ export class ProductService {
     return this.redis.getOrSet(
       PRODUCT_CACHE_KEYS.SIZE_FACET(hash),
       PRODUCT_CACHE_TTL.SIZE_FACET,
-      () => this.repository.findPublicSizeFacetSizes(params),
+      async () => {
+        const rankedIds = await this.getRankedProductIdsForSearch(params.search);
+        if (!rankedIds) {
+          return this.repository.findPublicSizeFacetSizes(params);
+        }
+        if (rankedIds.length === 0) {
+          return [];
+        }
+        return this.repository.findPublicSizeFacetSizes({
+          ...params,
+          search: undefined,
+          constrainedProductIds: rankedIds,
+        });
+      },
     );
   }
 
@@ -228,6 +344,7 @@ export class ProductService {
 
       // 6. Xóa Cache danh sách sản phẩm vì dữ liệu đã thay đổi
       await this.cacheService.invalidateProductCache(product.id);
+      await this.productSearchService.syncProductById(product.id);
 
       // 7. Ghi Audit Log để theo dõi vết tạo mới của nhân viên
       const afterData = this.transformAdminDetail(product);
@@ -302,6 +419,7 @@ export class ProductService {
 
       // 3. Xóa Cache cũ và Cache Slug mới (nếu Slug thay đổi) để đảm bảo dữ liệu mới nhất
       await this.cacheService.invalidateProductCache(existing.id);
+      await this.productSearchService.syncProductById(existing.id);
 
       // 4. Ghi Audit Log thành công
       const afterData = this.transformAdminDetail(product);
@@ -338,6 +456,7 @@ export class ProductService {
       await this.repository.softDelete(id);
       // Buộc xóa cache để khách hàng không nhìn thấy sản phẩm đã bị xóa
       await this.cacheService.invalidateProductCache(beforeData.id);
+      await this.productSearchService.syncProductById(beforeData.id);
       const afterRow = await this.repository.findAdminById(id);
       const afterData = afterRow ? this.transformAdminDetail(afterRow) : undefined;
       await this.auditLogService.write({
@@ -371,6 +490,7 @@ export class ProductService {
 
       const restored = await this.repository.restore(id);
       await this.cacheService.invalidateProductCache(beforeData.id);
+      await this.productSearchService.syncProductById(beforeData.id);
       const afterData = this.transformAdminDetail(restored);
       await this.auditLogService.write({
         ...auditContext,
@@ -568,6 +688,51 @@ export class ProductService {
   // Loại bỏ các ID trùng lặp và ID không hợp lệ (< 1)
   private dedupePositiveIds(ids: number[]): number[] {
     return [...new Set(ids.filter((id) => Number.isInteger(id) && id >= 1))];
+  }
+
+  private normalizeTrendingKeyword(rawSearch: string | undefined): string | null {
+    const normalized = rawSearch?.trim().replace(/\s+/g, ' ').toLowerCase() ?? '';
+    if (!normalized) {
+      return null;
+    }
+    if (normalized.length < 2) {
+      return null;
+    }
+    if (normalized.length > ProductService.SEARCH_TRENDING_QUERY_MAX_LENGTH) {
+      return null;
+    }
+    return normalized;
+  }
+
+  private resolveTrendingLimit(limitInput: number | undefined): number {
+    if (!limitInput || Number.isNaN(limitInput)) {
+      return 10;
+    }
+    if (limitInput < 1) {
+      return 1;
+    }
+    if (limitInput > 20) {
+      return 20;
+    }
+    return Math.trunc(limitInput);
+  }
+
+  private buildRecentRollingKeys(days: number): string[] {
+    const result: string[] = [];
+    const now = new Date();
+    for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - dayOffset);
+      result.push(`${ProductService.SEARCH_TRENDING_KEY_PREFIX}${this.formatDateKey(date)}`);
+    }
+    return result;
+  }
+
+  private formatDateKey(date: Date): string {
+    const year = String(date.getFullYear());
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
   }
 
   // Xử lý logic gán ID danh mục: chuẩn hóa danh sách mảng ID được truyền từ client

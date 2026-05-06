@@ -101,7 +101,7 @@ export function CategoryCatalogFiltersPanel({
                         aria-label={`Lọc màu ${color.name}`}
                         aria-pressed={isSelected}
                         onClick={() => onToggleDraftColor(color.id)}
-                        className="relative flex size-6 shrink-0 items-center justify-center rounded-full transition md:size-[26px]"
+                        className="relative flex size-6 shrink-0 items-center justify-center rounded-full border border-border transition md:size-[26px]"
                         style={{ backgroundColor: color.hexCode }}
                       >
                         {isSelected ? (

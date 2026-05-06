@@ -54,9 +54,30 @@ export class ProductController {
   async findAll(
     @Query() query: ListProductsQueryDto,
   ): Promise<SuccessPayload<ProductListResponseDto>> {
+    const productService: ProductService = this.productService;
+    void productService.trackPublicSearchKeyword(query.search, query.page);
     return ok(
       await this.productService.findPublicList(query),
       'Lấy danh sách sản phẩm thành công.',
+    );
+  }
+
+  @ApiOperation({ summary: 'Lấy từ khóa tìm kiếm nổi bật trong 7 ngày' })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({
+      type: 'array',
+      items: { type: 'string' },
+    }),
+  })
+  @Public()
+  @Get('trending-searches')
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  async findTrendingSearches(@Query('limit') limit?: string): Promise<SuccessPayload<string[]>> {
+    const limitNumber = limit ? Number.parseInt(limit, 10) : undefined;
+    const productService: ProductService = this.productService;
+    return ok(
+      await productService.findTrendingSearches7d(limitNumber),
+      'Lấy từ khóa tìm kiếm nổi bật thành công.',
     );
   }
 

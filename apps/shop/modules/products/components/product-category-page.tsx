@@ -7,7 +7,6 @@ import { CatalogPaginationNav } from '@/modules/products/components/catalog-pagi
 import { CatalogProductGridSkeleton } from '@/modules/products/components/catalog-product-grid-skeleton';
 import { CategoryCatalogFiltersPanel } from '@/modules/products/components/category-catalog-filters-panel';
 import { CategoryCatalogFiltersSheet } from '@/modules/products/components/category-catalog-filters-sheet';
-import { CATALOG_SORT_OPTIONS } from '@/modules/products/constants/catalog';
 import { useCategoryCatalogController } from '@/modules/products/hooks/use-category-catalog-controller';
 import type { ProductListSortOption } from '@/modules/products/types/product-list';
 import { Button } from '@repo/ui/components/ui/button';
@@ -28,6 +27,8 @@ export function ProductCategoryPage({
   const {
     page,
     sort,
+    hasSearchQuery,
+    sortOptions,
     productsQuery,
     colorsQuery,
     sizesQuery,
@@ -99,12 +100,12 @@ export function ProductCategoryPage({
             <div className="flex w-full min-w-0 flex-row items-end gap-2 sm:max-w-[min(100%,20rem)] sm:shrink-0 lg:max-w-[280px]">
               <div className="min-w-0 flex-1">
                 <LabeledInputSelect<ProductListSortOption>
-                  label="Sắp xếp theo"
+                  label={hasSearchQuery ? 'Sắp xếp kết quả' : 'Sắp xếp theo'}
                   name="catalog-sort"
                   value={sort}
                   onValueChange={handleSortChange}
                   placeholder="Chọn"
-                  options={CATALOG_SORT_OPTIONS}
+                  options={sortOptions}
                   triggerClassName="rounded-sm"
                 />
               </div>

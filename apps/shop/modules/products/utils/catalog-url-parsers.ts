@@ -1,7 +1,7 @@
 import {
   CATALOG_PAGINATION_WINDOW_SIZE,
   CATALOG_PRICE_RANGE_MAX,
-  CATALOG_SORT_OPTIONS,
+  CATALOG_SEARCH_SORT_OPTIONS,
 } from '@/modules/products/constants/catalog';
 import type { ProductListSortOption } from '@/modules/products/types/product-list';
 
@@ -28,7 +28,7 @@ export function parseCatalogIdsFromSearch(key: string, searchParams: URLSearchPa
 }
 
 export function parseCatalogSort(value: string | null): ProductListSortOption {
-  const allowedSortValues = CATALOG_SORT_OPTIONS.map((option) => option.value);
+  const allowedSortValues = [...CATALOG_SEARCH_SORT_OPTIONS].map((option) => option.value);
   if (value && allowedSortValues.includes(value as ProductListSortOption)) {
     return value as ProductListSortOption;
   }

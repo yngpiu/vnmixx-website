@@ -39,6 +39,9 @@ const envSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET_NAME: z.string().optional(),
   R2_PUBLIC_URL: z.string().optional(),
+  MEILISEARCH_HOST: z.string().url().optional(),
+  MEILISEARCH_MASTER_KEY: z.string().optional(),
+  MEILISEARCH_PRODUCT_INDEX: z.string().optional(),
 });
 
 type EnvVars = z.infer<typeof envSchema>;

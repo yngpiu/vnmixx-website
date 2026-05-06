@@ -13,3 +13,8 @@ export const CATALOG_SORT_OPTIONS: { value: ProductListSortOption; label: string
   { value: 'price_desc', label: 'Giá cao đến thấp' },
   { value: 'price_asc', label: 'Giá thấp đến cao' },
 ];
+
+export const CATALOG_SEARCH_SORT_OPTIONS: { value: ProductListSortOption; label: string }[] = [
+  { value: 'relevance', label: 'Liên quan nhất' },
+  ...CATALOG_SORT_OPTIONS,
+];

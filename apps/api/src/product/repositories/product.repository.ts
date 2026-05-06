@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '../../../generated/prisma/client';
 import { softDeletedWhere } from '../../common/utils/prisma.util';
 import { PrismaService } from '../../prisma/services/prisma.service';
@@ -6,6 +6,11 @@ import {
   type ProductListColorEntry,
   buildPublicListColors,
 } from '../utils/public-product-list-colors.util';
+import {
+  buildPublicCatalogProductBaseWhere,
+  buildPublicCatalogVariantGraphWhere,
+  buildPublicListWhereInput,
+} from './product-public-catalog-query.util';
 
 // ─── View types ─────────────────────────────────────────────────────────────
 
@@ -91,6 +96,13 @@ export interface PaginatedResult<T> {
   meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
+export interface ProductSearchDocument {
+  id: number;
+  name: string;
+  isActive: boolean;
+  deletedAtNull: boolean;
+}
+
 // ─── Select constants ───────────────────────────────────────────────────────
 
 const VARIANT_PUBLIC_SELECT = {
@@ -113,19 +125,6 @@ const IMAGE_SELECT = {
   altText: true,
   sortOrder: true,
 } as const;
-
-/** Slug danh mục khớp chính nút, con hoặc cháu (tối đa 3 tầng — giữ đồng bộ với bộ lọc cũ). */
-function categoryWhereMatchesSlugTree(slug: string): Prisma.CategoryWhereInput {
-  return {
-    deletedAt: null,
-    isActive: true,
-    OR: [
-      { slug },
-      { parent: { slug, deletedAt: null, isActive: true } },
-      { parent: { parent: { slug, deletedAt: null, isActive: true } } },
-    ],
-  };
-}
 
 /** Prisma select for storefront product list rows (typed payload for `findMany`). */
 const PUBLIC_LIST_GRAPH_SELECT = {
@@ -167,7 +166,7 @@ type PublicListGraphRow = Prisma.ProductGetPayload<{ select: typeof PUBLIC_LIST_
 @Injectable()
 // Repository Prisma cho các thao tác dữ liệu liên quan đến sản phẩm.
 export class ProductRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   private resolveCompareAtPrice(params: { price: number; compareAtPrice?: number }): number {
     const { price, compareAtPrice } = params;
@@ -175,78 +174,6 @@ export class ProductRepository {
       return price;
     }
     return compareAtPrice >= price ? compareAtPrice : price;
-  }
-
-  /** Product-level predicates shared by storefront catalog list and variant aggregations. */
-  private buildPublicCatalogProductBaseWhere(params: {
-    search?: string;
-    categorySlug?: string;
-  }): Prisma.ProductWhereInput {
-    const trimmedSearch = params.search?.trim();
-    return {
-      isActive: true,
-      deletedAt: null,
-      ...(trimmedSearch && { name: { contains: trimmedSearch } }),
-      ...(params.categorySlug && {
-        productCategories: {
-          some: { category: categoryWhereMatchesSlugTree(params.categorySlug) },
-        },
-      }),
-    };
-  }
-
-  /**
-   * Active variants shown on listing cards / used for MIN price when facets apply.
-   * Without color/size/slab filters → all active variants; with filters → only matching variants
-   * so giá và thứ tự sort theo giá không lệch nhau trên catalogue.
-   */
-  private buildPublicCatalogVariantGraphWhere(params: {
-    colorIds?: number[];
-    sizeIds?: number[];
-    minPrice?: number;
-    maxPrice?: number;
-  }): Prisma.ProductVariantWhereInput {
-    const variantPriceFilter: Prisma.IntFilter = {};
-    if (params.minPrice !== undefined) {
-      variantPriceFilter.gte = params.minPrice;
-    }
-    if (params.maxPrice !== undefined) {
-      variantPriceFilter.lte = params.maxPrice;
-    }
-    const hasFacetConstraint = !!(
-      params.colorIds?.length ||
-      params.sizeIds?.length ||
-      Object.keys(variantPriceFilter).length > 0
-    );
-    return {
-      isActive: true,
-      deletedAt: null,
-      ...(hasFacetConstraint && params.colorIds?.length && { colorId: { in: params.colorIds } }),
-      ...(hasFacetConstraint && params.sizeIds?.length && { sizeId: { in: params.sizeIds } }),
-      ...(hasFacetConstraint &&
-        Object.keys(variantPriceFilter).length > 0 && { price: variantPriceFilter }),
-    };
-  }
-
-  private buildPublicListWhereInput(params: {
-    search?: string;
-    categorySlug?: string;
-    colorIds?: number[];
-    sizeIds?: number[];
-    minPrice?: number;
-    maxPrice?: number;
-  }): Prisma.ProductWhereInput {
-    const where: Prisma.ProductWhereInput = this.buildPublicCatalogProductBaseWhere(params);
-    const variantFilter = this.buildPublicCatalogVariantGraphWhere(params);
-    if (
-      params.colorIds?.length ||
-      params.sizeIds?.length ||
-      params.minPrice !== undefined ||
-      params.maxPrice !== undefined
-    ) {
-      where.variants = { some: variantFilter };
-    }
-    return where;
   }
 
   /** Listing graph shape; variant `where` matches storefront facet context. */
@@ -258,7 +185,7 @@ export class ProductRepository {
     minPrice?: number;
     maxPrice?: number;
   }): typeof PUBLIC_LIST_GRAPH_SELECT {
-    const variantWhere = this.buildPublicCatalogVariantGraphWhere(params);
+    const variantWhere = buildPublicCatalogVariantGraphWhere(params);
     return {
       ...PUBLIC_LIST_GRAPH_SELECT,
       variants: {
@@ -295,6 +222,56 @@ export class ProductRepository {
     return items.slice().sort((a, b) => indexOf.get(a.id)! - indexOf.get(b.id)!);
   }
 
+  private async findPublicListByOrderedIds(
+    params: {
+      page: number;
+      limit: number;
+      categorySlug?: string;
+      colorIds?: number[];
+      sizeIds?: number[];
+      minPrice?: number;
+      maxPrice?: number;
+    },
+    orderedIds: number[],
+  ): Promise<
+    PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
+  > {
+    if (orderedIds.length === 0) {
+      return {
+        data: [],
+        meta: { page: params.page, limit: params.limit, total: 0, totalPages: 0 },
+      };
+    }
+    const where = buildPublicListWhereInput({
+      categorySlug: params.categorySlug,
+      colorIds: params.colorIds,
+      sizeIds: params.sizeIds,
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+    });
+    where.id = { in: orderedIds };
+    const products = await this.prisma.product.findMany({
+      where,
+      select: this.resolvePublicListGraphSelect({
+        categorySlug: params.categorySlug,
+        colorIds: params.colorIds,
+        sizeIds: params.sizeIds,
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
+      }),
+    });
+    const mapped = products.map((row) => this.mapProductGraphToPublicListItem(row));
+    const sorted = this.reorderPublicListItemsByIds(mapped, orderedIds);
+    const total = sorted.length;
+    const totalPages = Math.ceil(total / params.limit);
+    const start = (params.page - 1) * params.limit;
+    const data = sorted.slice(start, start + params.limit);
+    return {
+      data,
+      meta: { page: params.page, limit: params.limit, total, totalPages },
+    };
+  }
+
   // ─── Public ─────────────────────────────────────────────────────────────────
 
   // Màu sắc còn xuất hiện trong biến thể active sau khi áp category/search/giá/size — không áp filter màu.
@@ -304,6 +281,7 @@ export class ProductRepository {
     sizeIds?: number[];
     minPrice?: number;
     maxPrice?: number;
+    constrainedProductIds?: number[];
   }): Promise<{ id: number; name: string; hexCode: string }[]> {
     const variantPriceFilter: Prisma.IntFilter = {};
     if (params.minPrice !== undefined) {
@@ -312,17 +290,11 @@ export class ProductRepository {
     if (params.maxPrice !== undefined) {
       variantPriceFilter.lte = params.maxPrice;
     }
-    const trimmedSearch = params.search?.trim();
-    const productWhere: Prisma.ProductWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(trimmedSearch && { name: { contains: trimmedSearch } }),
-      ...(params.categorySlug && {
-        productCategories: {
-          some: { category: categoryWhereMatchesSlugTree(params.categorySlug) },
-        },
-      }),
-    };
+    const productWhere = buildPublicCatalogProductBaseWhere({
+      search: params.search,
+      categorySlug: params.categorySlug,
+      constrainedProductIds: params.constrainedProductIds,
+    });
     const variantWhere: Prisma.ProductVariantWhereInput = {
       isActive: true,
       deletedAt: null,
@@ -353,6 +325,7 @@ export class ProductRepository {
     colorIds?: number[];
     minPrice?: number;
     maxPrice?: number;
+    constrainedProductIds?: number[];
   }): Promise<{ id: number; label: string; sortOrder: number }[]> {
     const variantPriceFilter: Prisma.IntFilter = {};
     if (params.minPrice !== undefined) {
@@ -361,17 +334,11 @@ export class ProductRepository {
     if (params.maxPrice !== undefined) {
       variantPriceFilter.lte = params.maxPrice;
     }
-    const trimmedSearch = params.search?.trim();
-    const productWhere: Prisma.ProductWhereInput = {
-      isActive: true,
-      deletedAt: null,
-      ...(trimmedSearch && { name: { contains: trimmedSearch } }),
-      ...(params.categorySlug && {
-        productCategories: {
-          some: { category: categoryWhereMatchesSlugTree(params.categorySlug) },
-        },
-      }),
-    };
+    const productWhere = buildPublicCatalogProductBaseWhere({
+      search: params.search,
+      categorySlug: params.categorySlug,
+      constrainedProductIds: params.constrainedProductIds,
+    });
     const variantWhere: Prisma.ProductVariantWhereInput = {
       isActive: true,
       deletedAt: null,
@@ -406,6 +373,7 @@ export class ProductRepository {
     minPrice?: number;
     maxPrice?: number;
     sort?: string;
+    constrainedProductIds?: number[];
   }): Promise<
     PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
   > {
@@ -419,7 +387,7 @@ export class ProductRepository {
       return this.findPublicPriceSortedList(params);
     }
     const { page, limit } = params;
-    const where = this.buildPublicListWhereInput(params);
+    const where = buildPublicListWhereInput(params);
     const [total, products] = await Promise.all([
       this.prisma.product.count({ where }),
       this.prisma.product.findMany({
@@ -435,6 +403,70 @@ export class ProductRepository {
     return {
       data,
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async findPublicListBySearchRank(params: {
+    page: number;
+    limit: number;
+    categorySlug?: string;
+    colorIds?: number[];
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+    rankedProductIds: number[];
+  }): Promise<
+    PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
+  > {
+    return this.findPublicListByOrderedIds(
+      {
+        page: params.page,
+        limit: params.limit,
+        categorySlug: params.categorySlug,
+        colorIds: params.colorIds,
+        sizeIds: params.sizeIds,
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
+      },
+      params.rankedProductIds,
+    );
+  }
+
+  async findAllProductSearchDocuments(): Promise<ProductSearchDocument[]> {
+    const rows = await this.prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        deletedAt: true,
+      },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      isActive: row.isActive,
+      deletedAtNull: row.deletedAt === null,
+    }));
+  }
+
+  async findProductSearchDocumentById(productId: number): Promise<ProductSearchDocument | null> {
+    const row = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        deletedAt: true,
+      },
+    });
+    if (!row) {
+      return null;
+    }
+    return {
+      id: row.id,
+      name: row.name,
+      isActive: row.isActive,
+      deletedAtNull: row.deletedAt === null,
     };
   }
 
@@ -457,7 +489,7 @@ export class ProductRepository {
   > {
     const { page, limit } = params;
     const isAscending = params.sort === 'price_asc';
-    const where = this.buildPublicListWhereInput(params);
+    const where = buildPublicListWhereInput(params);
     const listStubs = await this.prisma.product.findMany({
       where,
       select: { id: true, createdAt: true },
@@ -471,7 +503,7 @@ export class ProductRepository {
       };
     }
     const productIds = listStubs.map((stub) => stub.id);
-    const variantCatalogWhere = this.buildPublicCatalogVariantGraphWhere(params);
+    const variantCatalogWhere = buildPublicCatalogVariantGraphWhere(params);
     const groupedMinPrices = await this.prisma.productVariant.groupBy({
       by: ['productId'],
       where: {
@@ -531,7 +563,7 @@ export class ProductRepository {
     PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
   > {
     const { page, limit } = params;
-    const where = this.buildPublicListWhereInput(params);
+    const where = buildPublicListWhereInput(params);
     const listStubs = await this.prisma.product.findMany({
       where,
       select: { id: true, createdAt: true },
@@ -605,7 +637,7 @@ export class ProductRepository {
     PaginatedResult<ProductListItemView & { minPrice: number | null; maxPrice: number | null }>
   > {
     const { page, limit } = params;
-    const where = this.buildPublicListWhereInput(params);
+    const where = buildPublicListWhereInput(params);
     const listStubs = await this.prisma.product.findMany({
       where,
       select: { id: true, createdAt: true },
