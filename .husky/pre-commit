@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # Filter staged files by target extensions
-files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx|json|css|scss|md)$')
+files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx|json|css|scss|md)$' || true)
 
 if [ -n "$files" ]; then
   echo "Running pre-commit hooks on staged files..."
