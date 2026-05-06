@@ -387,22 +387,22 @@ model ProductCategory {
 }
 
 model ProductVariant {
-  id          Int       @id @default(autoincrement()) @db.UnsignedInt
-  productId   Int       @map("product_id") @db.UnsignedInt
-  colorId     Int       @map("color_id") @db.UnsignedInt
-  sizeId      Int       @map("size_id") @db.UnsignedInt
-  sku         String    @unique(map: "uk_variants_sku") @db.VarChar(50)
-  barcode     String?   @unique(map: "uk_variants_barcode") @db.VarChar(64)
-  unit        String    @default("pcs") @db.VarChar(20)
-  price       Int       @db.UnsignedInt
-  compareAtPrice Int?   @map("compare_at_price") @db.UnsignedInt
-  onHand      Int       @default(0) @map("on_hand") @db.UnsignedInt
-  reserved    Int       @default(0) @db.UnsignedInt
-  version     Int       @default(0) @db.UnsignedInt
-  isActive    Boolean   @default(true) @map("is_active") @db.TinyInt
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt   DateTime? @map("deleted_at") @db.Timestamp(0)
+  id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  productId      Int       @map("product_id") @db.UnsignedInt
+  colorId        Int       @map("color_id") @db.UnsignedInt
+  sizeId         Int       @map("size_id") @db.UnsignedInt
+  sku            String    @unique(map: "uk_variants_sku") @db.VarChar(50)
+  barcode        String?   @unique(map: "uk_variants_barcode") @db.VarChar(64)
+  unit           String    @default("pcs") @db.VarChar(20)
+  price          Int       @db.UnsignedInt
+  compareAtPrice Int       @map("compare_at_price") @db.UnsignedInt
+  onHand         Int       @default(0) @map("on_hand") @db.UnsignedInt
+  reserved       Int       @default(0) @db.UnsignedInt
+  version        Int       @default(0) @db.UnsignedInt
+  isActive       Boolean   @default(true) @map("is_active") @db.TinyInt
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamp(0)
 
   product               Product                @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   color                 Color                  @relation(fields: [colorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
@@ -650,18 +650,18 @@ model Payment {
 }
 
 model SepayTransaction {
-  id                 Int               @id @default(autoincrement()) @db.UnsignedInt
-  sepayTransactionId Int               @unique(map: "uk_sepay_transactions_sepay_id") @map("sepay_transaction_id") @db.UnsignedInt
-  transferAmount     Int               @map("transfer_amount") @db.UnsignedInt
-  content            String            @db.VarChar(1000)
-  referenceCode      String?           @map("reference_code") @db.VarChar(255)
-  orderId            Int?              @map("order_id") @db.UnsignedInt
-  paymentId          Int?              @map("payment_id") @db.UnsignedInt
-  matchedOrderCode   String?           @map("matched_order_code") @db.VarChar(64)
-  matchStatus        SepayMatchStatus  @default(UNMATCHED) @map("match_status")
-  rawPayload         Json              @map("raw_payload")
-  receivedAt         DateTime          @default(now()) @map("received_at") @db.Timestamp(0)
-  processedAt        DateTime?         @map("processed_at") @db.Timestamp(0)
+  id                 Int              @id @default(autoincrement()) @db.UnsignedInt
+  sepayTransactionId Int              @unique(map: "uk_sepay_transactions_sepay_id") @map("sepay_transaction_id") @db.UnsignedInt
+  transferAmount     Int              @map("transfer_amount") @db.UnsignedInt
+  content            String           @db.VarChar(1000)
+  referenceCode      String?          @map("reference_code") @db.VarChar(255)
+  orderId            Int?             @map("order_id") @db.UnsignedInt
+  paymentId          Int?             @map("payment_id") @db.UnsignedInt
+  matchedOrderCode   String?          @map("matched_order_code") @db.VarChar(64)
+  matchStatus        SepayMatchStatus @default(UNMATCHED) @map("match_status")
+  rawPayload         Json             @map("raw_payload")
+  receivedAt         DateTime         @default(now()) @map("received_at") @db.Timestamp(0)
+  processedAt        DateTime?        @map("processed_at") @db.Timestamp(0)
 
   order   Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull, onUpdate: Cascade)

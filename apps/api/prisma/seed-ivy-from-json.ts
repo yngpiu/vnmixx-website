@@ -204,6 +204,15 @@ function normalizeSizeLabelForDb(label: string): string {
   return fitDbChars(trimmed, SIZE_LABEL_DB_MAX);
 }
 
+function ensureCompareAtPrice(params: {
+  priceVnd: number;
+  compareAtPriceVnd: number | null;
+}): number {
+  const { priceVnd, compareAtPriceVnd } = params;
+  if (compareAtPriceVnd == null) return priceVnd;
+  return compareAtPriceVnd >= priceVnd ? compareAtPriceVnd : priceVnd;
+}
+
 function jsonStringField(value: unknown): string {
   if (value == null) return '';
   if (typeof value === 'string') return value;
@@ -663,7 +672,7 @@ async function ingestOneProduct(input: {
     onHand: number;
     reserved: number;
     priceVnd: number;
-    compareAt: number | null;
+    compareAt: number;
     skuSeed: string;
     colorKeySeed: string;
   }>;
@@ -684,6 +693,10 @@ async function ingestOneProduct(input: {
     const rv = Math.max(0, v.reserved ?? 0);
     const existingAgg = variantAggByCombo.get(comboKey);
     if (existingAgg == null) {
+      const normalizedCompareAt = ensureCompareAtPrice({
+        priceVnd: v.priceVnd,
+        compareAtPriceVnd: v.compareAtPriceVnd,
+      });
       variantAggByCombo.set(comboKey, {
         colorId,
         sizeId,
@@ -691,7 +704,7 @@ async function ingestOneProduct(input: {
         onHand: q,
         reserved: rv,
         priceVnd: v.priceVnd,
-        compareAt: v.compareAtPriceVnd,
+        compareAt: normalizedCompareAt,
         skuSeed: v.ivyProductSubSku.trim(),
         colorKeySeed: v.colorKey.trim(),
       });
@@ -699,7 +712,8 @@ async function ingestOneProduct(input: {
     }
     const cmp = v.compareAtPriceVnd;
     let nextCmp = existingAgg.compareAt;
-    if (cmp != null && (nextCmp == null || cmp > nextCmp)) nextCmp = cmp;
+    if (cmp != null && cmp > nextCmp) nextCmp = cmp;
+    if (nextCmp < existingAgg.priceVnd) nextCmp = existingAgg.priceVnd;
     variantAggByCombo.set(comboKey, {
       ...existingAgg,
       onHand: existingAgg.onHand + q,

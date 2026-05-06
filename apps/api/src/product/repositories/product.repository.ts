@@ -169,6 +169,14 @@ type PublicListGraphRow = Prisma.ProductGetPayload<{ select: typeof PUBLIC_LIST_
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private resolveCompareAtPrice(params: { price: number; compareAtPrice?: number }): number {
+    const { price, compareAtPrice } = params;
+    if (compareAtPrice === undefined) {
+      return price;
+    }
+    return compareAtPrice >= price ? compareAtPrice : price;
+  }
+
   /** Product-level predicates shared by storefront catalog list and variant aggregations. */
   private buildPublicCatalogProductBaseWhere(params: {
     search?: string;
@@ -956,7 +964,10 @@ export class ProductRepository {
             sizeId: v.sizeId,
             sku: v.sku,
             price: v.price,
-            compareAtPrice: v.compareAtPrice ?? null,
+            compareAtPrice: this.resolveCompareAtPrice({
+              price: v.price,
+              compareAtPrice: v.compareAtPrice,
+            }),
             onHand: v.onHand,
             reserved: 0,
             version: 0,
@@ -1069,7 +1080,10 @@ export class ProductRepository {
           sizeId: data.sizeId,
           sku: data.sku,
           price: data.price,
-          compareAtPrice: data.compareAtPrice ?? null,
+          compareAtPrice: this.resolveCompareAtPrice({
+            price: data.price,
+            compareAtPrice: data.compareAtPrice,
+          }),
           onHand: data.onHand,
           reserved: 0,
           version: 0,
