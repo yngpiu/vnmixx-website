@@ -8,6 +8,7 @@ import {
   findOrCreateSupportChat,
   listSupportChatMessages,
 } from '@/modules/support-chat/api/support-chat';
+import { SupportChatImagePreviewDialog } from '@/modules/support-chat/components/support-chat-image-preview-dialog';
 import { useSupportChatRealtime } from '@/modules/support-chat/hooks/use-support-chat-realtime';
 import { useSupportChatDrawerStore } from '@/modules/support-chat/stores/support-chat-drawer-store';
 import type { ChatMessage } from '@/modules/support-chat/types/support-chat';
@@ -95,48 +96,44 @@ function formatFullTooltipTime(iso: string): string {
   return `${hhMm} ${day}`;
 }
 
-function SupportMessageBody({ content }: { content: string }): React.JSX.Element {
+type SupportMessageBodyProps = {
+  content: string;
+  onPreviewImage: (url: string) => void;
+};
+
+function SupportMessageBody({
+  content,
+  onPreviewImage,
+}: SupportMessageBodyProps): React.JSX.Element {
   const { text, imageUrls } = parseShopSupportMessageContent(content);
   const imageCount = imageUrls.length;
   const isImageOnlyMessage = imageCount > 0 && !text;
+  const imageGridClassName = cn(
+    'grid w-full max-w-[min(72vw,440px)] gap-2',
+    imageCount === 1 ? 'grid-cols-1' : imageCount <= 4 ? 'grid-cols-2' : 'grid-cols-3',
+  );
+  const imageItemClassName = cn(
+    'w-full overflow-hidden rounded-md border border-border/60',
+    imageCount === 1 ? 'max-w-[min(72vw,360px)]' : undefined,
+  );
+  const imageElementClassName = cn(
+    'block w-full object-cover',
+    imageCount === 1 ? 'h-auto max-h-[360px]' : imageCount <= 4 ? 'aspect-square' : 'aspect-square',
+  );
   return (
     <div className="space-y-2 wrap-break-word">
       {imageCount > 0 ? (
-        <div
-          className={cn(
-            'grid max-w-[460px] gap-2',
-            imageCount === 1 ? 'grid-cols-1' : imageCount <= 4 ? 'grid-cols-2' : 'grid-cols-3',
-            !isImageOnlyMessage && 'mb-2',
-          )}
-        >
+        <div className={cn(imageGridClassName, !isImageOnlyMessage && 'mb-2')}>
           {imageUrls.map((url) => (
-            <div
-              key={url}
-              className={cn(
-                'overflow-hidden rounded-md border border-border/60',
-                imageCount === 1 && 'max-w-[420px]',
-              )}
-            >
-              <div
-                className={cn(
-                  'relative w-full',
-                  imageCount === 1 ? 'h-64' : imageCount <= 4 ? 'h-40' : 'h-28',
-                )}
+            <div key={url} className={imageItemClassName}>
+              <button
+                type="button"
+                className="w-full rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => onPreviewImage(url)}
               >
-                <Image
-                  src={url}
-                  alt="Ảnh đính kèm"
-                  fill
-                  sizes={
-                    imageCount === 1
-                      ? '(max-width: 768px) 78vw, 420px'
-                      : imageCount <= 4
-                        ? '(max-width: 768px) 39vw, 220px'
-                        : '(max-width: 768px) 26vw, 140px'
-                  }
-                  className="object-cover"
-                />
-              </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="Ảnh đính kèm" className={imageElementClassName} />
+              </button>
             </div>
           ))}
         </div>
@@ -163,6 +160,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
   const { register, handleSubmit, watch, setValue } = form;
   const draft = watch('draft');
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [realtimeMessages, setRealtimeMessages] = useState<ChatMessage[]>([]);
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
   const [scrollToBottomTick, setScrollToBottomTick] = useState(0);
@@ -513,7 +511,10 @@ export function SupportChatFabSheet(): React.JSX.Element {
                                     !isImageOnlyMessage && bubbleClassName,
                                   )}
                                 >
-                                  <SupportMessageBody content={message.content} />
+                                  <SupportMessageBody
+                                    content={message.content}
+                                    onPreviewImage={setPreviewImageUrl}
+                                  />
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent side={mine ? 'left' : 'right'}>
@@ -604,6 +605,10 @@ export function SupportChatFabSheet(): React.JSX.Element {
           </div>
         </DrawerContent>
       </Drawer>
+      <SupportChatImagePreviewDialog
+        previewImageUrl={previewImageUrl}
+        onClose={() => setPreviewImageUrl(null)}
+      />
     </TooltipProvider>
   );
 }
