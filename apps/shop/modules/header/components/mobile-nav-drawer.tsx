@@ -52,6 +52,7 @@ interface CategoryMenuNodeProps {
   level: 1 | 2 | 3;
   expandedSlugs: string[];
   onToggle: (slug: string) => void;
+  onNavigate: () => void;
 }
 
 function CategoryMenuNode({
@@ -59,6 +60,7 @@ function CategoryMenuNode({
   level,
   expandedSlugs,
   onToggle,
+  onNavigate,
 }: CategoryMenuNodeProps): React.JSX.Element {
   const isExpanded = expandedSlugs.includes(node.slug);
   const hasChildren = hasCategoryChildren(node);
@@ -71,6 +73,7 @@ function CategoryMenuNode({
             getCategoryLabelClassName(level),
             node.isFeatured ? 'text-destructive' : undefined,
           )}
+          onClick={onNavigate}
         >
           {node.name}
         </Link>
@@ -96,6 +99,7 @@ function CategoryMenuNode({
               level={level === 1 ? 2 : 3}
               expandedSlugs={expandedSlugs}
               onToggle={onToggle}
+              onNavigate={onNavigate}
             />
           ))}
         </div>
@@ -137,7 +141,9 @@ export function MobileNavDrawer({ categoryTree }: MobileNavDrawerProps): React.J
         </div>
         <div className="space-y-4 px-4 pb-8">
           <PrimaryCtaButton asChild>
-            <Link href="/login">Đăng nhập</Link>
+            <Link href="/login" onClick={() => setMobileDrawerOpen(false)}>
+              Đăng nhập
+            </Link>
           </PrimaryCtaButton>
           <div className="space-y-1">
             {drawerCategories.map((category) => {
@@ -148,6 +154,7 @@ export function MobileNavDrawer({ categoryTree }: MobileNavDrawerProps): React.J
                   level={1}
                   expandedSlugs={expandedMobileCategorySlugs}
                   onToggle={toggleMobileCategory}
+                  onNavigate={() => setMobileDrawerOpen(false)}
                 />
               );
             })}
