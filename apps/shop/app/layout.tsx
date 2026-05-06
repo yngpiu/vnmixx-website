@@ -11,6 +11,9 @@ import { cookies } from 'next/headers';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SHOP_SITE_URL),
+  verification: {
+    google: '16d3921efa20a51f',
+  },
   title: {
     default: 'VNMIXX Shop',
     template: '%s | VNMIXX Shop',
