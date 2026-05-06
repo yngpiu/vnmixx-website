@@ -30,15 +30,21 @@ export function authBodyFromPair(pair: TokenPair): AuthResponseDto {
   };
 }
 
-/** Chuyển "DD/MM/YYYY" sang Date object cho database. Trả về null nếu không hợp lệ. */
+/** Parse ngày sinh theo `YYYY-MM-DD` hoặc fallback `DD/MM/YYYY`. */
 export function parseDob(dob: string | undefined): Date | null {
   if (!dob) return null;
-  const parts = dob.split('/');
-  if (parts.length !== 3) return null;
-  const day = Number.parseInt(parts[0], 10);
-  const month = Number.parseInt(parts[1], 10);
-  const year = Number.parseInt(parts[2], 10);
-  if (Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year)) return null;
-  // Tháng trong JS Date bắt đầu từ 0
+  const trimmedDob = dob.trim();
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedDob);
+  if (isoMatch) {
+    const year = Number.parseInt(isoMatch[1], 10);
+    const month = Number.parseInt(isoMatch[2], 10);
+    const day = Number.parseInt(isoMatch[3], 10);
+    return new Date(year, month - 1, day);
+  }
+  const legacyMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmedDob);
+  if (!legacyMatch) return null;
+  const day = Number.parseInt(legacyMatch[1], 10);
+  const month = Number.parseInt(legacyMatch[2], 10);
+  const year = Number.parseInt(legacyMatch[3], 10);
   return new Date(year, month - 1, day);
 }
