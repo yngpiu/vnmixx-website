@@ -1,3 +1,9 @@
-# `@turbo/eslint-config`
+# `@repo/eslint-config`
 
-Collection of internal eslint configurations.
+Shared ESLint configuration package for the VNMIXX monorepo.
+
+Used by workspace apps to keep lint rules consistent across:
+
+- `apps/api`
+- `apps/dashboard`
+- `apps/shop`

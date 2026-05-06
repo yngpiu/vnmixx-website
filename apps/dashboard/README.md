@@ -1,41 +1,42 @@
-# VNMIXX | Admin Dashboard
+# VNMIXX Dashboard (`apps/dashboard`)
 
-Giao diện quản trị (Admin Dashboard) sử dụng Framework Next.js.
+Admin dashboard dùng Next.js.
 
-## Bắt đầu
+## Local Setup
 
-Tùy chọn (chỉ cần khi muốn override API URL):
+Optional env override:
 
 ```bash
 cp .env.example .env
 ```
 
-Chạy server phát triển:
+Run local:
 
 ```bash
 pnpm dev
-# Hoặc từ Root: pnpm dev --filter dashboard
 ```
 
-Truy cập [localhost:3000](http://localhost:3000) để xem kết quả.
+Mặc định chạy ở `http://localhost:3000`.
 
-Mặc định, app sẽ gọi API tại `http://localhost:4000` nếu không có biến `NEXT_PUBLIC_API_BASE_URL`.
+## Scripts
 
-Bạn có thể bắt đầu chỉnh sửa giao diện bằng cách thay đổi file `app/page.tsx`. Trang sẽ tự động được cập nhật khi bạn lưu file.
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+pnpm check-types
+```
 
-Dự án này sử dụng [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) để tự động tải font Geist, một font chữ tùy chỉnh từ Google.
+## API Base URL
 
-## Tìm hiểu thêm
+Frontend đọc `NEXT_PUBLIC_API_BASE_URL`.
 
-Tìm hiểu thêm về `Next.js` qua các nguồn sau:
+- local default: `http://localhost:4000`
+- production domain setup: `https://api.vnmixx.shop`
+- docker internal setup (SSR): có thể dùng `http://api:4000` nếu cần
 
-- [Tài liệu Next.js](https://nextjs.org/docs) - tìm hiểu về các tính năng và API của Next.js.
-- [Học Next.js](https://nextjs.org/learn) - hướng dẫn tương tác.
+## Production Note
 
-Xem [Next.js GitHub repository](https://github.com/vercel/next.js) - mọi ý kiến đóng góp luôn được chào đón!
-
-## Triển khai trên Vercel
-
-Cách dễ nhất để triển khai ứng dụng Next.js là sử dụng [Nền tảng Vercel](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) từ những người sáng tạo Next.js.
-
-Xem [tài liệu triển khai Next.js](https://nextjs.org/docs/app/building-your-application/deploying) để biết thêm chi tiết.
+Khi chạy bằng Docker image, `NEXT_PUBLIC_*` được bake ở build time.
+Nếu đổi API URL, cần rebuild image dashboard.

@@ -1,64 +1,67 @@
-# VNMIXX | API
+# VNMIXX API (`apps/api`)
 
-Ứng dụng Backend API sử dụng Framework NestJS.
+Backend service dùng NestJS + Prisma.
 
-## Bắt đầu
-
-Tạo file env cho API:
+## Local Setup
 
 ```bash
 cp .env.example .env
+pnpm install
+pnpm dev
 ```
 
-Chạy server phát triển:
+API mặc định chạy tại `http://localhost:4000`.
+
+## Important Scripts
 
 ```bash
 pnpm dev
-# Hoặc từ Root: pnpm dev --filter api
+pnpm build
+pnpm start:prod
+pnpm lint
+pnpm test
 ```
 
-Mặc định, server sẽ chạy ở địa chỉ [localhost:4000](http://localhost:4000). Bạn có thể sử dụng các công cụ như [Insomnia](https://insomnia.rest/) hoặc [Postman](https://www.postman.com/) để kiểm tra API.
+Database/seed scripts:
 
-Bạn có thể chỉnh sửa mã nguồn trong thư mục `src/`. Cấu trúc code tuân thủ chuẩn của NestJS.
-
-## Redis
-
-Project đã được tích hợp Redis client bằng `ioredis` thông qua `RedisModule` (global module).
-
-Các biến môi trường hỗ trợ:
-
-- `DATABASE_URL` (bắt buộc cho Prisma)
-- `REDIS_URL` (nếu có sẽ được ưu tiên)
-- `REDIS_HOST` (mặc định `127.0.0.1`)
-- `REDIS_PORT` (mặc định `6379`)
-- `REDIS_USERNAME`
-- `REDIS_PASSWORD`
-- `REDIS_DB` (mặc định `0`)
-
-Bạn có thể inject `RedisService` ở bất kỳ module/service nào để sử dụng:
-
-```ts
-import { Injectable } from '@nestjs/common';
-import { RedisService } from './redis/redis.service';
-
-@Injectable()
-export class ExampleService {
-  constructor(private readonly redisService: RedisService) {}
-
-  async setValue() {
-    await this.redisService.getClient().set('key', 'value');
-  }
-}
+```bash
+pnpm db:push:force-reset
+pnpm db:seed:foundation
+pnpm db:seed
+pnpm db:seed:non-catalog
 ```
 
-### Chú ý quan trọng 🚧
+## Environment Notes
 
-Nếu bạn muốn xây dựng (`build`) hoặc chạy kiểm tra (`test`) thì trước tiên cần xây dựng các gói thư viện (`packages/*`) dùng chung.
+Biến môi trường quan trọng:
 
-## Tài liệu tham khảo
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `CORS_ORIGIN` (required in production)
+- `REDIS_URL` hoặc `REDIS_HOST` + `REDIS_PORT`
+- `SHOP_APP_BASE_URL`
 
-Tìm hiểu thêm về `NestJS` qua các nguồn sau:
+Tích hợp tùy chọn:
 
-- [Tài liệu chính thức](https://docs.nestjs.com) - Framework Node.js tiên tiến cho các ứng dụng server-side hiệu quả và có khả năng mở rộng.
-- [Các khóa học NestJS chính thức](https://courses.nestjs.com) - Học mọi thứ bạn cần để làm chủ NestJS.
-- [GitHub Repo](https://github.com/nestjs/nest)
+- SMTP: `SMTP_*`
+- GHN: `GHN_*`
+- SePay: `SEPAY_*`
+- R2: `R2_*`
+
+## Docker Runtime Notes
+
+Trong Docker Compose production:
+
+- DB service dùng `mariadb:10.11`
+- Redis service name là `redis`
+- API phải kết nối Redis qua `REDIS_URL=redis://redis:6379` hoặc `REDIS_HOST=redis`
+
+## Prisma
+
+Client được generate vào `apps/api/generated/prisma` theo `schema.prisma`.
+
+Trong môi trường container cần đảm bảo đã chạy:
+
+```bash
+pnpm --filter api exec prisma generate
+```

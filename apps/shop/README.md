@@ -1,41 +1,47 @@
-# VNMIXX | Shop
+# VNMIXX Shop (`apps/shop`)
 
-Giao diện khách hàng (Customer Shop) sử dụng Framework Next.js.
+Customer storefront dùng Next.js.
 
-## Bắt đầu
+## Local Setup
 
-Tùy chọn (chỉ cần khi muốn override API URL):
+Optional env override:
 
 ```bash
 cp .env.example .env
 ```
 
-Chạy server phát triển:
+Run local:
 
 ```bash
 pnpm dev
-# Hoặc từ Root: pnpm dev --filter shop
 ```
 
-Truy cập [localhost:3001](http://localhost:3001) để xem kết quả.
+Mặc định chạy ở `http://localhost:3001`.
 
-Mặc định, app sẽ gọi API tại `http://localhost:4000` nếu không có biến `NEXT_PUBLIC_API_BASE_URL`.
+## Scripts
 
-Bạn có thể bắt đầu chỉnh sửa giao diện bằng cách thay đổi file `app/page.tsx`. Trang sẽ tự động được cập nhật khi bạn lưu file.
+```bash
+pnpm dev
+pnpm build
+pnpm start
+pnpm lint
+pnpm check-types
+```
 
-Dự án này sử dụng [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) để tự động tải font Geist, một font chữ tùy chỉnh từ Google.
+## API Base URL
 
-## Tìm hiểu thêm
+Shop đọc:
 
-Tìm hiểu thêm về `Next.js` qua các nguồn sau:
+- `NEXT_PUBLIC_API_BASE_URL`
+- `NEXT_PUBLIC_SITE_URL`
 
-- [Tài liệu Next.js](https://nextjs.org/docs) - tìm hiểu về các tính năng và API của Next.js.
-- [Học Next.js](https://nextjs.org/learn) - hướng dẫn tương tác.
+Khuyến nghị:
 
-Xem [Next.js GitHub repository](https://github.com/vercel/next.js) - mọi ý kiến đóng góp luôn được chào đón!
+- local: `NEXT_PUBLIC_API_BASE_URL=http://localhost:4000`
+- production public: `NEXT_PUBLIC_API_BASE_URL=https://api.vnmixx.shop`
+- production site: `NEXT_PUBLIC_SITE_URL=https://vnmixx.shop`
 
-## Triển khai trên Vercel
+## Production Note
 
-Cách dễ nhất để triển khai ứng dụng Next.js là sử dụng [Nền tảng Vercel](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) từ những người sáng tạo Next.js.
-
-Xem [tài liệu triển khai Next.js](https://nextjs.org/docs/app/building-your-application/deploying) để biết thêm chi tiết.
+`NEXT_PUBLIC_*` được compile tại build time trong Docker image.
+Mỗi khi đổi các biến này, cần rebuild image `shop`.
