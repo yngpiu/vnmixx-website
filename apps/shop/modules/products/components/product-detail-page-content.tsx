@@ -2,6 +2,7 @@
 
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { SizeSoldOutDiagonalOverlay } from '@/modules/common/components/size-sold-out-diagonal-overlay';
+import { coerceHttpImageSrc } from '@/modules/common/utils/coerce-http-image-src';
 import { isLightHex } from '@/modules/common/utils/is-light-hex';
 import { buildCategoryHref } from '@/modules/common/utils/shop-routes';
 import type { NewArrivalProduct } from '@/modules/home/types/new-arrival-product';
@@ -17,6 +18,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { Check, ChevronDown, MinusIcon, PlusIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const ProductDetailReviewsSection = dynamic(
   () =>
@@ -45,6 +47,11 @@ export function ProductDetailPageContent({
   initialPublicReviews,
   suggestedProducts,
 }: ProductDetailPageContentProps): React.JSX.Element {
+  const reviewsSectionRef = useRef<HTMLElement | null>(null);
+  const suggestedSectionRef = useRef<HTMLElement | null>(null);
+  const [shouldRenderReviews, setShouldRenderReviews] = useState(false);
+  const [shouldRenderSuggested, setShouldRenderSuggested] = useState(false);
+  const preloadedColorImageIdsRef = useRef<Set<number>>(new Set<number>());
   const {
     colorOptions,
     selectedColorId,
@@ -68,6 +75,66 @@ export function ProductDetailPageContent({
     handleBuyNow,
   } = useProductDetailController({ product });
   const selectedColorName = colorOptions.find((color) => color.id === selectedColorId)?.name ?? '—';
+  const firstImageByColorId = useMemo(() => {
+    const firstImageMap = new Map<number, string>();
+    gallerySlides.forEach((slide) => {
+      if (slide.colorId === null || firstImageMap.has(slide.colorId)) {
+        return;
+      }
+      const source = coerceHttpImageSrc(slide.url);
+      if (!source) {
+        return;
+      }
+      firstImageMap.set(slide.colorId, source);
+    });
+    return firstImageMap;
+  }, [gallerySlides]);
+  const preloadColorImage = useCallback(
+    (colorId: number): void => {
+      if (preloadedColorImageIdsRef.current.has(colorId)) {
+        return;
+      }
+      const source = firstImageByColorId.get(colorId);
+      if (!source) {
+        return;
+      }
+      const image = new window.Image();
+      image.decoding = 'async';
+      image.src = source;
+      preloadedColorImageIdsRef.current.add(colorId);
+    },
+    [firstImageByColorId],
+  );
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          if (entry.target === reviewsSectionRef.current) {
+            setShouldRenderReviews(true);
+            observer.unobserve(entry.target);
+            return;
+          }
+          if (entry.target === suggestedSectionRef.current) {
+            setShouldRenderSuggested(true);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin: '350px 0px' },
+    );
+    const reviewsElement = reviewsSectionRef.current;
+    if (reviewsElement) {
+      observer.observe(reviewsElement);
+    }
+    const suggestedElement = suggestedSectionRef.current;
+    if (suggestedElement) {
+      observer.observe(suggestedElement);
+    }
+    return () => observer.disconnect();
+  }, []);
   return (
     <main className="shop-shell-container pb-16 pt-6 md:pt-8">
       <nav className="mb-6 text-sm text-muted-foreground">
@@ -141,7 +208,13 @@ export function ProductDetailPageContent({
                       type="button"
                       aria-label={`Chọn màu ${color.name}`}
                       aria-pressed={isSelected}
-                      onClick={() => setSelectedColorId(color.id)}
+                      onMouseEnter={() => preloadColorImage(color.id)}
+                      onFocus={() => preloadColorImage(color.id)}
+                      onTouchStart={() => preloadColorImage(color.id)}
+                      onClick={() => {
+                        preloadColorImage(color.id);
+                        setSelectedColorId(color.id);
+                      }}
                       className="relative flex h-10 w-10 items-center justify-center rounded-full border border-border transition"
                       style={{ backgroundColor: color.hexCode }}
                     >
@@ -298,13 +371,23 @@ export function ProductDetailPageContent({
           ) : null}
         </div>
       </div>
-      <ProductDetailReviewsSection productSlug={product.slug} initial={initialPublicReviews} />
+      <section ref={reviewsSectionRef}>
+        {shouldRenderReviews ? (
+          <ProductDetailReviewsSection productSlug={product.slug} initial={initialPublicReviews} />
+        ) : (
+          <div className="h-32" aria-hidden />
+        )}
+      </section>
       {suggestedProducts.length > 0 ? (
-        <section className="pt-12">
+        <section ref={suggestedSectionRef} className="pt-12">
           <h2 className="mb-6 text-xl font-semibold uppercase tracking-wide text-foreground">
             Sản phẩm gợi ý
           </h2>
-          <ProductCardSlider products={suggestedProducts} />
+          {shouldRenderSuggested ? (
+            <ProductCardSlider products={suggestedProducts} />
+          ) : (
+            <div className="h-60" aria-hidden />
+          )}
         </section>
       ) : null}
     </main>
