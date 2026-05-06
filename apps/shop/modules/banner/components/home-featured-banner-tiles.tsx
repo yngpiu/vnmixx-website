@@ -23,7 +23,7 @@ export function HomeFeaturedBannerTiles({
             <div className="radius-diagonal-lg md:radius-diagonal-lg relative aspect-square overflow-hidden bg-muted/20">
               <Image
                 src={coerceHttpImageSrc(banner.imageUrl) ?? '/images/placeholder.jpg'}
-                alt={banner.title ?? banner.category.name}
+                alt=""
                 fill
                 sizes="(max-width: 768px) 50vw, 25vw"
                 quality={70}
