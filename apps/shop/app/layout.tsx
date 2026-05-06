@@ -1,12 +1,10 @@
 import { COOKIE_ACCESS_TOKEN, SHOP_SITE_URL } from '@/config/constants';
 import { AuthProvider } from '@/modules/auth/providers/auth-provider';
-import { CartDrawer } from '@/modules/cart/components/cart-drawer';
+import { LazyGlobalOverlays } from '@/modules/common/components/lazy-global-overlays';
 import { ShopFooter } from '@/modules/footer/components/shop-footer';
 import { ShopHeader } from '@/modules/header/components/shop-header';
-import { SupportChatFabSheet } from '@/modules/support-chat/components/support-chat-fab-sheet';
 import { QueryProvider } from '@/providers/query-provider';
 import '@/styles/globals.css';
-import { Toaster } from '@repo/ui/components/ui/sonner';
 import { montserrat } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
@@ -52,9 +50,7 @@ export default async function RootLayout({
             <ShopHeader />
             <main className="flex-1 pb-16 md:pb-0">{children}</main>
             <ShopFooter />
-            <CartDrawer />
-            <SupportChatFabSheet />
-            <Toaster richColors closeButton position="bottom-right" theme="light" />
+            <LazyGlobalOverlays />
           </AuthProvider>
         </QueryProvider>
       </body>
