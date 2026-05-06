@@ -551,7 +551,7 @@ export class ProductRepository {
             `,
     );
     const soldCountByProductId = new Map<number, number>(
-      bestSellingRows.map((row) => [row.productId, Number(row.soldCount)]),
+      bestSellingRows.map((row) => [Number(row.productId), Number(row.soldCount)]),
     );
     const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
       const leftSold = soldCountByProductId.get(leftStub.id) ?? 0;
@@ -622,7 +622,7 @@ export class ProductRepository {
             `,
     );
     const favoriteCountByProductId = new Map<number, number>(
-      favoriteRows.map((row) => [row.productId, Number(row.favCount)]),
+      favoriteRows.map((row) => [Number(row.productId), Number(row.favCount)]),
     );
     const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
       const leftFav = favoriteCountByProductId.get(leftStub.id) ?? 0;
