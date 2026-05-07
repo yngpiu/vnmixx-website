@@ -61,15 +61,6 @@ type VariantDraft = {
   isActive: boolean;
 };
 
-function suggestSlugFromName(name: string): string {
-  const base = name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return base || 'san-pham';
-}
-
 function buildDescriptionPayload(value: string): string | undefined {
   const plainText = value
     .replace(/<[^>]*>/g, '')
@@ -112,7 +103,6 @@ export function EditProductForm({ productId }: EditProductFormProps) {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
-  const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState('');
   const [weight, setWeight] = useState('');
   const [length, setLength] = useState('');
@@ -173,11 +163,6 @@ export function EditProductForm({ productId }: EditProductFormProps) {
     );
     setImagesByColorId(compactImages);
   }, [detailQuery.data]);
-
-  useEffect(() => {
-    if (slugTouched) return;
-    setSlug(suggestSlugFromName(name));
-  }, [name, slugTouched]);
 
   const categoriesFlat = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data]);
   const categoriesById = useMemo(() => {
@@ -435,10 +420,7 @@ export function EditProductForm({ productId }: EditProductFormProps) {
                 <Input
                   id="ep-slug"
                   value={slug}
-                  onChange={(e) => {
-                    setSlugTouched(true);
-                    setSlug(e.target.value);
-                  }}
+                  onChange={(e) => setSlug(e.target.value)}
                   disabled={busy}
                   maxLength={255}
                   className="font-mono text-sm"
