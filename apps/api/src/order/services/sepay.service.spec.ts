@@ -53,6 +53,7 @@ describe('SepayService', () => {
   it('should extract order code from transfer content', () => {
     const service = createService();
     expect(service.extractOrderCode('Thanh toan SEVQR dhvnmxyz123')).toBe('DHVNMXYZ123');
+    expect(service.extractOrderCode('SEVQR VNM2605078OP6B')).toBe('VNM2605078OP6B');
     expect(service.extractOrderCode('DHABCDEFGH')).toBe('DHABCDEFGH');
     expect(service.extractOrderCode('no-order-code')).toBeNull();
     expect(service.extractOrderCode(null)).toBeNull();

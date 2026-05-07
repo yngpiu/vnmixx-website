@@ -53,7 +53,11 @@ export class SepayService {
       return null;
     }
 
-    const match = content.match(/\bDHVNM[A-Z0-9]+\b/i) ?? content.match(/\bDH[A-Z0-9]{8,}\b/i);
+    const match =
+      content.match(/\bDHVNM[A-Z0-9]+\b/i) ??
+      // Current order code format: VNM + YYMMDD + 5 chars (see generateOrderCode).
+      content.match(/\bVNM\d{6}[A-Z0-9]{5}\b/i) ??
+      content.match(/\bDH[A-Z0-9]{8,}\b/i);
     return match ? match[0].toUpperCase() : null;
   }
 
