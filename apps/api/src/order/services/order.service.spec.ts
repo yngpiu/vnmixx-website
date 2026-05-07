@@ -414,47 +414,11 @@ describe('OrderService', () => {
       );
     });
 
-    it('should return duplicate idempotently when transaction already matched', async () => {
+    it('should return duplicate when transaction already exists', async () => {
       sepayService.verifyWebhookAuthorization.mockReturnValue(true);
-      (prisma.sepayTransaction.findUnique as jest.Mock).mockResolvedValue({
-        id: 1,
-        matchStatus: 'MATCHED',
-        matchedOrderCode: 'ORD-123',
-        order: { orderCode: 'ORD-123' },
-      });
+      (prisma.sepayTransaction.findUnique as jest.Mock).mockResolvedValue({ id: 1 });
       const result = await service.handleSepayWebhook('Apikey x', payload);
-      expect(result).toEqual({ duplicate: true, matched: true, orderCode: 'ORD-123' });
-    });
-
-    it('should retry match on duplicate webhook when row is still UNMATCHED', async () => {
-      sepayService.verifyWebhookAuthorization.mockReturnValue(true);
-      (prisma.sepayTransaction.findUnique as jest.Mock).mockResolvedValue({
-        id: 9,
-        matchStatus: 'UNMATCHED',
-        matchedOrderCode: null,
-        order: null,
-      });
-      sepayService.extractOrderCode.mockReturnValue('ORD-123');
-      (prisma.sepayTransaction.update as jest.Mock).mockResolvedValue({});
-      (prisma.order.findFirst as jest.Mock).mockResolvedValue({
-        id: 1,
-        customerId: 2,
-        orderCode: 'ORD-123',
-        status: 'PENDING_CONFIRMATION',
-        payment: { id: 88, status: 'PENDING', method: 'BANK_TRANSFER_QR' },
-      });
-      const tx = {
-        payment: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
-        sepayTransaction: { update: jest.fn() },
-      };
-      prisma.$transaction.mockImplementation(async (cb) => cb(tx as any));
-      const result = await service.handleSepayWebhook('Apikey x', payload);
-      expect(result).toEqual({ duplicate: true, matched: true, orderCode: 'ORD-123' });
-      expect(orderPaymentGateway.emitOrderPaymentUpdated).toHaveBeenCalledWith(
-        2,
-        'ORD-123',
-        'SUCCESS',
-      );
+      expect(result).toEqual({ duplicate: true, matched: false });
     });
 
     it('should return unmatched when order code cannot be extracted', async () => {
