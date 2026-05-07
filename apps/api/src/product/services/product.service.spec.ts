@@ -7,6 +7,7 @@ import { CreateProductDto, ListAdminProductsQueryDto, ListProductsQueryDto } fro
 import { ProductAdminDetailView, ProductRepository } from '../repositories/product.repository';
 import { ProductCacheService } from './product-cache.service';
 import { ProductImageService } from './product-image.service';
+import { ProductSearchService } from './product-search.service';
 import { ProductVariantService } from './product-variant.service';
 import { ProductService } from './product.service';
 
@@ -85,6 +86,13 @@ describe('ProductService', () => {
             createImage: jest.fn(),
             updateImage: jest.fn(),
             deleteImage: jest.fn(),
+          },
+        },
+        {
+          provide: ProductSearchService,
+          useValue: {
+            searchProductIds: jest.fn().mockResolvedValue(null),
+            syncProductById: jest.fn().mockResolvedValue(undefined),
           },
         },
         {

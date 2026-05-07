@@ -133,6 +133,7 @@
     "moduleNameMapper": {
       "^src/(.*)$": "<rootDir>/$1",
       "^generated/(.*)$": "<rootDir>/../generated/$1",
+      "^meilisearch$": "<rootDir>/../test/__mocks__/meilisearch.ts",
       "^(\\.\\.?/.*)\\.js$": "$1"
     }
   }
