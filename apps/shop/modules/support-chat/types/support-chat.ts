@@ -1,4 +1,4 @@
-export type ChatSenderType = 'CUSTOMER' | 'EMPLOYEE';
+export type ChatSenderType = 'CUSTOMER' | 'EMPLOYEE' | 'GUEST';
 
 export type ChatAssignment = {
   employeeId: number;
@@ -8,7 +8,7 @@ export type ChatAssignment = {
 
 export type ChatDetail = {
   id: number;
-  customerId: number;
+  customerId: number | null;
   customerName: string;
   assignments: ChatAssignment[];
   createdAt: string;

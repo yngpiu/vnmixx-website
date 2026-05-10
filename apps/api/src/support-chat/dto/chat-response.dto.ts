@@ -10,8 +10,8 @@ export class ChatMessageResponseDto {
   @ApiProperty({ example: 1 })
   chatId!: number;
 
-  @ApiProperty({ enum: ['CUSTOMER', 'EMPLOYEE'], example: 'CUSTOMER' })
-  senderType!: 'CUSTOMER' | 'EMPLOYEE';
+  @ApiProperty({ enum: ['CUSTOMER', 'EMPLOYEE', 'GUEST'], example: 'CUSTOMER' })
+  senderType!: 'CUSTOMER' | 'EMPLOYEE' | 'GUEST';
 
   @ApiProperty({ nullable: true, example: 5 })
   senderCustomerId!: number | null;
@@ -36,16 +36,26 @@ export class ChatSummaryResponseDto {
   @ApiProperty({ example: 1 })
   id!: number;
 
-  @ApiProperty({ example: 10 })
-  customerId!: number;
+  @ApiProperty({
+    nullable: true,
+    description: 'Null when the chat party is anonymous (no customer row).',
+    example: 10,
+  })
+  customerId!: number | null;
 
-  @ApiProperty({ example: 'Trần Thị B' })
+  @ApiProperty({
+    example: 'Trần Thị B',
+    description: 'Display label; anonymous chats use server default.',
+  })
   customerName!: string;
 
-  @ApiProperty({ example: 'tranthib@example.com' })
+  @ApiProperty({
+    example: 'tranthib@example.com',
+    description: 'Empty string for anonymous chats.',
+  })
   customerEmail!: string;
 
-  @ApiProperty({ example: '0901234567' })
+  @ApiProperty({ example: '0901234567', description: 'Empty string for anonymous chats.' })
   customerPhoneNumber!: string;
 
   @ApiProperty({ nullable: true, example: 'Hỗ trợ đơn hàng' })
@@ -68,10 +78,17 @@ export class ChatDetailResponseDto {
   @ApiProperty({ example: 1 })
   id!: number;
 
-  @ApiProperty({ example: 10 })
-  customerId!: number;
+  @ApiProperty({
+    nullable: true,
+    description: 'Null when the chat party is anonymous (no customer row).',
+    example: 10,
+  })
+  customerId!: number | null;
 
-  @ApiProperty({ example: 'Trần Thị B' })
+  @ApiProperty({
+    example: 'Trần Thị B',
+    description: 'Display label; anonymous chats use server default.',
+  })
   customerName!: string;
 
   @ApiProperty({

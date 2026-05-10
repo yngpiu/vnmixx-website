@@ -3,6 +3,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { WsException } from '@nestjs/websockets';
 import { ChatSenderType } from '../../../generated/prisma/client';
 import { SupportChatService } from '../services/support-chat.service';
+import { WsCombinedAuthGuard } from '../ws-combined-auth.guard';
+import { WsGuestGuard } from '../ws-guest.guard';
+import { WsJwtGuard } from '../ws-jwt.guard';
 import { SupportChatGateway } from './support-chat.gateway';
 
 describe('SupportChatGateway', () => {
@@ -15,6 +18,7 @@ describe('SupportChatGateway', () => {
     service = {
       isCustomerOwner: jest.fn(),
       isEmployeeAssigned: jest.fn(),
+      isGuestOwner: jest.fn(),
       sendMessage: jest.fn(),
     };
 
@@ -29,6 +33,9 @@ describe('SupportChatGateway', () => {
           provide: JwtService,
           useValue: { verify: jest.fn() },
         },
+        WsJwtGuard,
+        WsGuestGuard,
+        WsCombinedAuthGuard,
       ],
     }).compile();
 
@@ -66,8 +73,23 @@ describe('SupportChatGateway', () => {
       await expect(gateway.handleJoinChat(mockClient, { chatId: 1 })).rejects.toThrow(WsException);
     });
 
+    it('should throw WsException if guest does not own chat', async () => {
+      mockClient.data = { userType: 'GUEST', guestSecretHash: 'abc123' };
+      service.isGuestOwner.mockResolvedValue(false);
+      await expect(gateway.handleJoinChat(mockClient, { chatId: 1 })).rejects.toThrow(WsException);
+    });
+
     it('should join room successfully', async () => {
       service.isCustomerOwner.mockResolvedValue(true);
+      const result = await gateway.handleJoinChat(mockClient, { chatId: 1 });
+
+      expect(mockClient.join).toHaveBeenCalledWith('chat:1');
+      expect(result).toEqual({ chatId: 1 });
+    });
+
+    it('should join room successfully for guest', async () => {
+      mockClient.data = { userType: 'GUEST', guestSecretHash: 'abc123' };
+      service.isGuestOwner.mockResolvedValue(true);
       const result = await gateway.handleJoinChat(mockClient, { chatId: 1 });
 
       expect(mockClient.join).toHaveBeenCalledWith('chat:1');
@@ -120,6 +142,26 @@ describe('SupportChatGateway', () => {
       });
       expect(mockServer.to).toHaveBeenCalledWith('chat:1');
       expect(mockServer.emit).toHaveBeenCalledWith('newMessage', mockMessage);
+      expect(result).toBe(mockMessage);
+    });
+
+    it('should send guest message without senderId', async () => {
+      mockClient.data = { userType: 'GUEST', guestSecretHash: 'abc123' };
+      service.isGuestOwner.mockResolvedValue(true);
+      const mockMessage = { id: 200, content: 'Guest hello' };
+      service.sendMessage.mockResolvedValue(mockMessage);
+
+      const result = await gateway.handleSendMessage(mockClient, {
+        chatId: 1,
+        content: 'Guest hello',
+      });
+
+      expect(service.sendMessage).toHaveBeenCalledWith({
+        chatId: 1,
+        senderType: ChatSenderType.GUEST,
+        senderId: undefined,
+        content: 'Guest hello',
+      });
       expect(result).toBe(mockMessage);
     });
   });

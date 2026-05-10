@@ -1,6 +1,6 @@
 'use client';
 
-import type { ChatSummary } from '@/modules/support-chat/types/support-chat';
+import type { ChatSenderType, ChatSummary } from '@/modules/support-chat/types/support-chat';
 import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/ui/tooltip';
@@ -21,7 +21,7 @@ type Props = {
   assignedToMe: boolean;
   onAssignedToMeChange: (value: boolean) => void;
   selectedChatId: number | null;
-  lastMessageSenderByChatId: Record<number, 'CUSTOMER' | 'EMPLOYEE'>;
+  lastMessageSenderByChatId: Record<number, ChatSenderType>;
   onSelectChat: (chatId: number) => void;
 };
 
@@ -107,7 +107,11 @@ export function SupportChatListSidebar({
               const parsedLast = parseMessagePayload(chat.lastMessageContent ?? '');
               const lastSenderType = lastMessageSenderByChatId[chat.id];
               const senderLabel =
-                lastSenderType === 'EMPLOYEE' ? 'VNMIXX' : shortDisplayName(chat.customerName);
+                lastSenderType === 'EMPLOYEE'
+                  ? 'VNMIXX'
+                  : lastSenderType === 'GUEST'
+                    ? 'Khách'
+                    : shortDisplayName(chat.customerName);
               const snippet =
                 parsedLast.text ||
                 (parsedLast.imageUrls.length > 0

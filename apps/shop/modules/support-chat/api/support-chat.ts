@@ -22,3 +22,24 @@ export async function listSupportChatMessages(
   });
   return data;
 }
+
+export async function findOrCreateGuestSupportChat(): Promise<ChatDetail> {
+  const { data } = await apiClient.post<ChatDetail>('/guest/support-chats');
+  return data;
+}
+
+export async function listGuestSupportChatMessages(
+  chatId: number,
+  params?: MessagesQuery,
+): Promise<MessagesResponse> {
+  const { data } = await apiClient.get<MessagesResponse>(
+    `/guest/support-chats/${chatId}/messages`,
+    {
+      params: {
+        ...(params?.cursor != null ? { cursor: params.cursor } : {}),
+        ...(params?.limit != null ? { limit: params.limit } : {}),
+      },
+    },
+  );
+  return data;
+}

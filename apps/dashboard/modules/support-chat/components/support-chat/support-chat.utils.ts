@@ -124,7 +124,11 @@ export function patchSupportChatListCache(
   const target = previous.items.find((item) => item.id === message.chatId);
   if (!target) return previous;
   const senderLabel =
-    message.senderType === 'EMPLOYEE' ? 'VNMIXX' : shortDisplayName(target.customerName);
+    message.senderType === 'EMPLOYEE'
+      ? 'VNMIXX'
+      : message.senderType === 'GUEST'
+        ? 'Khách'
+        : shortDisplayName(target.customerName);
   const snippet =
     parsed.text ||
     (parsed.imageUrls.length > 0

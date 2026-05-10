@@ -1,12 +1,19 @@
 'use client';
 
 import { useAuthStore } from '@/modules/auth/stores/auth-store';
-import { createSupportChatSocket, type SupportChatSocket } from '@/modules/support-chat/lib/socket';
+import {
+  createGuestSupportChatSocket,
+  createSupportChatSocket,
+  type SupportChatSocket,
+} from '@/modules/support-chat/lib/socket';
 import { useEffect, useRef, useState } from 'react';
+
+type RealtimeMode = 'authenticated' | 'guest';
 
 interface UseSupportChatRealtimeOptions {
   readonly chatId: number | null;
   readonly enabled: boolean;
+  readonly mode: RealtimeMode;
   readonly joinNonce?: number;
   readonly onNewMessage: (payload: unknown) => void;
   readonly onChatAssigned: (payload: unknown) => void;
@@ -15,6 +22,7 @@ interface UseSupportChatRealtimeOptions {
 export function useSupportChatRealtime({
   chatId,
   enabled,
+  mode,
   joinNonce = 0,
   onNewMessage,
   onChatAssigned,
@@ -23,8 +31,12 @@ export function useSupportChatRealtime({
   const socketRef = useRef<SupportChatSocket | null>(null);
   const [socket, setSocket] = useState<SupportChatSocket | null>(null);
   useEffect(() => {
-    if (!enabled || !accessToken) return;
-    const nextSocket = createSupportChatSocket(accessToken);
+    if (!enabled) return;
+    if (mode === 'authenticated' && !accessToken) return;
+    const nextSocket =
+      mode === 'authenticated'
+        ? createSupportChatSocket(accessToken!)
+        : createGuestSupportChatSocket();
     socketRef.current = nextSocket;
     setSocket(nextSocket);
     nextSocket.connect();
@@ -37,7 +49,7 @@ export function useSupportChatRealtime({
       socketRef.current = null;
       setSocket(null);
     };
-  }, [accessToken, enabled, onChatAssigned, onNewMessage]);
+  }, [accessToken, enabled, mode, onChatAssigned, onNewMessage]);
   useEffect(() => {
     const activeSocket = socketRef.current;
     if (!activeSocket || !chatId || !enabled) return;

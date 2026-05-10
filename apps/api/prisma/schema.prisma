@@ -1,5 +1,5 @@
 generator client {
-  provider     = "prisma-client"
+  provider     = "prisma-client-js"
   output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
@@ -88,6 +88,7 @@ enum AuditLogStatus {
 enum ChatSenderType {
   CUSTOMER
   EMPLOYEE
+  GUEST
 }
 
 enum ReviewVisibility {
@@ -765,12 +766,13 @@ model MediaFolder {
 }
 
 model SupportChat {
-  id         Int      @id @default(autoincrement()) @db.UnsignedInt
-  customerId Int      @unique(map: "uk_support_chats_customer") @map("customer_id") @db.UnsignedInt
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+  id                     Int       @id @default(autoincrement()) @db.UnsignedInt
+  customerId             Int?      @unique(map: "uk_support_chats_customer") @map("customer_id") @db.UnsignedInt
+  guestSessionSecretHash String?   @unique(map: "uk_support_chats_guest_session") @map("guest_session_secret_hash") @db.VarChar(64)
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
 
-  customer    Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  customer    Customer?        @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   messages    ChatMessage[]
   assignments ChatAssignment[]
 

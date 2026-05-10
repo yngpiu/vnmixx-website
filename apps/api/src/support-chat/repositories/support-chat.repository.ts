@@ -8,9 +8,9 @@ import { PrismaService } from '../../prisma/services/prisma.service';
  */
 export interface ChatDetailView {
   id: number;
-  customerId: number;
+  customerId: number | null;
   createdAt: Date;
-  customer: { fullName: string };
+  customer: { fullName: string } | null;
   assignments: {
     employee: { id: number; fullName: string };
     assignedAt: Date;
@@ -22,9 +22,9 @@ export interface ChatDetailView {
  */
 export interface ChatSummaryView {
   id: number;
-  customerId: number;
+  customerId: number | null;
   createdAt: Date;
-  customer: { fullName: string; email: string; phoneNumber: string };
+  customer: { fullName: string; email: string; phoneNumber: string } | null;
   assignments: { employee: { fullName: string } }[];
   messages: { content: string; createdAt: Date }[];
 }
@@ -45,7 +45,7 @@ export interface MessageView {
 interface CreateMessageData {
   readonly chatId: number;
   readonly senderType: ChatSenderType;
-  readonly senderId: number;
+  readonly senderId?: number;
   readonly content: string;
 }
 
@@ -140,9 +140,24 @@ export class SupportChatRepository {
   // Tạo mới một cuộc hội thoại cho khách hàng.
   async create(customerId: number): Promise<ChatDetailView> {
     return this.prisma.supportChat.create({
-      data: { customerId },
+      data: { customerId, guestSessionSecretHash: null },
       select: CHAT_DETAIL_SELECT,
     }) as Promise<ChatDetailView>;
+  }
+
+  /** Guest session identity: exactly one XOR with customerId enforced by application. */
+  async createForGuestSession(guestSessionSecretHash: string): Promise<ChatDetailView> {
+    return this.prisma.supportChat.create({
+      data: { customerId: null, guestSessionSecretHash },
+      select: CHAT_DETAIL_SELECT,
+    }) as Promise<ChatDetailView>;
+  }
+
+  async findByGuestSessionSecretHash(secretHash: string): Promise<ChatDetailView | null> {
+    return this.prisma.supportChat.findUnique({
+      where: { guestSessionSecretHash: secretHash },
+      select: CHAT_DETAIL_SELECT,
+    }) as Promise<ChatDetailView | null>;
   }
 
   // Lấy danh sách các cuộc hội thoại với phân trang và bộ lọc nhân viên.
@@ -194,21 +209,37 @@ export class SupportChatRepository {
 
   // Lưu tin nhắn mới vào cơ sở dữ liệu.
   async createMessage(data: CreateMessageData): Promise<MessageView> {
+    if (data.senderType === ChatSenderType.GUEST) {
+      return this.prisma.chatMessage.create({
+        data: {
+          chatId: data.chatId,
+          senderType: ChatSenderType.GUEST,
+          senderCustomerId: null,
+          senderEmployeeId: null,
+          content: data.content,
+        },
+        select: MESSAGE_SELECT,
+      }) as Promise<MessageView>;
+    }
+    const senderNumericId = typeof data.senderId !== 'undefined' ? data.senderId : null;
+    if (senderNumericId === null) {
+      throw new BadRequestException('senderId bắt buộc với vai trò CUSTOMER và EMPLOYEE.');
+    }
     if (data.senderType === ChatSenderType.CUSTOMER) {
       const customer = await this.prisma.customer.findUnique({
-        where: { id: data.senderId },
+        where: { id: senderNumericId },
         select: { id: true },
       });
       if (!customer) {
-        throw new NotFoundException(`Không tìm thấy khách hàng #${data.senderId}`);
+        throw new NotFoundException(`Không tìm thấy khách hàng #${senderNumericId}`);
       }
     } else if (data.senderType === ChatSenderType.EMPLOYEE) {
       const employee = await this.prisma.employee.findUnique({
-        where: { id: data.senderId },
+        where: { id: senderNumericId },
         select: { id: true },
       });
       if (!employee) {
-        throw new NotFoundException(`Không tìm thấy nhân viên #${data.senderId}`);
+        throw new NotFoundException(`Không tìm thấy nhân viên #${senderNumericId}`);
       }
     } else {
       throw new BadRequestException('senderType không hợp lệ.');
@@ -218,8 +249,8 @@ export class SupportChatRepository {
       data: {
         chatId: data.chatId,
         senderType: data.senderType,
-        senderCustomerId: data.senderType === ChatSenderType.CUSTOMER ? data.senderId : null,
-        senderEmployeeId: data.senderType === ChatSenderType.EMPLOYEE ? data.senderId : null,
+        senderCustomerId: data.senderType === ChatSenderType.CUSTOMER ? senderNumericId : null,
+        senderEmployeeId: data.senderType === ChatSenderType.EMPLOYEE ? senderNumericId : null,
         content: data.content,
       },
       select: MESSAGE_SELECT,

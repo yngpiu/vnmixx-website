@@ -5,7 +5,9 @@ import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { PrimaryCtaButton } from '@/modules/common/components/primary-cta-button';
 import { uploadMyMediaFiles } from '@/modules/media/api/media';
 import {
+  findOrCreateGuestSupportChat,
   findOrCreateSupportChat,
+  listGuestSupportChatMessages,
   listSupportChatMessages,
 } from '@/modules/support-chat/api/support-chat';
 import { SupportChatImagePreviewDialog } from '@/modules/support-chat/components/support-chat-image-preview-dialog';
@@ -30,7 +32,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImagePlusIcon, XIcon } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -144,7 +146,6 @@ function SupportMessageBody({
 }
 
 export function SupportChatFabSheet(): React.JSX.Element {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const isAuthSessionReady = useAuthSessionReady();
   const isOpen = useSupportChatDrawerStore((state) => state.isOpen);
@@ -153,6 +154,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
   const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
   const isLoggedIn = Boolean(accessToken && user);
+  const chatMode = isLoggedIn ? 'authenticated' : 'guest';
   const form = useForm<SupportChatDraftValues>({
     resolver: zodResolver(supportChatDraftSchema),
     defaultValues: { draft: '' },
@@ -169,23 +171,25 @@ export function SupportChatFabSheet(): React.JSX.Element {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  const chatQueryFn = isLoggedIn ? findOrCreateSupportChat : findOrCreateGuestSupportChat;
   const chatQuery = useQuery({
-    queryKey: ['me', 'support-chat', 'detail'],
-    queryFn: findOrCreateSupportChat,
-    enabled: isOpen && isAuthSessionReady && isLoggedIn,
+    queryKey: ['support-chat', 'detail', chatMode],
+    queryFn: chatQueryFn,
+    enabled: isOpen && isAuthSessionReady,
     staleTime: Infinity,
   });
   const chatId = chatQuery.data?.id ?? null;
+  const messagesListFn = isLoggedIn ? listSupportChatMessages : listGuestSupportChatMessages;
   const messagesQuery = useInfiniteQuery({
-    queryKey: ['me', 'support-chat', 'messages', chatId ?? 'none'],
+    queryKey: ['support-chat', 'messages', chatMode, chatId ?? 'none'],
     initialPageParam: null as number | null,
     queryFn: ({ pageParam }) =>
-      listSupportChatMessages(chatId!, {
+      messagesListFn(chatId!, {
         limit: 30,
         ...(pageParam !== null ? { cursor: pageParam } : {}),
       }),
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextCursor : null),
-    enabled: isOpen && isLoggedIn && chatId !== null,
+    enabled: isOpen && chatId !== null,
   });
   const selectedImagePreviews = useMemo(
     () => selectedImages.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })),
@@ -198,14 +202,19 @@ export function SupportChatFabSheet(): React.JSX.Element {
       if (!chatId || message.chatId !== chatId) return;
       setOptimisticMessages((previous) => {
         const incomingParsed = parseShopSupportMessageContent(message.content);
-        const targetIndex = previous.findIndex((item) => {
-          if (item.senderCustomerId !== user?.id || item.chatId !== message.chatId) return false;
-          const optimisticParsed = parseShopSupportMessageContent(item.content);
-          if (incomingParsed.imageUrls.length > 0) {
-            return item.id < 0 && optimisticParsed.imageUrls.length > 0;
-          }
-          return optimisticParsed.text === incomingParsed.text;
-        });
+        const isMySentMessage = isLoggedIn
+          ? message.senderType === 'CUSTOMER' && message.senderCustomerId === user?.id
+          : message.senderType === 'GUEST';
+        const targetIndex = isMySentMessage
+          ? previous.findIndex((item) => {
+              if (item.chatId !== message.chatId) return false;
+              const optimisticParsed = parseShopSupportMessageContent(item.content);
+              if (incomingParsed.imageUrls.length > 0) {
+                return item.id < 0 && optimisticParsed.imageUrls.length > 0;
+              }
+              return optimisticParsed.text === incomingParsed.text;
+            })
+          : -1;
         if (targetIndex === -1) return previous;
         const target = previous[targetIndex];
         if (target && target.id < 0) {
@@ -223,16 +232,17 @@ export function SupportChatFabSheet(): React.JSX.Element {
       });
       setScrollToBottomTick((tick) => tick + 1);
     },
-    [chatId, user?.id],
+    [chatId, isLoggedIn, user?.id],
   );
 
   const onChatAssigned = useCallback((): void => {
-    void queryClient.invalidateQueries({ queryKey: ['me', 'support-chat', 'detail'] });
-  }, [queryClient]);
+    void queryClient.invalidateQueries({ queryKey: ['support-chat', 'detail', chatMode] });
+  }, [chatMode, queryClient]);
 
   const socket = useSupportChatRealtime({
     chatId,
-    enabled: isOpen && isLoggedIn && chatId !== null,
+    mode: chatMode,
+    enabled: isOpen && chatId !== null,
     onNewMessage,
     onChatAssigned,
   });
@@ -269,7 +279,8 @@ export function SupportChatFabSheet(): React.JSX.Element {
 
   const pushOptimisticMessage = useCallback(
     (content: string): number | null => {
-      if (!chatId || !user?.id) return null;
+      if (!chatId) return null;
+      if (isLoggedIn && !user?.id) return null;
       const tempId = optimisticIdRef.current;
       optimisticIdRef.current -= 1;
       setOptimisticMessages((previous) => [
@@ -277,17 +288,17 @@ export function SupportChatFabSheet(): React.JSX.Element {
         {
           id: tempId,
           chatId,
-          senderType: 'CUSTOMER',
-          senderCustomerId: user.id,
+          senderType: isLoggedIn ? 'CUSTOMER' : 'GUEST',
+          senderCustomerId: isLoggedIn ? user!.id : null,
           senderEmployeeId: null,
-          senderName: user.fullName ?? null,
+          senderName: isLoggedIn ? (user!.fullName ?? null) : 'Khách',
           content,
           createdAt: new Date().toISOString(),
         },
       ]);
       return tempId;
     },
-    [chatId, user?.fullName, user?.id],
+    [chatId, isLoggedIn, user],
   );
 
   const handleSendMessage = async (values: SupportChatDraftValues): Promise<void> => {
@@ -302,7 +313,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
       pushOptimisticMessage(textContent);
       socket.emit('sendMessage', { chatId, content: textContent });
     }
-    if (imagesToSend.length > 0) {
+    if (isLoggedIn && imagesToSend.length > 0) {
       const localImageUrls = selectedImagePreviews.map((item) => item.previewUrl);
       const optimisticImageContent = buildShopSupportChatMessageContent('', localImageUrls);
       const optimisticImageId = pushOptimisticMessage(optimisticImageContent);
@@ -414,22 +425,6 @@ export function SupportChatFabSheet(): React.JSX.Element {
             </DrawerHeader>
             {!isAuthSessionReady ? (
               <div className="flex-1 p-4 text-sm text-muted-foreground">Đang tải...</div>
-            ) : !isLoggedIn ? (
-              <div className="flex flex-1 flex-col gap-4 p-4">
-                <p className="text-sm text-muted-foreground">
-                  Đăng nhập để chat trực tiếp với nhân viên hỗ trợ.
-                </p>
-                <PrimaryCtaButton
-                  type="button"
-                  className="w-full"
-                  onClick={() => {
-                    closeDrawer();
-                    router.push('/login');
-                  }}
-                >
-                  Đăng nhập
-                </PrimaryCtaButton>
-              </div>
             ) : chatQuery.isLoading || messagesQuery.isLoading ? (
               <div className="flex-1 p-4 text-sm text-muted-foreground">
                 Đang tải cuộc hội thoại...
@@ -458,7 +453,8 @@ export function SupportChatFabSheet(): React.JSX.Element {
                   ) : null}
                   {timelineMessages.map(
                     ({ message, parsed, showBoundaryTimestamp, boundaryLabel }, index) => {
-                      const mine = message.senderType === 'CUSTOMER';
+                      const mine =
+                        message.senderType === 'CUSTOMER' || message.senderType === 'GUEST';
                       const isImageOnlyMessage = parsed.imageUrls.length > 0 && !parsed.text;
                       const previousMessage =
                         index > 0 ? timelineMessages[index - 1]?.message : undefined;
@@ -578,7 +574,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
                       size="icon"
                       className="size-10 shrink-0 rounded-[4px] border-[#E7E8E9] md:size-12"
                       aria-label="Đính kèm ảnh"
-                      disabled={!socket || selectedImages.length >= MAX_CHAT_IMAGES}
+                      disabled={!socket || !isLoggedIn || selectedImages.length >= MAX_CHAT_IMAGES}
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <ImagePlusIcon className="size-5 text-[#57585A]" />

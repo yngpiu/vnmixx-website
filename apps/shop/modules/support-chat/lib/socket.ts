@@ -19,3 +19,12 @@ export function createSupportChatSocket(accessToken: string): SupportChatSocket 
     },
   });
 }
+
+/** Socket.IO client for guest sessions (auth via HttpOnly cookie, no JWT). */
+export function createGuestSupportChatSocket(): SupportChatSocket {
+  return io(`${buildSupportChatSocketOrigin()}/support-chat`, {
+    transports: ['polling', 'websocket'],
+    autoConnect: false,
+    withCredentials: true,
+  });
+}

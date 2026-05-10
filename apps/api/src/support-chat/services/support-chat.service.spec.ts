@@ -187,6 +187,31 @@ describe('SupportChatService', () => {
       });
       expect(result.senderName).toBe('Agent A');
     });
+
+    it('should resolve guest anonymous sender label', async () => {
+      repository.existsById.mockResolvedValue(true);
+      repository.createMessage.mockResolvedValue({
+        id: 102,
+        chatId: 2,
+        senderType: ChatSenderType.GUEST,
+        senderCustomerId: null,
+        senderEmployeeId: null,
+        content: 'Preview',
+        createdAt: new Date(),
+      });
+      const result = await service.sendMessage({
+        chatId: 2,
+        senderType: ChatSenderType.GUEST,
+        content: 'Preview',
+      });
+      expect(result.senderName).toBe('Khách');
+      expect(repository.findCustomerNames).not.toHaveBeenCalled();
+      expect(repository.createMessage).toHaveBeenCalledWith({
+        chatId: 2,
+        senderType: ChatSenderType.GUEST,
+        content: 'Preview',
+      });
+    });
   });
 
   describe('findChatByCustomer', () => {

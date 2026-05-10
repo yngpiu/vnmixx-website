@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ChatSenderType } from '../../../generated/prisma/client';
 import {
   ChatDetailResponseDto,
@@ -19,9 +24,12 @@ import {
 interface SendMessageInput {
   readonly chatId: number;
   readonly senderType: ChatSenderType;
-  readonly senderId: number;
+  readonly senderId?: number;
   readonly content: string;
 }
+
+const SUPPORT_CHAT_ANONYMOUS_PARTY_LABEL = 'Khách (chưa đăng nhập)';
+const SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL = 'Khách';
 
 @Injectable()
 // Xử lý luồng nghiệp vụ liên quan đến chat hỗ trợ khách hàng.
@@ -47,13 +55,21 @@ export class SupportChatService {
 
   // Lưu tin nhắn mới và trả về dữ liệu tin nhắn kèm tên người gửi.
   async sendMessage(input: SendMessageInput): Promise<ChatMessageResponseDto> {
+    const requiresNumericSender =
+      input.senderType === ChatSenderType.CUSTOMER || input.senderType === ChatSenderType.EMPLOYEE;
+    if (requiresNumericSender && typeof input.senderId !== 'number') {
+      throw new BadRequestException('senderId bắt buộc với CUSTOMER và EMPLOYEE.');
+    }
     const isExists = await this.repository.existsById(input.chatId);
     if (!isExists) {
       throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${input.chatId}`);
     }
 
     const message = await this.repository.createMessage(input);
-    const senderName = await this.resolveSenderName(input.senderType, input.senderId);
+    const senderName =
+      input.senderType === ChatSenderType.GUEST
+        ? SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL
+        : await this.resolveSenderName(input.senderType, input.senderId as number);
 
     return this.mapMessage(message, senderName);
   }
@@ -139,9 +155,23 @@ export class SupportChatService {
     return assignment !== null;
   }
 
+  // Tìm cuộc hội thoại cho guest session hoặc tạo mới.
+  async findOrCreateGuestChat(secretHash: string): Promise<ChatDetailResponseDto> {
+    const existing = await this.repository.findByGuestSessionSecretHash(secretHash);
+    if (existing) return this.mapChatDetail(existing);
+    const created = await this.repository.createForGuestSession(secretHash);
+    return this.mapChatDetail(created);
+  }
+
   // Kiểm tra xem khách hàng có phải chủ sở hữu của cuộc hội thoại không.
   async isCustomerOwner(chatId: number, customerId: number): Promise<boolean> {
     const chat = await this.repository.findByCustomerId(customerId);
+    return chat?.id === chatId;
+  }
+
+  // Kiểm tra xem guest có phải chủ sở hữu của cuộc hội thoại không.
+  async isGuestOwner(chatId: number, secretHash: string): Promise<boolean> {
+    const chat = await this.repository.findByGuestSessionSecretHash(secretHash);
     return chat?.id === chatId;
   }
 
@@ -151,7 +181,7 @@ export class SupportChatService {
     return {
       id: chat.id,
       customerId: chat.customerId,
-      customerName: chat.customer.fullName,
+      customerName: chat.customer?.fullName ?? SUPPORT_CHAT_ANONYMOUS_PARTY_LABEL,
       assignments: chat.assignments.map((a) => ({
         employeeId: a.employee.id,
         employeeName: a.employee.fullName,
@@ -163,12 +193,13 @@ export class SupportChatService {
 
   private mapChatSummary(chat: ChatSummaryView): ChatSummaryResponseDto {
     const lastMessage = chat.messages[0] ?? null;
+    const partyName = chat.customer?.fullName ?? SUPPORT_CHAT_ANONYMOUS_PARTY_LABEL;
     return {
       id: chat.id,
       customerId: chat.customerId,
-      customerName: chat.customer.fullName,
-      customerEmail: chat.customer.email,
-      customerPhoneNumber: chat.customer.phoneNumber,
+      customerName: partyName,
+      customerEmail: chat.customer?.email ?? '',
+      customerPhoneNumber: chat.customer?.phoneNumber ?? '',
       lastMessageContent: lastMessage?.content ?? null,
       lastMessageAt: lastMessage?.createdAt ?? null,
       assignedEmployeeNames: chat.assignments.map((a) => a.employee.fullName),
@@ -193,6 +224,9 @@ export class SupportChatService {
     senderType: ChatSenderType,
     senderId: number,
   ): Promise<string | null> {
+    if (senderType === ChatSenderType.GUEST) {
+      return SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL;
+    }
     if (senderType === ChatSenderType.CUSTOMER) {
       const rows = await this.repository.findCustomerNames([senderId]);
       return rows[0]?.fullName ?? null;
@@ -204,8 +238,11 @@ export class SupportChatService {
   private async resolveSenderNames(messages: MessageView[]): Promise<Map<string, string>> {
     const customerIds = new Set<number>();
     const employeeIds = new Set<number>();
-
+    const nameMap = new Map<string, string>();
     for (const msg of messages) {
+      if (msg.senderType === ChatSenderType.GUEST) {
+        nameMap.set('GUEST', SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL);
+      }
       if (msg.senderType === ChatSenderType.CUSTOMER && msg.senderCustomerId) {
         customerIds.add(msg.senderCustomerId);
       }
@@ -213,8 +250,6 @@ export class SupportChatService {
         employeeIds.add(msg.senderEmployeeId);
       }
     }
-
-    const nameMap = new Map<string, string>();
 
     if (customerIds.size > 0) {
       const customers = await this.repository.findCustomerNames([...customerIds]);
@@ -234,6 +269,7 @@ export class SupportChatService {
   }
 
   private buildSenderKey(msg: MessageView): string {
+    if (msg.senderType === ChatSenderType.GUEST) return 'GUEST';
     const id =
       msg.senderType === ChatSenderType.CUSTOMER ? msg.senderCustomerId : msg.senderEmployeeId;
     return `${msg.senderType}:${id}`;
