@@ -5,6 +5,15 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: vnmixx-api
     restart: unless-stopped
+    mem_limit: ${API_MEM_LIMIT:-1g}
+    mem_reservation: ${API_MEM_RESERVATION:-512m}
+    memswap_limit: ${API_MEMSWAP_LIMIT:-1g}
+    deploy:
+      resources:
+        limits:
+          memory: ${API_MEM_LIMIT:-1g}
+        reservations:
+          memory: ${API_MEM_RESERVATION:-512m}
     depends_on:
       mysql:
         condition: service_healthy
@@ -12,6 +21,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=${API_NODE_MAX_OLD_SPACE_SIZE:-768}
       PORT: 4000
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       REDIS_URL: redis://redis:6379

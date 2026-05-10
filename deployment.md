@@ -157,7 +157,7 @@ Sau khi DNS được update, đợi Cloudflare propagate (thường vài phút) 
 Nếu bạn dùng workflow mình vừa thêm vào repo:
 
 - `.github/workflows/ci.yml`: chạy `lint` + `check-types` + `build` + test khi có PR/push.
-- `.github/workflows/deploy.yml`: deploy lên VPS khi `push main` (hoặc manual `workflow_dispatch`).
+- `.github/workflows/deploy.yml`: deploy lên VPS khi workflow `CI` hoàn tất thành công trên `main` (hoặc manual `workflow_dispatch`).
 
 Các GitHub Secrets cần cấu hình:
 
@@ -172,6 +172,21 @@ Workflow sẽ thực hiện:
 2. `docker compose ... up -d --build` cho `mysql/redis`, `api`.
 3. `prisma migrate deploy` trong container `api`.
 4. `up -d --build` cho `dashboard` và `shop`.
+
+### 4.1) Xử lý OOM (exit code 137) cho API
+
+Khi gặp lỗi `exit code 137` (thường do thiếu RAM), tăng memory cho service `api` bằng các biến trong `.env`:
+
+- `API_MEM_LIMIT` (mặc định `1g`)
+- `API_MEM_RESERVATION` (mặc định `512m`)
+- `API_MEMSWAP_LIMIT` (mặc định `1g`)
+- `API_NODE_MAX_OLD_SPACE_SIZE` (mặc định `768`)
+
+Có thể kiểm tra nhanh mức dùng RAM khi deploy:
+
+```bash
+docker stats --no-stream
+```
 
 ## 5) Lưu ý về migration
 
