@@ -178,6 +178,10 @@ describe('ProductService', () => {
     const dto: CreateProductDto = {
       name: 'New Product',
       slug: 'new-product',
+      weight: 100,
+      length: 10,
+      width: 10,
+      height: 5,
       variants: [{ colorId: 1, sizeId: 1, sku: 'SKU1', price: 100, onHand: 10 }],
       categoryIds: [3],
     };

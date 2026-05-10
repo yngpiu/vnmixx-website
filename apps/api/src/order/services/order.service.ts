@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { OrderStatus, Prisma } from '../../../generated/prisma/client';
+import { isPrismaErrorCode } from '../../common/utils/prisma.util';
 import { PrismaService } from '../../prisma/services/prisma.service';
 import {
   estimateCartPackageFromLines,
@@ -88,6 +89,15 @@ interface ExpirablePendingOrderRecord {
     method: string;
     status: string;
   } | null;
+}
+
+class RetryableTransactionConflictError extends Error {
+  readonly code = 'P2034';
+
+  constructor() {
+    super('Transaction conflict');
+    this.name = 'RetryableTransactionConflictError';
+  }
 }
 
 // Dịch vụ quản lý đơn hàng dành cho khách hàng
@@ -529,8 +539,9 @@ export class OrderService {
   // Kiểm tra lỗi có thể thử lại được không (liên quan đến transaction/unique constraint)
   private isRetryableError(error: unknown): boolean {
     return (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      (error.code === 'P2034' || error.code === 'P2002')
+      error instanceof RetryableTransactionConflictError ||
+      isPrismaErrorCode(error, 'P2034') ||
+      isPrismaErrorCode(error, 'P2002')
     );
   }
 
@@ -622,10 +633,7 @@ export class OrderService {
 
       // Nếu không hàng nào được cập nhật, nghĩa là version đã thay đổi bởi transaction khác
       if (updated.count === 0) {
-        throw new Prisma.PrismaClientKnownRequestError('Conflict', {
-          code: 'P2034',
-          clientVersion: 'N/A',
-        });
+        throw new RetryableTransactionConflictError();
       }
 
       // 4. Lưu vết biến động kho
@@ -675,10 +683,7 @@ export class OrderService {
         },
       });
       if (updated.count === 0) {
-        throw new Prisma.PrismaClientKnownRequestError('Conflict', {
-          code: 'P2034',
-          clientVersion: 'N/A',
-        });
+        throw new RetryableTransactionConflictError();
       }
 
       // 3. Lưu vết biến động kho để đối soát

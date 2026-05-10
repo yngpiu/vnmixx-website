@@ -1,5 +1,3 @@
-import { Prisma } from 'generated/prisma/client';
-
 export type SoftDeletedWhereClause =
   | Record<string, never>
   | { deletedAt: null }
@@ -14,18 +12,23 @@ export function softDeletedWhere(isSoftDeleted?: boolean): SoftDeletedWhereClaus
 
 export function isPrismaKnownRequestError(
   error: unknown,
-): error is Prisma.PrismaClientKnownRequestError {
-  return error instanceof Prisma.PrismaClientKnownRequestError;
+): error is { code: string; meta?: { target?: unknown } | null } {
+  if (!(error instanceof Error)) return false;
+  const candidate = error as { code?: unknown };
+  return typeof candidate.code === 'string';
 }
 
 export function isPrismaErrorCode(
   error: unknown,
   code: string,
-): error is Prisma.PrismaClientKnownRequestError {
+): error is { code: string; meta?: { target?: unknown } | null } {
   return isPrismaKnownRequestError(error) && error.code === code;
 }
 
-export function getPrismaErrorTargets(error: Prisma.PrismaClientKnownRequestError): string[] {
+export function getPrismaErrorTargets(error: {
+  code: string;
+  meta?: { target?: unknown } | null;
+}): string[] {
   const target = error.meta?.target;
   if (Array.isArray(target)) {
     return target.map((item) => String(item));

@@ -577,22 +577,36 @@ export class ProductRepository {
       };
     }
     const productIds = listStubs.map((stub) => stub.id);
-    const bestSellingRows = await this.prisma.$queryRaw<
-      Array<{ productId: number; soldCount: bigint | number }>
-    >(
-      Prisma.sql`
-              SELECT pv.product_id AS productId, COALESCE(SUM(oi.quantity), 0) AS soldCount
-              FROM order_items oi
-              INNER JOIN product_variants pv ON pv.id = oi.variant_id
-              INNER JOIN orders o ON o.id = oi.order_id
-              WHERE o.status = 'DELIVERED'
-                AND pv.product_id IN (${Prisma.join(productIds)})
-              GROUP BY pv.product_id
-            `,
+    const variantSoldRows = await this.prisma.orderItem.groupBy({
+      by: ['variantId'],
+      where: {
+        order: { status: 'DELIVERED' },
+        variant: { productId: { in: productIds } },
+      },
+      _sum: { quantity: true },
+    });
+    const variantIds = variantSoldRows.map((row) => row.variantId);
+    const variants =
+      variantIds.length > 0
+        ? await this.prisma.productVariant.findMany({
+            where: { id: { in: variantIds } },
+            select: { id: true, productId: true },
+          })
+        : [];
+    const productIdByVariantId = new Map(
+      variants.map((variant) => [variant.id, variant.productId]),
     );
     const soldCountByProductId = new Map<number, number>(
-      bestSellingRows.map((row) => [Number(row.productId), Number(row.soldCount)]),
+      productIds.map((productId) => [productId, 0]),
     );
+    for (const row of variantSoldRows) {
+      const productId = productIdByVariantId.get(row.variantId);
+      if (!productId) continue;
+      soldCountByProductId.set(
+        productId,
+        (soldCountByProductId.get(productId) ?? 0) + Number(row._sum.quantity ?? 0),
+      );
+    }
     const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
       const leftSold = soldCountByProductId.get(leftStub.id) ?? 0;
       const rightSold = soldCountByProductId.get(rightStub.id) ?? 0;
@@ -651,18 +665,13 @@ export class ProductRepository {
       };
     }
     const productIds = listStubs.map((stub) => stub.id);
-    const favoriteRows = await this.prisma.$queryRaw<
-      Array<{ productId: number; favCount: bigint | number }>
-    >(
-      Prisma.sql`
-              SELECT w.product_id AS productId, COUNT(*) AS favCount
-              FROM wishlists w
-              WHERE w.product_id IN (${Prisma.join(productIds)})
-              GROUP BY w.product_id
-            `,
-    );
+    const favoriteRows = await this.prisma.wishlist.groupBy({
+      by: ['productId'],
+      where: { productId: { in: productIds } },
+      _count: { _all: true },
+    });
     const favoriteCountByProductId = new Map<number, number>(
-      favoriteRows.map((row) => [Number(row.productId), Number(row.favCount)]),
+      favoriteRows.map((row) => [row.productId, row._count._all]),
     );
     const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
       const leftFav = favoriteCountByProductId.get(leftStub.id) ?? 0;

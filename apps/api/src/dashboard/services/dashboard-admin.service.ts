@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OrderStatus, Prisma } from '../../../generated/prisma/client';
+import { OrderStatus } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
 type DateRange = {
@@ -166,8 +166,6 @@ export class DashboardAdminService {
     const range = this.resolveDateRange(params);
     const limit = params.limit ?? 5;
     const metric = params.metric ?? 'quantity';
-    const metricSql =
-      metric === 'revenue' ? Prisma.sql`SUM(oi.subtotal) DESC` : Prisma.sql`SUM(oi.quantity) DESC`;
     const rows = await this.prisma.$queryRaw<
       Array<{
         product_id: number;
@@ -176,7 +174,7 @@ export class DashboardAdminService {
         revenue: bigint;
         thumbnail_url: string | null;
       }>
-    >(Prisma.sql`
+    >`
       SELECT
         pv.product_id AS product_id,
         MAX(oi.product_name) AS product_name,
@@ -195,9 +193,12 @@ export class DashboardAdminService {
       WHERE o.created_at BETWEEN ${range.start} AND ${range.end}
         AND o.status <> 'CANCELLED'
       GROUP BY pv.product_id
-      ORDER BY ${metricSql}
+      ORDER BY CASE
+        WHEN ${metric} = 'revenue' THEN SUM(oi.subtotal)
+        ELSE SUM(oi.quantity)
+      END DESC
       LIMIT ${limit}
-    `);
+    `;
     return {
       items: rows.map((row) => ({
         productId: Number(row.product_id),
@@ -219,7 +220,7 @@ export class DashboardAdminService {
     const limit = params.limit ?? 5;
     const rows = await this.prisma.$queryRaw<
       Array<{ category_id: number; category_name: string; revenue: bigint }>
-    >(Prisma.sql`
+    >`
       SELECT
         c.id AS category_id,
         c.name AS category_name,
@@ -238,7 +239,7 @@ export class DashboardAdminService {
       GROUP BY c.id, c.name
       ORDER BY revenue DESC
       LIMIT ${limit}
-    `);
+    `;
     const totalRevenue = rows.reduce((total, row) => total + Number(row.revenue ?? 0), 0);
     return {
       segments: rows.map((row) => {
@@ -492,23 +493,26 @@ export class DashboardAdminService {
     end: Date,
     groupBy: 'day' | 'month' | 'year',
   ): Promise<Array<{ bucket: string; value: number }>> {
-    const formatSql =
-      groupBy === 'year'
-        ? Prisma.raw("'%Y'")
-        : groupBy === 'month'
-          ? Prisma.raw("'%Y-%m'")
-          : Prisma.raw("'%Y-%m-%d'");
-    const rows = await this.prisma.$queryRaw<Array<{ bucket: string; value: bigint }>>(Prisma.sql`
+    const rows = await this.prisma.$queryRaw<Array<{ bucket: string; value: bigint }>>`
       SELECT source.bucket AS bucket, SUM(source.total) AS value
       FROM (
-        SELECT DATE_FORMAT(created_at, ${formatSql}) AS bucket, total
+        SELECT
+          DATE_FORMAT(
+            created_at,
+            CASE
+              WHEN ${groupBy} = 'year' THEN '%Y'
+              WHEN ${groupBy} = 'month' THEN '%Y-%m'
+              ELSE '%Y-%m-%d'
+            END
+          ) AS bucket,
+          total
         FROM orders
         WHERE created_at BETWEEN ${start} AND ${end}
           AND status <> 'CANCELLED'
       ) AS source
       GROUP BY source.bucket
       ORDER BY bucket ASC
-    `);
+    `;
     return rows.map((row) => ({ bucket: row.bucket, value: Number(row.value ?? 0) }));
   }
 
