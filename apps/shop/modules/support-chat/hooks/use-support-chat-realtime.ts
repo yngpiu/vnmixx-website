@@ -17,6 +17,7 @@ interface UseSupportChatRealtimeOptions {
   readonly joinNonce?: number;
   readonly onNewMessage: (payload: unknown) => void;
   readonly onChatAssigned: (payload: unknown) => void;
+  readonly onTypingChange: (payload: unknown) => void;
 }
 
 export function useSupportChatRealtime({
@@ -26,6 +27,7 @@ export function useSupportChatRealtime({
   joinNonce = 0,
   onNewMessage,
   onChatAssigned,
+  onTypingChange,
 }: UseSupportChatRealtimeOptions): SupportChatSocket | null {
   const accessToken = useAuthStore((state) => state.accessToken);
   const socketRef = useRef<SupportChatSocket | null>(null);
@@ -42,14 +44,16 @@ export function useSupportChatRealtime({
     nextSocket.connect();
     nextSocket.on('newMessage', onNewMessage);
     nextSocket.on('chatAssigned', onChatAssigned);
+    nextSocket.on('typing', onTypingChange);
     return () => {
       nextSocket.off('newMessage', onNewMessage);
       nextSocket.off('chatAssigned', onChatAssigned);
+      nextSocket.off('typing', onTypingChange);
       nextSocket.disconnect();
       socketRef.current = null;
       setSocket(null);
     };
-  }, [accessToken, enabled, mode, onChatAssigned, onNewMessage]);
+  }, [accessToken, enabled, mode, onChatAssigned, onNewMessage, onTypingChange]);
   useEffect(() => {
     const activeSocket = socketRef.current;
     if (!activeSocket || !chatId || !enabled) return;

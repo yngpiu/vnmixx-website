@@ -13,6 +13,7 @@ describe('SupportChatGateway', () => {
   let service: any;
   let mockServer: any;
   let mockClient: any;
+  let mockClientRoomEmitter: { emit: jest.Mock };
 
   beforeEach(async () => {
     service = {
@@ -49,11 +50,15 @@ describe('SupportChatGateway', () => {
     (gateway as any).server = mockServer;
 
     // Mock Socket Client
+    mockClientRoomEmitter = {
+      emit: jest.fn(),
+    };
     mockClient = {
       id: 'test_client_id',
       data: { userId: 1, userType: 'CUSTOMER' },
       join: jest.fn(),
       leave: jest.fn(),
+      to: jest.fn().mockReturnValue(mockClientRoomEmitter),
     };
   });
 
@@ -172,6 +177,36 @@ describe('SupportChatGateway', () => {
 
       expect(mockServer.to).toHaveBeenCalledWith('chat:1');
       expect(mockServer.emit).toHaveBeenCalledWith('chatAssigned', { employeeId: 2 });
+    });
+  });
+
+  describe('handleTyping', () => {
+    it('should throw WsException if payload is invalid', async () => {
+      await expect(
+        gateway.handleTyping(mockClient, { chatId: 1, isTyping: 'yes' as never }),
+      ).rejects.toThrow(WsException);
+    });
+
+    it('should throw WsException if user does not have access', async () => {
+      service.isCustomerOwner.mockResolvedValue(false);
+      await expect(gateway.handleTyping(mockClient, { chatId: 1, isTyping: true })).rejects.toThrow(
+        WsException,
+      );
+    });
+
+    it('should emit typing event to room except sender', async () => {
+      service.isCustomerOwner.mockResolvedValue(true);
+      const result = await gateway.handleTyping(mockClient, { chatId: 1, isTyping: true });
+
+      expect(mockClient.to).toHaveBeenCalledWith('chat:1');
+      expect(mockClientRoomEmitter.emit).toHaveBeenCalledWith('typing', {
+        chatId: 1,
+        isTyping: true,
+        senderType: 'CUSTOMER',
+        senderCustomerId: 1,
+        senderEmployeeId: null,
+      });
+      expect(result).toEqual({ chatId: 1, isTyping: true });
     });
   });
 });

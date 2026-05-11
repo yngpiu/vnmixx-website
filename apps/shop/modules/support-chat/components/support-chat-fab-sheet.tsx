@@ -13,7 +13,7 @@ import {
 import { SupportChatImagePreviewDialog } from '@/modules/support-chat/components/support-chat-image-preview-dialog';
 import { useSupportChatRealtime } from '@/modules/support-chat/hooks/use-support-chat-realtime';
 import { useSupportChatDrawerStore } from '@/modules/support-chat/stores/support-chat-drawer-store';
-import type { ChatMessage } from '@/modules/support-chat/types/support-chat';
+import type { ChatMessage, ChatTypingEvent } from '@/modules/support-chat/types/support-chat';
 import {
   buildShopSupportChatMessageContent,
   parseShopSupportMessageContent,
@@ -51,6 +51,12 @@ const supportChatDraftSchema = z.object({
 });
 
 type SupportChatDraftValues = z.infer<typeof supportChatDraftSchema>;
+
+function buildTypingSenderKey(event: ChatTypingEvent): string {
+  if (event.senderType === 'EMPLOYEE') return `EMPLOYEE:${event.senderEmployeeId ?? 'unknown'}`;
+  if (event.senderType === 'CUSTOMER') return `CUSTOMER:${event.senderCustomerId ?? 'unknown'}`;
+  return 'GUEST';
+}
 
 function isSameDate(dateA: Date, dateB: Date): boolean {
   return (
@@ -166,8 +172,11 @@ export function SupportChatFabSheet(): React.JSX.Element {
   const [realtimeMessages, setRealtimeMessages] = useState<ChatMessage[]>([]);
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
   const [scrollToBottomTick, setScrollToBottomTick] = useState(0);
+  const [typingEvent, setTypingEvent] = useState<ChatTypingEvent | null>(null);
   const optimisticIdRef = useRef(-1);
   const optimisticImageUrlsRef = useRef(new Map<number, string[]>());
+  const typingClearTimerRef = useRef<number | null>(null);
+  const typingStopTimerRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -200,6 +209,11 @@ export function SupportChatFabSheet(): React.JSX.Element {
     (payload: unknown): void => {
       const message = payload as ChatMessage;
       if (!chatId || message.chatId !== chatId) return;
+      setTypingEvent(null);
+      if (typingClearTimerRef.current !== null) {
+        window.clearTimeout(typingClearTimerRef.current);
+        typingClearTimerRef.current = null;
+      }
       setOptimisticMessages((previous) => {
         const incomingParsed = parseShopSupportMessageContent(message.content);
         const isMySentMessage = isLoggedIn
@@ -239,12 +253,83 @@ export function SupportChatFabSheet(): React.JSX.Element {
     void queryClient.invalidateQueries({ queryKey: ['support-chat', 'detail', chatMode] });
   }, [chatMode, queryClient]);
 
+  const onTypingChange = useCallback(
+    (payload: unknown): void => {
+      const event = payload as ChatTypingEvent;
+      if (!chatId || event.chatId !== chatId || typeof event.isTyping !== 'boolean') return;
+      const isOwnEvent = isLoggedIn
+        ? event.senderType === 'CUSTOMER' && event.senderCustomerId === user?.id
+        : event.senderType === 'GUEST';
+      if (isOwnEvent) return;
+      const senderKey = buildTypingSenderKey(event);
+      if (typingClearTimerRef.current !== null) {
+        window.clearTimeout(typingClearTimerRef.current);
+        typingClearTimerRef.current = null;
+      }
+      if (!event.isTyping) {
+        setTypingEvent((previous) =>
+          previous && buildTypingSenderKey(previous) === senderKey ? null : previous,
+        );
+        return;
+      }
+      setTypingEvent(event);
+      typingClearTimerRef.current = window.setTimeout(() => {
+        setTypingEvent((previous) =>
+          previous && buildTypingSenderKey(previous) === senderKey ? null : previous,
+        );
+        typingClearTimerRef.current = null;
+      }, 1500);
+    },
+    [chatId, isLoggedIn, user?.id],
+  );
+
   const socket = useSupportChatRealtime({
     chatId,
     mode: chatMode,
     enabled: isOpen && chatId !== null,
     onNewMessage,
     onChatAssigned,
+    onTypingChange,
+  });
+
+  const emitTyping = useCallback(
+    (isTyping: boolean): void => {
+      if (!socket || !chatId) return;
+      socket.emit('typing', { chatId, isTyping });
+    },
+    [chatId, socket],
+  );
+
+  const stopTypingSignal = useCallback((): void => {
+    if (typingStopTimerRef.current !== null) {
+      window.clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+    emitTyping(false);
+  }, [emitTyping]);
+
+  const handleDraftTypingChange = useCallback(
+    (value: string): void => {
+      if (!value.trim()) {
+        stopTypingSignal();
+        return;
+      }
+      emitTyping(true);
+      if (typingStopTimerRef.current !== null) {
+        window.clearTimeout(typingStopTimerRef.current);
+      }
+      typingStopTimerRef.current = window.setTimeout(() => {
+        emitTyping(false);
+        typingStopTimerRef.current = null;
+      }, 1200);
+    },
+    [emitTyping, stopTypingSignal],
+  );
+
+  const draftField = register('draft', {
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+      handleDraftTypingChange(event.target.value);
+    },
   });
 
   const messages = useMemo(() => {
@@ -292,6 +377,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
           senderCustomerId: isLoggedIn ? user!.id : null,
           senderEmployeeId: null,
           senderName: isLoggedIn ? (user!.fullName ?? null) : 'Khách',
+          senderAvatarUrl: isLoggedIn ? (user!.avatarUrl ?? null) : null,
           content,
           createdAt: new Date().toISOString(),
         },
@@ -306,6 +392,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
     const textContent = values.draft.trim();
     const imagesToSend = selectedImages;
     if (!textContent && imagesToSend.length === 0) return;
+    stopTypingSignal();
     setValue('draft', '', { shouldValidate: true });
     setSelectedImages([]);
     setScrollToBottomTick((tick) => tick + 1);
@@ -372,6 +459,23 @@ export function SupportChatFabSheet(): React.JSX.Element {
       optimisticImages.clear();
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (typingClearTimerRef.current !== null) {
+        window.clearTimeout(typingClearTimerRef.current);
+      }
+      if (typingStopTimerRef.current !== null) {
+        window.clearTimeout(typingStopTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopTypingSignal();
+    };
+  }, [stopTypingSignal]);
 
   function handlePickImages(event: React.ChangeEvent<HTMLInputElement>): void {
     const files = Array.from(event.target.files ?? []).filter((file) =>
@@ -507,6 +611,18 @@ export function SupportChatFabSheet(): React.JSX.Element {
                       );
                     },
                   )}
+                  {typingEvent ? (
+                    <div className="flex items-end gap-2 justify-start">
+                      <div className="rounded-2xl rounded-tl-[4px] rounded-bl-[4px] bg-muted px-3 py-2 text-sm leading-none text-muted-foreground">
+                        <span className="sr-only">Đang nhập</span>
+                        <span className="inline-flex items-center gap-1" aria-hidden>
+                          <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.2s]" />
+                          <span className="size-1.5 animate-bounce rounded-full bg-current" />
+                          <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
                   <div ref={messagesEndRef} />
                 </div>
                 <form
@@ -567,7 +683,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
                     <input
                       type="text"
                       maxLength={MAX_DRAFT_LENGTH}
-                      {...register('draft')}
+                      {...draftField}
                       placeholder="Nhập tin nhắn..."
                       className={INLINE_FIELD_CLASS}
                       disabled={!socket}

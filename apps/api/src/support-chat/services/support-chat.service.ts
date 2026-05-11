@@ -28,7 +28,12 @@ interface SendMessageInput {
   readonly content: string;
 }
 
-const SUPPORT_CHAT_ANONYMOUS_PARTY_LABEL = 'Khách (chưa đăng nhập)';
+interface SenderProfile {
+  readonly name: string;
+  readonly avatarUrl: string | null;
+}
+
+const SUPPORT_CHAT_ANONYMOUS_PARTY_LABEL = 'Khách vãng lai';
 const SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL = 'Khách';
 
 @Injectable()
@@ -66,12 +71,12 @@ export class SupportChatService {
     }
 
     const message = await this.repository.createMessage(input);
-    const senderName =
+    const senderProfile =
       input.senderType === ChatSenderType.GUEST
-        ? SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL
-        : await this.resolveSenderName(input.senderType, input.senderId as number);
+        ? { name: SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL, avatarUrl: null }
+        : await this.resolveSenderProfile(input.senderType, input.senderId as number);
 
-    return this.mapMessage(message, senderName);
+    return this.mapMessage(message, senderProfile);
   }
 
   // Phân công nhân viên vào hỗ trợ cuộc hội thoại.
@@ -112,11 +117,11 @@ export class SupportChatService {
     const hasMore = messages.length > limit;
     const items = hasMore ? messages.slice(0, limit) : messages;
 
-    const senderNames = await this.resolveSenderNames(items);
+    const senderProfiles = await this.resolveSenderProfiles(items);
 
     return {
       items: items.map((msg) =>
-        this.mapMessage(msg, senderNames.get(this.buildSenderKey(msg)) ?? null),
+        this.mapMessage(msg, senderProfiles.get(this.buildSenderKey(msg)) ?? null),
       ),
       nextCursor: hasMore && items.length > 0 ? items[items.length - 1].id : null,
       hasMore,
@@ -198,6 +203,7 @@ export class SupportChatService {
       id: chat.id,
       customerId: chat.customerId,
       customerName: partyName,
+      customerAvatarUrl: chat.customer?.avatarUrl ?? null,
       customerEmail: chat.customer?.email ?? '',
       customerPhoneNumber: chat.customer?.phoneNumber ?? '',
       lastMessageContent: lastMessage?.content ?? null,
@@ -207,41 +213,51 @@ export class SupportChatService {
     };
   }
 
-  private mapMessage(msg: MessageView, senderName: string | null): ChatMessageResponseDto {
+  private mapMessage(
+    msg: MessageView,
+    senderProfile: SenderProfile | null,
+  ): ChatMessageResponseDto {
     return {
       id: msg.id,
       chatId: msg.chatId,
       senderType: msg.senderType,
       senderCustomerId: msg.senderCustomerId,
       senderEmployeeId: msg.senderEmployeeId,
-      senderName,
+      senderName: senderProfile?.name ?? null,
+      senderAvatarUrl: senderProfile?.avatarUrl ?? null,
       content: msg.content,
       createdAt: msg.createdAt,
     };
   }
 
-  private async resolveSenderName(
+  private async resolveSenderProfile(
     senderType: ChatSenderType,
     senderId: number,
-  ): Promise<string | null> {
+  ): Promise<SenderProfile | null> {
     if (senderType === ChatSenderType.GUEST) {
-      return SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL;
+      return { name: SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL, avatarUrl: null };
     }
     if (senderType === ChatSenderType.CUSTOMER) {
       const rows = await this.repository.findCustomerNames([senderId]);
-      return rows[0]?.fullName ?? null;
+      const customer = rows[0];
+      if (!customer) return null;
+      return { name: customer.fullName, avatarUrl: customer.avatarUrl ?? null };
     }
     const rows = await this.repository.findEmployeeNames([senderId]);
-    return rows[0]?.fullName ?? null;
+    const employee = rows[0];
+    if (!employee) return null;
+    return { name: employee.fullName, avatarUrl: employee.avatarUrl ?? null };
   }
 
-  private async resolveSenderNames(messages: MessageView[]): Promise<Map<string, string>> {
+  private async resolveSenderProfiles(
+    messages: MessageView[],
+  ): Promise<Map<string, SenderProfile>> {
     const customerIds = new Set<number>();
     const employeeIds = new Set<number>();
-    const nameMap = new Map<string, string>();
+    const profileMap = new Map<string, SenderProfile>();
     for (const msg of messages) {
       if (msg.senderType === ChatSenderType.GUEST) {
-        nameMap.set('GUEST', SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL);
+        profileMap.set('GUEST', { name: SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL, avatarUrl: null });
       }
       if (msg.senderType === ChatSenderType.CUSTOMER && msg.senderCustomerId) {
         customerIds.add(msg.senderCustomerId);
@@ -254,18 +270,24 @@ export class SupportChatService {
     if (customerIds.size > 0) {
       const customers = await this.repository.findCustomerNames([...customerIds]);
       for (const c of customers) {
-        nameMap.set(`CUSTOMER:${c.id}`, c.fullName);
+        profileMap.set(`CUSTOMER:${c.id}`, {
+          name: c.fullName,
+          avatarUrl: c.avatarUrl ?? null,
+        });
       }
     }
 
     if (employeeIds.size > 0) {
       const employees = await this.repository.findEmployeeNames([...employeeIds]);
       for (const e of employees) {
-        nameMap.set(`EMPLOYEE:${e.id}`, e.fullName);
+        profileMap.set(`EMPLOYEE:${e.id}`, {
+          name: e.fullName,
+          avatarUrl: e.avatarUrl ?? null,
+        });
       }
     }
 
-    return nameMap;
+    return profileMap;
   }
 
   private buildSenderKey(msg: MessageView): string {

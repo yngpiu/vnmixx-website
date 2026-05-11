@@ -24,7 +24,12 @@ export interface ChatSummaryView {
   id: number;
   customerId: number | null;
   createdAt: Date;
-  customer: { fullName: string; email: string; phoneNumber: string } | null;
+  customer: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    avatarUrl: string | null;
+  } | null;
   assignments: { employee: { fullName: string } }[];
   messages: { content: string; createdAt: Date }[];
 }
@@ -67,7 +72,7 @@ const CHAT_LIST_SELECT = {
   id: true,
   customerId: true,
   createdAt: true,
-  customer: { select: { fullName: true, email: true, phoneNumber: true } },
+  customer: { select: { fullName: true, email: true, phoneNumber: true, avatarUrl: true } },
   assignments: { select: { employee: { select: { fullName: true } } } },
   messages: {
     orderBy: { createdAt: 'desc' as const },
@@ -278,7 +283,7 @@ export class SupportChatRepository {
   async findCustomerNames(ids: number[]) {
     return this.prisma.customer.findMany({
       where: { id: { in: ids } },
-      select: { id: true, fullName: true },
+      select: { id: true, fullName: true, avatarUrl: true },
     });
   }
 
@@ -286,7 +291,7 @@ export class SupportChatRepository {
   async findEmployeeNames(ids: number[]) {
     return this.prisma.employee.findMany({
       where: { id: { in: ids } },
-      select: { id: true, fullName: true },
+      select: { id: true, fullName: true, avatarUrl: true },
     });
   }
 }

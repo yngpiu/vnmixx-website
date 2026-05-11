@@ -1,7 +1,7 @@
 'use client';
 
 import type { ChatSenderType, ChatSummary } from '@/modules/support-chat/types/support-chat';
-import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
@@ -128,6 +128,9 @@ export function SupportChatListSidebar({
                   onClick={() => onSelectChat(chat.id)}
                 >
                   <Avatar className="size-9">
+                    {chat.customerAvatarUrl ? (
+                      <AvatarImage src={chat.customerAvatarUrl} alt="" />
+                    ) : null}
                     <AvatarFallback>{senderInitial(chat.customerName)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">

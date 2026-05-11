@@ -5,7 +5,7 @@ import { ThemeFavicon } from '@/modules/common/components/brand/theme-favicon';
 import { QueryProvider } from '@/providers/query-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { DashboardTooltipProvider } from '@/providers/tooltip-provider';
-import '@repo/ui/index.css';
+import '@/styles/globals.css';
 import { beVietnamPro } from '@repo/ui/lib/fonts';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';

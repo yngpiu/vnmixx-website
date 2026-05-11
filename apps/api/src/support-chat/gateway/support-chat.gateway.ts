@@ -25,6 +25,19 @@ interface SendMessagePayload {
   content: string;
 }
 
+interface TypingPayload {
+  chatId: number;
+  isTyping: boolean;
+}
+
+interface ChatTypingEventPayload {
+  chatId: number;
+  isTyping: boolean;
+  senderType: 'CUSTOMER' | 'EMPLOYEE' | 'GUEST';
+  senderCustomerId: number | null;
+  senderEmployeeId: number | null;
+}
+
 type ClientAuthData =
   | { userType: 'CUSTOMER'; userId: number }
   | { userType: 'EMPLOYEE'; userId: number }
@@ -121,6 +134,25 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
     return message;
   }
 
+  @UseGuards(WsCombinedAuthGuard)
+  @SubscribeMessage('typing')
+  async handleTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: TypingPayload,
+  ): Promise<{ chatId: number; isTyping: boolean }> {
+    const auth = client.data as ClientAuthData;
+    if (!Number.isInteger(payload.chatId) || payload.chatId <= 0) {
+      throw new WsException('chatId không hợp lệ');
+    }
+    if (typeof payload.isTyping !== 'boolean') {
+      throw new WsException('isTyping phải là boolean');
+    }
+    await this.assertChatAccess(auth, payload.chatId);
+    const roomName = this.buildRoomName(payload.chatId);
+    client.to(roomName).emit('typing', this.buildTypingEventPayload(auth, payload));
+    return { chatId: payload.chatId, isTyping: payload.isTyping };
+  }
+
   /**
    * Emit sự kiện `chatAssigned` khi một nhân viên được phân công.
    * Được gọi từ Controller sau khi assign thành công.
@@ -156,5 +188,36 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
 
   private buildRoomName(chatId: number): string {
     return `chat:${chatId}`;
+  }
+
+  private buildTypingEventPayload(
+    auth: ClientAuthData,
+    payload: TypingPayload,
+  ): ChatTypingEventPayload {
+    if (auth.userType === 'CUSTOMER') {
+      return {
+        chatId: payload.chatId,
+        isTyping: payload.isTyping,
+        senderType: 'CUSTOMER',
+        senderCustomerId: auth.userId,
+        senderEmployeeId: null,
+      };
+    }
+    if (auth.userType === 'EMPLOYEE') {
+      return {
+        chatId: payload.chatId,
+        isTyping: payload.isTyping,
+        senderType: 'EMPLOYEE',
+        senderCustomerId: null,
+        senderEmployeeId: auth.userId,
+      };
+    }
+    return {
+      chatId: payload.chatId,
+      isTyping: payload.isTyping,
+      senderType: 'GUEST',
+      senderCustomerId: null,
+      senderEmployeeId: null,
+    };
   }
 }

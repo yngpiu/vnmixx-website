@@ -16,8 +16,9 @@ import type {
   ChatMessage,
   ChatSenderType,
   ChatSummary,
+  ChatTypingEvent,
 } from '@/modules/support-chat/types/support-chat';
-import { Avatar, AvatarFallback } from '@repo/ui/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
@@ -49,6 +50,24 @@ import {
   type SupportChatsListCache,
 } from './support-chat.utils';
 
+function buildTypingSenderKey(event: ChatTypingEvent): string {
+  if (event.senderType === 'EMPLOYEE') return `EMPLOYEE:${event.senderEmployeeId ?? 'unknown'}`;
+  if (event.senderType === 'CUSTOMER') return `CUSTOMER:${event.senderCustomerId ?? 'unknown'}`;
+  return 'GUEST';
+}
+
+function buildMessageSenderKey(message: ChatMessage): string {
+  if (message.senderType === 'EMPLOYEE') return `EMPLOYEE:${message.senderEmployeeId ?? 'unknown'}`;
+  if (message.senderType === 'CUSTOMER') return `CUSTOMER:${message.senderCustomerId ?? 'unknown'}`;
+  return 'GUEST';
+}
+
+function resolveMessageSenderName(message: ChatMessage, fallbackCustomerName: string): string {
+  if (message.senderType === 'CUSTOMER') return message.senderName?.trim() || fallbackCustomerName;
+  if (message.senderType === 'EMPLOYEE') return message.senderName?.trim() || 'Nhân viên';
+  return message.senderName?.trim() || 'Khách';
+}
+
 export function SupportChatManagementView(): React.JSX.Element {
   const router = useRouter();
   const pathname = usePathname();
@@ -68,8 +87,11 @@ export function SupportChatManagementView(): React.JSX.Element {
   const [scrollToBottomTick, setScrollToBottomTick] = useState(0);
   const [joinNonce, setJoinNonce] = useState(0);
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
+  const [typingEvent, setTypingEvent] = useState<ChatTypingEvent | null>(null);
   const optimisticIdRef = useRef(-1);
   const optimisticImageUrlsRef = useRef(new Map<number, string[]>());
+  const typingClearTimerRef = useRef<number | null>(null);
+  const typingStopTimerRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const previousSelectedChatIdRef = useRef<number | null>(null);
@@ -201,6 +223,11 @@ export function SupportChatManagementView(): React.JSX.Element {
     (payload: unknown): void => {
       const message = payload as ChatMessage;
       if (!selectedChatId || message.chatId !== selectedChatId) return;
+      setTypingEvent(null);
+      if (typingClearTimerRef.current !== null) {
+        window.clearTimeout(typingClearTimerRef.current);
+        typingClearTimerRef.current = null;
+      }
       setOptimisticMessages((previous) => {
         const incomingParsed = parseMessagePayload(message.content);
         const targetIndex = previous.findIndex((item) => {
@@ -250,13 +277,85 @@ export function SupportChatManagementView(): React.JSX.Element {
     [queryClient],
   );
 
+  const onTypingChange = useCallback(
+    (payload: unknown): void => {
+      const event = payload as ChatTypingEvent;
+      if (
+        !selectedChatId ||
+        event.chatId !== selectedChatId ||
+        typeof event.isTyping !== 'boolean'
+      ) {
+        return;
+      }
+      if (event.senderType === 'EMPLOYEE' && event.senderEmployeeId === employeeId) {
+        return;
+      }
+      const senderKey = buildTypingSenderKey(event);
+      if (typingClearTimerRef.current !== null) {
+        window.clearTimeout(typingClearTimerRef.current);
+        typingClearTimerRef.current = null;
+      }
+      if (!event.isTyping) {
+        setTypingEvent((previous) =>
+          previous && buildTypingSenderKey(previous) === senderKey ? null : previous,
+        );
+        return;
+      }
+      setTypingEvent(event);
+      typingClearTimerRef.current = window.setTimeout(() => {
+        setTypingEvent((previous) =>
+          previous && buildTypingSenderKey(previous) === senderKey ? null : previous,
+        );
+        typingClearTimerRef.current = null;
+      }, 1500);
+    },
+    [employeeId, selectedChatId],
+  );
+
   const socket = useSupportChatRealtime({
     chatId: selectedChatId,
     enabled: canRead && selectedChatId !== null,
     joinNonce,
     onNewMessage,
     onChatAssigned,
+    onTypingChange,
   });
+
+  const emitTyping = useCallback(
+    (isTyping: boolean): void => {
+      if (!socket || !selectedChatId || !selectedChatIsAssigned) return;
+      socket.emit('typing', { chatId: selectedChatId, isTyping });
+    },
+    [selectedChatId, selectedChatIsAssigned, socket],
+  );
+
+  const stopTypingSignal = useCallback((): void => {
+    if (typingStopTimerRef.current !== null) {
+      window.clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+    emitTyping(false);
+  }, [emitTyping]);
+
+  const handleDraftChange = useCallback(
+    (value: string): void => {
+      setDraft(value);
+      if (!selectedChatIsAssigned) return;
+      if (!value.trim()) {
+        stopTypingSignal();
+        return;
+      }
+      emitTyping(true);
+      if (typingStopTimerRef.current !== null) {
+        window.clearTimeout(typingStopTimerRef.current);
+      }
+      typingStopTimerRef.current = window.setTimeout(() => {
+        emitTyping(false);
+        typingStopTimerRef.current = null;
+      }, 1200);
+    },
+    [emitTyping, selectedChatIsAssigned, stopTypingSignal],
+  );
 
   const messages = useMemo(() => {
     const history = messagesQuery.data?.pages.flatMap((page) => page.items) ?? [];
@@ -269,6 +368,43 @@ export function SupportChatManagementView(): React.JSX.Element {
       return a.id - b.id;
     });
   }, [messagesQuery.data?.pages, optimisticMessages, realtimeMessages]);
+
+  const typingAvatarUrl = useMemo(() => {
+    if (!typingEvent || !selectedChatId || typingEvent.chatId !== selectedChatId) return null;
+    if (typingEvent.senderType === 'CUSTOMER') {
+      return selectedChatSummary?.customerAvatarUrl ?? null;
+    }
+    if (typingEvent.senderType !== 'EMPLOYEE' || !typingEvent.senderEmployeeId) return null;
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (
+        message?.senderType === 'EMPLOYEE' &&
+        message.senderEmployeeId === typingEvent.senderEmployeeId &&
+        message.senderAvatarUrl
+      ) {
+        return message.senderAvatarUrl;
+      }
+    }
+    return null;
+  }, [messages, selectedChatId, selectedChatSummary?.customerAvatarUrl, typingEvent]);
+
+  const typingSenderName = useMemo(() => {
+    if (!typingEvent || !selectedChatId || typingEvent.chatId !== selectedChatId) return null;
+    if (typingEvent.senderType === 'CUSTOMER') return selectedChatSummary?.customerName ?? 'Khách';
+    if (typingEvent.senderType === 'GUEST') return 'Khách';
+    if (!typingEvent.senderEmployeeId) return 'Nhân viên';
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (
+        message?.senderType === 'EMPLOYEE' &&
+        message.senderEmployeeId === typingEvent.senderEmployeeId &&
+        message.senderName?.trim()
+      ) {
+        return message.senderName.trim();
+      }
+    }
+    return 'Nhân viên';
+  }, [messages, selectedChatId, selectedChatSummary?.customerName, typingEvent]);
 
   const timelineMessages = useMemo(() => {
     return messages.map((message, index) => {
@@ -293,6 +429,7 @@ export function SupportChatManagementView(): React.JSX.Element {
   );
 
   const handleSelectChat = (chatId: number): void => {
+    stopTypingSignal();
     const selectedChat = chatsQuery.data?.items.find((chat) => chat.id === chatId);
     if (selectedChat) {
       const targetPath =
@@ -305,6 +442,11 @@ export function SupportChatManagementView(): React.JSX.Element {
     setRealtimeMessages([]);
     setOptimisticMessages([]);
     setDraft('');
+    setTypingEvent(null);
+    if (typingClearTimerRef.current !== null) {
+      window.clearTimeout(typingClearTimerRef.current);
+      typingClearTimerRef.current = null;
+    }
     setSelectedImages([]);
     setScrollToBottomTick((tick) => tick + 1);
   };
@@ -317,10 +459,16 @@ export function SupportChatManagementView(): React.JSX.Element {
       );
       if (!targetChat) return;
       if (selectedChatId === targetChat.id) return;
+      stopTypingSignal();
       setSelectedChatId(targetChat.id);
       setRealtimeMessages([]);
       setOptimisticMessages([]);
       setDraft('');
+      setTypingEvent(null);
+      if (typingClearTimerRef.current !== null) {
+        window.clearTimeout(typingClearTimerRef.current);
+        typingClearTimerRef.current = null;
+      }
       setSelectedImages([]);
       setScrollToBottomTick((tick) => tick + 1);
       return;
@@ -329,13 +477,19 @@ export function SupportChatManagementView(): React.JSX.Element {
     const targetChat = chatsQuery.data.items.find((chat) => chat.customerId === routeCustomerId);
     if (!targetChat) return;
     if (selectedChatId === targetChat.id) return;
+    stopTypingSignal();
     setSelectedChatId(targetChat.id);
     setRealtimeMessages([]);
     setOptimisticMessages([]);
     setDraft('');
+    setTypingEvent(null);
+    if (typingClearTimerRef.current !== null) {
+      window.clearTimeout(typingClearTimerRef.current);
+      typingClearTimerRef.current = null;
+    }
     setSelectedImages([]);
     setScrollToBottomTick((tick) => tick + 1);
-  }, [chatsQuery.data?.items, routeCustomerId, routeGuestChatId, selectedChatId]);
+  }, [chatsQuery.data?.items, routeCustomerId, routeGuestChatId, selectedChatId, stopTypingSignal]);
 
   const pushOptimisticMessage = useCallback(
     (content: string): number | null => {
@@ -351,13 +505,14 @@ export function SupportChatManagementView(): React.JSX.Element {
           senderCustomerId: null,
           senderEmployeeId: employeeId,
           senderName: user?.fullName ?? null,
+          senderAvatarUrl: user?.avatarUrl ?? null,
           content,
           createdAt: new Date().toISOString(),
         },
       ]);
       return tempId;
     },
-    [employeeId, selectedChatId, user?.fullName],
+    [employeeId, selectedChatId, user?.avatarUrl, user?.fullName],
   );
 
   const handleSendMessage = async (): Promise<void> => {
@@ -365,6 +520,7 @@ export function SupportChatManagementView(): React.JSX.Element {
     const textContent = draft.trim();
     const imagesToSend = selectedImages;
     if (!textContent && imagesToSend.length === 0) return;
+    stopTypingSignal();
     setDraft('');
     setSelectedImages([]);
     setScrollToBottomTick((tick) => tick + 1);
@@ -436,6 +592,23 @@ export function SupportChatManagementView(): React.JSX.Element {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (typingClearTimerRef.current !== null) {
+        window.clearTimeout(typingClearTimerRef.current);
+      }
+      if (typingStopTimerRef.current !== null) {
+        window.clearTimeout(typingStopTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopTypingSignal();
+    };
+  }, [stopTypingSignal]);
+
   if (!canRead) {
     return (
       <ListPage title="Hỗ trợ trực tuyến">
@@ -472,6 +645,9 @@ export function SupportChatManagementView(): React.JSX.Element {
               <div className="flex items-start justify-between gap-3 border-b p-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="size-10">
+                    {selectedChatSummary.customerAvatarUrl ? (
+                      <AvatarImage src={selectedChatSummary.customerAvatarUrl} alt="" />
+                    ) : null}
                     <AvatarFallback>
                       {senderInitial(selectedChatSummary.customerName)}
                     </AvatarFallback>
@@ -541,13 +717,16 @@ export function SupportChatManagementView(): React.JSX.Element {
                             index < timelineMessages.length - 1
                               ? timelineMessages[index + 1]
                               : undefined;
+                          const senderKey = buildMessageSenderKey(message);
                           const sameSenderAsNext =
                             nextItem !== undefined &&
-                            (nextItem.message.senderEmployeeId ??
-                              nextItem.message.senderCustomerId) ===
-                              (message.senderEmployeeId ?? message.senderCustomerId);
+                            buildMessageSenderKey(nextItem.message) === senderKey;
 
                           const isImageOnlyMessage = parsed.imageUrls.length > 0 && !parsed.text;
+                          const senderFallbackName = resolveMessageSenderName(
+                            message,
+                            selectedChatSummary.customerName,
+                          );
 
                           const bubbleClassName = mine
                             ? 'bg-primary text-primary-foreground'
@@ -580,8 +759,11 @@ export function SupportChatManagementView(): React.JSX.Element {
                                 {!mine ? (
                                   showIncomingAvatar ? (
                                     <Avatar className="size-7">
+                                      {message.senderAvatarUrl ? (
+                                        <AvatarImage src={message.senderAvatarUrl} alt="" />
+                                      ) : null}
                                       <AvatarFallback className="text-[10px]">
-                                        {senderInitial(selectedChatSummary.customerName)}
+                                        {senderInitial(senderFallbackName)}
                                       </AvatarFallback>
                                     </Avatar>
                                   ) : (
@@ -648,12 +830,33 @@ export function SupportChatManagementView(): React.JSX.Element {
                           );
                         },
                       )}
+                      {typingEvent ? (
+                        <div className="space-y-2">
+                          <div className="flex items-end gap-2 justify-start">
+                            <Avatar className="size-7">
+                              {typingAvatarUrl ? (
+                                <AvatarImage src={typingAvatarUrl} alt="" />
+                              ) : null}
+                              <AvatarFallback className="text-[10px]">
+                                {senderInitial(typingSenderName ?? 'Khách')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="rounded-2xl rounded-tl-[4px] rounded-bl-[4px] bg-muted px-3 py-2 text-sm leading-none text-muted-foreground">
+                              <span className="sr-only">Đang nhập</span>
+                              <span className="inline-flex items-center gap-1" aria-hidden>
+                                <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.2s]" />
+                                <span className="size-1.5 animate-bounce rounded-full bg-current" />
+                                <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
                       <div ref={messagesEndRef} />
                     </div>
                   )}
                 </ScrollArea>
               </div>
-
               <form
                 className="flex items-center gap-2 p-4"
                 onSubmit={(event) => {
@@ -697,7 +900,7 @@ export function SupportChatManagementView(): React.JSX.Element {
                 </Button>
                 <Input
                   value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
+                  onChange={(event) => handleDraftChange(event.target.value)}
                   placeholder={
                     selectedChatIsAssigned
                       ? 'Nhập nội dung phản hồi khách hàng...'

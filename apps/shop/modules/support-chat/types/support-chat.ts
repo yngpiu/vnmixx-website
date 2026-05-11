@@ -21,8 +21,17 @@ export type ChatMessage = {
   senderCustomerId: number | null;
   senderEmployeeId: number | null;
   senderName: string | null;
+  senderAvatarUrl: string | null;
   content: string;
   createdAt: string;
+};
+
+export type ChatTypingEvent = {
+  chatId: number;
+  isTyping: boolean;
+  senderType: ChatSenderType;
+  senderCustomerId: number | null;
+  senderEmployeeId: number | null;
 };
 
 export type MessagesQuery = {

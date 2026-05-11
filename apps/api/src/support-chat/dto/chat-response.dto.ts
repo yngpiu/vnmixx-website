@@ -22,6 +22,12 @@ export class ChatMessageResponseDto {
   @ApiProperty({ nullable: true, example: 'Nguyễn Văn A' })
   senderName!: string | null;
 
+  @ApiProperty({
+    nullable: true,
+    example: 'https://cdn.example.com/avatar/employee-1.jpg',
+  })
+  senderAvatarUrl!: string | null;
+
   @ApiProperty({ example: 'Tôi cần hỗ trợ về đơn hàng #12345' })
   content!: string;
 
@@ -48,6 +54,13 @@ export class ChatSummaryResponseDto {
     description: 'Display label; anonymous chats use server default.',
   })
   customerName!: string;
+
+  @ApiProperty({
+    nullable: true,
+    example: 'https://cdn.example.com/avatar/customer-10.jpg',
+    description: 'Customer avatar URL, null for anonymous chats or when unset.',
+  })
+  customerAvatarUrl!: string | null;
 
   @ApiProperty({
     example: 'tranthib@example.com',

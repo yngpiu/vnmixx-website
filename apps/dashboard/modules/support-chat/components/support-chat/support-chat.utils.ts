@@ -106,13 +106,9 @@ export function shortDisplayName(fullName: string): string {
 }
 
 export function senderInitial(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(-2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase();
+  const normalized = name.trim().replace(/\s+/g, '');
+  const initials = Array.from(normalized).slice(0, 2).join('').toUpperCase();
+  return initials || '?';
 }
 
 export function patchSupportChatListCache(
