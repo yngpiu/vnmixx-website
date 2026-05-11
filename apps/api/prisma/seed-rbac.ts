@@ -75,8 +75,8 @@ const PERMISSIONS: { name: string; description: string }[] = [
     update: 'Kho: cập nhật dữ liệu kho (dành cho luồng mở rộng)',
     delete: 'Kho: xóa dữ liệu kho (dành cho luồng mở rộng)',
   }),
-  { name: 'support-chat.read', description: 'Chat hỗ trợ: xem danh sách và tin nhắn' },
-  { name: 'support-chat.create', description: 'Chat hỗ trợ: nhận phân công và gửi tin nhắn' },
+  { name: 'support-chat.read', description: 'Hỗ trợ trực tuyến: xem danh sách và tin nhắn' },
+  { name: 'support-chat.create', description: 'Hỗ trợ trực tuyến: nhận phân công và gửi tin nhắn' },
 ];
 
 type RoleSeed = {

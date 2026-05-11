@@ -438,7 +438,7 @@ export function SupportChatManagementView(): React.JSX.Element {
 
   if (!canRead) {
     return (
-      <ListPage title="Tin nhắn hỗ trợ">
+      <ListPage title="Hỗ trợ trực tuyến">
         <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
           Bạn chưa có quyền `support-chat.read` để truy cập module này.
         </div>
@@ -447,7 +447,7 @@ export function SupportChatManagementView(): React.JSX.Element {
   }
 
   return (
-    <ListPage title="Tin nhắn hỗ trợ">
+    <ListPage title="Hỗ trợ trực tuyến">
       <section className="grid h-[calc(100dvh-10.5rem)] min-h-[560px] gap-4 lg:grid-cols-[320px_1fr]">
         <SupportChatListSidebar
           chats={filteredChats}
@@ -537,36 +537,33 @@ export function SupportChatManagementView(): React.JSX.Element {
                       {timelineMessages.map(
                         ({ message, parsed, showBoundaryTimestamp, boundaryLabel }, index) => {
                           const mine = message.senderEmployeeId === employeeId;
-                          const previous = index > 0 ? timelineMessages[index - 1]?.message : null;
-                          const next =
+                          const nextItem =
                             index < timelineMessages.length - 1
-                              ? timelineMessages[index + 1]?.message
-                              : null;
-                          const sameSenderAsPrevious =
-                            previous &&
-                            (previous.senderEmployeeId ?? previous.senderCustomerId) ===
-                              (message.senderEmployeeId ?? message.senderCustomerId);
+                              ? timelineMessages[index + 1]
+                              : undefined;
                           const sameSenderAsNext =
-                            next &&
-                            (next.senderEmployeeId ?? next.senderCustomerId) ===
+                            nextItem !== undefined &&
+                            (nextItem.message.senderEmployeeId ??
+                              nextItem.message.senderCustomerId) ===
                               (message.senderEmployeeId ?? message.senderCustomerId);
 
+                          const isImageOnlyMessage = parsed.imageUrls.length > 0 && !parsed.text;
+
                           const bubbleClassName = mine
-                            ? cn(
-                                'bg-primary text-primary-foreground',
-                                sameSenderAsPrevious ? 'rounded-tr-md' : 'rounded-tr-2xl',
-                                sameSenderAsNext ? 'rounded-br-md' : 'rounded-br-2xl',
-                                'rounded-tl-2xl rounded-bl-2xl',
-                              )
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-foreground';
+
+                          const bubbleRadiusClassName = isImageOnlyMessage
+                            ? 'rounded-2xl overflow-hidden'
                             : cn(
-                                'bg-muted text-foreground',
-                                sameSenderAsPrevious ? 'rounded-tl-md' : 'rounded-tl-2xl',
-                                sameSenderAsNext ? 'rounded-bl-md' : 'rounded-bl-2xl',
-                                'rounded-tr-2xl rounded-br-2xl',
+                                'rounded-2xl',
+                                mine
+                                  ? 'rounded-tr-[4px] rounded-br-[4px]'
+                                  : 'rounded-tl-[4px] rounded-bl-[4px]',
                               );
 
                           const showIncomingAvatar = !mine && !sameSenderAsNext;
-                          const isImageOnlyMessage = parsed.imageUrls.length > 0 && !parsed.text;
+
                           return (
                             <div key={message.id} className="space-y-2">
                               {showBoundaryTimestamp && boundaryLabel ? (
@@ -598,6 +595,7 @@ export function SupportChatManagementView(): React.JSX.Element {
                                         'max-w-[78%] text-sm',
                                         isImageOnlyMessage ? 'px-0 py-0' : 'px-3 py-2',
                                         !isImageOnlyMessage && bubbleClassName,
+                                        bubbleRadiusClassName,
                                       )}
                                     >
                                       {parsed.imageUrls.length > 0 ? (
@@ -616,7 +614,7 @@ export function SupportChatManagementView(): React.JSX.Element {
                                             <button
                                               key={url}
                                               type="button"
-                                              className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                               onClick={() => setPreviewImageUrl(url)}
                                             >
                                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -624,7 +622,7 @@ export function SupportChatManagementView(): React.JSX.Element {
                                                 src={url}
                                                 alt="Ảnh đính kèm"
                                                 className={cn(
-                                                  'w-full rounded-md border object-cover',
+                                                  'w-full border object-cover',
                                                   parsed.imageUrls.length === 1
                                                     ? 'h-64 max-w-[420px]'
                                                     : parsed.imageUrls.length <= 4
@@ -730,7 +728,7 @@ export function SupportChatManagementView(): React.JSX.Element {
                         <div
                           key={`${file.name}-${index}`}
                           className={cn(
-                            'relative overflow-hidden rounded-md border',
+                            'relative overflow-hidden border',
                             selectedImages.length === 1 ? 'w-[180px]' : 'w-[84px] sm:w-[92px]',
                           )}
                         >

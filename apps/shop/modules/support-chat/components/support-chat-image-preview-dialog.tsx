@@ -14,6 +14,7 @@ export function SupportChatImagePreviewDialog({
   return (
     <Dialog open={previewImageUrl !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
+        aria-describedby={undefined}
         showCloseButton={false}
         className="top-0 left-0 h-screen w-screen max-w-none translate-x-0 translate-y-0 rounded-none border-none bg-transparent p-0 shadow-none ring-0 sm:max-w-none"
       >

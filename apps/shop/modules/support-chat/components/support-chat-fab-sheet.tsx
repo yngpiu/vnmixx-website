@@ -115,7 +115,7 @@ function SupportMessageBody({
     imageCount === 1 ? 'grid-cols-1' : imageCount <= 4 ? 'grid-cols-2' : 'grid-cols-3',
   );
   const imageItemClassName = cn(
-    'w-full overflow-hidden rounded-md border border-border/60',
+    'w-full overflow-hidden border border-border/60',
     imageCount === 1 ? 'max-w-[min(72vw,360px)]' : undefined,
   );
   const imageElementClassName = cn(
@@ -130,7 +130,7 @@ function SupportMessageBody({
             <div key={url} className={imageItemClassName}>
               <button
                 type="button"
-                className="w-full rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => onPreviewImage(url)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -409,14 +409,14 @@ export function SupportChatFabSheet(): React.JSX.Element {
             <DrawerHeader className="border-b px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <DrawerTitle className="text-[20px] font-semibold leading-none">
-                  Chat hỗ trợ
+                  Hỗ trợ trực tuyến
                 </DrawerTitle>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
                   className="size-9 rounded-full"
-                  aria-label="Đóng chat hỗ trợ"
+                  aria-label="Đóng hỗ trợ trực tuyến"
                   onClick={closeDrawer}
                 >
                   <XIcon className="size-6" />
@@ -452,39 +452,23 @@ export function SupportChatFabSheet(): React.JSX.Element {
                     </p>
                   ) : null}
                   {timelineMessages.map(
-                    ({ message, parsed, showBoundaryTimestamp, boundaryLabel }, index) => {
+                    ({ message, parsed, showBoundaryTimestamp, boundaryLabel }) => {
                       const mine =
                         message.senderType === 'CUSTOMER' || message.senderType === 'GUEST';
                       const isImageOnlyMessage = parsed.imageUrls.length > 0 && !parsed.text;
-                      const previousMessage =
-                        index > 0 ? timelineMessages[index - 1]?.message : undefined;
-                      const nextMessage =
-                        index < timelineMessages.length - 1
-                          ? timelineMessages[index + 1]?.message
-                          : undefined;
-                      const sameSenderAsPrevious =
-                        previousMessage !== undefined &&
-                        previousMessage.senderType === message.senderType &&
-                        previousMessage.senderCustomerId === message.senderCustomerId &&
-                        previousMessage.senderEmployeeId === message.senderEmployeeId;
-                      const sameSenderAsNext =
-                        nextMessage !== undefined &&
-                        nextMessage.senderType === message.senderType &&
-                        nextMessage.senderCustomerId === message.senderCustomerId &&
-                        nextMessage.senderEmployeeId === message.senderEmployeeId;
                       const bubbleClassName = mine
-                        ? cn(
-                            'bg-primary text-primary-foreground',
-                            sameSenderAsPrevious ? 'rounded-tr-md' : 'rounded-tr-2xl',
-                            sameSenderAsNext ? 'rounded-br-md' : 'rounded-br-2xl',
-                            'rounded-tl-2xl rounded-bl-2xl',
-                          )
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-foreground';
+
+                      const bubbleRadiusClassName = isImageOnlyMessage
+                        ? 'rounded-2xl overflow-hidden'
                         : cn(
-                            'bg-muted text-foreground',
-                            sameSenderAsPrevious ? 'rounded-tl-md' : 'rounded-tl-2xl',
-                            sameSenderAsNext ? 'rounded-bl-md' : 'rounded-bl-2xl',
-                            'rounded-tr-2xl rounded-br-2xl',
+                            'rounded-2xl',
+                            mine
+                              ? 'rounded-tr-[4px] rounded-br-[4px]'
+                              : 'rounded-tl-[4px] rounded-bl-[4px]',
                           );
+
                       return (
                         <div key={message.id} className="space-y-2">
                           {showBoundaryTimestamp && boundaryLabel ? (
@@ -505,6 +489,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
                                     'max-w-[78%] text-sm',
                                     isImageOnlyMessage ? 'px-0 py-0' : 'px-3 py-2',
                                     !isImageOnlyMessage && bubbleClassName,
+                                    bubbleRadiusClassName,
                                   )}
                                 >
                                   <SupportMessageBody
@@ -543,7 +528,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
                       {selectedImagePreviews.map((entry, index) => (
                         <div
                           key={`${entry.file.name}-${entry.previewUrl}`}
-                          className="relative size-14 overflow-hidden rounded-md border border-border bg-muted"
+                          className="relative size-14 overflow-hidden border border-border bg-muted"
                         >
                           <Image
                             src={entry.previewUrl}

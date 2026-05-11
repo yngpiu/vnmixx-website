@@ -141,7 +141,7 @@ export function MobileBottomNav(): React.JSX.Element {
                   variant="ghost"
                   className="text-muted-foreground h-full w-full rounded-none px-0 py-0 text-xs"
                   onClick={openSupportChatDrawer}
-                  aria-label="Mở chat hỗ trợ"
+                  aria-label="Mở hỗ trợ trực tuyến"
                 >
                   <span className="flex h-full flex-col items-center justify-center gap-0 sm:gap-1">
                     <item.icon className="size-5 stroke-[1.75]" />

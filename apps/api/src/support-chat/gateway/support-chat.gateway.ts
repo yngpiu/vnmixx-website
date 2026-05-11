@@ -31,7 +31,7 @@ type ClientAuthData =
   | { userType: 'GUEST'; guestSecretHash: string };
 
 /**
- * SupportChatGateway: WebSocket Gateway cho hệ thống chat hỗ trợ khách hàng.
+ * SupportChatGateway: WebSocket Gateway cho hệ thống hỗ trợ trực tuyến.
  * Sử dụng Socket.IO với namespace `/support-chat`.
  * Xử lý kết nối, xác thực JWT, join room, gửi/nhận tin nhắn real-time.
  */
@@ -59,7 +59,7 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
 
   /**
    * Client join vào room chat cụ thể.
-   * Kiểm tra quyền: khách chỉ join được chat của mình, nhân viên phải được phân công.
+   * Kiểm tra quyền: khách chỉ join được cuộc hội thoại của mình, nhân viên phải được phân công.
    */
   @UseGuards(WsCombinedAuthGuard)
   @SubscribeMessage('joinChat')

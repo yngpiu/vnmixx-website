@@ -90,7 +90,7 @@ export const sidebarSections: SidebarSection[] = [
         icon: <StarIcon className="size-4 shrink-0" />,
       },
       {
-        title: 'Tin nhắn hỗ trợ',
+        title: 'Hỗ trợ trực tuyến',
         url: dashboardRoutes.supportChats,
         icon: <MessageSquareIcon className="size-4 shrink-0" />,
       },

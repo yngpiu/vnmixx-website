@@ -43,7 +43,7 @@ export const ADMIN_MODULES: Record<AdminModuleSlug, AdminModuleMeta> = {
     moduleName: 'EmployeeModule',
   },
   'support-chats': {
-    title: 'Tin nhắn hỗ trợ',
+    title: 'Hỗ trợ trực tuyến',
     apiPath: 'admin/support-chats',
     moduleName: 'SupportChatModule',
   },
