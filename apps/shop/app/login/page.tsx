@@ -89,7 +89,7 @@ export default function LoginPage(): React.JSX.Element {
 
           <div className="px-8  md:pr-16">
             <h1 className="mb-0 text-center text-[20px] font-semibold leading-[30px] text-foreground">
-              Bạn đã có tài khoản IVY
+              Bạn đã có tài khoản VNMIXX
             </h1>
             <p className="mb-0 mt-3 text-center text-[14px] leading-[24px] text-muted-foreground">
               Nếu bạn đã có tài khoản, hãy đăng nhập để tích lũy điểm thành viên và nhận được những
@@ -163,14 +163,14 @@ export default function LoginPage(): React.JSX.Element {
 
           <div className="flex flex-col items-center justify-center px-8 py-8 md:items-center md:pl-16">
             <h2 className="mb-0 text-center text-[20px] font-semibold leading-[30px] text-foreground">
-              Khách hàng mới của IVY moda
+              Khách hàng mới của VNMIXX
             </h2>
             <p className="mb-0 mt-3 text-center text-[14px] leading-[24px] text-muted-foreground">
-              Nếu bạn chưa có tài khoản trên ivymoda.com, hãy sử dụng tùy chọn này để truy cập biểu
+              Nếu bạn chưa có tài khoản trên vnmixx.shop, hãy sử dụng tùy chọn này để truy cập biểu
               mẫu đăng ký.
               <br />
-              Bằng cách cung cấp cho IVY moda thông tin chi tiết của bạn, quá trình mua hàng trên
-              ivymoda.com sẽ là một trải nghiệm thú vị và nhanh chóng hơn!
+              Bằng cách cung cấp cho VNMIXX thông tin chi tiết của bạn, quá trình mua hàng trên
+              vnmixx.shop sẽ là một trải nghiệm thú vị và nhanh chóng hơn!
             </p>
 
             <div className="mt-8 w-full max-w-[360px]">

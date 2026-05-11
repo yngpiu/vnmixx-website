@@ -35,7 +35,7 @@ export function MobileHeader(): React.JSX.Element {
       <Link href="/" aria-label="Trang chủ" className="relative block h-[31px] w-[108px]">
         <Image
           src="/images/logo.png"
-          alt="IVY moda"
+          alt="VNMIXX"
           fill
           sizes="108px"
           priority

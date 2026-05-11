@@ -23,7 +23,7 @@ services:
       NODE_ENV: production
       NODE_OPTIONS: --max-old-space-size=${API_NODE_MAX_OLD_SPACE_SIZE:-768}
       PORT: 4000
-      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}?connection_limit=${DB_CONNECTION_LIMIT:-10}&socket_timeout=${DB_SOCKET_TIMEOUT:-10}
       REDIS_URL: redis://redis:6379
       REDIS_HOST: redis
       REDIS_PORT: 6379

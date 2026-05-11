@@ -42,7 +42,7 @@ export async function ShopHeader(): Promise<React.JSX.Element> {
           >
             <Image
               src="/images/logo.png"
-              alt="IVY moda"
+              alt="VNMIXX"
               fill
               sizes="(min-width: 1280px) 170px, 150px"
               priority
