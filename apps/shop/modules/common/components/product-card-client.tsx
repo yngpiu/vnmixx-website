@@ -21,12 +21,15 @@ export type ProductCardProps = {
   /** Category listing typography; defaults to homepage card. */
   display?: 'compact' | 'listing';
   productHrefOverride?: string;
+  /** Override Next.js Image sizes attribute – helps pick the right srcset bucket */
+  imageSizes?: string;
 };
 
 export function ProductCardClient({
   product,
   display = 'compact',
   productHrefOverride,
+  imageSizes = '(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 17vw',
 }: ProductCardProps): React.JSX.Element {
   const productPrice = product.minPrice ?? product.maxPrice;
   const cheapestVariant = (product.variants ?? []).reduce<
@@ -73,7 +76,7 @@ export function ProductCardClient({
               src={listingPrimarySrc}
               alt={product.name}
               fill
-              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+              sizes={imageSizes}
               loading="lazy"
               fetchPriority="auto"
               className={cn(
@@ -86,7 +89,7 @@ export function ProductCardClient({
                 src={listingSecondarySrc}
                 alt=""
                 fill
-                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 50vw, (max-width: 1536px) 33vw, 25vw"
+                sizes={imageSizes}
                 loading="lazy"
                 fetchPriority="low"
                 className={cn(
@@ -110,7 +113,7 @@ export function ProductCardClient({
                   type="button"
                   aria-label={`Hiển thị ảnh màu ${color.name}`}
                   aria-pressed={isSelectedColor}
-                  className="relative flex size-[17px] shrink-0 items-center justify-center rounded-full border border-border outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+                  className="relative flex size-[17px] shrink-0 items-center justify-center rounded-full border border-border outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring before:absolute before:inset-[-13px]"
                   style={{ backgroundColor: color.hexCode }}
                   onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
                     event.preventDefault();

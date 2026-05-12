@@ -49,7 +49,10 @@ export function ProductCardSlider({ products }: ProductCardSliderProps): React.J
     >
       {products.map((product: NewArrivalProduct) => (
         <SwiperSlide key={product.id}>
-          <ProductCard product={product} />
+          <ProductCard
+            product={product}
+            imageSizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 17vw"
+          />
         </SwiperSlide>
       ))}
     </Swiper>

@@ -108,14 +108,15 @@ export function ShopFooter(): React.JSX.Element {
                 <li key={socialLink.alt}>
                   <Link
                     href={socialLink.href}
-                    className="inline-flex h-5 w-5 items-center justify-center"
+                    className="inline-flex h-[44px] w-[44px] items-center justify-center"
+                    aria-label={socialLink.alt}
                   >
                     <Image
                       src={socialLink.iconSrc}
-                      alt={socialLink.alt}
+                      alt=""
+                      aria-hidden
                       width={socialLink.iconWidth}
                       height={socialLink.iconHeight}
-                      style={{ width: 'auto', height: 'auto' }}
                     />
                   </Link>
                 </li>

@@ -80,6 +80,7 @@ export function MobileBottomNav(): React.JSX.Element {
               {item.type === 'link' ? (
                 <Link
                   href={item.href}
+                  aria-label={item.label}
                   className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex h-full w-full flex-col items-center justify-center gap-0 sm:gap-1 text-xs transition-colors"
                 >
                   <item.icon className="size-5 stroke-[1.75]" />

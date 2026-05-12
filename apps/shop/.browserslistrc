@@ -1,0 +1,14 @@
+# Target modern browsers only – avoids unnecessary polyfills for
+# Array.at, Array.flatMap, Object.fromEntries, Object.hasOwn, etc.
+# which were flagged by Lighthouse as ~13 KiB wasted legacy JS.
+# "Baseline Widely Available" = Chrome 87+, Firefox 78+, Safari 14+
+[production]
+chrome >= 87
+firefox >= 78
+safari >= 14
+edge >= 88
+
+[development]
+last 1 chrome version
+last 1 firefox version
+last 1 safari version
