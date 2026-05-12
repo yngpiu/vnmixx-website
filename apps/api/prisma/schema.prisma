@@ -811,3 +811,17 @@ model ChatAssignment {
   @@index([employeeId], map: "idx_chat_assignments_employee")
   @@map("chat_assignments")
 }
+
+/// Kho kiến thức cho AI chatbot: lưu các tài liệu chính sách, Q&A, điều khoản.
+model AiKnowledgeBase {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  slug      String   @unique(map: "uk_ai_kb_slug") @db.VarChar(100)
+  title     String   @db.VarChar(255)
+  content   String   @db.LongText
+  isActive  Boolean  @default(true) @map("is_active") @db.TinyInt
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@index([isActive], map: "idx_ai_kb_active")
+  @@map("ai_knowledge_base")
+}

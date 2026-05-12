@@ -3,6 +3,7 @@
 import { ADMIN_MODULES, adminModulePath, type AdminModuleSlug } from '@/config/admin-modules';
 import { dashboardRoutes } from '@/config/routes';
 import {
+  BookOpenIcon,
   ClipboardListIcon,
   ImageIcon,
   LayoutDashboardIcon,
@@ -96,6 +97,7 @@ export const sidebarSections: SidebarSection[] = [
       },
       moduleNav('employees', UsersRoundIcon, { title: 'Nhân viên' }),
       moduleNav('roles', ShieldIcon, { title: 'Vai trò' }),
+      moduleNav('knowledge', BookOpenIcon),
     ],
   },
   /*

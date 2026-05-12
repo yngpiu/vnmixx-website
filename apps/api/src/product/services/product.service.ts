@@ -55,12 +55,34 @@ export class ProductService {
     private readonly redis: RedisService,
   ) {}
 
-  private async getRankedProductIdsForSearch(search: string | undefined): Promise<number[] | null> {
-    const normalizedSearch = search?.trim();
-    if (!normalizedSearch) {
-      return null;
-    }
-    return this.productSearchService.searchProductIds(normalizedSearch);
+  private async getRankedProductIdsForSearch(params: {
+    search?: string;
+    categorySlug?: string;
+    colorIds?: number[];
+    sizeIds?: number[];
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+  }): Promise<number[] | null> {
+    const [colorNames, sizeLabels] = await Promise.all([
+      params.colorIds?.length ? this.repository.findColorNamesByIds(params.colorIds) : [],
+      params.sizeIds?.length ? this.repository.findSizeLabelsByIds(params.sizeIds) : [],
+    ]);
+    return this.productSearchService.searchProductIds({
+      query: params.search,
+      categorySlug: params.categorySlug,
+      colorNames,
+      sizeLabels,
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+      sort:
+        params.sort === 'relevance' ||
+        params.sort === 'newest' ||
+        params.sort === 'price_asc' ||
+        params.sort === 'price_desc'
+          ? params.sort
+          : undefined,
+    });
   }
 
   async trackPublicSearchKeyword(
@@ -122,14 +144,24 @@ export class ProductService {
       maxPrice: query.maxPrice,
       sort: query.sort,
     };
-    const canUseSearchEngine = Boolean(params.search?.trim());
+    const canUseSearchEngine =
+      Boolean(params.search?.trim()) ||
+      Boolean(params.categorySlug) ||
+      Boolean(params.colorIds?.length) ||
+      Boolean(params.sizeIds?.length) ||
+      params.minPrice !== undefined ||
+      params.maxPrice !== undefined ||
+      params.sort === 'relevance' ||
+      params.sort === 'newest' ||
+      params.sort === 'price_asc' ||
+      params.sort === 'price_desc';
     if (canUseSearchEngine) {
       const hash = this.cacheService.hashQuery(params);
       return this.redis.getOrSet(
         PRODUCT_CACHE_KEYS.PRODUCT_LIST(hash),
         PRODUCT_CACHE_TTL.PRODUCT_LIST,
         async () => {
-          const rankedIds = await this.getRankedProductIdsForSearch(params.search);
+          const rankedIds = await this.getRankedProductIdsForSearch(params);
           if (!rankedIds) {
             return this.repository.findPublicList(params);
           }
@@ -139,23 +171,15 @@ export class ProductService {
               meta: { page: params.page, limit: params.limit, total: 0, totalPages: 0 },
             };
           }
-          const isRelevanceSort = params.sort === 'relevance';
-          if (isRelevanceSort) {
-            return this.repository.findPublicListBySearchRank({
-              page: params.page,
-              limit: params.limit,
-              categorySlug: params.categorySlug,
-              colorIds: params.colorIds,
-              sizeIds: params.sizeIds,
-              minPrice: params.minPrice,
-              maxPrice: params.maxPrice,
-              rankedProductIds: rankedIds,
-            });
-          }
-          return this.repository.findPublicList({
-            ...params,
-            search: undefined,
-            constrainedProductIds: rankedIds,
+          return this.repository.findPublicListBySearchRank({
+            page: params.page,
+            limit: params.limit,
+            categorySlug: undefined,
+            colorIds: undefined,
+            sizeIds: undefined,
+            minPrice: undefined,
+            maxPrice: undefined,
+            rankedProductIds: rankedIds,
           });
         },
       );
@@ -186,7 +210,13 @@ export class ProductService {
       PRODUCT_CACHE_KEYS.COLOR_FACET(hash),
       PRODUCT_CACHE_TTL.COLOR_FACET,
       async () => {
-        const rankedIds = await this.getRankedProductIdsForSearch(params.search);
+        const rankedIds = await this.getRankedProductIdsForSearch({
+          search: params.search,
+          categorySlug: params.categorySlug,
+          sizeIds: params.sizeIds,
+          minPrice: params.minPrice,
+          maxPrice: params.maxPrice,
+        });
         if (!rankedIds) {
           return this.repository.findPublicColorFacetColors(params);
         }
@@ -218,7 +248,13 @@ export class ProductService {
       PRODUCT_CACHE_KEYS.SIZE_FACET(hash),
       PRODUCT_CACHE_TTL.SIZE_FACET,
       async () => {
-        const rankedIds = await this.getRankedProductIdsForSearch(params.search);
+        const rankedIds = await this.getRankedProductIdsForSearch({
+          search: params.search,
+          categorySlug: params.categorySlug,
+          colorIds: params.colorIds,
+          minPrice: params.minPrice,
+          maxPrice: params.maxPrice,
+        });
         if (!rankedIds) {
           return this.repository.findPublicSizeFacetSizes(params);
         }

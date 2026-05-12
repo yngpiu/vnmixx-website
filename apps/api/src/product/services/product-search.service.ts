@@ -1,17 +1,47 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Settings } from 'meilisearch';
 import { MeilisearchService } from '../../meilisearch/services/meilisearch.service';
-import { ProductRepository } from '../repositories/product.repository';
+import {
+  ProductRepository,
+  type ProductSearchDocument as ProductSearchSourceDocument,
+} from '../repositories/product.repository';
 
 const SEARCH_FETCH_BATCH = 80;
 const SEARCH_FETCH_LIMIT = 240;
 
 type ProductSearchDocument = {
   id: number;
+  slug: string;
   name: string;
   nameNormalized: string;
-  isActive: boolean;
-  deletedAtNull: boolean;
+  description: string | null;
+  descriptionNormalized: string;
+  primaryCategoryName: string | null;
+  primaryCategorySlug: string | null;
+  primaryCategoryNameNormalized: string;
+  categoryPathSlugs: string[];
+  categorySearchText: string;
+  categorySearchTextNormalized: string;
+  colorNames: string[];
+  colorNamesNormalized: string[];
+  sizeLabels: string[];
+  searchTextNormalized: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  activeVariantCount: number;
+  totalOnHand: number;
+  inStock: boolean;
+  createdAtTs: number;
+};
+
+type SearchProductIdsParams = {
+  query?: string;
+  categorySlug?: string;
+  colorNames?: string[];
+  sizeLabels?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+  sort?: 'relevance' | 'newest' | 'price_asc' | 'price_desc';
 };
 
 @Injectable()
@@ -35,15 +65,37 @@ export class ProductSearchService {
       .replace(/\s+/g, ' ');
   }
 
-  private mapToSearchDocument(document: {
-    id: number;
-    name: string;
-    isActive: boolean;
-    deletedAtNull: boolean;
-  }): ProductSearchDocument {
+  private joinAndNormalize(values: ReadonlyArray<string>): string {
+    return this.normalizeSearchText(values.join(' '));
+  }
+
+  private mapToSearchDocument(document: ProductSearchSourceDocument): ProductSearchDocument {
+    const descriptionNormalized = this.normalizeSearchText(document.description ?? '');
+    const primaryCategoryNameNormalized = this.normalizeSearchText(
+      document.primaryCategoryName ?? '',
+    );
+    const categorySearchTextNormalized = this.normalizeSearchText(document.categorySearchText);
+    const colorNamesNormalized = document.colorNames
+      .map((value) => this.normalizeSearchText(value))
+      .filter((value) => value.length > 0);
+    const searchTextNormalized = this.joinAndNormalize([
+      document.name,
+      document.slug,
+      document.description ?? '',
+      document.primaryCategoryName ?? '',
+      document.categorySearchText,
+      ...document.categoryPathSlugs,
+      ...document.colorNames,
+      ...document.sizeLabels,
+    ]);
     return {
       ...document,
       nameNormalized: this.normalizeSearchText(document.name),
+      descriptionNormalized,
+      primaryCategoryNameNormalized,
+      categorySearchTextNormalized,
+      colorNamesNormalized,
+      searchTextNormalized,
     };
   }
 
@@ -70,20 +122,50 @@ export class ProductSearchService {
     queryNormalized: string;
     queryTokens: string[];
     nameNormalized: string;
+    descriptionNormalized: string;
+    primaryCategoryNameNormalized: string;
+    categorySearchTextNormalized: string;
+    colorNamesNormalized: string[];
+    searchTextNormalized: string;
     baseRank: number;
   }): number {
     const startsWithQuery = params.nameNormalized.startsWith(params.queryNormalized);
     const containsWholeQuery = params.nameNormalized.includes(params.queryNormalized);
     const hasAllTokens = params.queryTokens.every((token) => params.nameNormalized.includes(token));
+    const descriptionHasAllTokens = params.queryTokens.every((token) =>
+      params.descriptionNormalized.includes(token),
+    );
+    const categoryStartsWithQuery = params.primaryCategoryNameNormalized.startsWith(
+      params.queryNormalized,
+    );
+    const categoryContainsQuery =
+      params.primaryCategoryNameNormalized.includes(params.queryNormalized) ||
+      params.categorySearchTextNormalized.includes(params.queryNormalized);
+    const colorsContainQuery = params.colorNamesNormalized.some((value) =>
+      value.includes(params.queryNormalized),
+    );
+    const searchTextHasAllTokens = params.queryTokens.every((token) =>
+      params.searchTextNormalized.includes(token),
+    );
     const prefixTokenMatches = this.countPrefixTokenMatches({
       nameNormalized: params.nameNormalized,
+      tokens: params.queryTokens,
+    });
+    const categoryPrefixMatches = this.countPrefixTokenMatches({
+      nameNormalized: params.categorySearchTextNormalized,
       tokens: params.queryTokens,
     });
     return (
       (startsWithQuery ? 1000 : 0) +
       (containsWholeQuery ? 300 : 0) +
       (hasAllTokens ? 200 : 0) +
-      prefixTokenMatches * 25 -
+      (categoryStartsWithQuery ? 180 : 0) +
+      (categoryContainsQuery ? 120 : 0) +
+      (searchTextHasAllTokens ? 100 : 0) +
+      (descriptionHasAllTokens ? 80 : 0) +
+      (colorsContainQuery ? 60 : 0) +
+      prefixTokenMatches * 25 +
+      categoryPrefixMatches * 15 -
       params.baseRank * 0.001
     );
   }
@@ -99,10 +181,55 @@ export class ProductSearchService {
     const indexUid = this.meilisearchService.getProductIndexUid();
     await client.createIndex(indexUid, { primaryKey: 'id' }).catch(() => undefined);
     const settings: Settings = {
-      searchableAttributes: ['name', 'nameNormalized'],
-      filterableAttributes: ['isActive', 'deletedAtNull'],
-      sortableAttributes: ['id'],
-      displayedAttributes: ['id', 'name', 'nameNormalized', 'isActive', 'deletedAtNull'],
+      searchableAttributes: [
+        'name',
+        'nameNormalized',
+        'primaryCategoryName',
+        'primaryCategoryNameNormalized',
+        'categorySearchText',
+        'categorySearchTextNormalized',
+        'slug',
+        'description',
+        'descriptionNormalized',
+        'colorNames',
+        'colorNamesNormalized',
+        'sizeLabels',
+        'searchTextNormalized',
+      ],
+      filterableAttributes: [
+        'primaryCategorySlug',
+        'categoryPathSlugs',
+        'colorNames',
+        'sizeLabels',
+        'minPrice',
+        'maxPrice',
+        'inStock',
+      ],
+      sortableAttributes: ['id', 'minPrice', 'maxPrice', 'createdAtTs', 'totalOnHand'],
+      displayedAttributes: [
+        'id',
+        'slug',
+        'name',
+        'nameNormalized',
+        'description',
+        'descriptionNormalized',
+        'primaryCategoryName',
+        'primaryCategorySlug',
+        'primaryCategoryNameNormalized',
+        'categoryPathSlugs',
+        'categorySearchText',
+        'categorySearchTextNormalized',
+        'colorNames',
+        'colorNamesNormalized',
+        'sizeLabels',
+        'searchTextNormalized',
+        'minPrice',
+        'maxPrice',
+        'activeVariantCount',
+        'totalOnHand',
+        'inStock',
+        'createdAtTs',
+      ],
     };
     await client.index(indexUid).updateSettings(settings);
     this.isIndexReady = true;
@@ -144,9 +271,61 @@ export class ProductSearchService {
     this.logger.log(`Reindexed ${documents.length} products to Meilisearch.`);
   }
 
-  async searchProductIds(query: string): Promise<number[] | null> {
-    const normalizedQuery = this.normalizeSearchText(query);
-    if (!normalizedQuery) {
+  private buildSearchFilters(params: SearchProductIdsParams): string[] {
+    const filters: string[] = [];
+    if (params.categorySlug?.trim()) {
+      const normalizedCategorySlug = params.categorySlug.trim();
+      filters.push(
+        `primaryCategorySlug = "${normalizedCategorySlug}" OR categoryPathSlugs = "${normalizedCategorySlug}"`,
+      );
+    }
+    if (params.colorNames?.length) {
+      const clauses = params.colorNames
+        .map((value) => this.normalizeSearchText(value))
+        .filter((value) => value.length > 0)
+        .map((value) => `colorNamesNormalized = "${value}"`);
+      if (clauses.length > 0) {
+        filters.push(clauses.join(' OR '));
+      }
+    }
+    if (params.sizeLabels?.length) {
+      const clauses = params.sizeLabels
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0)
+        .map((value) => `sizeLabels = "${value}"`);
+      if (clauses.length > 0) {
+        filters.push(clauses.join(' OR '));
+      }
+    }
+    if (params.minPrice !== undefined) {
+      filters.push(`maxPrice >= ${params.minPrice}`);
+    }
+    if (params.maxPrice !== undefined) {
+      filters.push(`minPrice <= ${params.maxPrice}`);
+    }
+    return filters;
+  }
+
+  private buildSorts(params: SearchProductIdsParams): string[] | undefined {
+    if (params.sort === 'newest') {
+      return ['createdAtTs:desc'];
+    }
+    if (params.sort === 'price_asc') {
+      return ['minPrice:asc', 'createdAtTs:desc'];
+    }
+    if (params.sort === 'price_desc') {
+      return ['minPrice:desc', 'createdAtTs:desc'];
+    }
+    return undefined;
+  }
+
+  async searchProductIds(params: string | SearchProductIdsParams): Promise<number[] | null> {
+    const searchParams: SearchProductIdsParams =
+      typeof params === 'string' ? { query: params } : params;
+    const normalizedQuery = this.normalizeSearchText(searchParams.query ?? '');
+    const filters = this.buildSearchFilters(searchParams);
+    const sorts = this.buildSorts(searchParams);
+    if (!normalizedQuery && filters.length === 0 && !sorts?.length) {
       return null;
     }
     if (!this.meilisearchService.isEnabled()) {
@@ -165,7 +344,8 @@ export class ProductSearchService {
         const result = await index.search(normalizedQuery, {
           limit,
           offset,
-          filter: ['isActive = true', 'deletedAtNull = true'],
+          ...(filters.length > 0 ? { filter: filters } : {}),
+          ...(sorts ? { sort: sorts } : {}),
         });
         const hits = result.hits;
         if (hits.length === 0) {
@@ -177,6 +357,9 @@ export class ProductSearchService {
           break;
         }
       }
+      if (searchParams.sort && searchParams.sort !== 'relevance') {
+        return collectedHits.map((hit) => hit.id);
+      }
       const queryTokens = this.tokenizeSearchText(normalizedQuery);
       const sortedHits = collectedHits
         .map((hit, index) => ({
@@ -185,6 +368,11 @@ export class ProductSearchService {
             queryNormalized: normalizedQuery,
             queryTokens,
             nameNormalized: hit.nameNormalized,
+            descriptionNormalized: hit.descriptionNormalized,
+            primaryCategoryNameNormalized: hit.primaryCategoryNameNormalized,
+            categorySearchTextNormalized: hit.categorySearchTextNormalized,
+            colorNamesNormalized: hit.colorNamesNormalized,
+            searchTextNormalized: hit.searchTextNormalized,
             baseRank: index,
           }),
         }))

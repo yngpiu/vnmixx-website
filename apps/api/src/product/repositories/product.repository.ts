@@ -96,11 +96,28 @@ export interface PaginatedResult<T> {
   meta: { page: number; limit: number; total: number; totalPages: number };
 }
 
+export type PublicCatalogSearchCandidate = ProductListItemView & {
+  minPrice: number | null;
+  maxPrice: number | null;
+};
+
 export interface ProductSearchDocument {
   id: number;
+  slug: string;
   name: string;
-  isActive: boolean;
-  deletedAtNull: boolean;
+  description: string | null;
+  primaryCategoryName: string | null;
+  primaryCategorySlug: string | null;
+  categoryPathSlugs: string[];
+  categorySearchText: string;
+  colorNames: string[];
+  sizeLabels: string[];
+  minPrice: number | null;
+  maxPrice: number | null;
+  activeVariantCount: number;
+  totalOnHand: number;
+  inStock: boolean;
+  createdAtTs: number;
 }
 
 // ─── Select constants ───────────────────────────────────────────────────────
@@ -158,6 +175,61 @@ const PUBLIC_LIST_GRAPH_SELECT = {
 
 type PublicListGraphRow = Prisma.ProductGetPayload<{ select: typeof PUBLIC_LIST_GRAPH_SELECT }>;
 
+const PRODUCT_SEARCH_GRAPH_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  description: true,
+  isActive: true,
+  deletedAt: true,
+  createdAt: true,
+  productCategories: {
+    select: {
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          isActive: true,
+          deletedAt: true,
+          parent: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              isActive: true,
+              deletedAt: true,
+              parent: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  isActive: true,
+                  deletedAt: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  variants: {
+    where: { isActive: true, deletedAt: null },
+    select: {
+      price: true,
+      onHand: true,
+      reserved: true,
+      color: { select: { name: true } },
+      size: { select: { label: true } },
+    },
+  },
+} satisfies Prisma.ProductSelect;
+
+type ProductSearchGraphRow = Prisma.ProductGetPayload<{
+  select: typeof PRODUCT_SEARCH_GRAPH_SELECT;
+}>;
+
 /**
  * ProductRepository: Chịu trách nhiệm thao tác dữ liệu sản phẩm trong Database.
  * Sử dụng Prisma Client để thực hiện các truy vấn phức tạp, bao gồm lọc, phân trang,
@@ -167,6 +239,68 @@ type PublicListGraphRow = Prisma.ProductGetPayload<{ select: typeof PUBLIC_LIST_
 // Repository Prisma cho các thao tác dữ liệu liên quan đến sản phẩm.
 export class ProductRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  private buildSearchCategoryPath(
+    category: ProductSearchGraphRow['productCategories'][number]['category'],
+  ): {
+    names: string[];
+    slugs: string[];
+  } {
+    const lineage = [category.parent?.parent, category.parent, category]
+      .filter((node): node is NonNullable<typeof node> => Boolean(node))
+      .filter((node) => node.isActive && node.deletedAt === null);
+    return {
+      names: lineage.map((node) => node.name),
+      slugs: lineage.map((node) => node.slug),
+    };
+  }
+
+  private mapProductToSearchDocument(row: ProductSearchGraphRow): ProductSearchDocument {
+    const categoryPaths = row.productCategories.map(({ category }) =>
+      this.buildSearchCategoryPath(category),
+    );
+    const categoryPathSlugs = Array.from(new Set(categoryPaths.flatMap((path) => path.slugs)));
+    const categorySearchText = Array.from(
+      new Set(categoryPaths.flatMap((path) => path.names)),
+    ).join(' ');
+    const colorNames = Array.from(
+      new Set(
+        row.variants
+          .map((variant) => variant.color.name.trim())
+          .filter((value) => value.length > 0),
+      ),
+    );
+    const sizeLabels = Array.from(
+      new Set(
+        row.variants
+          .map((variant) => variant.size.label.trim())
+          .filter((value) => value.length > 0),
+      ),
+    );
+    const prices = row.variants.map((variant) => variant.price);
+    const availableStocks = row.variants.map((variant) =>
+      Math.max(variant.onHand - variant.reserved, 0),
+    );
+    const primaryLeafCategory = row.productCategories[0]?.category ?? null;
+    return {
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      description: row.description,
+      primaryCategoryName: primaryLeafCategory?.name ?? null,
+      primaryCategorySlug: primaryLeafCategory?.slug ?? null,
+      categoryPathSlugs,
+      categorySearchText,
+      colorNames,
+      sizeLabels,
+      minPrice: prices.length > 0 ? Math.min(...prices) : null,
+      maxPrice: prices.length > 0 ? Math.max(...prices) : null,
+      activeVariantCount: row.variants.length,
+      totalOnHand: availableStocks.reduce((sum, value) => sum + value, 0),
+      inStock: availableStocks.some((value) => value > 0),
+      createdAtTs: row.createdAt.getTime(),
+    };
+  }
 
   private resolveCompareAtPrice(params: { price: number; compareAtPrice?: number }): number {
     const { price, compareAtPrice } = params;
@@ -432,42 +566,77 @@ export class ProductRepository {
     );
   }
 
+  async findPublicSearchCandidatesByOrderedIds(params: {
+    orderedIds: number[];
+    limit: number;
+    minPrice?: number;
+    maxPrice?: number;
+  }): Promise<PublicCatalogSearchCandidate[]> {
+    if (params.orderedIds.length === 0 || params.limit <= 0) {
+      return [];
+    }
+    const limitedIds = params.orderedIds.slice(0, Math.max(params.limit, 0));
+    const where = buildPublicListWhereInput({
+      constrainedProductIds: limitedIds,
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+    });
+    const rows = await this.prisma.product.findMany({
+      where,
+      select: this.resolvePublicListGraphSelect({
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
+      }),
+    });
+    const mapped = rows.map((row) => this.mapProductGraphToPublicListItem(row));
+    return this.reorderPublicListItemsByIds(mapped, limitedIds);
+  }
+
+  async findColorNamesByIds(ids: number[]): Promise<string[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.color.findMany({
+      where: { id: { in: ids } },
+      select: { name: true },
+      orderBy: { id: 'asc' },
+    });
+    return rows.map((row) => row.name);
+  }
+
+  async findSizeLabelsByIds(ids: number[]): Promise<string[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.size.findMany({
+      where: { id: { in: ids } },
+      select: { label: true },
+      orderBy: { id: 'asc' },
+    });
+    return rows.map((row) => row.label);
+  }
+
   async findAllProductSearchDocuments(): Promise<ProductSearchDocument[]> {
     const rows = await this.prisma.product.findMany({
-      select: {
-        id: true,
-        name: true,
-        isActive: true,
-        deletedAt: true,
-      },
+      where: { isActive: true, deletedAt: null },
+      select: PRODUCT_SEARCH_GRAPH_SELECT,
+      orderBy: { id: 'asc' },
     });
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      isActive: row.isActive,
-      deletedAtNull: row.deletedAt === null,
-    }));
+    return rows.map((row) => this.mapProductToSearchDocument(row));
   }
 
   async findProductSearchDocumentById(productId: number): Promise<ProductSearchDocument | null> {
     const row = await this.prisma.product.findUnique({
       where: { id: productId },
-      select: {
-        id: true,
-        name: true,
-        isActive: true,
-        deletedAt: true,
-      },
+      select: PRODUCT_SEARCH_GRAPH_SELECT,
     });
     if (!row) {
       return null;
     }
-    return {
-      id: row.id,
-      name: row.name,
-      isActive: row.isActive,
-      deletedAtNull: row.deletedAt === null,
-    };
+    if (!row.isActive || row.deletedAt !== null) {
+      return null;
+    }
+    return this.mapProductToSearchDocument(row);
   }
 
   /**
