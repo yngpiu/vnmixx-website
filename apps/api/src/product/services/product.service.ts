@@ -144,17 +144,7 @@ export class ProductService {
       maxPrice: query.maxPrice,
       sort: query.sort,
     };
-    const canUseSearchEngine =
-      Boolean(params.search?.trim()) ||
-      Boolean(params.categorySlug) ||
-      Boolean(params.colorIds?.length) ||
-      Boolean(params.sizeIds?.length) ||
-      params.minPrice !== undefined ||
-      params.maxPrice !== undefined ||
-      params.sort === 'relevance' ||
-      params.sort === 'newest' ||
-      params.sort === 'price_asc' ||
-      params.sort === 'price_desc';
+    const canUseSearchEngine = Boolean(params.search?.trim());
     if (canUseSearchEngine) {
       const hash = this.cacheService.hashQuery(params);
       return this.redis.getOrSet(
@@ -210,6 +200,9 @@ export class ProductService {
       PRODUCT_CACHE_KEYS.COLOR_FACET(hash),
       PRODUCT_CACHE_TTL.COLOR_FACET,
       async () => {
+        if (!params.search?.trim()) {
+          return this.repository.findPublicColorFacetColors(params);
+        }
         const rankedIds = await this.getRankedProductIdsForSearch({
           search: params.search,
           categorySlug: params.categorySlug,
@@ -248,6 +241,9 @@ export class ProductService {
       PRODUCT_CACHE_KEYS.SIZE_FACET(hash),
       PRODUCT_CACHE_TTL.SIZE_FACET,
       async () => {
+        if (!params.search?.trim()) {
+          return this.repository.findPublicSizeFacetSizes(params);
+        }
         const rankedIds = await this.getRankedProductIdsForSearch({
           search: params.search,
           categorySlug: params.categorySlug,
