@@ -1,4 +1,4 @@
-export type ChatSenderType = 'CUSTOMER' | 'EMPLOYEE' | 'GUEST';
+export type ChatSenderType = 'CUSTOMER' | 'EMPLOYEE' | 'GUEST' | 'AI';
 
 export type ChatSummary = {
   id: number;

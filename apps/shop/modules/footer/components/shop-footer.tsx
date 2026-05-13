@@ -117,6 +117,7 @@ export function ShopFooter(): React.JSX.Element {
                       aria-hidden
                       width={socialLink.iconWidth}
                       height={socialLink.iconHeight}
+                      className="h-auto w-auto"
                     />
                   </Link>
                 </li>

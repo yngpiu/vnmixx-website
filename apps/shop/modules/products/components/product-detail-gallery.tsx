@@ -1,7 +1,7 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useMemo, type ComponentType, type JSX } from 'react';
+import { ProductDetailGalleryDesktopSwiper } from '@/modules/products/components/product-detail-gallery-desktop-swiper';
+import { useMemo, type JSX } from 'react';
 
 export type ProductDetailGallerySlide = {
   id: number;
@@ -14,14 +14,6 @@ type ProductDetailGalleryProps = {
   slides: readonly ProductDetailGallerySlide[];
   selectedColorId: number;
 };
-
-const ProductDetailGalleryDesktopSwiper = dynamic(
-  () =>
-    import('./product-detail-gallery-desktop-swiper').then(
-      (module) => module.ProductDetailGalleryDesktopSwiper,
-    ),
-  { ssr: false },
-) as ComponentType<{ slides: readonly ProductDetailGallerySlide[] }>;
 
 export function ProductDetailGallery({
   slides,

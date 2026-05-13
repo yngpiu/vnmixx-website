@@ -1,8 +1,12 @@
+import { getQueueToken } from '@nestjs/bullmq';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { WsException } from '@nestjs/websockets';
 import { ChatSenderType } from '../../../generated/prisma/client';
+import { SupportChatAiProcessor } from '../processors/support-chat-ai.processor';
+import { SupportChatRepository } from '../repositories/support-chat.repository';
 import { SupportChatService } from '../services/support-chat.service';
+import { SUPPORT_CHAT_AI_QUEUE } from '../support-chat.constants';
 import { WsCombinedAuthGuard } from '../ws-combined-auth.guard';
 import { WsGuestGuard } from '../ws-guest.guard';
 import { WsJwtGuard } from '../ws-jwt.guard';
@@ -11,6 +15,9 @@ import { SupportChatGateway } from './support-chat.gateway';
 describe('SupportChatGateway', () => {
   let gateway: SupportChatGateway;
   let service: any;
+  let repository: any;
+  let aiProcessor: any;
+  let aiQueue: any;
   let mockServer: any;
   let mockClient: any;
   let mockClientRoomEmitter: { emit: jest.Mock };
@@ -21,6 +28,19 @@ describe('SupportChatGateway', () => {
       isEmployeeAssigned: jest.fn(),
       isGuestOwner: jest.fn(),
       sendMessage: jest.fn(),
+    };
+    repository = {
+      findChatAiContext: jest.fn().mockResolvedValue(null),
+    };
+    aiProcessor = {
+      setServer: jest.fn(),
+      isChatResponding: jest.fn().mockReturnValue(false),
+      markChatResponding: jest.fn(),
+      cancelChatResponse: jest.fn().mockResolvedValue(true),
+    };
+    aiQueue = {
+      remove: jest.fn().mockResolvedValue(undefined),
+      add: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -33,6 +53,18 @@ describe('SupportChatGateway', () => {
         {
           provide: JwtService,
           useValue: { verify: jest.fn() },
+        },
+        {
+          provide: SupportChatRepository,
+          useValue: repository,
+        },
+        {
+          provide: SupportChatAiProcessor,
+          useValue: aiProcessor,
+        },
+        {
+          provide: getQueueToken(SUPPORT_CHAT_AI_QUEUE),
+          useValue: aiQueue,
         },
         WsJwtGuard,
         WsGuestGuard,
@@ -150,6 +182,19 @@ describe('SupportChatGateway', () => {
       expect(result).toBe(mockMessage);
     });
 
+    it('should block customer when AI is still responding in AUTO mode', async () => {
+      service.isCustomerOwner.mockResolvedValue(true);
+      repository.findChatAiContext.mockResolvedValue({
+        id: 1,
+        aiMode: 'AUTO',
+        status: 'OPEN',
+      });
+      aiProcessor.isChatResponding.mockReturnValue(true);
+      await expect(
+        gateway.handleSendMessage(mockClient, { chatId: 1, content: 'Second message' }),
+      ).rejects.toThrow(WsException);
+    });
+
     it('should send guest message without senderId', async () => {
       mockClient.data = { userType: 'GUEST', guestSecretHash: 'abc123' };
       service.isGuestOwner.mockResolvedValue(true);
@@ -168,6 +213,25 @@ describe('SupportChatGateway', () => {
         content: 'Guest hello',
       });
       expect(result).toBe(mockMessage);
+    });
+  });
+
+  describe('handleStopAiResponse', () => {
+    it('should stop AI response for customer in AUTO mode', async () => {
+      service.isCustomerOwner.mockResolvedValue(true);
+      repository.findChatAiContext.mockResolvedValue({
+        id: 1,
+        aiMode: 'AUTO',
+        status: 'OPEN',
+      });
+      aiProcessor.cancelChatResponse.mockResolvedValue(true);
+
+      const result = await gateway.handleStopAiResponse(mockClient, { chatId: 1 });
+
+      expect(aiProcessor.cancelChatResponse).toHaveBeenCalledWith(1);
+      expect(mockServer.to).toHaveBeenCalledWith('chat:1');
+      expect(mockServer.emit).toHaveBeenCalledWith('ai:thinking', { chatId: 1, isThinking: false });
+      expect(result).toEqual({ chatId: 1, stopped: true });
     });
   });
 

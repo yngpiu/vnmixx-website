@@ -1,6 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../../../generated/prisma/client';
-import { ChatSenderType } from '../../../generated/prisma/client';
+import {
+  ChatSenderType,
+  SupportChatAiMode,
+  SupportChatStatus,
+} from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
 /**
@@ -226,6 +230,18 @@ export class SupportChatRepository {
         select: MESSAGE_SELECT,
       }) as Promise<MessageView>;
     }
+    if (data.senderType === ChatSenderType.AI) {
+      return this.prisma.chatMessage.create({
+        data: {
+          chatId: data.chatId,
+          senderType: ChatSenderType.AI,
+          senderCustomerId: null,
+          senderEmployeeId: null,
+          content: data.content,
+        },
+        select: MESSAGE_SELECT,
+      }) as Promise<MessageView>;
+    }
     const senderNumericId = typeof data.senderId !== 'undefined' ? data.senderId : null;
     if (senderNumericId === null) {
       throw new BadRequestException('senderId bắt buộc với vai trò CUSTOMER và EMPLOYEE.');
@@ -293,5 +309,39 @@ export class SupportChatRepository {
       where: { id: { in: ids } },
       select: { id: true, fullName: true, avatarUrl: true },
     });
+  }
+
+  // Lấy thông tin AI context của một cuộc hội thoại.
+  async findChatAiContext(chatId: number): Promise<{
+    id: number;
+    aiMode: SupportChatAiMode;
+    status: SupportChatStatus;
+  } | null> {
+    return this.prisma.supportChat.findUnique({
+      where: { id: chatId },
+      select: { id: true, aiMode: true, status: true },
+    });
+  }
+
+  // Lấy N tin nhắn gần nhất của cuộc hội thoại để làm context cho AI.
+  async findRecentMessagesForAi(
+    chatId: number,
+    limit: number,
+  ): Promise<{ senderType: ChatSenderType; content: string }[]> {
+    const rows = await this.prisma.chatMessage.findMany({
+      where: { chatId },
+      orderBy: { id: 'desc' },
+      take: limit,
+      select: { senderType: true, content: true },
+    });
+    return rows.reverse();
+  }
+
+  // Cập nhật trạng thái AI của cuộc hội thoại.
+  async updateAiState(
+    chatId: number,
+    data: { aiMode?: SupportChatAiMode; status?: SupportChatStatus },
+  ): Promise<void> {
+    await this.prisma.supportChat.update({ where: { id: chatId }, data });
   }
 }

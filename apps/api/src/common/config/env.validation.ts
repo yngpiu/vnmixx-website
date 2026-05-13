@@ -39,6 +39,8 @@ const envSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET_NAME: z.string().optional(),
   R2_PUBLIC_URL: z.string().optional(),
+  COHERE_API_KEY: z.string().min(1, 'COHERE_API_KEY is required'),
+  COHERE_MODEL: z.string().optional(),
   MEILISEARCH_HOST: z.string().url().optional(),
   MEILISEARCH_MASTER_KEY: z.string().optional(),
   MEILISEARCH_PRODUCT_INDEX: z.string().optional(),

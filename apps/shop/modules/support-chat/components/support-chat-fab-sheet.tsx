@@ -22,18 +22,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@repo/ui/components/ui/drawer';
 import { toast } from '@repo/ui/components/ui/sonner';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@repo/ui/components/ui/tooltip';
+import { TooltipProvider } from '@repo/ui/components/ui/tooltip';
 import { cn } from '@repo/ui/lib/utils';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImagePlusIcon, XIcon } from 'lucide-react';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -109,11 +107,31 @@ type SupportMessageBodyProps = {
   onPreviewImage: (url: string) => void;
 };
 
+const CHAT_MARKDOWN_CLASSNAME =
+  'wrap-break-word leading-relaxed [&_p]:my-0 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:space-y-1 [&_ol]:pl-5 [&_li]:leading-relaxed [&_a]:underline [&_a]:underline-offset-2 [&_pre]:my-1.5 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-black/10 [&_pre]:p-2 [&_code]:font-mono [&_code]:text-[13px]';
+
+function normalizeMessageTextForMarkdown(rawText: string): string {
+  return rawText.replace(/\r\n?/g, '\n').replace(/\\n/g, '\n');
+}
+
+type AiThinkingEvent = {
+  chatId: number;
+  isThinking: boolean;
+};
+
+type TimelineMessageItem = {
+  message: ChatMessage;
+  parsed: ReturnType<typeof parseShopSupportMessageContent>;
+  showBoundaryTimestamp: boolean;
+  boundaryLabel: string | null;
+};
+
 function SupportMessageBody({
   content,
   onPreviewImage,
 }: SupportMessageBodyProps): React.JSX.Element {
   const { text, imageUrls } = parseShopSupportMessageContent(content);
+  const markdownText = text ? normalizeMessageTextForMarkdown(text) : '';
   const imageCount = imageUrls.length;
   const isImageOnlyMessage = imageCount > 0 && !text;
   const imageGridClassName = cn(
@@ -146,10 +164,118 @@ function SupportMessageBody({
           ))}
         </div>
       ) : null}
-      {text ? <p>{text}</p> : null}
+      {text ? (
+        <div className={cn(CHAT_MARKDOWN_CLASSNAME, 'select-text')}>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{markdownText}</ReactMarkdown>
+        </div>
+      ) : null}
     </div>
   );
 }
+
+type SupportChatTimelineProps = {
+  timelineMessages: readonly TimelineMessageItem[];
+  typingEvent: ChatTypingEvent | null;
+  aiThinking: boolean;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
+  onPreviewImage: (url: string) => void;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+};
+
+const SupportChatTimeline = memo(function SupportChatTimeline({
+  timelineMessages,
+  typingEvent,
+  aiThinking,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
+  onPreviewImage,
+  messagesEndRef,
+}: SupportChatTimelineProps): React.JSX.Element {
+  return (
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/25 p-4">
+      {hasNextPage ? (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            disabled={isFetchingNextPage}
+            className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+            onClick={onLoadMore}
+          >
+            {isFetchingNextPage ? 'Đang tải...' : 'Tải thêm tin nhắn'}
+          </button>
+        </div>
+      ) : null}
+      {timelineMessages.length === 0 ? (
+        <p className="text-center text-sm text-muted-foreground">
+          Chưa có tin nhắn. Hãy gửi câu hỏi cho chúng tôi.
+        </p>
+      ) : null}
+      {timelineMessages.map(({ message, parsed, showBoundaryTimestamp, boundaryLabel }) => {
+        const mine = message.senderType === 'CUSTOMER' || message.senderType === 'GUEST';
+        const isImageOnlyMessage = parsed.imageUrls.length > 0 && !parsed.text;
+        const bubbleClassName = mine
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-muted text-foreground';
+
+        const bubbleRadiusClassName = isImageOnlyMessage
+          ? 'rounded-2xl overflow-hidden'
+          : cn(
+              'rounded-2xl',
+              mine ? 'rounded-tr-[4px] rounded-br-[4px]' : 'rounded-tl-[4px] rounded-bl-[4px]',
+            );
+
+        return (
+          <div key={message.id} className="space-y-2">
+            {showBoundaryTimestamp && boundaryLabel ? (
+              <div className="text-center text-xs text-muted-foreground">{boundaryLabel}</div>
+            ) : null}
+            <div className={cn('flex items-end gap-2', mine ? 'justify-end' : 'justify-start')}>
+              <div
+                title={formatFullTooltipTime(message.createdAt)}
+                className={cn(
+                  'max-w-[78%] text-sm select-text',
+                  isImageOnlyMessage ? 'px-0 py-0' : 'px-3 py-2',
+                  !isImageOnlyMessage && bubbleClassName,
+                  bubbleRadiusClassName,
+                )}
+              >
+                <SupportMessageBody content={message.content} onPreviewImage={onPreviewImage} />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+      {typingEvent ? (
+        <div className="flex items-end gap-2 justify-start">
+          <div className="rounded-2xl rounded-tl-[4px] rounded-bl-[4px] bg-muted px-3 py-2 text-sm leading-none text-muted-foreground">
+            <span className="sr-only">Đang nhập</span>
+            <span className="inline-flex items-center gap-1" aria-hidden>
+              <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.2s]" />
+              <span className="size-1.5 animate-bounce rounded-full bg-current" />
+              <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
+            </span>
+          </div>
+        </div>
+      ) : null}
+      {aiThinking ? (
+        <div className="flex items-end gap-2 justify-start">
+          <div className="rounded-2xl rounded-tl-[4px] rounded-bl-[4px] bg-muted px-3 py-2 text-sm leading-none text-muted-foreground">
+            <span className="sr-only">Đang phản hồi</span>
+            <span className="inline-flex items-center gap-1" aria-hidden>
+              <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.2s]" />
+              <span className="size-1.5 animate-bounce rounded-full bg-current" />
+              <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
+            </span>
+          </div>
+        </div>
+      ) : null}
+      <div ref={messagesEndRef} />
+    </div>
+  );
+});
 
 export function SupportChatFabSheet(): React.JSX.Element {
   const queryClient = useQueryClient();
@@ -173,6 +299,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
   const [optimisticMessages, setOptimisticMessages] = useState<ChatMessage[]>([]);
   const [scrollToBottomTick, setScrollToBottomTick] = useState(0);
   const [typingEvent, setTypingEvent] = useState<ChatTypingEvent | null>(null);
+  const [aiThinking, setAiThinking] = useState(false);
   const optimisticIdRef = useRef(-1);
   const optimisticImageUrlsRef = useRef(new Map<number, string[]>());
   const typingClearTimerRef = useRef<number | null>(null);
@@ -244,6 +371,9 @@ export function SupportChatFabSheet(): React.JSX.Element {
         if (previous.some((item) => item.id === message.id)) return previous;
         return [...previous, message];
       });
+      if (message.senderType === 'AI') {
+        setAiThinking(false);
+      }
       setScrollToBottomTick((tick) => tick + 1);
     },
     [chatId, isLoggedIn, user?.id],
@@ -283,6 +413,15 @@ export function SupportChatFabSheet(): React.JSX.Element {
     [chatId, isLoggedIn, user?.id],
   );
 
+  const onAiThinkingChange = useCallback(
+    (payload: unknown): void => {
+      const event = payload as AiThinkingEvent;
+      if (!chatId || event.chatId !== chatId || typeof event.isThinking !== 'boolean') return;
+      setAiThinking(event.isThinking);
+    },
+    [chatId],
+  );
+
   const socket = useSupportChatRealtime({
     chatId,
     mode: chatMode,
@@ -290,7 +429,14 @@ export function SupportChatFabSheet(): React.JSX.Element {
     onNewMessage,
     onChatAssigned,
     onTypingChange,
+    onAiThinkingChange,
   });
+
+  const handleStopAiResponse = useCallback((): void => {
+    if (!socket || !chatId) return;
+    socket.emit('stopAiResponse', { chatId });
+    setAiThinking(false);
+  }, [chatId, socket]);
 
   const emitTyping = useCallback(
     (isTyping: boolean): void => {
@@ -389,6 +535,12 @@ export function SupportChatFabSheet(): React.JSX.Element {
 
   const handleSendMessage = async (values: SupportChatDraftValues): Promise<void> => {
     if (!socket || !chatId) return;
+    if (aiThinking) {
+      toast.warning('AI đang trả lời. Nhấn Dừng để hủy và gửi tin mới.', {
+        position: 'bottom-right',
+      });
+      return;
+    }
     const textContent = values.draft.trim();
     const imagesToSend = selectedImages;
     if (!textContent && imagesToSend.length === 0) return;
@@ -477,6 +629,18 @@ export function SupportChatFabSheet(): React.JSX.Element {
     };
   }, [stopTypingSignal]);
 
+  useEffect(() => {
+    if (!chatId) {
+      setAiThinking(false);
+    }
+  }, [chatId]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setAiThinking(false);
+    }
+  }, [isOpen]);
+
   function handlePickImages(event: React.ChangeEvent<HTMLInputElement>): void {
     const files = Array.from(event.target.files ?? []).filter((file) =>
       file.type.startsWith('image/'),
@@ -507,7 +671,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
 
   return (
     <TooltipProvider>
-      <Drawer direction="right" open={isOpen} onOpenChange={setDrawerOpen}>
+      <Drawer direction="right" open={isOpen} onOpenChange={setDrawerOpen} handleOnly>
         <DrawerContent className="h-svh rounded-none border-l bg-background p-0 data-[vaul-drawer-direction=right]:w-full data-[vaul-drawer-direction=right]:max-w-none sm:data-[vaul-drawer-direction=right]:max-w-none md:data-[vaul-drawer-direction=right]:max-w-[420px]">
           <div className="flex h-full min-h-0 flex-col">
             <DrawerHeader className="border-b px-4 py-3">
@@ -537,94 +701,16 @@ export function SupportChatFabSheet(): React.JSX.Element {
               <div className="flex-1 p-4 text-sm text-destructive">Không tải được tin nhắn.</div>
             ) : (
               <>
-                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-muted/25 p-4">
-                  {messagesQuery.hasNextPage ? (
-                    <div className="flex justify-center">
-                      <button
-                        type="button"
-                        disabled={messagesQuery.isFetchingNextPage}
-                        className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
-                        onClick={() => void messagesQuery.fetchNextPage()}
-                      >
-                        {messagesQuery.isFetchingNextPage ? 'Đang tải...' : 'Tải thêm tin nhắn'}
-                      </button>
-                    </div>
-                  ) : null}
-                  {timelineMessages.length === 0 ? (
-                    <p className="text-center text-sm text-muted-foreground">
-                      Chưa có tin nhắn. Hãy gửi câu hỏi cho chúng tôi.
-                    </p>
-                  ) : null}
-                  {timelineMessages.map(
-                    ({ message, parsed, showBoundaryTimestamp, boundaryLabel }) => {
-                      const mine =
-                        message.senderType === 'CUSTOMER' || message.senderType === 'GUEST';
-                      const isImageOnlyMessage = parsed.imageUrls.length > 0 && !parsed.text;
-                      const bubbleClassName = mine
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-foreground';
-
-                      const bubbleRadiusClassName = isImageOnlyMessage
-                        ? 'rounded-2xl overflow-hidden'
-                        : cn(
-                            'rounded-2xl',
-                            mine
-                              ? 'rounded-tr-[4px] rounded-br-[4px]'
-                              : 'rounded-tl-[4px] rounded-bl-[4px]',
-                          );
-
-                      return (
-                        <div key={message.id} className="space-y-2">
-                          {showBoundaryTimestamp && boundaryLabel ? (
-                            <div className="text-center text-xs text-muted-foreground">
-                              {boundaryLabel}
-                            </div>
-                          ) : null}
-                          <div
-                            className={cn(
-                              'flex items-end gap-2',
-                              mine ? 'justify-end' : 'justify-start',
-                            )}
-                          >
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div
-                                  className={cn(
-                                    'max-w-[78%] text-sm',
-                                    isImageOnlyMessage ? 'px-0 py-0' : 'px-3 py-2',
-                                    !isImageOnlyMessage && bubbleClassName,
-                                    bubbleRadiusClassName,
-                                  )}
-                                >
-                                  <SupportMessageBody
-                                    content={message.content}
-                                    onPreviewImage={setPreviewImageUrl}
-                                  />
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side={mine ? 'left' : 'right'}>
-                                <p>{formatFullTooltipTime(message.createdAt)}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </div>
-                      );
-                    },
-                  )}
-                  {typingEvent ? (
-                    <div className="flex items-end gap-2 justify-start">
-                      <div className="rounded-2xl rounded-tl-[4px] rounded-bl-[4px] bg-muted px-3 py-2 text-sm leading-none text-muted-foreground">
-                        <span className="sr-only">Đang nhập</span>
-                        <span className="inline-flex items-center gap-1" aria-hidden>
-                          <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.2s]" />
-                          <span className="size-1.5 animate-bounce rounded-full bg-current" />
-                          <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0.2s]" />
-                        </span>
-                      </div>
-                    </div>
-                  ) : null}
-                  <div ref={messagesEndRef} />
-                </div>
+                <SupportChatTimeline
+                  timelineMessages={timelineMessages}
+                  typingEvent={typingEvent}
+                  aiThinking={aiThinking}
+                  hasNextPage={messagesQuery.hasNextPage}
+                  isFetchingNextPage={messagesQuery.isFetchingNextPage}
+                  onLoadMore={() => void messagesQuery.fetchNextPage()}
+                  onPreviewImage={setPreviewImageUrl}
+                  messagesEndRef={messagesEndRef}
+                />
                 <form
                   className="shrink-0 border-t border-border bg-card p-4"
                   onSubmit={handleSubmit((values: SupportChatDraftValues) => {
@@ -675,7 +761,12 @@ export function SupportChatFabSheet(): React.JSX.Element {
                       size="icon"
                       className="size-10 shrink-0 rounded-[4px] border-[#E7E8E9] md:size-12"
                       aria-label="Đính kèm ảnh"
-                      disabled={!socket || !isLoggedIn || selectedImages.length >= MAX_CHAT_IMAGES}
+                      disabled={
+                        !socket ||
+                        !isLoggedIn ||
+                        aiThinking ||
+                        selectedImages.length >= MAX_CHAT_IMAGES
+                      }
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <ImagePlusIcon className="size-5 text-[#57585A]" />
@@ -689,11 +780,15 @@ export function SupportChatFabSheet(): React.JSX.Element {
                       disabled={!socket}
                     />
                     <PrimaryCtaButton
-                      type="submit"
+                      type={aiThinking ? 'button' : 'submit'}
                       className="h-10! min-h-10! w-auto! shrink-0 px-5! md:h-12! md:min-h-12!"
-                      disabled={!socket || (draft.trim() === '' && selectedImages.length === 0)}
+                      disabled={
+                        !socket ||
+                        (!aiThinking && draft.trim() === '' && selectedImages.length === 0)
+                      }
+                      onClick={aiThinking ? handleStopAiResponse : undefined}
                     >
-                      Gửi
+                      {aiThinking ? 'Dừng' : 'Gửi'}
                     </PrimaryCtaButton>
                   </div>
                 </form>

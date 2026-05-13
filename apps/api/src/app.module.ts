@@ -18,7 +18,6 @@ import { CustomerModule } from './customer/customer.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EmployeeModule } from './employee/employee.module';
 import { InventoryModule } from './inventory/inventory.module';
-import { KnowledgeModule } from './knowledge/knowledge.module';
 import { LocationModule } from './location/location.module';
 import { MailModule } from './mail/mail.module';
 import { MediaModule } from './media/media.module';
@@ -83,7 +82,6 @@ import { WishlistModule } from './wishlist/wishlist.module';
     R2Module,
     MediaModule,
     SupportChatModule,
-    KnowledgeModule,
   ],
   controllers: [AppController],
   providers: [

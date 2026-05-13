@@ -1,35 +1,35 @@
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { PrismaClient } from '../generated/prisma/client';
+import { PrismaClient, ShopContentKey } from '../generated/prisma/client';
 
 const TERMS_DIR = path.resolve(__dirname, 'data/terms');
 
 interface TermFile {
-  slug: string;
+  key: ShopContentKey;
   title: string;
   fileName: string;
 }
 
 const TERM_FILES: TermFile[] = [
-  { slug: 've-chung-toi', title: 'Về chúng tôi — VNMIXX', fileName: 'thong_tin.md' },
+  { key: ShopContentKey.STORE_INFO, title: 'Về chúng tôi — VNMIXX', fileName: 'thong_tin.md' },
   {
-    slug: 'chinh-sach-doi-tra',
+    key: ShopContentKey.RETURN_POLICY,
     title: 'Chính sách đổi hàng',
     fileName: 'chinh_sach_doi_tra.md',
   },
   {
-    slug: 'chinh-sach-bao-hanh',
+    key: ShopContentKey.WARRANTY_POLICY,
     title: 'Chính sách bảo hành & sửa chữa',
     fileName: 'chinh_sach_bao_hanh.md',
   },
   {
-    slug: 'chinh-sach-dieu-khoan',
+    key: ShopContentKey.TERMS,
     title: 'Chính sách điều khoản sử dụng',
     fileName: 'chinh_sach_dieu_khoan.md',
   },
   {
-    slug: 'cau-hoi-thuong-gap',
+    key: ShopContentKey.FAQ,
     title: 'Câu hỏi thường gặp (Q&A)',
     fileName: 'q_n_a.md',
   },
@@ -47,14 +47,14 @@ export async function seedKnowledge(): Promise<void> {
         continue;
       }
       const content = fs.readFileSync(filePath, 'utf-8');
-      await prisma.aiKnowledgeBase.upsert({
-        where: { slug: term.slug },
-        create: { slug: term.slug, title: term.title, content, isActive: true },
-        update: { title: term.title, content, isActive: true },
+      await prisma.shopContent.upsert({
+        where: { key: term.key },
+        create: { key: term.key, title: term.title, content },
+        update: { title: term.title, content },
       });
-      console.log(`✅ Upserted: ${term.slug}`);
+      console.log(`✅ Upserted: ${term.key}`);
     }
-    console.log('Seed knowledge base hoàn tất.');
+    console.log('Seed shop content hoàn tất.');
   } finally {
     await prisma.$disconnect();
   }

@@ -89,6 +89,20 @@ enum ChatSenderType {
   CUSTOMER
   EMPLOYEE
   GUEST
+  AI
+}
+
+enum SupportChatAiMode {
+  AUTO
+  PAUSED
+  OFF
+}
+
+enum SupportChatStatus {
+  OPEN
+  WAITING_HUMAN
+  RESOLVED
+  CLOSED
 }
 
 enum ReviewVisibility {
@@ -766,17 +780,20 @@ model MediaFolder {
 }
 
 model SupportChat {
-  id                     Int       @id @default(autoincrement()) @db.UnsignedInt
-  customerId             Int?      @unique(map: "uk_support_chats_customer") @map("customer_id") @db.UnsignedInt
-  guestSessionSecretHash String?   @unique(map: "uk_support_chats_guest_session") @map("guest_session_secret_hash") @db.VarChar(64)
-  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+  id                     Int                @id @default(autoincrement()) @db.UnsignedInt
+  customerId             Int?               @unique(map: "uk_support_chats_customer") @map("customer_id") @db.UnsignedInt
+  guestSessionSecretHash String?            @unique(map: "uk_support_chats_guest_session") @map("guest_session_secret_hash") @db.VarChar(64)
+  aiMode                 SupportChatAiMode  @default(AUTO) @map("ai_mode")
+  status                 SupportChatStatus  @default(OPEN) @map("status")
+  createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt              DateTime           @updatedAt @map("updated_at") @db.Timestamp(0)
 
   customer    Customer?        @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   messages    ChatMessage[]
   assignments ChatAssignment[]
 
   @@index([updatedAt], map: "idx_support_chats_updated")
+  @@index([status], map: "idx_support_chats_status")
   @@map("support_chats")
 }
 
@@ -786,7 +803,7 @@ model ChatMessage {
   senderType       ChatSenderType @map("sender_type")
   senderCustomerId Int?           @map("sender_customer_id") @db.UnsignedInt
   senderEmployeeId Int?           @map("sender_employee_id") @db.UnsignedInt
-  content          String         @db.VarChar(2000)
+  content          String         @db.LongText
   createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
 
   chat           SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -812,16 +829,21 @@ model ChatAssignment {
   @@map("chat_assignments")
 }
 
-/// Kho kiến thức cho AI chatbot: lưu các tài liệu chính sách, Q&A, điều khoản.
-model AiKnowledgeBase {
-  id        Int      @id @default(autoincrement()) @db.UnsignedInt
-  slug      String   @unique(map: "uk_ai_kb_slug") @db.VarChar(100)
-  title     String   @db.VarChar(255)
-  content   String   @db.LongText
-  isActive  Boolean  @default(true) @map("is_active") @db.TinyInt
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+enum ShopContentKey {
+  WARRANTY_POLICY
+  RETURN_POLICY
+  TERMS
+  FAQ
+  STORE_INFO
+}
 
-  @@index([isActive], map: "idx_ai_kb_active")
-  @@map("ai_knowledge_base")
+/// Nội dung cửa hàng dùng cho AI chatbot: mỗi key là 1 loại chính sách/thông tin cố định.
+model ShopContent {
+  id        Int            @id @default(autoincrement()) @db.UnsignedInt
+  key       ShopContentKey @unique
+  title     String         @db.VarChar(255)
+  content   String         @db.LongText
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@map("shop_content")
 }

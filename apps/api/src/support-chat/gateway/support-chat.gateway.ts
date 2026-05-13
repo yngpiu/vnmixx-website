@@ -1,19 +1,25 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import { Logger, UseGuards } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
+import { Queue } from 'bullmq';
 import { Server, Socket } from 'socket.io';
-import { ChatSenderType } from '../../../generated/prisma/client';
+import { ChatSenderType, SupportChatAiMode } from '../../../generated/prisma/client';
 import { buildSocketIoCorsOptions } from '../../common/websocket/socket-io-cors';
 import type { ChatMessageResponseDto } from '../dto/chat-response.dto';
+import { SupportChatAiProcessor } from '../processors/support-chat-ai.processor';
+import { SupportChatRepository } from '../repositories/support-chat.repository';
 import { SupportChatService } from '../services/support-chat.service';
+import { SUPPORT_CHAT_AI_JOB, SUPPORT_CHAT_AI_QUEUE } from '../support-chat.constants';
 import { WsCombinedAuthGuard } from '../ws-combined-auth.guard';
 
 interface JoinChatPayload {
@@ -28,6 +34,10 @@ interface SendMessagePayload {
 interface TypingPayload {
   chatId: number;
   isTyping: boolean;
+}
+
+interface StopAiResponsePayload {
+  chatId: number;
 }
 
 interface ChatTypingEventPayload {
@@ -53,12 +63,22 @@ type ClientAuthData =
   path: '/socket.io',
   cors: buildSocketIoCorsOptions(),
 })
-export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer()
   private readonly server!: Server;
   private readonly logger = new Logger(SupportChatGateway.name);
 
-  constructor(private readonly chatService: SupportChatService) {}
+  constructor(
+    private readonly chatService: SupportChatService,
+    private readonly chatRepo: SupportChatRepository,
+    private readonly aiProcessor: SupportChatAiProcessor,
+    @InjectQueue(SUPPORT_CHAT_AI_QUEUE) private readonly aiQueue: Queue,
+  ) {}
+
+  /** Give processor access to Socket.IO server for emitting events. */
+  afterInit(server: Server): void {
+    this.aiProcessor.setServer(server);
+  }
 
   /** Ghi log khi client kết nối. */
   handleConnection(client: Socket): void {
@@ -84,6 +104,9 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
     await this.assertChatAccess(auth, payload.chatId);
     const roomName = this.buildRoomName(payload.chatId);
     await client.join(roomName);
+    if (this.aiProcessor.isChatResponding(payload.chatId)) {
+      client.emit('ai:thinking', { chatId: payload.chatId, isThinking: true });
+    }
     const authLabel = auth.userType === 'GUEST' ? 'GUEST' : `${auth.userType}:${auth.userId}`;
     this.logger.log(`${authLabel} joined room ${roomName}`);
     return { chatId: payload.chatId };
@@ -122,6 +145,19 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
     }
     await this.assertChatAccess(auth, payload.chatId);
     const senderType = this.resolveSenderType(auth);
+    const isCustomerOrGuest =
+      senderType === ChatSenderType.CUSTOMER || senderType === ChatSenderType.GUEST;
+    let chatCtx: { id: number; aiMode: SupportChatAiMode; status: string } | null = null;
+    if (isCustomerOrGuest) {
+      chatCtx = await this.chatRepo.findChatAiContext(payload.chatId);
+      if (
+        chatCtx?.aiMode === SupportChatAiMode.AUTO &&
+        this.aiProcessor.isChatResponding(payload.chatId)
+      ) {
+        this.logger.log(`[chat ${payload.chatId}] Blocked sendMessage: AI is still responding`);
+        throw new WsException('AI đang trả lời, vui lòng chờ hoặc nhấn Dừng để gửi câu hỏi mới');
+      }
+    }
     const senderId = auth.userType !== 'GUEST' ? auth.userId : undefined;
     const message = await this.chatService.sendMessage({
       chatId: payload.chatId,
@@ -131,7 +167,52 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
     });
     const roomName = this.buildRoomName(payload.chatId);
     this.server.to(roomName).emit('newMessage', message);
+
+    // Enqueue AI response if sender is customer/guest and AI mode is AUTO
+    if (isCustomerOrGuest) {
+      if (chatCtx?.aiMode === SupportChatAiMode.AUTO) {
+        const jobId = `ai-respond-${payload.chatId}`;
+        // Remove any existing queued (not yet started) job to deduplicate
+        await this.aiQueue.remove(jobId).catch(() => null);
+        await this.aiQueue.add(
+          SUPPORT_CHAT_AI_JOB,
+          { chatId: payload.chatId },
+          { jobId, removeOnComplete: true, removeOnFail: 50 },
+        );
+        this.logger.log(`[chat ${payload.chatId}] Enqueued AI job ${jobId}`);
+        this.aiProcessor.markChatResponding(payload.chatId);
+        this.server.to(roomName).emit('ai:thinking', { chatId: payload.chatId, isThinking: true });
+      }
+    }
+
     return message;
+  }
+
+  @UseGuards(WsCombinedAuthGuard)
+  @SubscribeMessage('stopAiResponse')
+  async handleStopAiResponse(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: StopAiResponsePayload,
+  ): Promise<{ chatId: number; stopped: boolean }> {
+    const auth = client.data as ClientAuthData;
+    if (!Number.isInteger(payload.chatId) || payload.chatId <= 0) {
+      throw new WsException('chatId không hợp lệ');
+    }
+    await this.assertChatAccess(auth, payload.chatId);
+    if (auth.userType === 'EMPLOYEE') {
+      throw new WsException('Chỉ khách hàng mới có thể dừng phản hồi AI');
+    }
+    const chatCtx = await this.chatRepo.findChatAiContext(payload.chatId);
+    if (chatCtx?.aiMode !== SupportChatAiMode.AUTO) {
+      return { chatId: payload.chatId, stopped: false };
+    }
+    const stopped = await this.aiProcessor.cancelChatResponse(payload.chatId);
+    this.logger.log(`[chat ${payload.chatId}] stopAiResponse requested, stopped=${stopped}`);
+    this.server.to(this.buildRoomName(payload.chatId)).emit('ai:thinking', {
+      chatId: payload.chatId,
+      isThinking: false,
+    });
+    return { chatId: payload.chatId, stopped };
   }
 
   @UseGuards(WsCombinedAuthGuard)

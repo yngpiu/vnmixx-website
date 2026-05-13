@@ -21,5 +21,6 @@ import { ProductService } from './services/product.service';
     ProductImageService,
     ProductSearchService,
   ],
+  exports: [ProductService, ProductSearchService],
 })
 export class ProductModule {}

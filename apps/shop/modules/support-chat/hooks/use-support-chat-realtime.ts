@@ -18,6 +18,7 @@ interface UseSupportChatRealtimeOptions {
   readonly onNewMessage: (payload: unknown) => void;
   readonly onChatAssigned: (payload: unknown) => void;
   readonly onTypingChange: (payload: unknown) => void;
+  readonly onAiThinkingChange?: (payload: unknown) => void;
 }
 
 export function useSupportChatRealtime({
@@ -28,6 +29,7 @@ export function useSupportChatRealtime({
   onNewMessage,
   onChatAssigned,
   onTypingChange,
+  onAiThinkingChange,
 }: UseSupportChatRealtimeOptions): SupportChatSocket | null {
   const accessToken = useAuthStore((state) => state.accessToken);
   const socketRef = useRef<SupportChatSocket | null>(null);
@@ -45,15 +47,29 @@ export function useSupportChatRealtime({
     nextSocket.on('newMessage', onNewMessage);
     nextSocket.on('chatAssigned', onChatAssigned);
     nextSocket.on('typing', onTypingChange);
+    if (onAiThinkingChange) {
+      nextSocket.on('ai:thinking', onAiThinkingChange);
+    }
     return () => {
       nextSocket.off('newMessage', onNewMessage);
       nextSocket.off('chatAssigned', onChatAssigned);
       nextSocket.off('typing', onTypingChange);
+      if (onAiThinkingChange) {
+        nextSocket.off('ai:thinking', onAiThinkingChange);
+      }
       nextSocket.disconnect();
       socketRef.current = null;
       setSocket(null);
     };
-  }, [accessToken, enabled, mode, onChatAssigned, onNewMessage, onTypingChange]);
+  }, [
+    accessToken,
+    enabled,
+    mode,
+    onAiThinkingChange,
+    onChatAssigned,
+    onNewMessage,
+    onTypingChange,
+  ]);
   useEffect(() => {
     const activeSocket = socketRef.current;
     if (!activeSocket || !chatId || !enabled) return;

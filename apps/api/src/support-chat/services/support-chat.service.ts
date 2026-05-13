@@ -220,7 +220,7 @@ export class SupportChatService {
     return {
       id: msg.id,
       chatId: msg.chatId,
-      senderType: msg.senderType,
+      senderType: msg.senderType as 'CUSTOMER' | 'EMPLOYEE' | 'GUEST' | 'AI',
       senderCustomerId: msg.senderCustomerId,
       senderEmployeeId: msg.senderEmployeeId,
       senderName: senderProfile?.name ?? null,

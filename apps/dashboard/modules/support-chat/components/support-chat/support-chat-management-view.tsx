@@ -36,6 +36,9 @@ import {
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
 import {
   SUPPORT_CHATS_LIST_QUERY,
@@ -49,6 +52,13 @@ import {
   senderInitial,
   type SupportChatsListCache,
 } from './support-chat.utils';
+
+const CHAT_MARKDOWN_CLASSNAME =
+  'wrap-break-word leading-relaxed [&_p]:my-0 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:space-y-1 [&_ol]:pl-5 [&_li]:leading-relaxed [&_a]:underline [&_a]:underline-offset-2 [&_pre]:my-1.5 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-black/10 [&_pre]:p-2 [&_code]:font-mono [&_code]:text-[13px]';
+
+function normalizeMessageTextForMarkdown(rawText: string): string {
+  return rawText.replace(/\r\n?/g, '\n').replace(/\\n/g, '\n');
+}
 
 function buildTypingSenderKey(event: ChatTypingEvent): string {
   if (event.senderType === 'EMPLOYEE') return `EMPLOYEE:${event.senderEmployeeId ?? 'unknown'}`;
@@ -723,6 +733,9 @@ export function SupportChatManagementView(): React.JSX.Element {
                             buildMessageSenderKey(nextItem.message) === senderKey;
 
                           const isImageOnlyMessage = parsed.imageUrls.length > 0 && !parsed.text;
+                          const markdownText = parsed.text
+                            ? normalizeMessageTextForMarkdown(parsed.text)
+                            : '';
                           const senderFallbackName = resolveMessageSenderName(
                             message,
                             selectedChatSummary.customerName,
@@ -817,7 +830,11 @@ export function SupportChatManagementView(): React.JSX.Element {
                                         </div>
                                       ) : null}
                                       {parsed.text ? (
-                                        <p className="wrap-break-word">{parsed.text}</p>
+                                        <div className={CHAT_MARKDOWN_CLASSNAME}>
+                                          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                                            {markdownText}
+                                          </ReactMarkdown>
+                                        </div>
                                       ) : null}
                                     </div>
                                   </TooltipTrigger>

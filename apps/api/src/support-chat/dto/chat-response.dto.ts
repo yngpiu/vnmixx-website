@@ -10,8 +10,8 @@ export class ChatMessageResponseDto {
   @ApiProperty({ example: 1 })
   chatId!: number;
 
-  @ApiProperty({ enum: ['CUSTOMER', 'EMPLOYEE', 'GUEST'], example: 'CUSTOMER' })
-  senderType!: 'CUSTOMER' | 'EMPLOYEE' | 'GUEST';
+  @ApiProperty({ enum: ['CUSTOMER', 'EMPLOYEE', 'GUEST', 'AI'], example: 'CUSTOMER' })
+  senderType!: 'CUSTOMER' | 'EMPLOYEE' | 'GUEST' | 'AI';
 
   @ApiProperty({ nullable: true, example: 5 })
   senderCustomerId!: number | null;
