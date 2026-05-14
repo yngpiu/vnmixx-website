@@ -1,23 +1,14 @@
-export type KnowledgeItem = {
+export type ShopContentKey = 'WARRANTY_POLICY' | 'RETURN_POLICY' | 'TERMS' | 'FAQ' | 'STORE_INFO';
+
+export type ShopContent = {
   id: number;
-  slug: string;
+  key: ShopContentKey;
   title: string;
   content: string;
-  isActive: boolean;
-  createdAt: string;
   updatedAt: string;
 };
 
-export type CreateKnowledgeBody = {
-  slug: string;
+export type UpsertShopContentBody = {
   title: string;
   content: string;
-  isActive?: boolean;
-};
-
-export type UpdateKnowledgeBody = {
-  slug?: string;
-  title?: string;
-  content?: string;
-  isActive?: boolean;
 };

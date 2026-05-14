@@ -122,9 +122,11 @@ export function patchSupportChatListCache(
   const senderLabel =
     message.senderType === 'EMPLOYEE'
       ? 'VNMIXX'
-      : message.senderType === 'GUEST'
-        ? 'Khách'
-        : shortDisplayName(target.customerName);
+      : message.senderType === 'AI'
+        ? 'VNMIXX AI'
+        : message.senderType === 'GUEST'
+          ? 'Khách'
+          : shortDisplayName(target.customerName);
   const snippet =
     parsed.text ||
     (parsed.imageUrls.length > 0

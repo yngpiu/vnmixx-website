@@ -13,6 +13,8 @@ import { PrismaService } from '../../prisma/services/prisma.service';
 export interface ChatDetailView {
   id: number;
   customerId: number | null;
+  aiMode: SupportChatAiMode;
+  status: SupportChatStatus;
   createdAt: Date;
   customer: { fullName: string } | null;
   assignments: {
@@ -61,6 +63,8 @@ interface CreateMessageData {
 const CHAT_DETAIL_SELECT = {
   id: true,
   customerId: true,
+  aiMode: true,
+  status: true,
   createdAt: true,
   customer: { select: { fullName: true } },
   assignments: {

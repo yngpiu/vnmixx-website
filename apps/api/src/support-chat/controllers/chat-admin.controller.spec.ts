@@ -15,6 +15,7 @@ describe('ChatAdminController', () => {
       assignEmployee: jest.fn(),
       getEmployeeChats: jest.fn(),
       getMessages: jest.fn(),
+      updateChatAiMode: jest.fn(),
     };
 
     gateway = {
@@ -86,6 +87,17 @@ describe('ChatAdminController', () => {
       const result = await controller.getMessages(1, {});
       expect(result.data).toBe(mockMessages);
       expect(service.getMessages).toHaveBeenCalledWith(1, {});
+    });
+  });
+
+  describe('updateChatAiMode', () => {
+    it('should update ai mode', async () => {
+      const mockDetail = { id: 1, aiMode: 'OFF' };
+      service.updateChatAiMode.mockResolvedValue(mockDetail);
+
+      const result = await controller.updateChatAiMode(1, { aiMode: 'OFF' });
+      expect(result.data).toBe(mockDetail);
+      expect(service.updateChatAiMode).toHaveBeenCalledWith(1, 'OFF');
     });
   });
 });

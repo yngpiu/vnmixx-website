@@ -109,9 +109,11 @@ export function SupportChatListSidebar({
               const senderLabel =
                 lastSenderType === 'EMPLOYEE'
                   ? 'VNMIXX'
-                  : lastSenderType === 'GUEST'
-                    ? 'Khách'
-                    : shortDisplayName(chat.customerName);
+                  : lastSenderType === 'AI'
+                    ? 'VNMIXX AI'
+                    : lastSenderType === 'GUEST'
+                      ? 'Khách'
+                      : shortDisplayName(chat.customerName);
               const snippet =
                 parsedLast.text ||
                 (parsedLast.imageUrls.length > 0

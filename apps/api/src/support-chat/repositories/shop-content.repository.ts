@@ -17,4 +17,19 @@ export class ShopContentRepository {
       select: { title: true, content: true },
     });
   }
+
+  async findAll(): Promise<(ShopContentView & { key: ShopContentKey; updatedAt: Date })[]> {
+    return this.prisma.shopContent.findMany({
+      select: { key: true, title: true, content: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  async upsert(key: ShopContentKey, title: string, content: string): Promise<void> {
+    await this.prisma.shopContent.upsert({
+      where: { key },
+      create: { key, title, content },
+      update: { title, content },
+    });
+  }
 }

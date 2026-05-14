@@ -1,8 +1,14 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ChatSenderType } from '../../../generated/prisma/client';
+import {
+  ChatSenderType,
+  SupportChatAiMode,
+  SupportChatStatus,
+} from '../../../generated/prisma/client';
 import { SupportChatRepository } from '../repositories/support-chat.repository';
 import { SupportChatService } from './support-chat.service';
+
+const AI_AVATAR_URL = 'https://media.vnmixx.shop/AI/1778784999854-5cffc9-cohere-logo.png';
 
 describe('SupportChatService', () => {
   let service: SupportChatService;
@@ -23,6 +29,7 @@ describe('SupportChatService', () => {
       findMessages: jest.fn(),
       findCustomerNames: jest.fn(),
       findEmployeeNames: jest.fn(),
+      updateAiState: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -47,6 +54,8 @@ describe('SupportChatService', () => {
       const mockChat = {
         id: 1,
         customerId: 10,
+        aiMode: SupportChatAiMode.AUTO,
+        status: SupportChatStatus.OPEN,
         createdAt: new Date(),
         customer: { fullName: 'Test' },
         assignments: [],
@@ -64,6 +73,8 @@ describe('SupportChatService', () => {
       const newChat = {
         id: 2,
         customerId: 10,
+        aiMode: SupportChatAiMode.AUTO,
+        status: SupportChatStatus.OPEN,
         createdAt: new Date(),
         customer: { fullName: 'Test' },
         assignments: [],
@@ -86,6 +97,8 @@ describe('SupportChatService', () => {
       const mockDetail = {
         id: 1,
         customerId: 10,
+        aiMode: SupportChatAiMode.AUTO,
+        status: SupportChatStatus.OPEN,
         createdAt: new Date(),
         customer: { fullName: 'Test' },
         assignments: [],
@@ -115,6 +128,8 @@ describe('SupportChatService', () => {
       repository.findById.mockResolvedValue({
         id: 1,
         customerId: 10,
+        aiMode: SupportChatAiMode.AUTO,
+        status: SupportChatStatus.OPEN,
         createdAt: new Date(),
         customer: { fullName: 'Test' },
         assignments: [],
@@ -212,6 +227,28 @@ describe('SupportChatService', () => {
         content: 'Preview',
       });
     });
+
+    it('should resolve AI sender label without employee lookup', async () => {
+      repository.existsById.mockResolvedValue(true);
+      repository.createMessage.mockResolvedValue({
+        id: 103,
+        chatId: 2,
+        senderType: ChatSenderType.AI,
+        senderCustomerId: null,
+        senderEmployeeId: null,
+        content: 'Xin chao',
+        createdAt: new Date(),
+      });
+      const result = await service.sendMessage({
+        chatId: 2,
+        senderType: ChatSenderType.AI,
+        content: 'Xin chao',
+      });
+      expect(result.senderName).toBe('VNMIXX AI');
+      expect(result.senderAvatarUrl).toBe(AI_AVATAR_URL);
+      expect(repository.findEmployeeNames).not.toHaveBeenCalled();
+      expect(repository.findCustomerNames).not.toHaveBeenCalled();
+    });
   });
 
   describe('findChatByCustomer', () => {
@@ -257,6 +294,29 @@ describe('SupportChatService', () => {
       expect(result.nextCursor).toBe(3);
       expect(result.items[0].senderName).toBe('Customer 10');
     });
+
+    it('should include AI sender label in message history', async () => {
+      repository.existsById.mockResolvedValue(true);
+      const createdAt = new Date();
+      repository.findMessages.mockResolvedValue([
+        {
+          id: 5,
+          chatId: 1,
+          senderType: ChatSenderType.AI,
+          senderCustomerId: null,
+          senderEmployeeId: null,
+          content: 'Toi la AI',
+          createdAt,
+        },
+      ]);
+      const result = await service.getMessages(1, { limit: 30 } as any);
+      expect(result.hasMore).toBe(false);
+      expect(result.nextCursor).toBeNull();
+      expect(result.items[0].senderName).toBe('VNMIXX AI');
+      expect(result.items[0].senderAvatarUrl).toBe(AI_AVATAR_URL);
+      expect(repository.findEmployeeNames).not.toHaveBeenCalled();
+      expect(repository.findCustomerNames).not.toHaveBeenCalled();
+    });
   });
 
   describe('getAdminChats', () => {
@@ -266,6 +326,8 @@ describe('SupportChatService', () => {
         {
           id: 1,
           customerId: 10,
+          aiMode: SupportChatAiMode.AUTO,
+          status: SupportChatStatus.OPEN,
           customer: {
             fullName: 'Customer',
             email: 'c@example.com',
@@ -297,6 +359,74 @@ describe('SupportChatService', () => {
       repository.findByCustomerId.mockResolvedValue(null);
       const result = await service.isCustomerOwner(1, 10);
       expect(result).toBe(false);
+    });
+  });
+
+  describe('updateChatAiMode', () => {
+    it('should throw NotFoundException when chat not found', async () => {
+      repository.findById.mockResolvedValue(null);
+      await expect(service.updateChatAiMode(99, SupportChatAiMode.OFF)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should enable AI and reset waiting human status to OPEN', async () => {
+      repository.findById
+        .mockResolvedValueOnce({
+          id: 1,
+          customerId: 10,
+          aiMode: SupportChatAiMode.OFF,
+          status: SupportChatStatus.WAITING_HUMAN,
+          createdAt: new Date(),
+          customer: { fullName: 'Test' },
+          assignments: [],
+        })
+        .mockResolvedValueOnce({
+          id: 1,
+          customerId: 10,
+          aiMode: SupportChatAiMode.AUTO,
+          status: SupportChatStatus.OPEN,
+          createdAt: new Date(),
+          customer: { fullName: 'Test' },
+          assignments: [],
+        });
+
+      const result = await service.updateChatAiMode(1, SupportChatAiMode.AUTO);
+      expect(repository.updateAiState).toHaveBeenCalledWith(1, {
+        aiMode: SupportChatAiMode.AUTO,
+        status: SupportChatStatus.OPEN,
+      });
+      expect(result.aiMode).toBe('AUTO');
+      expect(result.status).toBe('OPEN');
+    });
+
+    it('should disable AI without forcing status change', async () => {
+      repository.findById
+        .mockResolvedValueOnce({
+          id: 1,
+          customerId: 10,
+          aiMode: SupportChatAiMode.AUTO,
+          status: SupportChatStatus.OPEN,
+          createdAt: new Date(),
+          customer: { fullName: 'Test' },
+          assignments: [],
+        })
+        .mockResolvedValueOnce({
+          id: 1,
+          customerId: 10,
+          aiMode: SupportChatAiMode.OFF,
+          status: SupportChatStatus.OPEN,
+          createdAt: new Date(),
+          customer: { fullName: 'Test' },
+          assignments: [],
+        });
+
+      const result = await service.updateChatAiMode(1, SupportChatAiMode.OFF);
+      expect(repository.updateAiState).toHaveBeenCalledWith(1, {
+        aiMode: SupportChatAiMode.OFF,
+      });
+      expect(result.aiMode).toBe('OFF');
+      expect(result.status).toBe('OPEN');
     });
   });
 

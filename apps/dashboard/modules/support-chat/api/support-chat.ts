@@ -5,6 +5,7 @@ import type {
   ChatDetail,
   MessagesQuery,
   MessagesResponse,
+  SupportChatAiMode,
 } from '@/modules/support-chat/types/support-chat';
 
 export async function listAdminChats(params: AdminChatsQuery): Promise<AdminChatsResponse> {
@@ -32,5 +33,15 @@ export async function listAdminChatMessages(
 
 export async function assignSelfToChat(chatId: number): Promise<ChatDetail> {
   const { data } = await apiClient.post<ChatDetail>(`/admin/support-chats/${chatId}/assign`);
+  return data;
+}
+
+export async function updateAdminChatAiMode(
+  chatId: number,
+  aiMode: SupportChatAiMode,
+): Promise<ChatDetail> {
+  const { data } = await apiClient.post<ChatDetail>(`/admin/support-chats/${chatId}/ai-mode`, {
+    aiMode,
+  });
   return data;
 }

@@ -3,6 +3,8 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ProductModule } from '../product/product.module';
+import { RedisModule } from '../redis/redis.module';
+import { AdminShopContentController } from './controllers/admin-shop-content.controller';
 import { ChatAdminController } from './controllers/chat-admin.controller';
 import { ChatCustomerController } from './controllers/chat-customer.controller';
 import { ChatGuestController } from './controllers/chat-guest.controller';
@@ -25,9 +27,15 @@ import { WsJwtGuard } from './ws-jwt.guard';
     PrismaModule,
     AuthModule,
     ProductModule,
+    RedisModule,
     BullModule.registerQueue({ name: SUPPORT_CHAT_AI_QUEUE }),
   ],
-  controllers: [ChatCustomerController, ChatAdminController, ChatGuestController],
+  controllers: [
+    ChatCustomerController,
+    ChatAdminController,
+    ChatGuestController,
+    AdminShopContentController,
+  ],
   providers: [
     SupportChatService,
     GuestSessionService,

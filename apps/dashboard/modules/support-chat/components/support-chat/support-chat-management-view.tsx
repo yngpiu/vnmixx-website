@@ -8,6 +8,7 @@ import {
   getAdminChatDetail,
   listAdminChatMessages,
   listAdminChats,
+  updateAdminChatAiMode,
 } from '@/modules/support-chat/api/support-chat';
 import { SupportChatImagePreviewDialog } from '@/modules/support-chat/components/support-chat/support-chat-image-preview-dialog';
 import { SupportChatListSidebar } from '@/modules/support-chat/components/support-chat/support-chat-list-sidebar';
@@ -17,6 +18,7 @@ import type {
   ChatSenderType,
   ChatSummary,
   ChatTypingEvent,
+  SupportChatAiMode,
 } from '@/modules/support-chat/types/support-chat';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
@@ -63,18 +65,21 @@ function normalizeMessageTextForMarkdown(rawText: string): string {
 function buildTypingSenderKey(event: ChatTypingEvent): string {
   if (event.senderType === 'EMPLOYEE') return `EMPLOYEE:${event.senderEmployeeId ?? 'unknown'}`;
   if (event.senderType === 'CUSTOMER') return `CUSTOMER:${event.senderCustomerId ?? 'unknown'}`;
+  if (event.senderType === 'AI') return 'AI';
   return 'GUEST';
 }
 
 function buildMessageSenderKey(message: ChatMessage): string {
   if (message.senderType === 'EMPLOYEE') return `EMPLOYEE:${message.senderEmployeeId ?? 'unknown'}`;
   if (message.senderType === 'CUSTOMER') return `CUSTOMER:${message.senderCustomerId ?? 'unknown'}`;
+  if (message.senderType === 'AI') return 'AI';
   return 'GUEST';
 }
 
 function resolveMessageSenderName(message: ChatMessage, fallbackCustomerName: string): string {
   if (message.senderType === 'CUSTOMER') return message.senderName?.trim() || fallbackCustomerName;
   if (message.senderType === 'EMPLOYEE') return message.senderName?.trim() || 'Nhân viên';
+  if (message.senderType === 'AI') return message.senderName?.trim() || 'VNMIXX AI';
   return message.senderName?.trim() || 'Khách';
 }
 
@@ -200,6 +205,8 @@ export function SupportChatManagementView(): React.JSX.Element {
     if (!detailQuery.data || !employeeId) return false;
     return detailQuery.data.assignments.some((assignment) => assignment.employeeId === employeeId);
   }, [detailQuery.data, employeeId]);
+  const selectedChatAiMode = detailQuery.data?.aiMode ?? null;
+  const selectedChatAiEnabled = selectedChatAiMode === 'AUTO';
 
   const refreshChatData = useCallback(async (): Promise<void> => {
     await Promise.all([
@@ -218,6 +225,18 @@ export function SupportChatManagementView(): React.JSX.Element {
       toast.success('Đã nhận cuộc hội thoại.');
       queryClient.setQueryData(['admin', 'support-chats', 'detail', chat.id], chat);
       setJoinNonce((value) => value + 1);
+      await refreshChatData();
+    },
+    onError: (error) => toast.error(apiErrorMessage(error)),
+  });
+  const updateAiModeMutation = useMutation({
+    mutationFn: ({ chatId, aiMode }: { chatId: number; aiMode: SupportChatAiMode }) =>
+      updateAdminChatAiMode(chatId, aiMode),
+    onSuccess: async (chat) => {
+      queryClient.setQueryData(['admin', 'support-chats', 'detail', chat.id], chat);
+      toast.success(
+        chat.aiMode === 'AUTO' ? 'Đã bật AI cho cuộc hội thoại.' : 'Đã tắt AI cho cuộc hội thoại.',
+      );
       await refreshChatData();
     },
     onError: (error) => toast.error(apiErrorMessage(error)),
@@ -384,6 +403,7 @@ export function SupportChatManagementView(): React.JSX.Element {
     if (typingEvent.senderType === 'CUSTOMER') {
       return selectedChatSummary?.customerAvatarUrl ?? null;
     }
+    if (typingEvent.senderType === 'AI') return null;
     if (typingEvent.senderType !== 'EMPLOYEE' || !typingEvent.senderEmployeeId) return null;
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index];
@@ -402,6 +422,7 @@ export function SupportChatManagementView(): React.JSX.Element {
     if (!typingEvent || !selectedChatId || typingEvent.chatId !== selectedChatId) return null;
     if (typingEvent.senderType === 'CUSTOMER') return selectedChatSummary?.customerName ?? 'Khách';
     if (typingEvent.senderType === 'GUEST') return 'Khách';
+    if (typingEvent.senderType === 'AI') return 'VNMIXX AI';
     if (!typingEvent.senderEmployeeId) return 'Nhân viên';
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       const message = messages[index];
@@ -677,20 +698,41 @@ export function SupportChatManagementView(): React.JSX.Element {
                     )}
                   </div>
                 </div>
-                {!selectedChatIsAssigned ? (
-                  <Button
-                    size="sm"
-                    disabled={!canAssign || assignMutation.isPending}
-                    onClick={() => selectedChatId && assignMutation.mutate(selectedChatId)}
-                  >
-                    {assignMutation.isPending ? (
-                      <Loader2Icon className="mr-2 size-4 animate-spin" />
-                    ) : (
-                      <UserRoundCheckIcon className="mr-2 size-4" />
-                    )}
-                    Nhận chat
-                  </Button>
-                ) : null}
+                <div className="flex items-center gap-2">
+                  {detailQuery.data ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!canAssign || updateAiModeMutation.isPending}
+                      onClick={() =>
+                        selectedChatId &&
+                        updateAiModeMutation.mutate({
+                          chatId: selectedChatId,
+                          aiMode: selectedChatAiEnabled ? 'OFF' : 'AUTO',
+                        })
+                      }
+                    >
+                      {updateAiModeMutation.isPending ? (
+                        <Loader2Icon className="mr-2 size-4 animate-spin" />
+                      ) : null}
+                      {selectedChatAiEnabled ? 'Tắt AI' : 'Bật AI'}
+                    </Button>
+                  ) : null}
+                  {!selectedChatIsAssigned ? (
+                    <Button
+                      size="sm"
+                      disabled={!canAssign || assignMutation.isPending}
+                      onClick={() => selectedChatId && assignMutation.mutate(selectedChatId)}
+                    >
+                      {assignMutation.isPending ? (
+                        <Loader2Icon className="mr-2 size-4 animate-spin" />
+                      ) : (
+                        <UserRoundCheckIcon className="mr-2 size-4" />
+                      )}
+                      Nhận chat
+                    </Button>
+                  ) : null}
+                </div>
               </div>
 
               <div className="min-h-0 flex-1 overflow-hidden border-y">
@@ -740,7 +782,6 @@ export function SupportChatManagementView(): React.JSX.Element {
                             message,
                             selectedChatSummary.customerName,
                           );
-
                           const bubbleClassName = mine
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-muted text-foreground';
@@ -776,7 +817,9 @@ export function SupportChatManagementView(): React.JSX.Element {
                                         <AvatarImage src={message.senderAvatarUrl} alt="" />
                                       ) : null}
                                       <AvatarFallback className="text-[10px]">
-                                        {senderInitial(senderFallbackName)}
+                                        {message.senderType === 'AI'
+                                          ? 'AI'
+                                          : senderInitial(senderFallbackName)}
                                       </AvatarFallback>
                                     </Avatar>
                                   ) : (

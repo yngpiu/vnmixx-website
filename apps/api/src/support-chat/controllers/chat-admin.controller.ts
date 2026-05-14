@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -34,6 +35,7 @@ import {
   ChatListResponseDto,
   ChatSummaryResponseDto,
   MessagesListResponseDto,
+  UpdateChatAiModeDto,
 } from '../dto';
 import { ListChatsQueryDto } from '../dto/list-chats-query.dto';
 import { MessagesQueryDto } from '../dto/messages-query.dto';
@@ -128,5 +130,25 @@ export class ChatAdminController {
     const chatDetail = await this.chatService.assignEmployee(id, user.id);
     this.chatGateway.emitChatAssigned(id, chatDetail);
     return ok(chatDetail, 'Phân công vào cuộc hội thoại thành công.');
+  }
+
+  @ApiOperation({ summary: 'Cập nhật chế độ AI của cuộc hội thoại' })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(ChatDetailResponseDto) }),
+  })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy cuộc hội thoại.' })
+  @ApiBadRequestResponse({ description: 'ID cuộc hội thoại hoặc dữ liệu aiMode không hợp lệ.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @RequirePermissions('support-chat.create')
+  @Post(':id/ai-mode')
+  @HttpCode(HttpStatus.OK)
+  async updateChatAiMode(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: UpdateChatAiModeDto,
+  ): Promise<SuccessPayload<ChatDetailResponseDto>> {
+    return ok(
+      await this.chatService.updateChatAiMode(id, body.aiMode),
+      'Cập nhật chế độ AI thành công.',
+    );
   }
 }

@@ -117,6 +117,12 @@ export class ChatDetailResponseDto {
   })
   assignments!: { employeeId: number; employeeName: string; assignedAt: Date }[];
 
+  @ApiProperty({ enum: ['AUTO', 'PAUSED', 'OFF'], example: 'AUTO' })
+  aiMode!: 'AUTO' | 'PAUSED' | 'OFF';
+
+  @ApiProperty({ enum: ['OPEN', 'WAITING_HUMAN', 'RESOLVED', 'CLOSED'], example: 'OPEN' })
+  status!: 'OPEN' | 'WAITING_HUMAN' | 'RESOLVED' | 'CLOSED';
+
   @ApiProperty({ example: '2026-04-26T01:00:00.000Z' })
   createdAt!: Date;
 }

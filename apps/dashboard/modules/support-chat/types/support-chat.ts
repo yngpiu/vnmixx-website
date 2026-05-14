@@ -1,4 +1,6 @@
 export type ChatSenderType = 'CUSTOMER' | 'EMPLOYEE' | 'GUEST' | 'AI';
+export type SupportChatAiMode = 'AUTO' | 'PAUSED' | 'OFF';
+export type SupportChatStatus = 'OPEN' | 'WAITING_HUMAN' | 'RESOLVED' | 'CLOSED';
 
 export type ChatSummary = {
   id: number;
@@ -24,6 +26,8 @@ export type ChatDetail = {
   customerId: number | null;
   customerName: string;
   assignments: ChatAssignment[];
+  aiMode: SupportChatAiMode;
+  status: SupportChatStatus;
   createdAt: string;
 };
 

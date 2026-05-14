@@ -2,16 +2,11 @@
 
 import { BackButton } from '@/modules/common/components/back-button';
 import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
-import {
-  createKnowledge,
-  getKnowledgeById,
-  updateKnowledge,
-} from '@/modules/knowledge/api/knowledge';
-import type { CreateKnowledgeBody, UpdateKnowledgeBody } from '@/modules/knowledge/types/knowledge';
+import { getShopContentByKey, upsertShopContent } from '@/modules/knowledge/api/knowledge';
+import type { ShopContentKey, UpsertShopContentBody } from '@/modules/knowledge/types/knowledge';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
-import { Switch } from '@repo/ui/components/ui/switch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -33,51 +28,46 @@ const quillModules = {
 };
 
 type KnowledgeFormProps = {
-  mode: 'create' | 'edit';
-  knowledgeId?: number;
+  shopContentKey: ShopContentKey;
 };
 
 type KnowledgeFormState = {
-  slug: string;
   title: string;
   content: string;
-  isActive: boolean;
 };
 
 const INITIAL_FORM: KnowledgeFormState = {
-  slug: '',
   title: '',
   content: '',
-  isActive: true,
 };
 
-export function KnowledgeForm({ mode, knowledgeId }: KnowledgeFormProps) {
+export function KnowledgeForm({ shopContentKey }: KnowledgeFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<KnowledgeFormState>(INITIAL_FORM);
   const [formError, setFormError] = useState<string | null>(null);
 
   const detailQuery = useQuery({
-    queryKey: ['knowledge', 'detail', knowledgeId],
-    queryFn: () => getKnowledgeById(knowledgeId as number),
-    enabled: mode === 'edit' && Number.isFinite(knowledgeId),
+    queryKey: ['shop-contents', 'detail', shopContentKey],
+    queryFn: () => getShopContentByKey(shopContentKey),
   });
 
   useEffect(() => {
-    if (mode !== 'edit' || !detailQuery.data) return;
+    if (!detailQuery.data) return;
     setForm({
-      slug: detailQuery.data.slug,
       title: detailQuery.data.title,
       content: detailQuery.data.content,
-      isActive: detailQuery.data.isActive,
     });
-  }, [mode, detailQuery.data]);
+  }, [detailQuery.data]);
 
-  const createMutation = useMutation({
-    mutationFn: (payload: CreateKnowledgeBody) => createKnowledge(payload),
+  const upsertMutation = useMutation({
+    mutationFn: (payload: UpsertShopContentBody) => upsertShopContent(shopContentKey, payload),
     onSuccess: async () => {
-      toast.success('Đã tạo mục chính sách.');
-      await queryClient.invalidateQueries({ queryKey: ['knowledge', 'list'] });
+      toast.success('Đã lưu nội dung chính sách.');
+      await queryClient.invalidateQueries({ queryKey: ['shop-contents', 'list'] });
+      await queryClient.invalidateQueries({
+        queryKey: ['shop-contents', 'detail', shopContentKey],
+      });
       router.push('/knowledge');
     },
     onError: (error) => {
@@ -85,27 +75,10 @@ export function KnowledgeForm({ mode, knowledgeId }: KnowledgeFormProps) {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (payload: UpdateKnowledgeBody) => updateKnowledge(knowledgeId as number, payload),
-    onSuccess: async () => {
-      toast.success('Đã cập nhật mục chính sách.');
-      await queryClient.invalidateQueries({ queryKey: ['knowledge', 'list'] });
-      await queryClient.invalidateQueries({ queryKey: ['knowledge', 'detail', knowledgeId] });
-      router.push('/knowledge');
-    },
-    onError: (error) => {
-      toast.error(apiErrorMessage(error));
-    },
-  });
-
-  const isBusy = detailQuery.isLoading || createMutation.isPending || updateMutation.isPending;
+  const isBusy = detailQuery.isLoading || upsertMutation.isPending;
 
   const submit = (): void => {
     setFormError(null);
-    if (!form.slug.trim()) {
-      setFormError('Vui lòng nhập slug.');
-      return;
-    }
     if (!form.title.trim()) {
       setFormError('Vui lòng nhập tiêu đề.');
       return;
@@ -114,24 +87,14 @@ export function KnowledgeForm({ mode, knowledgeId }: KnowledgeFormProps) {
       setFormError('Vui lòng nhập nội dung.');
       return;
     }
-    if (mode === 'edit') {
-      updateMutation.mutate({
-        slug: form.slug.trim(),
-        title: form.title.trim(),
-        content: form.content,
-        isActive: form.isActive,
-      });
-      return;
-    }
-    createMutation.mutate({
-      slug: form.slug.trim(),
+
+    upsertMutation.mutate({
       title: form.title.trim(),
       content: form.content,
-      isActive: form.isActive,
     });
   };
 
-  if (mode === 'edit' && detailQuery.isError) {
+  if (detailQuery.isError) {
     return (
       <p className="text-destructive text-sm" role="alert">
         Không tải được chi tiết mục chính sách. Vui lòng thử lại.
@@ -145,7 +108,7 @@ export function KnowledgeForm({ mode, knowledgeId }: KnowledgeFormProps) {
         <BackButton className="-ml-2 h-8 px-2" />
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {mode === 'create' ? 'Tạo chính sách mới' : 'Cập nhật chính sách'}
+            Cập nhật chính sách: {shopContentKey}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Nội dung này sẽ được sử dụng làm cơ sở kiến thức cho AI chatbot.
@@ -163,22 +126,6 @@ export function KnowledgeForm({ mode, knowledgeId }: KnowledgeFormProps) {
       ) : null}
 
       <div className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="knowledge-slug">
-            Slug <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="knowledge-slug"
-            value={form.slug}
-            disabled={isBusy}
-            placeholder="vd: chinh-sach-doi-tra"
-            onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
-          />
-          <p className="text-muted-foreground text-xs">
-            Chỉ dùng chữ thường, số và dấu gạch nối. VD: <code>chinh-sach-doi-tra</code>
-          </p>
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="knowledge-title">
             Tiêu đề <span className="text-destructive">*</span>
@@ -208,18 +155,6 @@ export function KnowledgeForm({ mode, knowledgeId }: KnowledgeFormProps) {
             />
           </div>
         </div>
-
-        <div className="flex items-center justify-between rounded-md border px-3 py-2">
-          <Label htmlFor="knowledge-active" className="text-sm">
-            Kích hoạt (hiển thị với AI)
-          </Label>
-          <Switch
-            id="knowledge-active"
-            checked={form.isActive}
-            disabled={isBusy}
-            onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked }))}
-          />
-        </div>
       </div>
 
       <div className="flex justify-end gap-2">
@@ -232,7 +167,7 @@ export function KnowledgeForm({ mode, knowledgeId }: KnowledgeFormProps) {
           Hủy
         </Button>
         <Button type="button" onClick={submit} disabled={isBusy}>
-          {mode === 'create' ? 'Tạo chính sách' : 'Lưu thay đổi'}
+          Lưu thay đổi
         </Button>
       </div>
     </div>

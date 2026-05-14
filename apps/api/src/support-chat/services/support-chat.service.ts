@@ -4,7 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ChatSenderType } from '../../../generated/prisma/client';
+import {
+  ChatSenderType,
+  SupportChatAiMode,
+  SupportChatStatus,
+} from '../../../generated/prisma/client';
 import {
   ChatDetailResponseDto,
   ChatListResponseDto,
@@ -35,6 +39,9 @@ interface SenderProfile {
 
 const SUPPORT_CHAT_ANONYMOUS_PARTY_LABEL = 'Khách vãng lai';
 const SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL = 'Khách';
+const SUPPORT_CHAT_AI_SENDER_LABEL = 'VNMIXX AI';
+const SUPPORT_CHAT_AI_AVATAR_URL =
+  'https://media.vnmixx.shop/AI/1778784999854-5cffc9-cohere-logo.png';
 
 @Injectable()
 // Xử lý luồng nghiệp vụ liên quan đến chat hỗ trợ khách hàng.
@@ -72,8 +79,8 @@ export class SupportChatService {
 
     const message = await this.repository.createMessage(input);
     const senderProfile =
-      input.senderType === ChatSenderType.GUEST
-        ? { name: SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL, avatarUrl: null }
+      input.senderType === ChatSenderType.GUEST || input.senderType === ChatSenderType.AI
+        ? this.resolveSystemSenderProfile(input.senderType)
         : await this.resolveSenderProfile(input.senderType, input.senderId as number);
 
     return this.mapMessage(message, senderProfile);
@@ -103,6 +110,25 @@ export class SupportChatService {
     }
 
     return this.mapChatDetail(chat);
+  }
+
+  async updateChatAiMode(
+    chatId: number,
+    aiMode: SupportChatAiMode,
+  ): Promise<ChatDetailResponseDto> {
+    const chat = await this.repository.findById(chatId);
+    if (!chat) {
+      throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+    }
+
+    await this.repository.updateAiState(chatId, {
+      aiMode,
+      ...(aiMode === SupportChatAiMode.AUTO && chat.status === SupportChatStatus.WAITING_HUMAN
+        ? { status: SupportChatStatus.OPEN }
+        : {}),
+    });
+
+    return this.getChatDetail(chatId);
   }
 
   // Lấy danh sách tin nhắn cũ hơn cursor để phục vụ infinite scroll.
@@ -192,6 +218,8 @@ export class SupportChatService {
         employeeName: a.employee.fullName,
         assignedAt: a.assignedAt,
       })),
+      aiMode: chat.aiMode,
+      status: chat.status,
       createdAt: chat.createdAt,
     };
   }
@@ -234,8 +262,8 @@ export class SupportChatService {
     senderType: ChatSenderType,
     senderId: number,
   ): Promise<SenderProfile | null> {
-    if (senderType === ChatSenderType.GUEST) {
-      return { name: SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL, avatarUrl: null };
+    if (senderType === ChatSenderType.GUEST || senderType === ChatSenderType.AI) {
+      return this.resolveSystemSenderProfile(senderType);
     }
     if (senderType === ChatSenderType.CUSTOMER) {
       const rows = await this.repository.findCustomerNames([senderId]);
@@ -257,7 +285,10 @@ export class SupportChatService {
     const profileMap = new Map<string, SenderProfile>();
     for (const msg of messages) {
       if (msg.senderType === ChatSenderType.GUEST) {
-        profileMap.set('GUEST', { name: SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL, avatarUrl: null });
+        profileMap.set('GUEST', this.resolveSystemSenderProfile(ChatSenderType.GUEST));
+      }
+      if (msg.senderType === ChatSenderType.AI) {
+        profileMap.set('AI', this.resolveSystemSenderProfile(ChatSenderType.AI));
       }
       if (msg.senderType === ChatSenderType.CUSTOMER && msg.senderCustomerId) {
         customerIds.add(msg.senderCustomerId);
@@ -292,8 +323,15 @@ export class SupportChatService {
 
   private buildSenderKey(msg: MessageView): string {
     if (msg.senderType === ChatSenderType.GUEST) return 'GUEST';
+    if (msg.senderType === ChatSenderType.AI) return 'AI';
     const id =
       msg.senderType === ChatSenderType.CUSTOMER ? msg.senderCustomerId : msg.senderEmployeeId;
     return `${msg.senderType}:${id}`;
+  }
+
+  private resolveSystemSenderProfile(senderType: 'GUEST' | 'AI'): SenderProfile {
+    return senderType === ChatSenderType.AI
+      ? { name: SUPPORT_CHAT_AI_SENDER_LABEL, avatarUrl: SUPPORT_CHAT_AI_AVATAR_URL }
+      : { name: SUPPORT_CHAT_ANONYMOUS_SENDER_LABEL, avatarUrl: null };
   }
 }
