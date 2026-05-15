@@ -155,6 +155,47 @@ class CustomerBriefDto {
 }
 
 /**
+ * SepayTransactionDto: DTO chi tiết một giao dịch SePay để đối soát theo đơn hàng.
+ */
+class SepayTransactionDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty({ example: 902400 })
+  sepayTransactionId: number;
+
+  @ApiProperty({ example: 7015500 })
+  transferAmount: number;
+
+  @ApiProperty({ example: 'Thanh toan don hang VNM260410A1B2C' })
+  content: string;
+
+  @ApiPropertyOptional({ example: 'REF-VNM260410A1B2C', nullable: true })
+  referenceCode: string | null;
+
+  @ApiPropertyOptional({ example: 123, nullable: true })
+  orderId: number | null;
+
+  @ApiPropertyOptional({ example: 'VNM260410A1B2C', nullable: true })
+  orderCode: string | null;
+
+  @ApiPropertyOptional({ example: 456, nullable: true })
+  paymentId: number | null;
+
+  @ApiPropertyOptional({ example: 'VNM260410A1B2C', nullable: true })
+  matchedOrderCode: string | null;
+
+  @ApiProperty({ example: 'MATCHED', enum: ['UNMATCHED', 'MATCHED', 'IGNORED'] })
+  matchStatus: string;
+
+  @ApiProperty({ example: '2026-04-10T10:15:00.000Z' })
+  receivedAt: Date;
+
+  @ApiPropertyOptional({ example: '2026-04-10T10:16:00.000Z', nullable: true })
+  processedAt: Date | null;
+}
+
+/**
  * OrderListItemResponseDto: DTO tóm tắt thông tin đơn hàng trong danh sách.
  */
 export class OrderListItemResponseDto {
@@ -169,6 +210,9 @@ export class OrderListItemResponseDto {
 
   @ApiProperty({ example: 'PENDING' })
   paymentStatus: string;
+
+  @ApiPropertyOptional({ example: 'COD', nullable: true, enum: ['COD', 'BANK_TRANSFER_QR'] })
+  paymentMethod: string | null;
 
   @ApiProperty({ example: 498000 })
   subtotal: number;
@@ -265,6 +309,17 @@ export class OrderAdminDetailResponseDto extends OrderDetailResponseDto {
 
   @ApiProperty({ type: CustomerBriefDto })
   customer: CustomerBriefDto;
+}
+
+/**
+ * SepayTransactionListResponseDto: DTO bọc danh sách giao dịch SePay theo đơn hàng.
+ */
+export class SepayTransactionListResponseDto {
+  @ApiProperty({ type: [SepayTransactionDto] })
+  data: SepayTransactionDto[];
+
+  @ApiProperty({ example: { page: 1, limit: 20, total: 3, totalPages: 1 } })
+  meta: PaginationMetaDto;
 }
 
 /**

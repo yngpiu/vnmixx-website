@@ -13,6 +13,7 @@ import {
 import type {
   InventoryListItem,
   InventoryMovementItem,
+  InventoryMovementType,
   InventoryVoucherListItem,
   InventoryVoucherType,
 } from '@/modules/inventory/types/inventory';
@@ -35,7 +36,7 @@ import {
   type ColumnDef,
   type PaginationState,
 } from '@tanstack/react-table';
-import { ClockIcon, FileTextIcon, HistoryIcon, MinusIcon, PlusIcon } from 'lucide-react';
+import { FileTextIcon, HistoryIcon, MinusIcon, PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { InventoryTable } from './inventory-table';
@@ -50,6 +51,28 @@ const DEFAULT_ISSUED_AT = () => {
 
 function actionLabel(type: InventoryVoucherType): string {
   return type === 'EXPORT' ? 'Phiếu xuất' : 'Phiếu nhập';
+}
+
+function movementTypeLabel(type: InventoryMovementType): string {
+  switch (type) {
+    case 'IMPORT':
+      return 'Nhập';
+    case 'EXPORT':
+      return 'Xuất';
+    case 'RESERVE':
+      return 'Giữ chỗ';
+    case 'RELEASE':
+      return 'Giải phóng';
+    case 'ADJUSTMENT':
+      return 'Điều chỉnh';
+    case 'RETURN':
+      return 'Nhập trả';
+  }
+  return 'Không xác định';
+}
+
+function voucherTypeLabel(type: InventoryVoucherType): string {
+  return type === 'IMPORT' ? 'Nhập' : 'Xuất';
 }
 
 export function InventoryManagementView() {
@@ -90,10 +113,6 @@ export function InventoryManagementView() {
     placeholderData: keepPreviousData,
   });
 
-  const movementPreviewQuery = useQuery({
-    queryKey: ['inventory', 'movements', 'preview'],
-    queryFn: () => listInventoryMovements({ page: 1, limit: 5 }),
-  });
   const movementHistoryQuery = useQuery({
     queryKey: [
       'inventory',
@@ -127,12 +146,6 @@ export function InventoryManagementView() {
     queryFn: () => getInventoryVoucherDetail(selectedVoucherId as number),
     enabled: selectedVoucherId != null,
   });
-
-  const movementSummary = useMemo(() => {
-    const total = movementPreviewQuery.data?.meta.total ?? 0;
-    if (!movementPreviewQuery.data) return 'Chưa có giao dịch kho.';
-    return `${total.toLocaleString('vi-VN')} giao dịch gần đây`;
-  }, [movementPreviewQuery.data]);
 
   useEffect(() => {
     if (!voucherOpen) {
@@ -226,15 +239,7 @@ export function InventoryManagementView() {
       {
         accessorKey: 'type',
         header: 'Loại',
-        cell: ({ row }) => (
-          <span className="text-xs">
-            {row.original.type === 'IMPORT'
-              ? 'Nhập'
-              : row.original.type === 'EXPORT'
-                ? 'Xuất'
-                : row.original.type}
-          </span>
-        ),
+        cell: ({ row }) => <span className="text-xs">{movementTypeLabel(row.original.type)}</span>,
       },
       {
         accessorKey: 'delta',
@@ -299,7 +304,7 @@ export function InventoryManagementView() {
       {
         accessorKey: 'type',
         header: 'Loại',
-        cell: ({ row }) => (row.original.type === 'IMPORT' ? 'Nhập' : 'Xuất'),
+        cell: ({ row }) => <span className="text-xs">{voucherTypeLabel(row.original.type)}</span>,
       },
       {
         accessorKey: 'issuedAt',
@@ -364,10 +369,7 @@ export function InventoryManagementView() {
                 setHistoryPagination({ pageIndex: 0, pageSize: historyPagination.pageSize });
                 setHistoryOpen(true);
               }}
-            >
-              <ClockIcon className="mr-2 size-4" />
-              {movementSummary}
-            </Button>
+            ></Button>
             <Button type="button" variant="outline" onClick={() => setHistoryOpen(true)}>
               <HistoryIcon className="mr-2 size-4" />
               Lịch sử nhập/xuất kho
@@ -521,8 +523,7 @@ export function InventoryManagementView() {
               {selectedVoucher ? (
                 <div className="mt-4 rounded-md border p-4">
                   <p className="text-sm font-semibold">
-                    Chi tiết {selectedVoucher.code} (
-                    {selectedVoucher.type === 'IMPORT' ? 'Nhập' : 'Xuất'})
+                    Chi tiết {selectedVoucher.code} ({voucherTypeLabel(selectedVoucher.type)})
                   </p>
                   <p className="text-muted-foreground mt-1 text-xs">
                     {new Date(selectedVoucher.issuedAt).toLocaleString('vi-VN')}

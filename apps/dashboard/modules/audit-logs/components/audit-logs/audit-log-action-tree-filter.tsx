@@ -69,7 +69,7 @@ export function AuditLogActionTreeFilter<TData, TValue>({
                 ) : (
                   Array.from(selectedValues).map((value) => (
                     <Badge variant="secondary" key={value} className="rounded-sm px-1 font-normal">
-                      {labelByValue.get(value) ?? value}
+                      {labelByValue.get(value) ?? 'Không xác định'}
                     </Badge>
                   ))
                 )}

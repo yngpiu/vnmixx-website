@@ -24,6 +24,7 @@ import {
   OrderRepository,
   type OrderAdminDetailView,
   type OrderAdminListItemView,
+  type SepayTransactionView,
 } from '../repositories/order.repository';
 
 type AdminOrderItemRecord = {
@@ -130,6 +131,22 @@ export class OrderAdminService {
       throw new NotFoundException(`Không tìm thấy đơn hàng ${orderCode}.`);
     }
     return order;
+  }
+
+  async findSepayTransactions(query: { page: number; limit: number; search?: string }): Promise<{
+    data: SepayTransactionView[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const { data, total } = await this.orderRepo.findSepayTransactions(query);
+    return {
+      data,
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: Math.ceil(total / query.limit) || 1,
+      },
+    };
   }
 
   // Xác nhận đơn hàng và đẩy thông tin sang đơn vị vận chuyển (GHN)

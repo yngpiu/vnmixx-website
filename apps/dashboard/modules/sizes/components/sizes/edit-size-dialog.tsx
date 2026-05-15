@@ -28,7 +28,6 @@ type EditSizeDialogProps = {
 export function EditSizeDialog({ sizeId, open, onOpenChange }: EditSizeDialogProps) {
   const queryClient = useQueryClient();
   const [label, setLabel] = useState('');
-  const [sortOrder, setSortOrder] = useState('');
   const [labelError, setLabelError] = useState<string | null>(null);
 
   const listQuery = useQuery({
@@ -42,7 +41,6 @@ export function EditSizeDialog({ sizeId, open, onOpenChange }: EditSizeDialogPro
   useEffect(() => {
     if (!open) {
       setLabel('');
-      setSortOrder('');
       setLabelError(null);
     }
   }, [open]);
@@ -50,14 +48,12 @@ export function EditSizeDialog({ sizeId, open, onOpenChange }: EditSizeDialogPro
   useEffect(() => {
     if (!open || !size) return;
     setLabel(size.label);
-    setSortOrder(String(size.sortOrder));
     setLabelError(null);
   }, [open, size]);
 
   const mutation = useMutation({
     mutationFn: () => {
-      const so = Number.parseInt(sortOrder, 10);
-      return updateSize(sizeId!, { label: label.trim(), sortOrder: so });
+      return updateSize(sizeId!, { label: label.trim() });
     },
     onSuccess: async () => {
       toast.success('Đã cập nhật kích cỡ.');
@@ -74,11 +70,6 @@ export function EditSizeDialog({ sizeId, open, onOpenChange }: EditSizeDialogPro
     setLabelError(null);
     if (!label.trim()) {
       setLabelError('Nhãn kích cỡ là bắt buộc.');
-      return;
-    }
-    const so = Number.parseInt(sortOrder, 10);
-    if (Number.isNaN(so) || so < 0) {
-      toast.error('Thứ tự sắp xếp phải là số nguyên ≥ 0.');
       return;
     }
     mutation.mutate();
@@ -136,19 +127,10 @@ export function EditSizeDialog({ sizeId, open, onOpenChange }: EditSizeDialogPro
                     errors={labelError ? [{ message: labelError }] : []}
                   />
                 </Field>
-                <Field>
-                  <FieldLabel htmlFor="edit-size-order">Thứ tự sắp xếp</FieldLabel>
-                  <Input
-                    id="edit-size-order"
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    disabled={busy}
-                  />
-                </Field>
               </FieldGroup>
+              <p className="text-muted-foreground text-xs">
+                Thứ tự hiển thị được điều khiển bằng kéo-thả ở danh sách kích cỡ.
+              </p>
             </form>
           ) : null}
         </div>

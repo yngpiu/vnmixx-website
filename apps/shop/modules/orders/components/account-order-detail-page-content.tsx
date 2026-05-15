@@ -47,7 +47,7 @@ export function AccountOrderDetailPageContent({
   const firstPayment = selectedOrder?.payments[0];
   const paymentMethodLabel =
     firstPayment?.method === 'BANK_TRANSFER_QR'
-      ? 'Thanh toán bằng thẻ ATM'
+      ? 'Chuyển khoản QR'
       : 'Thanh toán khi nhận hàng (COD)';
   return (
     <main className="shop-shell-container pb-16 pt-6">
@@ -114,17 +114,17 @@ export function AccountOrderDetailPageContent({
                   >
                     <ChevronLeftIcon className="size-5 stroke-[1.75]" />
                   </Link>
-                  <h1 className="text-[30px] leading-[40px] font-semibold uppercase text-foreground">
+                  <h1 className="text-[24px] leading-8 font-semibold uppercase text-foreground">
                     Chi tiết đơn hàng{' '}
                     <span className="text-destructive">{selectedOrder.orderCode}</span>
                   </h1>
                 </div>
-                <p className="text-[14px] text-[#d56f6f]">
+                <p className="text-[13px] text-[#d56f6f]">
                   {getMyOrderStatusLabel(selectedOrder.status)}
                 </p>
               </div>
               <section className="rounded-md border border-border bg-white px-4 py-3">
-                <h2 className="text-[16px] font-semibold text-foreground">Trạng thái đơn hàng</h2>
+                <h2 className="text-[15px] font-semibold text-foreground">Trạng thái đơn hàng</h2>
                 <ol className="mt-3 space-y-3">
                   {[...selectedOrder.statusHistories]
                     .sort(
@@ -135,10 +135,10 @@ export function AccountOrderDetailPageContent({
                       <li key={history.id} className="flex items-start gap-3">
                         <span className="mt-2 size-2 rounded-full bg-foreground" />
                         <div>
-                          <p className="text-[14px] font-medium text-foreground">
+                          <p className="text-[13px] font-medium text-foreground">
                             {getMyOrderStatusLabel(history.status)}
                           </p>
-                          <p className="text-[12px] text-muted-foreground">
+                          <p className="text-[11px] text-muted-foreground">
                             {formatDateTime(history.createdAt)}
                           </p>
                         </div>
@@ -169,27 +169,27 @@ export function AccountOrderDetailPageContent({
                           <div>
                             <Link
                               href={`/products/${encodeURIComponent(item.productSlug)}`}
-                              className="text-[16px] leading-6 font-semibold text-foreground underline-offset-2 hover:underline"
+                              className="text-[15px] leading-6 font-semibold text-foreground underline-offset-2 hover:underline"
                             >
                               {item.productName}
                             </Link>
-                            <p className="text-[14px] leading-6 text-muted-foreground">
+                            <p className="text-[13px] leading-6 text-muted-foreground">
                               Màu sắc: {item.colorName}
                             </p>
-                            <p className="text-[14px] leading-6 text-muted-foreground">
+                            <p className="text-[13px] leading-6 text-muted-foreground">
                               Size: {item.sizeLabel}
                             </p>
-                            <p className="text-[14px] leading-6 text-muted-foreground">
+                            <p className="text-[13px] leading-6 text-muted-foreground">
                               Số lượng: {item.quantity}
                             </p>
-                            <p className="text-[14px] leading-6 text-muted-foreground">
+                            <p className="text-[13px] leading-6 text-muted-foreground">
                               SKU:
                               <br />
                               (#{item.sku})
                             </p>
                           </div>
                         </div>
-                        <p className="text-[24px] leading-8 font-semibold text-foreground">
+                        <p className="text-[18px] leading-7 font-semibold text-foreground">
                           {formatMoney(item.subtotal)}
                         </p>
                       </div>
@@ -198,44 +198,44 @@ export function AccountOrderDetailPageContent({
                 </div>
                 <aside className="bg-muted/45 p-6">
                   <div className="space-y-3">
-                    <h3 className="text-[20px] leading-6 font-semibold text-foreground">
+                    <h3 className="text-[16px] leading-6 font-semibold text-foreground">
                       Tóm tắt đơn hàng
                     </h3>
-                    <p className="flex items-center justify-between text-[16px] text-muted-foreground">
+                    <p className="flex items-center justify-between text-[14px] text-muted-foreground">
                       <span>Ngày tạo đơn</span>
                       <span>{formatDateTime(selectedOrder.createdAt)}</span>
                     </p>
-                    <p className="flex items-center justify-between text-[16px] text-muted-foreground">
+                    <p className="flex items-center justify-between text-[14px] text-muted-foreground">
                       <span>Tạm tính</span>
                       <span>{formatMoney(selectedOrder.subtotal)}</span>
                     </p>
-                    <p className="flex items-center justify-between text-[16px] text-muted-foreground">
+                    <p className="flex items-center justify-between text-[14px] text-muted-foreground">
                       <span>Phí vận chuyển</span>
                       <span>{formatMoney(selectedOrder.shippingFee)}</span>
                     </p>
-                    <p className="flex items-center justify-between text-[16px] font-semibold text-foreground">
+                    <p className="flex items-center justify-between text-[14px] font-semibold text-foreground">
                       <span>Tổng tiền</span>
                       <span>{formatMoney(selectedOrder.total)}</span>
                     </p>
                   </div>
                   <div className="mt-5 space-y-2 border-t border-border pt-5">
-                    <h3 className="text-[18px] leading-6 font-semibold text-foreground">
+                    <h3 className="text-[15px] leading-6 font-semibold text-foreground">
                       Hình thức thanh toán
                     </h3>
-                    <p className="text-[16px] text-muted-foreground">{paymentMethodLabel}</p>
+                    <p className="text-[14px] text-muted-foreground">{paymentMethodLabel}</p>
                   </div>
                   <div className="mt-5 space-y-2 border-t border-border pt-5">
-                    <h3 className="text-[18px] leading-6 font-semibold text-foreground">
+                    <h3 className="text-[15px] leading-6 font-semibold text-foreground">
                       Đơn vị vận chuyển
                     </h3>
-                    <p className="text-[16px] text-muted-foreground">Chuyển phát nhanh</p>
+                    <p className="text-[14px] text-muted-foreground">Chuyển phát nhanh</p>
                   </div>
                   <div className="mt-5 space-y-2 border-t border-border pt-5">
-                    <h3 className="text-[18px] leading-6 font-semibold text-foreground">Địa chỉ</h3>
-                    <p className="text-[16px] text-muted-foreground">
+                    <h3 className="text-[15px] leading-6 font-semibold text-foreground">Địa chỉ</h3>
+                    <p className="text-[14px] text-muted-foreground">
                       {selectedOrder.shippingFullName}
                     </p>
-                    <p className="text-[16px] text-muted-foreground">
+                    <p className="text-[14px] text-muted-foreground">
                       {[
                         selectedOrder.shippingAddressLine,
                         selectedOrder.shippingWard,
@@ -245,7 +245,7 @@ export function AccountOrderDetailPageContent({
                         .filter(Boolean)
                         .join(', ')}
                     </p>
-                    <p className="text-[16px] text-muted-foreground">
+                    <p className="text-[14px] text-muted-foreground">
                       Điện thoại: {selectedOrder.shippingPhoneNumber}
                     </p>
                   </div>

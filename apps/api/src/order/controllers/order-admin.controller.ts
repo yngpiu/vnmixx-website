@@ -25,6 +25,7 @@ import {
   ListAdminOrdersQueryDto,
   OrderAdminDetailResponseDto,
   OrderAdminListResponseDto,
+  SepayTransactionListResponseDto,
   UpdateOrderStatusDto,
 } from '../dto';
 import { OrderAdminService } from '../services/order-admin.service';
@@ -34,7 +35,11 @@ import { OrderAdminService } from '../services/order-admin.service';
 @ApiUnauthorizedResponse({ description: 'Yêu cầu xác thực hoặc token không hợp lệ.' })
 @ApiForbiddenResponse({ description: 'Bạn không có quyền truy cập tài nguyên này.' })
 @RequireUserType('EMPLOYEE')
-@ApiExtraModels(OrderAdminListResponseDto, OrderAdminDetailResponseDto)
+@ApiExtraModels(
+  OrderAdminListResponseDto,
+  OrderAdminDetailResponseDto,
+  SepayTransactionListResponseDto,
+)
 @Controller('admin/orders')
 // Tiếp nhận các yêu cầu quản lý đơn hàng từ phía nhân viên.
 // Cung cấp các công cụ vận hành: xác nhận đơn, tạo vận đơn GHN, và xử lý các tình huống hủy đơn/thanh toán.
@@ -54,6 +59,28 @@ export class OrderAdminController {
     return ok(
       await this.orderAdminService.findAllOrders(query),
       'Lấy danh sách đơn hàng thành công.',
+    );
+  }
+
+  @ApiOperation({ summary: 'Lấy danh sách giao dịch SePay' })
+  @ApiOkResponse({
+    schema: buildSuccessResponseSchema({ $ref: getSchemaPath(SepayTransactionListResponseDto) }),
+  })
+  @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @Get('sepay-transactions')
+  async findSepayTransactions(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ): Promise<SuccessPayload<SepayTransactionListResponseDto>> {
+    return ok(
+      await this.orderAdminService.findSepayTransactions({
+        page: Math.max(1, Number.parseInt(page ?? '1', 10) || 1),
+        limit: Math.max(1, Number.parseInt(limit ?? '20', 10) || 20),
+        search,
+      }),
+      'Lấy danh sách giao dịch SePay thành công.',
     );
   }
 

@@ -14,6 +14,18 @@ import { useMemo } from 'react';
 import { InventoryVoucherLineItems, type VoucherLineDraft } from './inventory-voucher-line-items';
 import { InventoryVoucherSummary } from './inventory-voucher-summary';
 
+function voucherTypeLabel(type: InventoryVoucherType): string {
+  return type === 'EXPORT' ? 'phiếu xuất' : 'phiếu nhập';
+}
+
+function voucherTitle(type: InventoryVoucherType): string {
+  return type === 'EXPORT' ? 'Phiếu xuất kho' : 'Phiếu nhập hàng';
+}
+
+function voucherCodePlaceholder(type: InventoryVoucherType): string {
+  return type === 'EXPORT' ? 'VD: PX-260427-001' : 'VD: PN-260427-001';
+}
+
 type InventoryVoucherDialogProps = {
   open: boolean;
   type: InventoryVoucherType;
@@ -67,7 +79,7 @@ export function InventoryVoucherDialog({
         aria-describedby={undefined}
       >
         <DialogHeader>
-          <DialogTitle>{type === 'IMPORT' ? 'Phiếu nhập hàng' : 'Phiếu xuất kho'}</DialogTitle>
+          <DialogTitle>{voucherTitle(type)}</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-5 md:grid-cols-[280px_1fr]">
@@ -78,7 +90,7 @@ export function InventoryVoucherDialog({
               <Input
                 value={voucherCode}
                 onChange={(event) => setVoucherCode(event.target.value)}
-                placeholder={type === 'IMPORT' ? 'VD: PN-260427-001' : 'VD: PX-260427-001'}
+                placeholder={voucherCodePlaceholder(type)}
               />
             </div>
             <div className="space-y-1.5">
@@ -111,11 +123,7 @@ export function InventoryVoucherDialog({
             Hủy
           </Button>
           <Button type="button" onClick={onSubmit} disabled={!canSubmit || isSubmitting}>
-            {isSubmitting
-              ? 'Đang xử lý...'
-              : type === 'IMPORT'
-                ? 'Lưu phiếu nhập'
-                : 'Lưu phiếu xuất'}
+            {isSubmitting ? 'Đang xử lý...' : `Lưu ${voucherTypeLabel(type)}`}
           </Button>
         </DialogFooter>
       </DialogContent>

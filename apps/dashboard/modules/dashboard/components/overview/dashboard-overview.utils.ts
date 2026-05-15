@@ -85,7 +85,7 @@ export function getDashboardOrderStatusLabel(status: string): string {
     CANCELLED: 'Đã hủy',
     RETURNED: 'Hoàn trả',
   };
-  return labels[status] ?? status;
+  return labels[status] ?? 'Không xác định';
 }
 
 export function getDashboardOrderStatusClassName(status: string): string {

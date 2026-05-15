@@ -30,6 +30,21 @@ export interface PaymentView {
   expiredAt: Date | null;
 }
 
+export interface SepayTransactionView {
+  id: number;
+  sepayTransactionId: number;
+  transferAmount: number;
+  content: string;
+  referenceCode: string | null;
+  orderId: number | null;
+  orderCode: string | null;
+  paymentId: number | null;
+  matchedOrderCode: string | null;
+  matchStatus: string;
+  receivedAt: Date;
+  processedAt: Date | null;
+}
+
 export interface CheckoutInfoView {
   provider: string;
   bankCode: string;
@@ -55,6 +70,7 @@ export interface OrderListItemView {
   orderCode: string;
   status: string;
   paymentStatus: string;
+  paymentMethod: string | null;
   subtotal: number;
   shippingFee: number;
   total: number;
@@ -159,7 +175,7 @@ const ORDER_LIST_SELECT = {
   total: true,
   createdAt: true,
   items: { select: ORDER_ITEM_SELECT },
-  payment: { select: { status: true } },
+  payment: { select: { status: true, method: true } },
 } as const;
 
 const ORDER_DETAIL_SELECT = {
@@ -202,6 +218,21 @@ const ORDER_ADMIN_DETAIL_SELECT = {
   customer: { select: CUSTOMER_BRIEF_SELECT },
 } as const;
 
+const SEPAY_TRANSACTION_SELECT = {
+  id: true,
+  sepayTransactionId: true,
+  transferAmount: true,
+  content: true,
+  referenceCode: true,
+  orderId: true,
+  order: { select: { orderCode: true } },
+  paymentId: true,
+  matchedOrderCode: true,
+  matchStatus: true,
+  receivedAt: true,
+  processedAt: true,
+} as const;
+
 // ─── Repository ──────────────────────────────────────────
 
 /**
@@ -219,6 +250,38 @@ export class OrderRepository {
     return {
       ...order,
       paymentStatus,
+    };
+  }
+
+  private withDerivedPaymentMethod<T extends { payment: { method: string } | null }>(
+    order: T,
+  ): T & { paymentMethod: string | null } {
+    return {
+      ...order,
+      paymentMethod: order.payment?.method ?? null,
+    };
+  }
+
+  private mapOrderListItemView<
+    T extends {
+      id: number;
+      orderCode: string;
+      status: string;
+      subtotal: number;
+      shippingFee: number;
+      total: number;
+      createdAt: Date;
+      items: Array<Parameters<OrderRepository['mapOrderItemView']>[0]>;
+      payment?: { status: string; method: string } | null;
+      paymentMethod?: string | null;
+      paymentStatus?: string;
+    },
+  >(order: T): T & OrderListItemView {
+    return {
+      ...order,
+      paymentStatus: order.paymentStatus ?? order.payment?.status ?? 'PENDING',
+      paymentMethod: order.paymentMethod ?? order.payment?.method ?? null,
+      items: order.items.map((item) => this.mapOrderItemView(item)),
     };
   }
 
@@ -247,6 +310,38 @@ export class OrderRepository {
       amountPaid: payment.amountPaid,
       paidAt: payment.paidAt,
       expiredAt: payment.expiredAt,
+    };
+  }
+
+  private mapSepayTransactionView<
+    T extends {
+      id: number;
+      sepayTransactionId: number;
+      transferAmount: number;
+      content: string;
+      referenceCode: string | null;
+      orderId: number | null;
+      order: { orderCode: string } | null;
+      paymentId: number | null;
+      matchedOrderCode: string | null;
+      matchStatus: string;
+      receivedAt: Date;
+      processedAt: Date | null;
+    },
+  >(transaction: T): SepayTransactionView {
+    return {
+      id: transaction.id,
+      sepayTransactionId: transaction.sepayTransactionId,
+      transferAmount: transaction.transferAmount,
+      content: transaction.content,
+      referenceCode: transaction.referenceCode,
+      orderId: transaction.orderId,
+      orderCode: transaction.order?.orderCode ?? null,
+      paymentId: transaction.paymentId,
+      matchedOrderCode: transaction.matchedOrderCode,
+      matchStatus: transaction.matchStatus,
+      receivedAt: transaction.receivedAt,
+      processedAt: transaction.processedAt,
     };
   }
 
@@ -385,13 +480,9 @@ export class OrderRepository {
       this.prisma.order.count({ where }),
     ]);
 
-    const data = rows.map((row) => {
-      const withPaymentStatus = this.withDerivedPaymentStatus(row);
-      return {
-        ...withPaymentStatus,
-        items: withPaymentStatus.items.map((item) => this.mapOrderItemView(item)),
-      };
-    });
+    const data = rows.map((row) =>
+      this.mapOrderListItemView(this.withDerivedPaymentMethod(this.withDerivedPaymentStatus(row))),
+    );
     return { data, total };
   }
 
@@ -412,11 +503,11 @@ export class OrderRepository {
     }
 
     const withPaymentStatus = this.withDerivedPaymentStatus(row);
+    const withPaymentMethod = this.withDerivedPaymentMethod(withPaymentStatus);
     return {
-      ...withPaymentStatus,
-      items: withPaymentStatus.items.map((item) => this.mapOrderItemView(item)),
-      payments: withPaymentStatus.payment ? [this.mapPaymentView(withPaymentStatus.payment)] : [],
-      checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payment),
+      ...this.mapOrderListItemView(withPaymentMethod),
+      payments: withPaymentMethod.payment ? [this.mapPaymentView(withPaymentMethod.payment)] : [],
+      checkoutSession: this.deriveCheckoutInfo(withPaymentMethod.payment),
     };
   }
 
@@ -435,11 +526,40 @@ export class OrderRepository {
 
     const withPaymentStatus = this.withDerivedPaymentStatus(row);
     return {
-      ...withPaymentStatus,
-      items: withPaymentStatus.items.map((item) => this.mapOrderItemView(item)),
+      ...this.mapOrderListItemView(this.withDerivedPaymentMethod(withPaymentStatus)),
+      customer: row.customer,
       payments: withPaymentStatus.payment ? [this.mapPaymentView(withPaymentStatus.payment)] : [],
       checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payment),
     };
+  }
+
+  async findSepayTransactions(params: {
+    page: number;
+    limit: number;
+    search?: string;
+  }): Promise<{ data: SepayTransactionView[]; total: number }> {
+    const where: Prisma.SepayTransactionWhereInput = {};
+    if (params.search) {
+      where.OR = [
+        { content: { contains: params.search } },
+        { referenceCode: { contains: params.search } },
+        { matchedOrderCode: { contains: params.search } },
+        { order: { is: { orderCode: { contains: params.search } } } },
+      ];
+    }
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.sepayTransaction.count({ where }),
+      this.prisma.sepayTransaction.findMany({
+        where,
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+        orderBy: [{ receivedAt: 'desc' }, { id: 'desc' }],
+        select: SEPAY_TRANSACTION_SELECT,
+      }),
+    ]);
+
+    return { data: data.map((row) => this.mapSepayTransactionView(row)), total };
   }
 
   /**
@@ -480,13 +600,9 @@ export class OrderRepository {
       this.prisma.order.count({ where }),
     ]);
 
-    const data = rows.map((row) => {
-      const withPaymentStatus = this.withDerivedPaymentStatus(row);
-      return {
-        ...withPaymentStatus,
-        items: withPaymentStatus.items.map((item) => this.mapOrderItemView(item)),
-      };
-    });
+    const data = rows.map((row) =>
+      this.mapOrderListItemView(this.withDerivedPaymentMethod(this.withDerivedPaymentStatus(row))),
+    );
     return { data, total };
   }
 

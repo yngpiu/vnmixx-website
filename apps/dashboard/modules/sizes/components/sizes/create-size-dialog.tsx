@@ -1,7 +1,7 @@
 'use client';
 
 import { apiErrorMessage } from '@/modules/common/utils/api-error-message';
-import { createSize } from '@/modules/sizes/api/sizes';
+import { createSize, listPublicSizes } from '@/modules/sizes/api/sizes';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Dialog,
@@ -12,7 +12,7 @@ import {
 } from '@repo/ui/components/ui/dialog';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@repo/ui/components/ui/field';
 import { Input } from '@repo/ui/components/ui/input';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -26,22 +26,27 @@ type CreateSizeDialogProps = {
 export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) {
   const queryClient = useQueryClient();
   const [label, setLabel] = useState('');
-  const [sortOrder, setSortOrder] = useState('');
   const [labelError, setLabelError] = useState<string | null>(null);
+
+  const listQuery = useQuery({
+    queryKey: ['sizes', 'public'],
+    queryFn: listPublicSizes,
+    enabled: open,
+  });
 
   useEffect(() => {
     if (!open) return;
     setLabel('');
-    setSortOrder('');
     setLabelError(null);
   }, [open]);
 
   const mutation = useMutation({
     mutationFn: () => {
-      const so = sortOrder.trim() === '' ? undefined : Number.parseInt(sortOrder, 10);
+      const nextSortOrder =
+        (listQuery.data?.reduce((max, size) => Math.max(max, size.sortOrder), -1) ?? -1) + 1;
       return createSize({
         label: label.trim(),
-        ...(so !== undefined && !Number.isNaN(so) ? { sortOrder: so } : {}),
+        sortOrder: nextSortOrder,
       });
     },
     onSuccess: async () => {
@@ -58,11 +63,6 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
     setLabelError(null);
     if (!label.trim()) {
       setLabelError('Nhãn kích cỡ là bắt buộc.');
-      return;
-    }
-    const so = sortOrder.trim() === '' ? undefined : Number.parseInt(sortOrder, 10);
-    if (sortOrder.trim() !== '' && Number.isNaN(so!)) {
-      toast.error('Thứ tự sắp xếp phải là số nguyên.');
       return;
     }
     mutation.mutate();
@@ -106,20 +106,10 @@ export function CreateSizeDialog({ open, onOpenChange }: CreateSizeDialogProps) 
               />
               <FieldError className="mt-1" errors={labelError ? [{ message: labelError }] : []} />
             </Field>
-            <Field>
-              <FieldLabel htmlFor="create-size-order">Thứ tự sắp xếp</FieldLabel>
-              <Input
-                id="create-size-order"
-                type="number"
-                min={0}
-                inputMode="numeric"
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                disabled={busy}
-                placeholder="Mặc định theo server"
-              />
-            </Field>
           </FieldGroup>
+          <p className="text-muted-foreground text-xs">
+            Kích cỡ mới sẽ được thêm ở cuối danh sách. Bạn có thể kéo-thả để đổi thứ tự sau khi tạo.
+          </p>
         </form>
 
         <DialogFooter className="mx-0 mb-0 shrink-0 gap-2 px-6 py-4 sm:justify-end">

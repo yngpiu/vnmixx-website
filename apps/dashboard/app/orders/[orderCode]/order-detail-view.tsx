@@ -54,8 +54,8 @@ function parseOrderCodeParam(raw: string | string[] | undefined): string | null 
 
 function paymentMethodLabel(method: string): string {
   if (method === 'COD') return 'COD';
-  if (method === 'BANK_TRANSFER') return 'Chuyển khoản';
-  return method;
+  if (method === 'BANK_TRANSFER_QR') return 'Chuyển khoản QR';
+  return '—';
 }
 
 const dateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
@@ -111,9 +111,11 @@ export function OrderDetailView() {
             title={order.orderCode}
             description={`Tạo ${dateTimeFormatter.format(new Date(order.createdAt))} · Cập nhật ${dateTimeFormatter.format(new Date(order.updatedAt))}`}
           />
-          <Button type="button" onClick={() => setActionsOpen(true)}>
-            Chuyển trạng thái
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => setActionsOpen(true)}>
+              Chuyển trạng thái
+            </Button>
+          </div>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">

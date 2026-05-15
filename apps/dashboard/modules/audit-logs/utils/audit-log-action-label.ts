@@ -101,15 +101,13 @@ const AUDIT_LOG_ACTION_LABELS_VI: Record<(typeof AUDIT_LOG_ACTION_VALUES)[number
   'support-chat.delete': 'Xóa hội thoại hỗ trợ',
 };
 
-/**
- * Vietnamese label for an audit action code; falls back to the raw code.
- */
+/** Vietnamese label for an audit action code. */
 export function auditLogActionDisplayName(action: string): string {
   if (!action) {
-    return action;
+    return 'Không xác định';
   }
   const key = action as (typeof AUDIT_LOG_ACTION_VALUES)[number];
-  return AUDIT_LOG_ACTION_LABELS_VI[key] ?? action;
+  return AUDIT_LOG_ACTION_LABELS_VI[key] ?? 'Không xác định';
 }
 
 /** Nhóm mã hành động để gán màu badge (xoá đỏ, thêm xanh, …). */

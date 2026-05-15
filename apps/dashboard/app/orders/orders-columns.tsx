@@ -8,6 +8,7 @@ import {
 import type { DataTableColumnMeta } from '@/modules/common/components/data-table/column-meta';
 import { LongText } from '@/modules/common/components/long-text';
 import { formatVnd } from '@/modules/common/utils/format-vnd';
+import { getAdminOrder } from '@/modules/orders/api/orders';
 import type { OrderAdminListItem } from '@/modules/orders/types/order-admin';
 import {
   getOrderStatusBadgeClassName,
@@ -17,6 +18,7 @@ import {
 } from '@/modules/orders/utils/order-status-labels';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { cn } from '@repo/ui/lib/utils';
+import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import Link from 'next/link';
 
@@ -24,6 +26,28 @@ const createdAtFormatter = new Intl.DateTimeFormat('vi-VN', {
   dateStyle: 'short',
   timeStyle: 'short',
 });
+
+function paymentMethodLabel(method: OrderAdminListItem['paymentMethod']): string {
+  if (method === 'COD') return 'COD';
+  if (method === 'BANK_TRANSFER_QR') return 'Chuyển khoản QR';
+  return '—';
+}
+
+function PaymentMethodCell({ order }: { order: OrderAdminListItem }): React.JSX.Element {
+  const detailQuery = useQuery({
+    queryKey: ['orders', 'admin', 'detail', order.orderCode, 'payment-method'],
+    queryFn: () => getAdminOrder(order.orderCode),
+    enabled: order.paymentMethod == null,
+    staleTime: 60_000,
+  });
+  const paymentMethod =
+    order.paymentMethod ?? order.payment?.method ?? detailQuery.data?.payments[0]?.method ?? null;
+  return (
+    <span className="whitespace-nowrap text-muted-foreground">
+      {paymentMethodLabel(paymentMethod)}
+    </span>
+  );
+}
 
 export const ordersColumns: ColumnDef<OrderAdminListItem>[] = [
   dataTableSttColumnDef<OrderAdminListItem>(),
@@ -108,6 +132,14 @@ export const ordersColumns: ColumnDef<OrderAdminListItem>[] = [
     meta: { dataTableColumnLabel: 'Thanh toán' } satisfies DataTableColumnMeta,
   },
   {
+    accessorKey: 'paymentMethod',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Phương thức thanh toán" />
+    ),
+    cell: ({ row }) => <PaymentMethodCell order={row.original} />,
+    meta: { dataTableColumnLabel: 'Phương thức thanh toán' } satisfies DataTableColumnMeta,
+  },
+  {
     accessorKey: 'createdAt',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Ngày tạo" />,
     cell: ({ row }) => (
@@ -116,13 +148,6 @@ export const ordersColumns: ColumnDef<OrderAdminListItem>[] = [
       </span>
     ),
     meta: { dataTableColumnLabel: 'Ngày tạo' } satisfies DataTableColumnMeta,
-  },
-  {
-    id: 'itemsCount',
-    accessorFn: (row) => row.items.length,
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Dòng hàng" />,
-    cell: ({ row }) => <span className="tabular-nums">{row.original.items.length}</span>,
-    meta: { dataTableColumnLabel: 'Dòng hàng' } satisfies DataTableColumnMeta,
   },
   {
     id: 'actions',

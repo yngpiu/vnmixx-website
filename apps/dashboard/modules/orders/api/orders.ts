@@ -4,6 +4,7 @@ import type {
   OrderAdminDetail,
   OrderAdminListResponse,
   OrderStatus,
+  SepayTransactionListResponse,
 } from '@/modules/orders/types/order-admin';
 export type { ListAdminOrdersParams } from '@/modules/orders/types/order-admin';
 
@@ -17,6 +18,18 @@ export async function listAdminOrders(
 export async function getAdminOrder(orderCode: string): Promise<OrderAdminDetail> {
   const { data } = await apiClient.get<OrderAdminDetail>(
     `/admin/orders/${encodeURIComponent(orderCode)}`,
+  );
+  return data;
+}
+
+export async function listAdminSepayTransactions(
+  params: { page?: number; limit?: number; search?: string } = {},
+): Promise<SepayTransactionListResponse> {
+  const { data } = await apiClient.get<SepayTransactionListResponse>(
+    '/admin/orders/sepay-transactions',
+    {
+      params,
+    },
   );
   return data;
 }

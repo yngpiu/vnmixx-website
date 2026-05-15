@@ -56,11 +56,11 @@ export function getPaymentStatusBadgeClassName(status: PaymentStatus): string {
 }
 
 export function getOrderStatusLabel(status: OrderStatus): string {
-  return ORDER_STATUS_LABELS[status] ?? status;
+  return ORDER_STATUS_LABELS[status] ?? 'Không xác định';
 }
 
 export function getPaymentStatusLabel(status: PaymentStatus): string {
-  return PAYMENT_STATUS_LABELS[status] ?? status;
+  return PAYMENT_STATUS_LABELS[status] ?? 'Không xác định';
 }
 
 export const ORDER_STATUS_FILTER_OPTIONS: { label: string; value: OrderStatus }[] = (

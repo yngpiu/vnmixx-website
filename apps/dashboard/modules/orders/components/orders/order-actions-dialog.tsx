@@ -93,7 +93,7 @@ export function OrderActionsDialog(props: {
   const paymentMethodLabel = useMemo((): string => {
     const m = order?.payments[0]?.method as PaymentMethod | undefined;
     if (m === 'COD') return 'COD';
-    if (m === 'BANK_TRANSFER_QR') return 'Chuyển khoản';
+    if (m === 'BANK_TRANSFER_QR') return 'Chuyển khoản QR';
     return '—';
   }, [order]);
   const isMutating = updateStatusMutation.isPending;

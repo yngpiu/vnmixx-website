@@ -46,17 +46,17 @@ const PLACEMENT_SECTIONS: ReadonlyArray<{
 }> = [
   {
     placement: 'HERO_SLIDER',
-    title: 'Hero banner',
+    title: 'Banner chính',
     description: 'Không giới hạn số lượng.',
   },
   {
     placement: 'FEATURED_TILE',
-    title: 'Featured tile',
+    title: 'Banner nổi bật',
     description: 'Không giới hạn số lượng.',
   },
   {
     placement: 'PROMO_STRIP',
-    title: 'Promo strip',
+    title: 'Banner khuyến mãi',
     description: 'Tối đa 1 banner.',
   },
 ];
@@ -290,7 +290,7 @@ export function BannersView() {
               );
             })}
             <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              Loại Promo strip chỉ nên có 1 banner. Form tạo mới sẽ chặn nếu đã tồn tại.
+              Loại banner khuyến mãi chỉ nên có 1 banner. Form tạo mới sẽ chặn nếu đã tồn tại.
             </div>
           </div>
         )}

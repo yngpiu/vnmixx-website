@@ -21,6 +21,13 @@ import { MediaPickerDialog } from '@/modules/products/components/products/media-
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@repo/ui/components/ui/select';
 import { Switch } from '@repo/ui/components/ui/switch';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImageIcon, XIcon } from 'lucide-react';
@@ -56,17 +63,17 @@ const PLACEMENT_OPTIONS: ReadonlyArray<{
 }> = [
   {
     value: 'HERO_SLIDER',
-    label: 'Hero',
+    label: 'Banner chính',
     description: 'Banner lớn đầu trang, không giới hạn số lượng.',
   },
   {
     value: 'FEATURED_TILE',
-    label: 'Featured tile',
+    label: 'Banner nổi bật',
     description: 'Banner ô nổi bật, không giới hạn số lượng.',
   },
   {
     value: 'PROMO_STRIP',
-    label: 'Promo strip',
+    label: 'Banner khuyến mãi',
     description: 'Dải promo, chỉ cho phép tối đa 1 banner.',
   },
 ];
@@ -174,7 +181,7 @@ export function BannerForm({ mode, bannerId }: BannerFormProps) {
   const submit = (): void => {
     setFormError(null);
     if (form.placement === 'PROMO_STRIP' && isPromoPlacementLocked) {
-      setFormError('Loại Promo chỉ cho phép tối đa 1 banner.');
+      setFormError('Loại banner khuyến mãi chỉ cho phép tối đa 1 banner.');
       return;
     }
     if (!form.imageUrl.trim()) {
@@ -244,7 +251,6 @@ export function BannerForm({ mode, bannerId }: BannerFormProps) {
               Chọn ảnh
             </Button>
           </div>
-          <Input value={form.imageUrl} readOnly placeholder="Chưa chọn ảnh..." />
           <div className="bg-muted/30 flex min-h-[220px] items-center justify-center overflow-hidden rounded-xl border">
             {form.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -262,32 +268,34 @@ export function BannerForm({ mode, bannerId }: BannerFormProps) {
         <section className="space-y-4 rounded-2xl border p-4">
           <div className="space-y-2">
             <Label>Loại banner</Label>
-            <div className="grid gap-2">
-              {PLACEMENT_OPTIONS.map((option) => {
-                const isSelected = form.placement === option.value;
-                const isDisabled =
-                  isBusy ||
-                  (option.value === 'PROMO_STRIP' &&
+            <Select
+              value={form.placement}
+              onValueChange={(value) =>
+                setForm((prev) => ({ ...prev, placement: value as BannerPlacement }))
+              }
+              disabled={isBusy}
+            >
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder="Chọn loại banner" />
+              </SelectTrigger>
+              <SelectContent>
+                {PLACEMENT_OPTIONS.map((option) => {
+                  const isDisabled =
+                    option.value === 'PROMO_STRIP' &&
                     isPromoPlacementLocked &&
-                    form.placement !== 'PROMO_STRIP');
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`rounded-lg border px-3 py-2 text-left ${
-                      isSelected
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'hover:bg-muted/50 text-foreground'
-                    } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
-                    disabled={isDisabled}
-                    onClick={() => setForm((prev) => ({ ...prev, placement: option.value }))}
-                  >
-                    <p className="text-sm font-medium">{option.label}</p>
-                    <p className="text-muted-foreground text-xs">{option.description}</p>
-                  </button>
-                );
-              })}
-            </div>
+                    form.placement !== 'PROMO_STRIP';
+
+                  return (
+                    <SelectItem key={option.value} value={option.value} disabled={isDisabled}>
+                      {option.label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">
+              {PLACEMENT_OPTIONS.find((option) => option.value === form.placement)?.description}
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="banner-title">Tiêu đề banner (tuỳ chọn)</Label>

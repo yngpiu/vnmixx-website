@@ -32,6 +32,23 @@ export interface PaymentAdmin {
   paidAt: string | null;
 }
 
+export type SepayMatchStatus = 'UNMATCHED' | 'MATCHED' | 'IGNORED';
+
+export interface SepayTransactionAdmin {
+  id: number;
+  sepayTransactionId: number;
+  transferAmount: number;
+  content: string;
+  referenceCode: string | null;
+  orderId: number | null;
+  orderCode: string | null;
+  paymentId: number | null;
+  matchedOrderCode: string | null;
+  matchStatus: SepayMatchStatus;
+  receivedAt: string;
+  processedAt: string | null;
+}
+
 export interface StatusHistoryAdmin {
   id: number;
   status: OrderStatus;
@@ -50,6 +67,11 @@ export interface OrderAdminListItem {
   orderCode: string;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod | null;
+  payment?: {
+    method: PaymentMethod;
+    status: PaymentStatus;
+  } | null;
   subtotal: number;
   shippingFee: number;
   total: number;
@@ -100,3 +122,8 @@ export type ListAdminOrdersParams = {
   search?: string;
   customerId?: number;
 };
+
+export interface SepayTransactionListResponse {
+  data: SepayTransactionAdmin[];
+  meta: ListPaginationMeta;
+}

@@ -17,18 +17,25 @@ const updatedFormatter = new Intl.DateTimeFormat('vi-VN', {
 
 export function createSizesColumns(handlers: SizesColumnHandlers): ColumnDef<SizeAdmin>[] {
   return [
+    {
+      id: 'drag',
+      header: () => <span className="sr-only">Sắp xếp</span>,
+      cell: () => null,
+      meta: {
+        dataTableColumnLabel: 'Sắp xếp',
+        className: 'w-12',
+        thClassName: 'w-12',
+        tdClassName: 'w-12',
+      } satisfies DataTableColumnMeta,
+      enableSorting: false,
+      enableHiding: false,
+    },
     dataTableSttColumnDef<SizeAdmin>(),
     {
       accessorKey: 'label',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nhãn" />,
       cell: ({ row }) => <span className="font-medium">{row.original.label}</span>,
       meta: { dataTableColumnLabel: 'Nhãn' } satisfies DataTableColumnMeta,
-    },
-    {
-      accessorKey: 'sortOrder',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Thứ tự" />,
-      cell: ({ row }) => <div className="text-center tabular-nums">{row.original.sortOrder}</div>,
-      meta: { dataTableColumnLabel: 'Thứ tự' } satisfies DataTableColumnMeta,
     },
     {
       accessorKey: 'updatedAt',

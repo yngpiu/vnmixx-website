@@ -25,10 +25,8 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   profile: 'Hồ sơ',
 };
 
-/**
- * Tiêu đề nhóm quyền cho UI (tiếng Việt). Nếu chưa khai báo trong bảng map, trả về mã gốc.
- */
+/** Tiêu đề nhóm quyền cho UI (tiếng Việt). Nếu chưa khai báo trong bảng map, trả về nhãn an toàn. */
 export function permissionModuleDisplayName(moduleKey: string): string {
-  if (!moduleKey) return moduleKey;
-  return PERMISSION_RESOURCE_LABELS_VI[moduleKey] ?? moduleKey;
+  if (!moduleKey) return 'Không xác định';
+  return PERMISSION_RESOURCE_LABELS_VI[moduleKey] ?? 'Không xác định';
 }

@@ -213,7 +213,7 @@ export function CheckoutPageContent(): React.JSX.Element {
             <PaymentMethodOption
               value="BANK_TRANSFER_QR"
               currentValue={paymentMethod}
-              title="Thanh toán qua mã QR"
+              title="Chuyển khoản QR"
               description="Bạn quét mã QR và chuyển khoản để hoàn tất thanh toán."
               onChange={setPaymentMethod}
             />
