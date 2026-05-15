@@ -34,7 +34,7 @@ import {
 } from '@nestjs/swagger';
 import type { Express, Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
-import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   buildNullDataSuccessResponseSchema,
@@ -104,6 +104,7 @@ export class MediaAdminController {
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(MediaListResponseDto) }),
   })
   @Get()
+  @RequirePermissions('media.read')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async listMedia(
     @Query() query: ListMediaQueryDto,
@@ -147,6 +148,7 @@ export class MediaAdminController {
     }),
   )
   @Post('upload')
+  @RequirePermissions('media.create')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   // Endpoint tiếp nhận file từ request multipart/form-data và chuyển tiếp sang MediaService
@@ -185,6 +187,7 @@ export class MediaAdminController {
     }),
   })
   @Get('folders')
+  @RequirePermissions('media.read')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async listFolders(): Promise<SuccessPayload<string[]>> {
     return ok(await this.mediaService.listFolders(), 'Lấy danh sách thư mục thành công.');
@@ -196,6 +199,7 @@ export class MediaAdminController {
     schema: buildNullDataSuccessResponseSchema('Thư mục đã tạo.'),
   })
   @Post('folders')
+  @RequirePermissions('media.create')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   // Tạo thư mục logic trong hệ thống để tổ chức lưu trữ media
@@ -213,6 +217,7 @@ export class MediaAdminController {
     description: 'Kết quả xóa thư mục.',
   })
   @Delete('folders')
+  @RequirePermissions('media.delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   // Xóa thư mục sẽ xóa toàn bộ file bên trong trên R2 và DB
@@ -231,6 +236,7 @@ export class MediaAdminController {
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Patch(':id/move')
+  @RequirePermissions('media.update')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   // Cập nhật thư mục cha của một file media
@@ -250,6 +256,7 @@ export class MediaAdminController {
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy file.' })
   @Delete(':id')
+  @RequirePermissions('media.delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   // Xóa một file media đơn lẻ

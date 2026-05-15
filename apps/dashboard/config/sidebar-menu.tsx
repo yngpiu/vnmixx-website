@@ -3,6 +3,11 @@
 import { ADMIN_MODULES, adminModulePath, type AdminModuleSlug } from '@/config/admin-modules';
 import { dashboardRoutes } from '@/config/routes';
 import {
+  canAccessReadPermission,
+  readPermissionForModuleSlug,
+  type ReadPermission,
+} from '@/modules/auth/utils/dashboard-authz';
+import {
   BookOpenIcon,
   ClipboardListIcon,
   ImageIcon,
@@ -27,6 +32,7 @@ export type SidebarNavItem = {
   icon?: ReactNode;
   subtitle?: string;
   isActive?: boolean;
+  requiredReadPermission?: ReadPermission | null;
   items?: { title: string; url: string }[];
   groups?: { title: string; items: { title: string; url: string }[] }[];
 };
@@ -42,6 +48,7 @@ export type DashboardSearchEntry = {
   readonly label: string;
   readonly href: string;
   readonly group: string;
+  readonly requiredReadPermission?: ReadPermission | null;
 };
 
 function moduleNav(
@@ -53,6 +60,7 @@ function moduleNav(
     title: options?.title ?? ADMIN_MODULES[slug].title,
     url: options?.url ?? adminModulePath(slug),
     icon: <Icon className="size-4 shrink-0" />,
+    requiredReadPermission: readPermissionForModuleSlug(slug),
   };
 }
 
@@ -78,11 +86,13 @@ export const sidebarSections: SidebarSection[] = [
         title: 'Đánh giá',
         url: dashboardRoutes.reviews,
         icon: <StarIcon className="size-4 shrink-0" />,
+        requiredReadPermission: 'review.read',
       },
       {
         title: 'Hỗ trợ trực tuyến',
         url: dashboardRoutes.supportChats,
         icon: <MessageSquareIcon className="size-4 shrink-0" />,
+        requiredReadPermission: 'support-chat.read',
       },
     ],
   },
@@ -96,6 +106,7 @@ export const sidebarSections: SidebarSection[] = [
         title: 'Bộ sưu tập',
         url: dashboardRoutes.media,
         icon: <ImageIcon className="size-4 shrink-0" />,
+        requiredReadPermission: 'media.read',
       },
       moduleNav('colors', PaletteIcon),
       moduleNav('sizes', RulerIcon),
@@ -115,36 +126,6 @@ export const sidebarSections: SidebarSection[] = [
     groupLabel: 'Nội dung',
     items: [moduleNav('banners', ImageIcon), moduleNav('knowledge', BookOpenIcon)],
   },
-  /*
-   * Reports section intentionally disabled.
-   * Uncomment when report routes are ready.
-   */
-  // {
-  //   id: 'reports',
-  //   groupLabel: 'Báo cáo',
-  //   items: [
-  //     {
-  //       title: 'Doanh thu',
-  //       url: '/reports?type=revenue',
-  //       icon: <ChartColumnIcon className="size-4 shrink-0" />,
-  //     },
-  //     {
-  //       title: 'Sản phẩm',
-  //       url: '/reports?type=products',
-  //       icon: <PackageIcon className="size-4 shrink-0" />,
-  //     },
-  //     {
-  //       title: 'Khách hàng',
-  //       url: '/reports?type=customers',
-  //       icon: <UsersIcon className="size-4 shrink-0" />,
-  //     },
-  //     {
-  //       title: 'Tồn kho',
-  //       url: '/reports?type=inventory',
-  //       icon: <TruckIcon className="size-4 shrink-0" />,
-  //     },
-  //   ],
-  // },
   {
     id: 'system-admin',
     groupLabel: 'Hệ thống',
@@ -153,19 +134,36 @@ export const sidebarSections: SidebarSection[] = [
         title: 'Nhật ký thao tác',
         url: '/audit-logs',
         icon: <ClipboardListIcon className="size-4 shrink-0" />,
+        requiredReadPermission: 'audit.read',
       },
     ],
   },
 ];
 
-export function getDashboardSearchEntries(): DashboardSearchEntry[] {
+export function filterSidebarSectionsByPermissions(
+  permissions: readonly string[],
+  sections: readonly SidebarSection[] = sidebarSections,
+): SidebarSection[] {
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) =>
+        canAccessReadPermission(permissions, item.requiredReadPermission ?? null),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
+export function getDashboardSearchEntries(permissions: readonly string[]): DashboardSearchEntry[] {
+  const sections = filterSidebarSectionsByPermissions(permissions);
   const entries: DashboardSearchEntry[] = [];
-  for (const section of sidebarSections) {
+  for (const section of sections) {
     for (const item of section.items) {
       entries.push({
         label: item.title,
         href: item.url,
         group: section.groupLabel,
+        requiredReadPermission: item.requiredReadPermission ?? null,
       });
       if (item.items) {
         for (const sub of item.items) {
@@ -174,6 +172,7 @@ export function getDashboardSearchEntries(): DashboardSearchEntry[] {
             label: `${item.title} — ${sub.title}`,
             href: sub.url,
             group: section.groupLabel,
+            requiredReadPermission: item.requiredReadPermission ?? null,
           });
         }
       }
@@ -184,6 +183,7 @@ export function getDashboardSearchEntries(): DashboardSearchEntry[] {
               label: `${item.title} — ${g.title} — ${sub.title}`,
               href: sub.url,
               group: section.groupLabel,
+              requiredReadPermission: item.requiredReadPermission ?? null,
             });
           }
         }
@@ -194,6 +194,7 @@ export function getDashboardSearchEntries(): DashboardSearchEntry[] {
     label: 'Cài đặt cá nhân',
     href: dashboardRoutes.settings,
     group: 'Tài khoản',
+    requiredReadPermission: null,
   });
   return entries;
 }

@@ -69,6 +69,24 @@ const PERMISSIONS: { name: string; description: string }[] = [
     update: 'Đánh giá: cập nhật',
     delete: 'Đánh giá: xóa',
   }),
+  ...crud('banner', {
+    create: 'Banner: tạo',
+    read: 'Banner: xem',
+    update: 'Banner: cập nhật',
+    delete: 'Banner: xóa',
+  }),
+  ...crud('media', {
+    create: 'Media: tải lên / tạo thư mục',
+    read: 'Media: xem danh sách tệp và thư mục',
+    update: 'Media: di chuyển tệp',
+    delete: 'Media: xóa tệp / thư mục',
+  }),
+  ...crud('knowledge', {
+    create: 'Nội dung chính sách: tạo',
+    read: 'Nội dung chính sách: xem',
+    update: 'Nội dung chính sách: cập nhật',
+    delete: 'Nội dung chính sách: xóa',
+  }),
   ...crud('inventory', {
     create: 'Kho: tạo phiếu nhập/xuất và ghi nhận biến động tồn',
     read: 'Kho: xem tồn kho, lịch sử biến động, danh sách/chi tiết phiếu',

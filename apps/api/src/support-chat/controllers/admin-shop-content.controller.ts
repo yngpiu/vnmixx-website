@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Put } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ShopContentKey } from '../../../generated/prisma/client';
-import { RequireUserType } from '../../auth/decorators';
+import { RequirePermissions, RequireUserType } from '../../auth/decorators';
 import { RedisService } from '../../redis/services/redis.service';
 import { UpsertShopContentDto } from '../dto/upsert-shop-content.dto';
 import { ShopContentRepository } from '../repositories/shop-content.repository';
@@ -19,12 +19,14 @@ export class AdminShopContentController {
 
   @ApiOperation({ summary: 'Lấy tất cả Shop Content' })
   @Get()
+  @RequirePermissions('knowledge.read')
   async findAll() {
     return this.shopContentRepository.findAll();
   }
 
   @ApiOperation({ summary: 'Lấy chi tiết một Shop Content' })
   @Get(':key')
+  @RequirePermissions('knowledge.read')
   async findOne(@Param('key') key: ShopContentKey) {
     const item = await this.shopContentRepository.findByKey(key);
     return item ? { ...item, key } : null;
@@ -32,6 +34,7 @@ export class AdminShopContentController {
 
   @ApiOperation({ summary: 'Cập nhật/Thêm mới Shop Content' })
   @Put(':key')
+  @RequirePermissions('knowledge.update')
   async upsert(@Param('key') key: ShopContentKey, @Body() dto: UpsertShopContentDto) {
     await this.shopContentRepository.upsert(key, dto.title, dto.content);
 

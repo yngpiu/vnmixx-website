@@ -29,7 +29,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
-import { CurrentUser, RequireUserType } from '../../auth/decorators';
+import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   buildSuccessResponseSchema,
@@ -65,6 +65,7 @@ export class BannerAdminController {
     }),
   })
   @Get()
+  @RequirePermissions('banner.read')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findAll(
     @Query() query: ListBannersQueryDto,
@@ -84,6 +85,7 @@ export class BannerAdminController {
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy banner.' })
   @Get(':id')
+  @RequirePermissions('banner.read')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async findById(
     @Param('id', ParseIntPipe) id: number,
@@ -96,6 +98,7 @@ export class BannerAdminController {
     schema: buildSuccessResponseSchema({ $ref: getSchemaPath(BannerAdminResponseDto) }),
   })
   @Post()
+  @RequirePermissions('banner.create')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   async create(
@@ -115,6 +118,7 @@ export class BannerAdminController {
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy banner.' })
   @Put(':id')
+  @RequirePermissions('banner.update')
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @ApiBadRequestResponse({ description: 'Dữ liệu đầu vào không hợp lệ.' })
   async update(
@@ -135,6 +139,7 @@ export class BannerAdminController {
   })
   @ApiNotFoundResponse({ description: 'Không tìm thấy banner.' })
   @Delete(':id')
+  @RequirePermissions('banner.delete')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   async remove(

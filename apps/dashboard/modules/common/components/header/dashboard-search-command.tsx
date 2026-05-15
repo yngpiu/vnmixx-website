@@ -1,6 +1,7 @@
 'use client';
 
 import { getDashboardSearchEntries } from '@/config/sidebar-menu';
+import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { Button } from '@repo/ui/components/ui/button';
 import {
   Command,
@@ -16,12 +17,10 @@ import { ArrowRightIcon, ChevronRightIcon, SearchIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-const COMMAND_ENTRIES = getDashboardSearchEntries();
-
-const GROUP_ORDER = (): readonly string[] => {
+const GROUP_ORDER = (entries: readonly { group: string }[]): readonly string[] => {
   const seen = new Set<string>();
   const order: string[] = [];
-  for (const e of COMMAND_ENTRIES) {
+  for (const e of entries) {
     if (!seen.has(e.group)) {
       seen.add(e.group);
       order.push(e.group);
@@ -84,10 +83,16 @@ function formatCommandLabel(label: string): ReactNode {
  */
 export function DashboardSearchCommand({ className }: DashboardSearchCommandProps) {
   const router = useRouter();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
   const [open, setOpen] = useState(false);
   const modKeyLabel = useModKeyLabel();
-  const grouped = useMemo(() => groupEntriesByGroup(COMMAND_ENTRIES), []);
-  const groupOrder = useMemo(() => GROUP_ORDER(), []);
+  const commandEntries = useMemo(
+    () => (accessToken && !user ? [] : getDashboardSearchEntries(user?.permissions ?? [])),
+    [accessToken, user],
+  );
+  const grouped = useMemo(() => groupEntriesByGroup(commandEntries), [commandEntries]);
+  const groupOrder = useMemo(() => GROUP_ORDER(commandEntries), [commandEntries]);
 
   const navigateTo = useCallback(
     (href: string) => {

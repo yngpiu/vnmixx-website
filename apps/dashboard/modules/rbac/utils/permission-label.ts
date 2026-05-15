@@ -17,8 +17,10 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   color: 'Màu sắc',
   size: 'Kích cỡ',
   media: 'Bộ sưu tập',
+  banner: 'Banner',
   review: 'Đánh giá',
   inventory: 'Kho hàng',
+  knowledge: 'Nội dung chính sách',
   'support-chat': 'Hỗ trợ trực tuyến',
   profile: 'Hồ sơ',
 };

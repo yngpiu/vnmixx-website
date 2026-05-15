@@ -3,7 +3,8 @@
 import type { ComponentProps } from 'react';
 
 import { dashboardRoutes } from '@/config/routes';
-import { sidebarSections } from '@/config/sidebar-menu';
+import { filterSidebarSectionsByPermissions } from '@/config/sidebar-menu';
+import { useAuthStore } from '@/modules/auth/stores/auth-store';
 import { DashboardLogo } from '@/modules/common/components/brand/dashboard-logo';
 import { NavMain } from '@/modules/common/components/sidebar/nav-main';
 import {
@@ -17,6 +18,11 @@ import {
 import Link from 'next/link';
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  const permissions = user?.permissions ?? [];
+  const sections = accessToken && !user ? [] : filterSidebarSectionsByPermissions(permissions);
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -36,7 +42,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {sidebarSections.map((section) => (
+        {sections.map((section) => (
           <NavMain
             key={section.id}
             groupLabel={section.groupLabel}
