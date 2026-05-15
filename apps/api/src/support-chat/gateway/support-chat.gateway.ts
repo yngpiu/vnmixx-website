@@ -50,7 +50,7 @@ interface ChatTypingEventPayload {
 
 type ClientAuthData =
   | { userType: 'CUSTOMER'; userId: number }
-  | { userType: 'EMPLOYEE'; userId: number }
+  | { userType: 'EMPLOYEE'; userId: number; permissions?: string[] }
   | { userType: 'GUEST'; guestSecretHash: string };
 
 /**
@@ -253,6 +253,9 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
       const isOwner = await this.chatService.isGuestOwner(chatId, auth.guestSecretHash);
       if (!isOwner) throw new WsException('Bạn không có quyền truy cập cuộc hội thoại này');
     } else {
+      if (auth.permissions?.includes('support-chat.read')) {
+        return;
+      }
       const isAssigned = await this.chatService.isEmployeeAssigned(chatId, auth.userId);
       if (!isAssigned) throw new WsException('Bạn chưa được phân công vào cuộc hội thoại này');
     }

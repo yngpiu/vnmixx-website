@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { WsException } from '@nestjs/websockets';
 import { ChatSenderType } from '../../../generated/prisma/client';
+import { EmployeeAuthzCacheService } from '../../auth/services/employee-authz-cache.service';
 import { SupportChatAiProcessor } from '../processors/support-chat-ai.processor';
 import { SupportChatRepository } from '../repositories/support-chat.repository';
 import { SupportChatService } from '../services/support-chat.service';
@@ -53,6 +54,12 @@ describe('SupportChatGateway', () => {
         {
           provide: JwtService,
           useValue: { verify: jest.fn() },
+        },
+        {
+          provide: EmployeeAuthzCacheService,
+          useValue: {
+            getRolesAndPermissions: jest.fn().mockResolvedValue({ roles: [], permissions: [] }),
+          },
         },
         {
           provide: SupportChatRepository,

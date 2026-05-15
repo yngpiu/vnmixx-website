@@ -3,10 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import type { JwtPayload } from '../auth/interfaces';
+import { EmployeeAuthzCacheService } from '../auth/services/employee-authz-cache.service';
 
 interface WsAuthenticatedData {
   userId: number;
   userType: 'CUSTOMER' | 'EMPLOYEE';
+  permissions?: string[];
 }
 
 /**
@@ -18,9 +20,12 @@ interface WsAuthenticatedData {
 export class WsJwtGuard implements CanActivate {
   private readonly logger = new Logger(WsJwtGuard.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly employeeAuthzCache: EmployeeAuthzCacheService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const client = context.switchToWs().getClient<Socket>();
     const token = this.extractToken(client);
     if (!token) {
@@ -35,6 +40,10 @@ export class WsJwtGuard implements CanActivate {
         userId: payload.sub,
         userType: payload.userType,
       };
+      if (payload.userType === 'EMPLOYEE') {
+        const authz = await this.employeeAuthzCache.getRolesAndPermissions(payload.sub);
+        authData.permissions = authz.permissions;
+      }
       client.data = { ...(client.data as Record<string, unknown>), ...authData };
       return true;
     } catch (err) {

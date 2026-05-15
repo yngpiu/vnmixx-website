@@ -14,9 +14,9 @@ export class WsCombinedAuthGuard implements CanActivate {
     private readonly guestGuard: WsGuestGuard,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
-      return this.jwtGuard.canActivate(context);
+      return await this.jwtGuard.canActivate(context);
     } catch {
       // JWT failed — try guest cookie
     }
