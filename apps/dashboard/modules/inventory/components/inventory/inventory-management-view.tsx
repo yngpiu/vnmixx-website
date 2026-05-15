@@ -27,7 +27,7 @@ import {
   TableRow,
 } from '@repo/ui/components/ui/table';
 import { cn } from '@repo/ui/lib/utils';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   flexRender,
   getCoreRowModel,
@@ -57,6 +57,8 @@ export function InventoryManagementView() {
   const [voucherOpen, setVoucherOpen] = useState(false);
   const [voucherType, setVoucherType] = useState<InventoryVoucherType>('IMPORT');
   const [draftItems, setDraftItems] = useState<VoucherLineDraft[]>([]);
+  const [inventorySearchValue, setInventorySearchValue] = useState('');
+  const [debouncedInventorySearch, setDebouncedInventorySearch] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
   const [issuedAt, setIssuedAt] = useState(DEFAULT_ISSUED_AT());
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -70,9 +72,22 @@ export function InventoryManagementView() {
     pageIndex: 0,
     pageSize: 10,
   });
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedInventorySearch(inventorySearchValue.trim());
+    }, 300);
+    return () => window.clearTimeout(timeoutId);
+  }, [inventorySearchValue]);
+
   const inventoryQuickListQuery = useQuery({
-    queryKey: ['inventory', 'quick-list'],
-    queryFn: () => listInventory({ page: 1, limit: 200 }),
+    queryKey: ['inventory', 'quick-list', debouncedInventorySearch],
+    queryFn: () =>
+      listInventory({
+        page: 1,
+        limit: 50,
+        search: debouncedInventorySearch || undefined,
+      }),
+    placeholderData: keepPreviousData,
   });
 
   const movementPreviewQuery = useQuery({
@@ -122,6 +137,8 @@ export function InventoryManagementView() {
   useEffect(() => {
     if (!voucherOpen) {
       setDraftItems([]);
+      setInventorySearchValue('');
+      setDebouncedInventorySearch('');
       setVoucherCode('');
       setIssuedAt(DEFAULT_ISSUED_AT());
     }
@@ -381,6 +398,8 @@ export function InventoryManagementView() {
         setIssuedAt={setIssuedAt}
         items={draftItems}
         inventoryOptions={inventoryOptions}
+        searchValue={inventorySearchValue}
+        onSearchValueChange={setInventorySearchValue}
         onOpenChange={setVoucherOpen}
         onAddFromInventory={addItemFromInventory}
         onUpdateItem={updateDraftItem}

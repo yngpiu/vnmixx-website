@@ -104,12 +104,22 @@ const MESSAGE_SELECT = {
 export class SupportChatRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private buildChatListWhere(employeeId?: number, search?: string): Prisma.SupportChatWhereInput {
+  private buildChatListWhere(
+    employeeId?: number,
+    search?: string,
+    customerType?: 'all' | 'customer' | 'guest',
+  ): Prisma.SupportChatWhereInput {
     const normalizedSearch = search?.trim();
     const where: Prisma.SupportChatWhereInput = {};
 
     if (employeeId) {
       where.assignments = { some: { employeeId } };
+    }
+
+    if (customerType === 'guest') {
+      where.customerId = null;
+    } else if (customerType === 'customer') {
+      where.customerId = { not: null };
     }
 
     if (normalizedSearch) {
@@ -179,8 +189,9 @@ export class SupportChatRepository {
     take: number,
     employeeId?: number,
     search?: string,
+    customerType?: 'all' | 'customer' | 'guest',
   ): Promise<ChatSummaryView[]> {
-    const where = this.buildChatListWhere(employeeId, search);
+    const where = this.buildChatListWhere(employeeId, search, customerType);
     return this.prisma.supportChat.findMany({
       where,
       orderBy: { updatedAt: 'desc' },
@@ -191,9 +202,20 @@ export class SupportChatRepository {
   }
 
   // Đếm tổng số cuộc hội thoại theo bộ lọc.
-  async count(employeeId?: number, search?: string): Promise<number> {
-    const where = this.buildChatListWhere(employeeId, search);
+  async count(
+    employeeId?: number,
+    search?: string,
+    customerType?: 'all' | 'customer' | 'guest',
+  ): Promise<number> {
+    const where = this.buildChatListWhere(employeeId, search, customerType);
     return this.prisma.supportChat.count({ where });
+  }
+
+  // Xóa vĩnh viễn một cuộc hội thoại; tin nhắn và phân công sẽ bị xóa cascade.
+  async deleteById(chatId: number): Promise<void> {
+    await this.prisma.supportChat.delete({
+      where: { id: chatId },
+    });
   }
 
   // Lấy danh sách các cuộc hội thoại mà một nhân viên cụ thể tham gia.

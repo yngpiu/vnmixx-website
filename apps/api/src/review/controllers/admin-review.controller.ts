@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Patch,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -24,7 +25,10 @@ import {
   ApiUnauthorizedResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
-import { RequireUserType } from '../../auth/decorators';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
+import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
   buildSuccessResponseSchema,
   ok,
@@ -92,12 +96,19 @@ export class AdminReviewController {
   @ApiNotFoundResponse({ description: 'Không tìm thấy đánh giá.' })
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Patch(':id/visibility')
+  @RequirePermissions('review.update')
   async updateVisibility(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateReviewVisibilityDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<SuccessPayload<AdminReviewDetailResponseDto>> {
     return ok(
-      await this.reviewService.updateAdminReviewStatus(id, dto.status),
+      await this.reviewService.updateAdminReviewStatus(
+        id,
+        dto.status,
+        buildAuditRequestContext(request, user),
+      ),
       'Cập nhật trạng thái đánh giá thành công.',
     );
   }
@@ -111,7 +122,12 @@ export class AdminReviewController {
   @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteReview(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    await this.reviewService.hideAdminReview(id);
+  @RequirePermissions('review.delete')
+  async deleteReview(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    await this.reviewService.hideAdminReview(id, buildAuditRequestContext(request, user));
   }
 }

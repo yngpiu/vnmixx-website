@@ -29,6 +29,7 @@ const HISTORY_LIMIT = 5;
 const ROOM_PREFIX = 'chat:';
 const TOOL_RESULT_CHAR_LIMIT = 1800;
 const AI_MODE_AUTO: SupportChatAiMode = 'AUTO';
+const AI_MODE_OFF: SupportChatAiMode = 'OFF';
 const CHAT_STATUS_WAITING_HUMAN: SupportChatStatus = 'WAITING_HUMAN';
 const SENDER_TYPE_CUSTOMER: ChatSenderType = 'CUSTOMER';
 const SENDER_TYPE_GUEST: ChatSenderType = 'GUEST';
@@ -210,7 +211,10 @@ export class SupportChatAiProcessor extends WorkerHost {
 
       const execution = await this.executeTool(chatId, fnName, fnArgs);
       if (execution.handoff) {
-        await this.repo.updateAiState(chatId, { status: CHAT_STATUS_WAITING_HUMAN });
+        await this.repo.updateAiState(chatId, {
+          aiMode: AI_MODE_OFF,
+          status: CHAT_STATUS_WAITING_HUMAN,
+        });
         this.emit(chatId, 'chat:status_changed', { chatId, status: 'WAITING_HUMAN' });
         return 'Tôi đã chuyển cuộc hội thoại của bạn đến nhân viên hỗ trợ. Vui lòng chờ trong giây lát!';
       }

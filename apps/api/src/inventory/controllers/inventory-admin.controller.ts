@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiExtraModels,
@@ -10,6 +10,8 @@ import {
   ApiUnauthorizedResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
@@ -105,9 +107,14 @@ export class InventoryAdminController {
   async createVoucher(
     @Body() body: CreateInventoryVoucherDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<SuccessPayload<InventoryVoucherDetailResponseDto>> {
     return ok(
-      await this.inventoryAdminService.createInventoryVoucher(body, user.id),
+      await this.inventoryAdminService.createInventoryVoucher(
+        body,
+        user.id,
+        buildAuditRequestContext(request, user),
+      ),
       'Tạo phiếu kho thành công.',
     );
   }

@@ -45,3 +45,7 @@ export async function updateAdminChatAiMode(
   });
   return data;
 }
+
+export async function deleteAdminChat(chatId: number): Promise<void> {
+  await apiClient.delete(`/admin/support-chats/${chatId}`);
+}

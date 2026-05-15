@@ -23,6 +23,8 @@ type InventoryVoucherDialogProps = {
   setIssuedAt: (value: string) => void;
   items: VoucherLineDraft[];
   inventoryOptions: InventoryListItem[];
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
   onOpenChange: (open: boolean) => void;
   onAddFromInventory: (item: InventoryListItem) => void;
   onUpdateItem: (variantId: number, patch: Partial<VoucherLineDraft>) => void;
@@ -40,6 +42,8 @@ export function InventoryVoucherDialog({
   setIssuedAt,
   items,
   inventoryOptions,
+  searchValue,
+  onSearchValueChange,
   onOpenChange,
   onAddFromInventory,
   onUpdateItem,
@@ -92,6 +96,8 @@ export function InventoryVoucherDialog({
               items={items}
               inventoryOptions={inventoryOptions}
               canExport={type === 'EXPORT'}
+              searchValue={searchValue}
+              onSearchValueChange={onSearchValueChange}
               onAddFromInventory={onAddFromInventory}
               onUpdateItem={onUpdateItem}
               onRemoveItem={onRemoveItem}

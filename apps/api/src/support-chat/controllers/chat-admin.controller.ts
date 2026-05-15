@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -8,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -16,6 +18,7 @@ import {
   ApiExtraModels,
   ApiForbiddenResponse,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -23,6 +26,8 @@ import {
   ApiUnauthorizedResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
+import { buildAuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { CurrentUser, RequirePermissions, RequireUserType } from '../../auth/decorators';
 import type { AuthenticatedUser } from '../../auth/interfaces';
 import {
@@ -126,8 +131,13 @@ export class ChatAdminController {
   async assignSelf(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<SuccessPayload<ChatDetailResponseDto>> {
-    const chatDetail = await this.chatService.assignEmployee(id, user.id);
+    const chatDetail = await this.chatService.assignEmployee(
+      id,
+      user.id,
+      buildAuditRequestContext(request, user),
+    );
     this.chatGateway.emitChatAssigned(id, chatDetail);
     return ok(chatDetail, 'Phân công vào cuộc hội thoại thành công.');
   }
@@ -145,10 +155,32 @@ export class ChatAdminController {
   async updateChatAiMode(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateChatAiModeDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
   ): Promise<SuccessPayload<ChatDetailResponseDto>> {
     return ok(
-      await this.chatService.updateChatAiMode(id, body.aiMode),
+      await this.chatService.updateChatAiMode(
+        id,
+        body.aiMode,
+        buildAuditRequestContext(request, user),
+      ),
       'Cập nhật chế độ AI thành công.',
     );
+  }
+
+  @ApiOperation({ summary: 'Xóa cuộc hội thoại hỗ trợ' })
+  @ApiNoContentResponse({ description: 'Xóa cuộc hội thoại thành công.' })
+  @ApiNotFoundResponse({ description: 'Không tìm thấy cuộc hội thoại.' })
+  @ApiBadRequestResponse({ description: 'ID cuộc hội thoại không hợp lệ.' })
+  @ApiInternalServerErrorResponse({ description: 'Lỗi hệ thống.' })
+  @RequirePermissions('support-chat.delete')
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: Request,
+  ): Promise<void> {
+    await this.chatService.deleteChat(id, buildAuditRequestContext(request, user));
   }
 }

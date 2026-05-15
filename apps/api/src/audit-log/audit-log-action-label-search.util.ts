@@ -3,6 +3,9 @@
  * Dùng để tìm audit theo tên hành động tiếng Việt trên API.
  */
 const AUDIT_LOG_ACTION_LABELS_VI: Record<string, string> = {
+  'banner.create': 'Thêm banner',
+  'banner.delete': 'Xóa banner',
+  'banner.update': 'Sửa banner',
   'category.create': 'Thêm danh mục',
   'category.delete': 'Xóa danh mục',
   'category.restore': 'Khôi phục danh mục',
@@ -15,6 +18,7 @@ const AUDIT_LOG_ACTION_LABELS_VI: Record<string, string> = {
   'customer.update': 'Sửa khách hàng',
   'employee.create': 'Thêm nhân viên',
   'employee.delete': 'Xóa nhân viên',
+  'employee.password.reset': 'Đặt lại mật khẩu nhân viên',
   'employee.restore': 'Khôi phục nhân viên',
   'employee.update': 'Sửa nhân viên',
   'media.create-folder': 'Tạo thư mục',
@@ -25,6 +29,7 @@ const AUDIT_LOG_ACTION_LABELS_VI: Record<string, string> = {
   'order.cancel': 'Hủy đơn hàng',
   'order.confirm': 'Xác nhận đơn hàng',
   'order.confirm-payment': 'Xác nhận thanh toán đơn hàng',
+  'order.update-status-manual': 'Cập nhật trạng thái đơn hàng thủ công',
   'product.create': 'Thêm sản phẩm',
   'product.delete': 'Xóa sản phẩm',
   'product.image.create': 'Thêm ảnh sản phẩm',
@@ -42,6 +47,9 @@ const AUDIT_LOG_ACTION_LABELS_VI: Record<string, string> = {
   'size.create': 'Thêm kích cỡ',
   'size.delete': 'Xóa kích cỡ',
   'size.update': 'Sửa kích cỡ',
+  'support-chat.ai-mode.update': 'Cập nhật chế độ AI chat hỗ trợ',
+  'support-chat.assign': 'Nhận phân công chat hỗ trợ',
+  'support-chat.delete': 'Xóa hội thoại hỗ trợ',
 };
 
 /**

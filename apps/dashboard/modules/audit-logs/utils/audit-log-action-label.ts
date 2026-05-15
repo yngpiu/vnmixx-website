@@ -2,6 +2,9 @@ import { permissionModuleDisplayName } from '@/modules/rbac/utils/permission-lab
 
 /** Known audit action codes (aligned with API services + seed). */
 export const AUDIT_LOG_ACTION_VALUES = [
+  'banner.create',
+  'banner.delete',
+  'banner.update',
   'category.create',
   'category.delete',
   'category.restore',
@@ -14,6 +17,7 @@ export const AUDIT_LOG_ACTION_VALUES = [
   'customer.update',
   'employee.create',
   'employee.delete',
+  'employee.password.reset',
   'employee.restore',
   'employee.update',
   'media.create-folder',
@@ -24,6 +28,7 @@ export const AUDIT_LOG_ACTION_VALUES = [
   'order.cancel',
   'order.confirm',
   'order.confirm-payment',
+  'order.update-status-manual',
   'product.create',
   'product.delete',
   'product.image.create',
@@ -41,10 +46,16 @@ export const AUDIT_LOG_ACTION_VALUES = [
   'size.create',
   'size.delete',
   'size.update',
+  'support-chat.ai-mode.update',
+  'support-chat.assign',
+  'support-chat.delete',
 ] as const;
 
 const AUDIT_LOG_ACTION_LABELS_VI: Record<(typeof AUDIT_LOG_ACTION_VALUES)[number], string> = {
   'category.create': 'Thêm danh mục',
+  'banner.create': 'Thêm banner',
+  'banner.delete': 'Xóa banner',
+  'banner.update': 'Sửa banner',
   'category.delete': 'Xóa mềm danh mục',
   'category.restore': 'Khôi phục danh mục',
   'category.update': 'Sửa danh mục',
@@ -56,6 +67,7 @@ const AUDIT_LOG_ACTION_LABELS_VI: Record<(typeof AUDIT_LOG_ACTION_VALUES)[number
   'customer.update': 'Sửa khách hàng',
   'employee.create': 'Thêm nhân viên',
   'employee.delete': 'Xóa mềm nhân viên',
+  'employee.password.reset': 'Đặt lại mật khẩu nhân viên',
   'employee.restore': 'Khôi phục nhân viên',
   'employee.update': 'Sửa nhân viên',
   'media.create-folder': 'Tạo thư mục',
@@ -66,6 +78,7 @@ const AUDIT_LOG_ACTION_LABELS_VI: Record<(typeof AUDIT_LOG_ACTION_VALUES)[number
   'order.cancel': 'Hủy đơn hàng',
   'order.confirm': 'Xác nhận đơn hàng',
   'order.confirm-payment': 'Xác nhận thanh toán đơn hàng',
+  'order.update-status-manual': 'Cập nhật trạng thái đơn hàng thủ công',
   'product.create': 'Thêm sản phẩm',
   'product.delete': 'Xóa mềm sản phẩm',
   'product.image.create': 'Thêm ảnh sản phẩm',
@@ -83,6 +96,9 @@ const AUDIT_LOG_ACTION_LABELS_VI: Record<(typeof AUDIT_LOG_ACTION_VALUES)[number
   'size.create': 'Thêm kích cỡ',
   'size.delete': 'Xóa kích cỡ',
   'size.update': 'Sửa kích cỡ',
+  'support-chat.ai-mode.update': 'Cập nhật chế độ AI chat hỗ trợ',
+  'support-chat.assign': 'Nhận phân công chat hỗ trợ',
+  'support-chat.delete': 'Xóa hội thoại hỗ trợ',
 };
 
 /**

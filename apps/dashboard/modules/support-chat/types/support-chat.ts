@@ -1,6 +1,7 @@
 export type ChatSenderType = 'CUSTOMER' | 'EMPLOYEE' | 'GUEST' | 'AI';
 export type SupportChatAiMode = 'AUTO' | 'PAUSED' | 'OFF';
 export type SupportChatStatus = 'OPEN' | 'WAITING_HUMAN' | 'RESOLVED' | 'CLOSED';
+export type SupportChatCustomerTypeFilter = 'all' | 'customer' | 'guest';
 
 export type ChatSummary = {
   id: number;
@@ -56,6 +57,7 @@ export type AdminChatsQuery = {
   pageSize?: number;
   assignedToMe?: boolean;
   search?: string;
+  customerType?: SupportChatCustomerTypeFilter;
 };
 
 export type AdminChatsResponse = {

@@ -1,9 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  AuditLogStatus,
   InventoryMovementType,
   InventoryVoucherType,
   Prisma,
 } from '../../../generated/prisma/client';
+import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import {
   pickFirstProductImageUrl,
   resolvePreviewImageUrlForColor,
@@ -17,7 +20,10 @@ import { InventoryRepository } from '../repositories/inventory.repository';
 
 @Injectable()
 export class InventoryAdminService {
-  constructor(private readonly inventoryRepository: InventoryRepository) {}
+  constructor(
+    private readonly inventoryRepository: InventoryRepository,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async getLowStockProducts(params: {
     threshold?: number;
@@ -261,6 +267,7 @@ export class InventoryAdminService {
       }>;
     },
     employeeId: number,
+    auditContext: AuditRequestContext = {},
   ): Promise<{
     id: number;
     code: string;
@@ -280,63 +287,87 @@ export class InventoryAdminService {
       lineAmount: number;
     }>;
   }> {
-    if (!params.items.length) {
-      throw new BadRequestException('Phiếu kho phải có ít nhất 1 SKU.');
-    }
-    const uniqueVariants = new Set<number>();
-    for (const item of params.items) {
-      if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
-        throw new BadRequestException('Số lượng dòng phải lớn hơn 0.');
+    try {
+      if (!params.items.length) {
+        throw new BadRequestException('Phiếu kho phải có ít nhất 1 SKU.');
       }
-      if (item.unitPrice < 0) {
-        throw new BadRequestException('Đơn giá không được âm.');
+      const uniqueVariants = new Set<number>();
+      for (const item of params.items) {
+        if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
+          throw new BadRequestException('Số lượng dòng phải lớn hơn 0.');
+        }
+        if (item.unitPrice < 0) {
+          throw new BadRequestException('Đơn giá không được âm.');
+        }
+        if (uniqueVariants.has(item.variantId)) {
+          throw new BadRequestException('Không được trùng SKU trong cùng một phiếu.');
+        }
+        uniqueVariants.add(item.variantId);
       }
-      if (uniqueVariants.has(item.variantId)) {
-        throw new BadRequestException('Không được trùng SKU trong cùng một phiếu.');
+      const code = params.code.trim();
+      if (!code) {
+        throw new BadRequestException('Mã phiếu là bắt buộc.');
       }
-      uniqueVariants.add(item.variantId);
+      const issuedAt = params.issuedAt ? new Date(params.issuedAt) : new Date();
+      const totalQuantity = params.items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalAmount = params.items.reduce(
+        (sum, item) => sum + item.quantity * item.unitPrice,
+        0,
+      );
+      const voucherNoteTrimmed = params.note?.trim() || null;
+      const voucher = await this.inventoryRepository.createVoucherWithLinesAndMovements({
+        code,
+        type: params.type,
+        issuedAt,
+        voucherNote: voucherNoteTrimmed,
+        totalQuantity,
+        totalAmount,
+        employeeId,
+        items: params.items.map((item) => ({
+          variantId: item.variantId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      });
+      const result = {
+        id: voucher.id,
+        code: voucher.code,
+        type: voucher.type,
+        issuedAt: voucher.issuedAt,
+        totalQuantity: voucher.totalQuantity,
+        totalAmount: voucher.totalAmount,
+        note: voucher.note ?? null,
+        createdByEmployeeName: voucher.createdByEmployee.fullName,
+        items: voucher.items.map((item) => ({
+          id: item.id,
+          variantId: item.variantId,
+          productName: item.variant.product.name,
+          sku: item.variant.sku,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineAmount: item.lineAmount,
+        })),
+      };
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'inventory.create',
+        resourceType: 'inventory-voucher',
+        resourceId: String(result.id),
+        status: AuditLogStatus.SUCCESS,
+        afterData: result,
+      });
+      return result;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'inventory.create',
+        resourceType: 'inventory-voucher',
+        status: AuditLogStatus.FAILED,
+        afterData: params,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
     }
-    const code = params.code.trim();
-    if (!code) {
-      throw new BadRequestException('Mã phiếu là bắt buộc.');
-    }
-    const issuedAt = params.issuedAt ? new Date(params.issuedAt) : new Date();
-    const totalQuantity = params.items.reduce((sum, item) => sum + item.quantity, 0);
-    const totalAmount = params.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-    const voucherNoteTrimmed = params.note?.trim() || null;
-    const voucher = await this.inventoryRepository.createVoucherWithLinesAndMovements({
-      code,
-      type: params.type,
-      issuedAt,
-      voucherNote: voucherNoteTrimmed,
-      totalQuantity,
-      totalAmount,
-      employeeId,
-      items: params.items.map((item) => ({
-        variantId: item.variantId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      })),
-    });
-    return {
-      id: voucher.id,
-      code: voucher.code,
-      type: voucher.type,
-      issuedAt: voucher.issuedAt,
-      totalQuantity: voucher.totalQuantity,
-      totalAmount: voucher.totalAmount,
-      note: voucher.note ?? null,
-      createdByEmployeeName: voucher.createdByEmployee.fullName,
-      items: voucher.items.map((item) => ({
-        id: item.id,
-        variantId: item.variantId,
-        productName: item.variant.product.name,
-        sku: item.variant.sku,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        lineAmount: item.lineAmount,
-      })),
-    };
   }
 
   async listInventoryVouchers(params: {

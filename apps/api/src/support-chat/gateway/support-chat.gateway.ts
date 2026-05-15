@@ -170,7 +170,7 @@ export class SupportChatGateway implements OnGatewayConnection, OnGatewayDisconn
 
     // Enqueue AI response if sender is customer/guest and AI mode is AUTO
     if (isCustomerOrGuest) {
-      if (chatCtx?.aiMode === SupportChatAiMode.AUTO) {
+      if (chatCtx?.aiMode === SupportChatAiMode.AUTO && chatCtx.status !== 'WAITING_HUMAN') {
         const jobId = `ai-respond-${payload.chatId}`;
         // Remove any existing queued (not yet started) job to deduplicate
         await this.aiQueue.remove(jobId).catch(() => null);

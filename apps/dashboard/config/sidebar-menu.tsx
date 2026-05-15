@@ -69,22 +69,11 @@ export const sidebarSections: SidebarSection[] = [
     ],
   },
   {
-    id: 'management',
-    groupLabel: 'Quản lý',
+    id: 'sales',
+    groupLabel: 'Bán hàng',
     items: [
       moduleNav('orders', ShoppingCartIcon),
-      moduleNav('products', PackageIcon),
-      moduleNav('banners', ImageIcon),
-      {
-        title: 'Bộ sưu tập',
-        url: dashboardRoutes.media,
-        icon: <ImageIcon className="size-4 shrink-0" />,
-      },
-      moduleNav('categories', TagsIcon),
-      moduleNav('colors', PaletteIcon),
-      moduleNav('sizes', RulerIcon),
       moduleNav('customers', UsersIcon),
-      moduleNav('inventory', TruckIcon),
       {
         title: 'Đánh giá',
         url: dashboardRoutes.reviews,
@@ -95,10 +84,36 @@ export const sidebarSections: SidebarSection[] = [
         url: dashboardRoutes.supportChats,
         icon: <MessageSquareIcon className="size-4 shrink-0" />,
       },
+    ],
+  },
+  {
+    id: 'products',
+    groupLabel: 'Sản phẩm',
+    items: [
+      moduleNav('products', PackageIcon),
+      moduleNav('categories', TagsIcon),
+      {
+        title: 'Bộ sưu tập',
+        url: dashboardRoutes.media,
+        icon: <ImageIcon className="size-4 shrink-0" />,
+      },
+      moduleNav('colors', PaletteIcon),
+      moduleNav('sizes', RulerIcon),
+      moduleNav('inventory', TruckIcon),
+    ],
+  },
+  {
+    id: 'human-resources',
+    groupLabel: 'Nhân sự',
+    items: [
       moduleNav('employees', UsersRoundIcon, { title: 'Nhân viên' }),
       moduleNav('roles', ShieldIcon, { title: 'Vai trò' }),
-      moduleNav('knowledge', BookOpenIcon),
     ],
+  },
+  {
+    id: 'content',
+    groupLabel: 'Nội dung',
+    items: [moduleNav('banners', ImageIcon), moduleNav('knowledge', BookOpenIcon)],
   },
   /*
    * Reports section intentionally disabled.

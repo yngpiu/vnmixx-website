@@ -1,6 +1,10 @@
 'use client';
 
-import type { ChatSenderType, ChatSummary } from '@/modules/support-chat/types/support-chat';
+import type {
+  ChatSenderType,
+  ChatSummary,
+  SupportChatCustomerTypeFilter,
+} from '@/modules/support-chat/types/support-chat';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { ScrollArea } from '@repo/ui/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/ui/tooltip';
@@ -20,6 +24,8 @@ type Props = {
   onKeywordChange: (value: string) => void;
   assignedToMe: boolean;
   onAssignedToMeChange: (value: boolean) => void;
+  customerType: SupportChatCustomerTypeFilter;
+  onCustomerTypeChange: (value: SupportChatCustomerTypeFilter) => void;
   selectedChatId: number | null;
   lastMessageSenderByChatId: Record<number, ChatSenderType>;
   onSelectChat: (chatId: number) => void;
@@ -32,6 +38,8 @@ export function SupportChatListSidebar({
   onKeywordChange,
   assignedToMe,
   onAssignedToMeChange,
+  customerType,
+  onCustomerTypeChange,
   selectedChatId,
   lastMessageSenderByChatId,
   onSelectChat,
@@ -87,7 +95,45 @@ export function SupportChatListSidebar({
             )}
             onClick={() => onAssignedToMeChange(true)}
           >
-            Chat của tôi
+            Của tôi
+          </button>
+        </div>
+        <div className="inline-flex w-full rounded-md border border-input p-1">
+          <button
+            type="button"
+            className={cn(
+              'flex-1 rounded-sm px-2 py-1 text-xs transition-colors',
+              customerType === 'all'
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+            onClick={() => onCustomerTypeChange('all')}
+          >
+            Tất cả khách
+          </button>
+          <button
+            type="button"
+            className={cn(
+              'flex-1 rounded-sm px-2 py-1 text-xs transition-colors',
+              customerType === 'customer'
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+            onClick={() => onCustomerTypeChange('customer')}
+          >
+            Đã đăng nhập
+          </button>
+          <button
+            type="button"
+            className={cn(
+              'flex-1 rounded-sm px-2 py-1 text-xs transition-colors',
+              customerType === 'guest'
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+            onClick={() => onCustomerTypeChange('guest')}
+          >
+            Vãng lai
           </button>
         </div>
       </div>

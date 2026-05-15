@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ReviewVisibility } from '../../../generated/prisma/client';
+import { AuditLogStatus, Prisma, ReviewVisibility } from '../../../generated/prisma/client';
+import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { PrismaService } from '../../prisma/services/prisma.service';
 import type {
   AdminReviewDetailResponseDto,
@@ -14,6 +16,7 @@ export class ReviewService {
   constructor(
     private readonly reviewRepo: ReviewRepository,
     private readonly prisma: PrismaService, // Dùng để truy vấn bảng Product và OrderItem
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -210,24 +213,72 @@ export class ReviewService {
   async updateAdminReviewStatus(
     id: number,
     status: ReviewVisibility,
+    auditContext: AuditRequestContext = {},
   ): Promise<AdminReviewDetailResponseDto> {
-    const exists = await this.reviewRepo.exists(id);
-    if (!exists) {
-      throw new NotFoundException('Không tìm thấy đánh giá.');
+    const beforeData = await this.reviewRepo.findById(id);
+    try {
+      const exists = await this.reviewRepo.exists(id);
+      if (!exists) {
+        throw new NotFoundException('Không tìm thấy đánh giá.');
+      }
+
+      await this.reviewRepo.update(id, { status });
+      const detail = await this.getAdminReviewDetail(id);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'review.update',
+        resourceType: 'review',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: beforeData ?? undefined,
+        afterData: detail,
+      });
+      return detail;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'review.update',
+        resourceType: 'review',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData: beforeData ?? undefined,
+        afterData: { status },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
     }
-
-    await this.reviewRepo.update(id, { status });
-
-    return this.getAdminReviewDetail(id);
   }
 
   // Ẩn đánh giá thay vì xóa cứng để giữ lịch sử moderation và dữ liệu báo cáo.
-  async hideAdminReview(id: number): Promise<void> {
-    const exists = await this.reviewRepo.exists(id);
-    if (!exists) {
-      throw new NotFoundException('Không tìm thấy đánh giá.');
-    }
+  async hideAdminReview(id: number, auditContext: AuditRequestContext = {}): Promise<void> {
+    const beforeData = await this.reviewRepo.findById(id);
+    try {
+      const exists = await this.reviewRepo.exists(id);
+      if (!exists) {
+        throw new NotFoundException('Không tìm thấy đánh giá.');
+      }
 
-    await this.reviewRepo.update(id, { status: ReviewVisibility.HIDDEN });
+      await this.reviewRepo.update(id, { status: ReviewVisibility.HIDDEN });
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'review.delete',
+        resourceType: 'review',
+        resourceId: String(id),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: beforeData ?? undefined,
+        afterData: { status: ReviewVisibility.HIDDEN },
+      });
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'review.delete',
+        resourceType: 'review',
+        resourceId: String(id),
+        status: AuditLogStatus.FAILED,
+        beforeData: beforeData ?? undefined,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 }

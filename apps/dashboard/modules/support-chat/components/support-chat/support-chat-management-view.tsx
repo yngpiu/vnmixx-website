@@ -5,6 +5,7 @@ import { ListPage } from '@/modules/common/components/list-page';
 import { uploadMedia } from '@/modules/media/api/media';
 import {
   assignSelfToChat,
+  deleteAdminChat,
   getAdminChatDetail,
   listAdminChatMessages,
   listAdminChats,
@@ -19,7 +20,18 @@ import type {
   ChatSummary,
   ChatTypingEvent,
   SupportChatAiMode,
+  SupportChatCustomerTypeFilter,
 } from '@/modules/support-chat/types/support-chat';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@repo/ui/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/ui/avatar';
 import { Button } from '@repo/ui/components/ui/button';
 import { Input } from '@repo/ui/components/ui/input';
@@ -32,6 +44,7 @@ import {
   Loader2Icon,
   MessageCircleIcon,
   SendHorizonalIcon,
+  Trash2Icon,
   UserRoundCheckIcon,
   XIcon,
 } from 'lucide-react';
@@ -90,7 +103,9 @@ export function SupportChatManagementView(): React.JSX.Element {
   const user = useAuthStore((state) => state.user);
   const [keyword, setKeyword] = useState('');
   const [assignedToMe, setAssignedToMe] = useState(false);
+  const [customerType, setCustomerType] = useState<SupportChatCustomerTypeFilter>('all');
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ChatSummary | null>(null);
   const [draft, setDraft] = useState('');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -113,6 +128,7 @@ export function SupportChatManagementView(): React.JSX.Element {
 
   const canRead = user?.permissions.includes('support-chat.read') ?? false;
   const canAssign = user?.permissions.includes('support-chat.create') ?? false;
+  const canDelete = user?.permissions.includes('support-chat.delete') ?? false;
   const employeeId = user?.userType === 'EMPLOYEE' ? user.id : null;
   const pathnameSegments = useMemo(() => (pathname ?? '').split('/').filter(Boolean), [pathname]);
 
@@ -158,9 +174,10 @@ export function SupportChatManagementView(): React.JSX.Element {
           pageSize: 50,
           assignedToMe: assignedToMe || undefined,
           search: debouncedKeyword || undefined,
+          customerType: customerType === 'all' ? undefined : customerType,
         },
       ] as const,
-    [assignedToMe, debouncedKeyword],
+    [assignedToMe, customerType, debouncedKeyword],
   );
 
   const chatsQuery = useQuery({
@@ -171,6 +188,7 @@ export function SupportChatManagementView(): React.JSX.Element {
         pageSize: 50,
         assignedToMe: assignedToMe || undefined,
         search: debouncedKeyword || undefined,
+        customerType: customerType === 'all' ? undefined : customerType,
       }),
     enabled: canRead,
     staleTime: 10_000,
@@ -365,6 +383,30 @@ export function SupportChatManagementView(): React.JSX.Element {
     }
     emitTyping(false);
   }, [emitTyping]);
+
+  const deleteChatMutation = useMutation({
+    mutationFn: (chatId: number) => deleteAdminChat(chatId),
+    onSuccess: async (_, deletedChatId) => {
+      toast.success('Đã xóa cuộc hội thoại.');
+      setDeleteTarget(null);
+      if (selectedChatId === deletedChatId) {
+        stopTypingSignal();
+        setSelectedChatId(null);
+        setRealtimeMessages([]);
+        setOptimisticMessages([]);
+        setDraft('');
+        setTypingEvent(null);
+        setSelectedImages([]);
+        router.replace('/support-chats');
+      }
+      queryClient.removeQueries({ queryKey: ['admin', 'support-chats', 'detail', deletedChatId] });
+      queryClient.removeQueries({
+        queryKey: ['admin', 'support-chats', 'messages', deletedChatId],
+      });
+      await queryClient.invalidateQueries({ queryKey: SUPPORT_CHATS_LIST_QUERY });
+    },
+    onError: (error) => toast.error(apiErrorMessage(error)),
+  });
 
   const handleDraftChange = useCallback(
     (value: string): void => {
@@ -660,6 +702,8 @@ export function SupportChatManagementView(): React.JSX.Element {
           onKeywordChange={setKeyword}
           assignedToMe={assignedToMe}
           onAssignedToMeChange={setAssignedToMe}
+          customerType={customerType}
+          onCustomerTypeChange={setCustomerType}
           selectedChatId={selectedChatId}
           lastMessageSenderByChatId={lastMessageSenderByChatId}
           onSelectChat={handleSelectChat}
@@ -716,6 +760,21 @@ export function SupportChatManagementView(): React.JSX.Element {
                         <Loader2Icon className="mr-2 size-4 animate-spin" />
                       ) : null}
                       {selectedChatAiEnabled ? 'Tắt AI' : 'Bật AI'}
+                    </Button>
+                  ) : null}
+                  {canDelete ? (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={deleteChatMutation.isPending}
+                      onClick={() => setDeleteTarget(selectedChatSummary)}
+                    >
+                      {deleteChatMutation.isPending ? (
+                        <Loader2Icon className="mr-2 size-4 animate-spin" />
+                      ) : (
+                        <Trash2Icon className="mr-2 size-4" />
+                      )}
+                      Xóa hội thoại
                     </Button>
                   ) : null}
                   {!selectedChatIsAssigned ? (
@@ -1026,6 +1085,43 @@ export function SupportChatManagementView(): React.JSX.Element {
         previewImageUrl={previewImageUrl}
         onClose={() => setPreviewImageUrl(null)}
       />
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteChatMutation.isPending) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xóa hội thoại?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Hội thoại với{' '}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.customerName ?? 'khách hàng này'}
+              </span>{' '}
+              sẽ bị xóa vĩnh viễn cùng toàn bộ tin nhắn và phân công liên quan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 px-6 py-4 sm:flex-row sm:justify-end">
+            <AlertDialogCancel disabled={deleteChatMutation.isPending}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteTarget == null || deleteChatMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (!deleteTarget) return;
+                deleteChatMutation.mutate(deleteTarget.id);
+              }}
+            >
+              {deleteChatMutation.isPending ? (
+                <Loader2Icon className="mr-2 size-4 animate-spin" />
+              ) : null}
+              Xóa hội thoại
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ListPage>
   );
 }

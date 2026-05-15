@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { parseOptionalBool } from '../../common/utils/query-bool.util';
 
 /**
@@ -41,4 +41,15 @@ export class ListChatsQueryDto {
   @IsString({ message: 'search phải là chuỗi ký tự.' })
   @MaxLength(100, { message: 'search không được vượt quá 100 ký tự.' })
   search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Lọc theo loại khách: all (tất cả), customer (đã đăng nhập), guest (vãng lai).',
+    enum: ['all', 'customer', 'guest'],
+    default: 'all',
+  })
+  @IsOptional()
+  @IsIn(['all', 'customer', 'guest'], {
+    message: 'customerType chỉ chấp nhận: all, customer hoặc guest.',
+  })
+  customerType?: 'all' | 'customer' | 'guest' = 'all';
 }

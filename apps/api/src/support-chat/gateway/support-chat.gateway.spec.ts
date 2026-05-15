@@ -214,6 +214,26 @@ describe('SupportChatGateway', () => {
       });
       expect(result).toBe(mockMessage);
     });
+
+    it('should not enqueue AI when chat is waiting for human', async () => {
+      service.isCustomerOwner.mockResolvedValue(true);
+      repository.findChatAiContext.mockResolvedValue({
+        id: 1,
+        aiMode: 'AUTO',
+        status: 'WAITING_HUMAN',
+      });
+      const mockMessage = { id: 300, content: 'Xin gặp nhân viên' };
+      service.sendMessage.mockResolvedValue(mockMessage);
+
+      const result = await gateway.handleSendMessage(mockClient, {
+        chatId: 1,
+        content: 'Xin gặp nhân viên',
+      });
+
+      expect(aiQueue.add).not.toHaveBeenCalled();
+      expect(aiProcessor.markChatResponding).not.toHaveBeenCalled();
+      expect(result).toBe(mockMessage);
+    });
   });
 
   describe('handleStopAiResponse', () => {

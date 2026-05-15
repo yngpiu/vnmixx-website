@@ -1,5 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
+import { AuditLogModule } from '../audit-log/audit-log.module';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ProductModule } from '../product/product.module';
@@ -26,6 +27,7 @@ import { WsJwtGuard } from './ws-jwt.guard';
   imports: [
     PrismaModule,
     AuthModule,
+    AuditLogModule,
     ProductModule,
     RedisModule,
     BullModule.registerQueue({ name: SUPPORT_CHAT_AI_QUEUE }),

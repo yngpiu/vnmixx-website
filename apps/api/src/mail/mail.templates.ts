@@ -1,6 +1,6 @@
 import * as handlebars from 'handlebars';
 
-const VNMIXX_LOGO_URL = 'https://i.ibb.co/FL6c0B2v/logo.png';
+const VNMIXX_LOGO_URL = 'https://media.vnmixx.shop/logo/1778843253638-u8oyq3-logo.png';
 
 function createOtpEmailHtml(params: {
   readonly title: string;

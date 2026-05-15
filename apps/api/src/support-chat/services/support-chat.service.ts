@@ -5,10 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AuditLogStatus,
   ChatSenderType,
   SupportChatAiMode,
   SupportChatStatus,
 } from '../../../generated/prisma/client';
+import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import {
   ChatDetailResponseDto,
   ChatListResponseDto,
@@ -46,7 +49,10 @@ const SUPPORT_CHAT_AI_AVATAR_URL =
 @Injectable()
 // Xử lý luồng nghiệp vụ liên quan đến chat hỗ trợ khách hàng.
 export class SupportChatService {
-  constructor(private readonly repository: SupportChatRepository) {}
+  constructor(
+    private readonly repository: SupportChatRepository,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   // Tìm cuộc hội thoại hiện có hoặc tạo mới nếu khách hàng chưa có chat.
   async findOrCreateChat(customerId: number): Promise<ChatDetailResponseDto> {
@@ -87,19 +93,48 @@ export class SupportChatService {
   }
 
   // Phân công nhân viên vào hỗ trợ cuộc hội thoại.
-  async assignEmployee(chatId: number, employeeId: number): Promise<ChatDetailResponseDto> {
-    const isExists = await this.repository.existsById(chatId);
-    if (!isExists) {
-      throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
-    }
+  async assignEmployee(
+    chatId: number,
+    employeeId: number,
+    auditContext: AuditRequestContext = {},
+  ): Promise<ChatDetailResponseDto> {
+    const beforeData = await this.repository.findById(chatId);
+    try {
+      const isExists = await this.repository.existsById(chatId);
+      if (!isExists) {
+        throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+      }
 
-    const existing = await this.repository.findAssignment(chatId, employeeId);
-    if (existing) {
-      throw new ConflictException('Bạn đã được phân công vào cuộc hội thoại này.');
-    }
+      const existing = await this.repository.findAssignment(chatId, employeeId);
+      if (existing) {
+        throw new ConflictException('Bạn đã được phân công vào cuộc hội thoại này.');
+      }
 
-    await this.repository.createAssignment(chatId, employeeId);
-    return this.getChatDetail(chatId);
+      await this.repository.createAssignment(chatId, employeeId);
+      const detail = await this.getChatDetail(chatId);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'support-chat.assign',
+        resourceType: 'support-chat',
+        resourceId: String(chatId),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: beforeData ?? undefined,
+        afterData: detail,
+      });
+      return detail;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'support-chat.assign',
+        resourceType: 'support-chat',
+        resourceId: String(chatId),
+        status: AuditLogStatus.FAILED,
+        beforeData: beforeData ?? undefined,
+        afterData: { employeeId },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
   // Lấy chi tiết cuộc hội thoại bao gồm các nhân viên đã được phân công.
@@ -115,20 +150,78 @@ export class SupportChatService {
   async updateChatAiMode(
     chatId: number,
     aiMode: SupportChatAiMode,
+    auditContext: AuditRequestContext = {},
   ): Promise<ChatDetailResponseDto> {
-    const chat = await this.repository.findById(chatId);
-    if (!chat) {
-      throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+    const beforeData = await this.repository.findById(chatId);
+    try {
+      const chat = beforeData;
+      if (!chat) {
+        throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+      }
+
+      await this.repository.updateAiState(chatId, {
+        aiMode,
+        ...(aiMode === SupportChatAiMode.AUTO && chat.status === SupportChatStatus.WAITING_HUMAN
+          ? { status: SupportChatStatus.OPEN }
+          : {}),
+      });
+
+      const detail = await this.getChatDetail(chatId);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'support-chat.ai-mode.update',
+        resourceType: 'support-chat',
+        resourceId: String(chatId),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: beforeData ?? undefined,
+        afterData: detail,
+      });
+      return detail;
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'support-chat.ai-mode.update',
+        resourceType: 'support-chat',
+        resourceId: String(chatId),
+        status: AuditLogStatus.FAILED,
+        beforeData: beforeData ?? undefined,
+        afterData: { aiMode },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
     }
+  }
 
-    await this.repository.updateAiState(chatId, {
-      aiMode,
-      ...(aiMode === SupportChatAiMode.AUTO && chat.status === SupportChatStatus.WAITING_HUMAN
-        ? { status: SupportChatStatus.OPEN }
-        : {}),
-    });
+  // Xóa vĩnh viễn một cuộc hội thoại hỗ trợ.
+  async deleteChat(chatId: number, auditContext: AuditRequestContext = {}): Promise<void> {
+    const beforeData = await this.repository.findById(chatId);
+    try {
+      const isExists = await this.repository.existsById(chatId);
+      if (!isExists) {
+        throw new NotFoundException(`Không tìm thấy cuộc hội thoại #${chatId}`);
+      }
 
-    return this.getChatDetail(chatId);
+      await this.repository.deleteById(chatId);
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'support-chat.delete',
+        resourceType: 'support-chat',
+        resourceId: String(chatId),
+        status: AuditLogStatus.SUCCESS,
+        beforeData: beforeData ?? undefined,
+      });
+    } catch (error) {
+      await this.auditLogService.write({
+        ...auditContext,
+        action: 'support-chat.delete',
+        resourceType: 'support-chat',
+        resourceId: String(chatId),
+        status: AuditLogStatus.FAILED,
+        beforeData: beforeData ?? undefined,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
   // Lấy danh sách tin nhắn cũ hơn cursor để phục vụ infinite scroll.
@@ -163,10 +256,17 @@ export class SupportChatService {
     const pageSize = query.pageSize ?? 20;
     const filterEmployeeId = query.assignedToMe ? currentEmployeeId : undefined;
     const search = query.search?.trim() || undefined;
+    const customerType = query.customerType ?? 'all';
 
     const [total, chats] = await Promise.all([
-      this.repository.count(filterEmployeeId, search),
-      this.repository.findMany((page - 1) * pageSize, pageSize, filterEmployeeId, search),
+      this.repository.count(filterEmployeeId, search, customerType),
+      this.repository.findMany(
+        (page - 1) * pageSize,
+        pageSize,
+        filterEmployeeId,
+        search,
+        customerType,
+      ),
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / pageSize));

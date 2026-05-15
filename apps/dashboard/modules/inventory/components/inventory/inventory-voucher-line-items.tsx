@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@repo/ui/components/ui/table';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 export type VoucherLineDraft = {
   variantId: number;
@@ -26,6 +26,8 @@ export type VoucherLineDraft = {
 type InventoryVoucherLineItemsProps = {
   items: VoucherLineDraft[];
   canExport: boolean;
+  searchValue: string;
+  onSearchValueChange: (value: string) => void;
   onAddFromInventory: (item: InventoryListItem) => void;
   onUpdateItem: (variantId: number, patch: Partial<VoucherLineDraft>) => void;
   onRemoveItem: (variantId: number) => void;
@@ -35,22 +37,14 @@ type InventoryVoucherLineItemsProps = {
 export function InventoryVoucherLineItems({
   items,
   canExport,
+  searchValue,
+  onSearchValueChange,
   onAddFromInventory,
   onUpdateItem,
   onRemoveItem,
   inventoryOptions,
 }: InventoryVoucherLineItemsProps) {
-  const [searchValue, setSearchValue] = useState('');
-  const normalized = searchValue.trim().toLowerCase();
-  const options = useMemo(() => {
-    if (!normalized) return inventoryOptions.slice(0, 8);
-    return inventoryOptions
-      .filter((item) => {
-        const text = `${item.sku} ${item.productName}`.toLowerCase();
-        return text.includes(normalized);
-      })
-      .slice(0, 8);
-  }, [inventoryOptions, normalized]);
+  const options = useMemo(() => inventoryOptions.slice(0, 8), [inventoryOptions]);
 
   return (
     <div className="space-y-3">
@@ -59,7 +53,7 @@ export function InventoryVoucherLineItems({
         <Input
           placeholder="Tìm SKU hoặc tên sản phẩm..."
           value={searchValue}
-          onChange={(event) => setSearchValue(event.target.value)}
+          onChange={(event) => onSearchValueChange(event.target.value)}
         />
         <div className="max-h-48 overflow-y-auto rounded-md border">
           {options.length ? (

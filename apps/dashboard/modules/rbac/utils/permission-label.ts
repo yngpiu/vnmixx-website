@@ -18,6 +18,7 @@ const PERMISSION_RESOURCE_LABELS_VI: Record<string, string> = {
   size: 'Kích cỡ',
   media: 'Bộ sưu tập',
   review: 'Đánh giá',
+  inventory: 'Kho hàng',
   'support-chat': 'Hỗ trợ trực tuyến',
   profile: 'Hồ sơ',
 };
