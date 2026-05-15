@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { InventoryMovementType, InventoryVoucherType } from '../../../generated/prisma/client';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { InventoryRepository } from '../repositories/inventory.repository';
 import { InventoryAdminService } from './inventory-admin.service';
 
@@ -23,6 +24,12 @@ describe('InventoryAdminService', () => {
             countInventoryVouchers: jest.fn(),
             findInventoryVouchersPage: jest.fn(),
             findInventoryVoucherDetailById: jest.fn(),
+          },
+        },
+        {
+          provide: AuditLogService,
+          useValue: {
+            write: jest.fn(),
           },
         },
       ],

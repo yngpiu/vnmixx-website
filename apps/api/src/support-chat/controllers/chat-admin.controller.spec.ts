@@ -69,12 +69,17 @@ describe('ChatAdminController', () => {
   describe('assignSelf', () => {
     it('should assign employee successfully and emit event', async () => {
       const user = { id: 10 } as any;
+      const request = { requestId: 'req-1', headers: {} } as any;
       const mockDetail = { id: 1 };
       service.assignEmployee.mockResolvedValue(mockDetail);
 
-      const result = await controller.assignSelf(1, user);
+      const result = await controller.assignSelf(1, user, request);
       expect(result.data).toBe(mockDetail);
-      expect(service.assignEmployee).toHaveBeenCalledWith(1, 10);
+      expect(service.assignEmployee).toHaveBeenCalledWith(
+        1,
+        10,
+        expect.objectContaining({ requestId: 'req-1' }),
+      );
       expect(gateway.emitChatAssigned).toHaveBeenCalledWith(1, mockDetail);
     });
   });
@@ -93,11 +98,17 @@ describe('ChatAdminController', () => {
   describe('updateChatAiMode', () => {
     it('should update ai mode', async () => {
       const mockDetail = { id: 1, aiMode: 'OFF' };
+      const user = { id: 10, userType: 'EMPLOYEE' } as any;
+      const request = { requestId: 'req-2', headers: {} } as any;
       service.updateChatAiMode.mockResolvedValue(mockDetail);
 
-      const result = await controller.updateChatAiMode(1, { aiMode: 'OFF' });
+      const result = await controller.updateChatAiMode(1, { aiMode: 'OFF' } as any, user, request);
       expect(result.data).toBe(mockDetail);
-      expect(service.updateChatAiMode).toHaveBeenCalledWith(1, 'OFF');
+      expect(service.updateChatAiMode).toHaveBeenCalledWith(
+        1,
+        'OFF',
+        expect.objectContaining({ requestId: 'req-2', actorEmployeeId: 10 }),
+      );
     });
   });
 });

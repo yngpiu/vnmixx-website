@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReviewVisibility } from '../../../generated/prisma/client';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { PrismaService } from '../../prisma/services/prisma.service';
 import { ReviewRepository } from '../repositories/review.repository';
 import { ReviewService } from './review.service';
@@ -37,6 +38,12 @@ describe('ReviewService', () => {
         {
           provide: PrismaService,
           useValue: prisma,
+        },
+        {
+          provide: AuditLogService,
+          useValue: {
+            write: jest.fn(),
+          },
         },
       ],
     }).compile();

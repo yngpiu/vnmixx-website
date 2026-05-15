@@ -5,6 +5,7 @@ import {
   SupportChatAiMode,
   SupportChatStatus,
 } from '../../../generated/prisma/client';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { SupportChatRepository } from '../repositories/support-chat.repository';
 import { SupportChatService } from './support-chat.service';
 
@@ -38,6 +39,12 @@ describe('SupportChatService', () => {
         {
           provide: SupportChatRepository,
           useValue: repository,
+        },
+        {
+          provide: AuditLogService,
+          useValue: {
+            write: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -342,7 +349,7 @@ describe('SupportChatService', () => {
         { assignedToMe: true, search: '  abc  ', page: 1, pageSize: 20 } as any,
         22,
       );
-      expect(repository.count).toHaveBeenCalledWith(22, 'abc');
+      expect(repository.count).toHaveBeenCalledWith(22, 'abc', 'all');
       expect(result.total).toBe(1);
       expect(result.items[0].assignedEmployeeNames).toEqual(['Agent A']);
     });

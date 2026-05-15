@@ -1,19 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RedisService } from '../../redis/services/redis.service';
 import { PermissionRepository } from '../repositories/permission.repository';
 import { PermissionService } from './permission.service';
 
 describe('PermissionService', () => {
   let service: PermissionService;
   let permissionRepo: jest.Mocked<PermissionRepository>;
-  let redis: jest.Mocked<RedisService>;
 
   const mockPermissionRepo = {
     findAll: jest.fn(),
-  };
-
-  const mockRedisService = {
-    getOrSet: jest.fn().mockImplementation((_key, _ttl, factory) => factory()),
   };
 
   beforeEach(async () => {
@@ -22,13 +16,11 @@ describe('PermissionService', () => {
       providers: [
         PermissionService,
         { provide: PermissionRepository, useValue: mockPermissionRepo },
-        { provide: RedisService, useValue: mockRedisService },
       ],
     }).compile();
 
     service = module.get<PermissionService>(PermissionService);
     permissionRepo = module.get(PermissionRepository);
-    redis = module.get(RedisService);
   });
 
   describe('findAll', () => {
@@ -39,7 +31,6 @@ describe('PermissionService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual(permissions);
-      expect(redis.getOrSet).toHaveBeenCalled();
       expect(permissionRepo.findAll).toHaveBeenCalled();
     });
   });
