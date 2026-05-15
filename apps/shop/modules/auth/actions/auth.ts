@@ -146,7 +146,7 @@ export async function registerActionForm(
   if (password !== confirmPassword)
     return { success: false, error: 'Mật khẩu nhập lại không khớp.' };
   if (!termsAccepted)
-    return { success: false, error: 'Bạn cần đồng ý với các điều khoản của IVY.' };
+    return { success: false, error: 'Bạn cần đồng ý với các điều khoản của VNMIXX.' };
 
   const result = await registerAction({
     fullName,

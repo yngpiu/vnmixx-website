@@ -39,7 +39,7 @@ const signupSchema = z
     confirmPassword: z.string().min(1, { message: 'Vui lòng nhập lại mật khẩu.' }),
     termsAccepted: z
       .boolean()
-      .refine((v) => v === true, { message: 'Bạn cần đồng ý với các điều khoản của IVY.' }),
+      .refine((v) => v === true, { message: 'Bạn cần đồng ý với các điều khoản của VNMIXX.' }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],
@@ -235,7 +235,7 @@ export default function SignupPage(): React.JSX.Element {
                 render={({ field }) => (
                   <LabeledCheckbox
                     id="termsAccepted"
-                    label="Đồng ý với các điều khoản của IVY"
+                    label="Đồng ý với các điều khoản của VNMIXX"
                     checked={field.value}
                     onCheckedChange={field.onChange}
                     disabled={busy}

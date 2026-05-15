@@ -16,7 +16,7 @@ type NewArrivalSectionProps = {
 };
 
 type BrandTab = {
-  id: 'ivy-moda' | 'metagent';
+  id: 'vnmixx' | 'metagent';
   label: string;
   products: NewArrivalProduct[];
 };
@@ -29,12 +29,12 @@ export function NewArrivalSection({
 }: NewArrivalSectionProps): React.JSX.Element {
   const tabs = useMemo<BrandTab[]>(
     () => [
-      { id: 'ivy-moda', label: 'Nữ', products: womenProducts },
+      { id: 'vnmixx', label: 'Nữ', products: womenProducts },
       { id: 'metagent', label: 'Nam', products: menProducts },
     ],
     [menProducts, womenProducts],
   );
-  const [activeTabId, setActiveTabId] = useState<BrandTab['id']>('ivy-moda');
+  const [activeTabId, setActiveTabId] = useState<BrandTab['id']>('vnmixx');
   const [isHydrated, setIsHydrated] = useState(false);
   useEffect(() => {
     setIsHydrated(true);
@@ -43,7 +43,7 @@ export function NewArrivalSection({
 
   const sortSlug = serializeCatalogSort(sort);
   const activeTabHref =
-    activeTab.id === 'ivy-moda'
+    activeTab.id === 'vnmixx'
       ? `/categories/nu?sort=${sortSlug}`
       : `/categories/nam?sort=${sortSlug}`;
 

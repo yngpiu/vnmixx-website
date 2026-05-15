@@ -1,12 +1,12 @@
 /**
- * Seed Ivy catalog từ JSON xuất bởi `temp/crawl/ivy/scripts/crawl-pilot.ts`.
+ * Seed vnmixx catalog từ JSON xuất bởi `temp/crawl/vnmixx/scripts/crawl-pilot.ts`.
  *
  * ```bash
- * cd apps/api && node --env-file-if-exists=.env --import tsx prisma/seed-ivy-from-json.ts
+ * cd apps/api && node --env-file-if-exists=.env --import tsx prisma/seed-vnmixx-from-json.ts
  * ```
  *
  * File mặc định (ưu tiên file tồn tại):
- *   1) ivy-catalog.seed-ready.json (full crawl)
+ *   1) vnmixx-catalog.seed-ready.json (full crawl)
  *   2) seed-ready.nu-ao-ao-so-mi.json (pilot)
  * Override: IVY_CATALOG_JSON=/abs/or/rel/path.json
  */
@@ -19,7 +19,7 @@ import {
   neighborHexDistinct,
   semanticHexFromFingerprint,
   unpackHexRgb,
-} from './ivy-semantic-color-hex';
+} from './vnmixx-semantic-color-hex';
 
 const CATEGORY_NAME_MAX = 100;
 const CATEGORY_SLUG_MAX = 120;
@@ -41,19 +41,19 @@ type FlatCategorySeed = Readonly<{
   isFeatured: boolean;
   showInHeader: boolean;
   isActive: boolean;
-  ivyListingUrl?: string | null;
+  vnmixxListingUrl?: string | null;
 }>;
 
-type IvyColorSeed = Readonly<{
+type VnmixxColorSeed = Readonly<{
   key: string;
   displayName: string;
   hexCode: string;
-  ivyKeys?: readonly string[];
+  vnmixxKeys?: readonly string[];
 }>;
 
-type IvyVariantSeed = Readonly<{
-  ivyProductSubSku: string;
-  ivySwatchCode: string;
+type VnmixxVariantSeed = Readonly<{
+  vnmixxProductSubSku: string;
+  vnmixxSwatchCode: string;
   colorDisplayName: string;
   colorKey: string;
   sizeLabel: string;
@@ -63,7 +63,7 @@ type IvyVariantSeed = Readonly<{
   reserved: number;
 }>;
 
-type IvyProductSeed = Readonly<{
+type VnmixxProductSeed = Readonly<{
   categoryLevel3Slugs: readonly string[];
   product: {
     name: string;
@@ -79,38 +79,38 @@ type IvyProductSeed = Readonly<{
   imagesByColor: Readonly<
     Record<string, readonly { url: string; alt: string | null; sortOrder: number }[]>
   >;
-  variants: readonly IvyVariantSeed[];
+  variants: readonly VnmixxVariantSeed[];
 }>;
 
-type IvySeedFile = Readonly<{
+type VnmixxSeedFile = Readonly<{
   schemaVersion: number;
   categories: FlatCategorySeed[];
-  colors: IvyColorSeed[];
+  colors: VnmixxColorSeed[];
   sizes: string[];
-  products: IvyProductSeed[];
+  products: VnmixxProductSeed[];
 }>;
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 
 const SIZE_ORDER_PREF: readonly string[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'FREE SIZE'];
 
-const IVY_JSON_DIR = path.resolve(process.cwd(), '../../temp/crawl/ivy/json');
+const VNMIXX_JSON_DIR = path.resolve(process.cwd(), '../../temp/crawl/vnmixx/json');
 
-const DEFAULT_IVY_CATALOG_CANDIDATES = [
-  'ivy-catalog.seed-ready.json',
+const DEFAULT_VNMIXX_CATALOG_CANDIDATES = [
+  'vnmixx-catalog.seed-ready.json',
   'seed-ready.nu-ao-ao-so-mi.json',
 ] as const;
 
 function resolveCatalogJsonPath(): string {
-  const fromEnv = process.env.IVY_CATALOG_JSON?.trim();
+  const fromEnv = process.env.VNMIXX_CATALOG_JSON?.trim();
   if (fromEnv != null && fromEnv.length > 0) {
     return path.isAbsolute(fromEnv) ? fromEnv : path.resolve(process.cwd(), fromEnv);
   }
-  for (const name of DEFAULT_IVY_CATALOG_CANDIDATES) {
-    const p = path.join(IVY_JSON_DIR, name);
+  for (const name of DEFAULT_VNMIXX_CATALOG_CANDIDATES) {
+    const p = path.join(VNMIXX_JSON_DIR, name);
     if (fs.existsSync(p)) return p;
   }
-  return path.join(IVY_JSON_DIR, DEFAULT_IVY_CATALOG_CANDIDATES[0]);
+  return path.join(VNMIXX_JSON_DIR, DEFAULT_VNMIXX_CATALOG_CANDIDATES[0]);
 }
 
 function fitDbChars(s: string, maxLen: number): string {
@@ -125,14 +125,14 @@ function normalizeHex(hex: string): string {
   return `#${m[1].toUpperCase()}`;
 }
 
-function normalizeIvyColorNameKey(rawInput: string): string {
+function normalizeVnmixxColorNameKey(rawInput: string): string {
   return rawInput.replace(/\s+/g, ' ').trim().normalize('NFC').toLowerCase();
 }
 
 const HOATIET_DISPLAY_PREFIX = /^họa tiết\s+/iu;
 
 /**
- * Bỏ tiền tố Ivy "Họa tiết …" để màu nền và màu hoạ tiết map cùng một dòng palette (SKU/ô vẫn khác nhau).
+ * Bỏ tiền tố Vnmixx "Họa tiết …" để màu nền và màu hoạ tiết map cùng một dòng palette (SKU/ô vẫn khác nhau).
  */
 function stripHoatietCatalogPrefix(rawDisplay: string): string {
   const trimmed = rawDisplay.replace(/\s+/g, ' ').trim();
@@ -141,15 +141,15 @@ function stripHoatietCatalogPrefix(rawDisplay: string): string {
 }
 
 /**
- * Gộp ô màu catalog theo **nhãn hiển thị Ivy đã chuẩn hóa** (VD `Đỏ mận`, `Đen`, `Trắng`; `Họa tiết Đỏ` ⇒ `Đỏ`): cùng tên ⇒ một dòng `colors`
- * và một `hex` deterministic. Mã ô Ivy (`049` vs `032`) chỉ là nội bộ SKU/ảnh, không ép vào `colors.name`.
+ * Gộp ô màu catalog theo **nhãn hiển thị Vnmixx đã chuẩn hóa** (VD `Đỏ mận`, `Đen`, `Trắng`; `Họa tiết Đỏ` ⇒ `Đỏ`): cùng tên ⇒ một dòng `colors`
+ * và một `hex` deterministic. Mã ô Vnmixx (`049` vs `032`) chỉ là nội bộ SKU/ảnh, không ép vào `colors.name`.
  * Sau chuẩn hóa, chỉ báo lỗi khi các ô gộp cùng fingerprint có **tên hiển thị sau khi bỏ tiền tố "Họa tiết"** vẫn khác nhau (trùng tông nhưng khác màu được gộp).
  */
-function ivySemanticColorFingerprint(displayRaw: string, colorKeyFallback: string): string {
+function vnmixxSemanticColorFingerprint(displayRaw: string, colorKeyFallback: string): string {
   let trimmed = displayRaw.replace(/\s+/g, ' ').trim();
   trimmed = stripHoatietCatalogPrefix(trimmed);
   const baseLabel = trimmed.length > 0 ? trimmed : `Màu ${colorKeyFallback.trim()}`;
-  return normalizeIvyColorNameKey(baseLabel);
+  return normalizeVnmixxColorNameKey(baseLabel);
 }
 
 /** Tên cột `colors.name`: không lưu tiền tố hoạ tiết (`Họa tiết X` ⇒ `X`); chỉ truncate `VarChar(50)`. */
@@ -159,7 +159,7 @@ function colorCatalogDbName(displayRaw: string): string {
   return fitDbChars(base, COLOR_NAME_DB_MAX);
 }
 
-function pickVariantDisplayRaw(v: IvyVariantSeed): string {
+function pickVariantDisplayRaw(v: VnmixxVariantSeed): string {
   const t = v.colorDisplayName.replace(/\s+/g, ' ').trim();
   if (t.length > 0) return t;
   return `Màu ${v.colorKey.trim()}`;
@@ -171,12 +171,12 @@ function sizeSortOrdinal(labelUpper: string): number {
 }
 
 function skuForVariant(
-  rawIvySku: string,
+  rawVnmixxSku: string,
   productSlug: string,
   colorKey: string,
   sizeLabelNorm: string,
 ): string {
-  const raw = rawIvySku.trim();
+  const raw = rawVnmixxSku.trim();
   if (raw.length <= VARIANT_SKU_MAX) return fitDbChars(raw, VARIANT_SKU_MAX);
   const h = crypto
     .createHash('sha256')
@@ -230,7 +230,7 @@ function optionalJsonStringOrNull(value: unknown): string | null {
   if (value == null || value === '') return null;
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  throw new Error('ivyListingUrl must be a string scalar when present');
+  throw new Error('vnmixxListingUrl must be a string scalar when present');
 }
 
 function parseFlatCategoryTreeNode(node: JsonRecord): FlatCategorySeed {
@@ -248,19 +248,19 @@ function parseFlatCategoryTreeNode(node: JsonRecord): FlatCategorySeed {
     isFeatured: Boolean(node.isFeatured),
     showInHeader: Boolean(node.showInHeader),
     isActive: node.isActive !== false,
-    ivyListingUrl: optionalJsonStringOrNull(node.ivyListingUrl),
+    vnmixxListingUrl: optionalJsonStringOrNull(node.vnmixxListingUrl),
   };
 }
 
 function collectColorsInfer(
-  products: ReadonlyArray<Readonly<{ variants: readonly IvyVariantSeed[] }>>,
-): IvyColorSeed[] {
+  products: ReadonlyArray<Readonly<{ variants: readonly VnmixxVariantSeed[] }>>,
+): VnmixxColorSeed[] {
   type Agg = { displayRaw: string; keyRaw: string };
   const byFp = new Map<string, Agg>();
   for (const product of products) {
     for (const v of product.variants) {
       const displayRaw = pickVariantDisplayRaw(v);
-      const fp = ivySemanticColorFingerprint(displayRaw, v.colorKey);
+      const fp = vnmixxSemanticColorFingerprint(displayRaw, v.colorKey);
       const existing = byFp.get(fp);
       if (!existing) {
         byFp.set(fp, { displayRaw, keyRaw: v.colorKey.trim() });
@@ -269,14 +269,14 @@ function collectColorsInfer(
       }
     }
   }
-  const out: IvyColorSeed[] = [];
+  const out: VnmixxColorSeed[] = [];
   for (const [, agg] of byFp) {
     const kr = agg.keyRaw;
     out.push({
       key: kr,
       displayName: fitDbChars(agg.displayRaw.replace(/\s+/g, ' ').trim(), COLOR_NAME_DB_MAX),
-      hexCode: semanticHexFromFingerprint(ivySemanticColorFingerprint(agg.displayRaw, kr)),
-      ivyKeys: [kr],
+      hexCode: semanticHexFromFingerprint(vnmixxSemanticColorFingerprint(agg.displayRaw, kr)),
+      vnmixxKeys: [kr],
     });
   }
   out.sort((a, b) => a.displayName.localeCompare(b.displayName, 'vi'));
@@ -298,7 +298,7 @@ type GlobalColorAgg = Readonly<{
   hexInput: string | null;
 }>;
 
-function ivyColorFingerprintFromSeedRow(c: IvyColorSeed): string {
+function vnmixxColorFingerprintFromSeedRow(c: VnmixxColorSeed): string {
   const rawDisp = String(c.displayName ?? '').trim();
   const keyPrimary = String(c.key ?? '').trim();
   const spaced = rawDisp.replace(/\s+/g, ' ').trim();
@@ -306,15 +306,15 @@ function ivyColorFingerprintFromSeedRow(c: IvyColorSeed): string {
     spaced.length > 0
       ? spaced.replace(new RegExp(`\\s+${escapeRegExp(keyPrimary)}$`, 'iu'), '').trim() || spaced
       : `Màu ${keyPrimary}`;
-  return ivySemanticColorFingerprint(label, keyPrimary);
+  return vnmixxSemanticColorFingerprint(label, keyPrimary);
 }
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function assertNoConflictingIvyColorKeysPerSemanticLabel(
-  products: readonly IvyProductSeed[],
+function assertNoConflictingVnmixxColorKeysPerSemanticLabel(
+  products: readonly VnmixxProductSeed[],
 ): void {
   for (const p of products) {
     const slug = p.product.slug.trim();
@@ -322,7 +322,7 @@ function assertNoConflictingIvyColorKeysPerSemanticLabel(
     const baseLabelsPerFp = new Map<string, Set<string>>();
     for (const v of p.variants) {
       const pick = pickVariantDisplayRaw(v);
-      const labelKey = ivySemanticColorFingerprint(pick, v.colorKey);
+      const labelKey = vnmixxSemanticColorFingerprint(pick, v.colorKey);
       const ky = v.colorKey.trim().toLowerCase();
       let setForLabel = buckets.get(labelKey);
       if (setForLabel == null) {
@@ -336,14 +336,14 @@ function assertNoConflictingIvyColorKeysPerSemanticLabel(
         baseLabelsPerFp.set(labelKey, baseLabs);
       }
       const rawSpaced = pick.replace(/\s+/g, ' ').trim();
-      baseLabs.add(normalizeIvyColorNameKey(stripHoatietCatalogPrefix(rawSpaced)));
+      baseLabs.add(normalizeVnmixxColorNameKey(stripHoatietCatalogPrefix(rawSpaced)));
     }
     for (const [fp, keys] of buckets) {
       if (keys.size <= 1) continue;
       const baseLabs = baseLabelsPerFp.get(fp);
       if (baseLabs == null || baseLabs.size <= 1) continue;
       throw new Error(
-        `Slug "${slug}": Ivy có nhiều mã ô khác nhau (${[...keys].sort().join(', ')}) trong cùng một nhãn gộp "${fp}", ` +
+        `Slug "${slug}": Vnmixx có nhiều mã ô khác nhau (${[...keys].sort().join(', ')}) trong cùng một nhãn gộp "${fp}", ` +
           `nhưng sau khi bỏ "Họa tiết" vẫn còn nhiều tên khác nhau (${[...baseLabs].sort().join(' | ')}). ` +
           'Chỉnh nhãn phía crawl hoặc làm rõ semantic.',
       );
@@ -351,7 +351,7 @@ function assertNoConflictingIvyColorKeysPerSemanticLabel(
   }
 }
 
-function buildGlobalColorAggs(payload: IvySeedFile): GlobalColorAgg[] {
+function buildGlobalColorAggs(payload: VnmixxSeedFile): GlobalColorAgg[] {
   const map = new Map<string, GlobalColorAgg>();
   const bump = (fp: string, displayRaw: string, hexInput: string | null): void => {
     const dbName = colorCatalogDbName(displayRaw);
@@ -370,7 +370,7 @@ function buildGlobalColorAggs(payload: IvySeedFile): GlobalColorAgg[] {
     const keyPrimary = String(c.key ?? '').trim();
     const keySet = new Set<string>();
     if (keyPrimary.length > 0) keySet.add(keyPrimary);
-    const extras = Array.isArray(c.ivyKeys) ? c.ivyKeys : [];
+    const extras = Array.isArray(c.vnmixxKeys) ? c.vnmixxKeys : [];
     for (const ex of extras) {
       const k = String(ex ?? '').trim();
       if (k.length > 0) keySet.add(k);
@@ -381,13 +381,13 @@ function buildGlobalColorAggs(payload: IvySeedFile): GlobalColorAgg[] {
       [...keySet].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))[0] ||
       '';
     const label = (rawDisp.length > 0 ? rawDisp : `Màu ${fallbackKey}`).replace(/\s+/g, ' ').trim();
-    const fp = ivySemanticColorFingerprint(label, fallbackKey);
+    const fp = vnmixxSemanticColorFingerprint(label, fallbackKey);
     bump(fp, label, hexFromRow);
   }
   for (const p of payload.products) {
     for (const v of p.variants) {
       const raw = pickVariantDisplayRaw(v);
-      bump(ivySemanticColorFingerprint(raw, v.colorKey), raw, null);
+      bump(vnmixxSemanticColorFingerprint(raw, v.colorKey), raw, null);
     }
     const byColor = p.imagesByColor ?? {};
     for (const sw of Object.keys(byColor)) {
@@ -395,7 +395,7 @@ function buildGlobalColorAggs(payload: IvySeedFile): GlobalColorAgg[] {
       const matched = p.variants.some((vx) => vx.colorKey.trim().toLowerCase() === lc);
       if (matched) continue;
       const rawImg = `Màu ${sw.trim()}`;
-      bump(ivySemanticColorFingerprint(rawImg, sw.trim()), rawImg, null);
+      bump(vnmixxSemanticColorFingerprint(rawImg, sw.trim()), rawImg, null);
     }
   }
   return [...map.values()].sort((a, b) =>
@@ -406,7 +406,7 @@ function buildGlobalColorAggs(payload: IvySeedFile): GlobalColorAgg[] {
 /**
  * Chuẩn hóa cả JSON đầy đủ (schemaVersion + categories) lẫn pilot cũ (categoryAssignment + categories.tree.json).
  */
-function coerceIvySeedFile(raw: unknown, jsonPath: string): IvySeedFile {
+function coerceVnmixxSeedFile(raw: unknown, jsonPath: string): VnmixxSeedFile {
   const r = raw as JsonRecord & {
     products?: unknown;
     categories?: unknown;
@@ -418,7 +418,7 @@ function coerceIvySeedFile(raw: unknown, jsonPath: string): IvySeedFile {
     throw new Error(`JSON thiếu products[] không rỗng: ${jsonPath}`);
   }
   if (r.schemaVersion === 1 && Array.isArray(r.categories) && r.categories.length > 0) {
-    return r as unknown as IvySeedFile;
+    return r as unknown as VnmixxSeedFile;
   }
   const pilotAssign = r.categoryAssignment as JsonRecord | undefined;
   const level3FromPilot =
@@ -428,7 +428,7 @@ function coerceIvySeedFile(raw: unknown, jsonPath: string): IvySeedFile {
   const treePath = path.join(path.dirname(jsonPath), 'categories.tree.json');
   if (!fs.existsSync(treePath)) {
     throw new Error(
-      `JSON không có categories nhúng. Cần file categories.tree.json tại ${treePath}, hoặc dùng ivy-catalog.seed-ready.json (tạo bằng crawl: \`pnpm crawl:ivy -- full\` trong apps/api). Hiện tại: ${jsonPath}`,
+      `JSON không có categories nhúng. Cần file categories.tree.json tại ${treePath}, hoặc dùng vnmixx-catalog.seed-ready.json (tạo bằng crawl: \`pnpm crawl:vnmixx -- full\` trong apps/api). Hiện tại: ${jsonPath}`,
     );
   }
   const treeParsed = JSON.parse(fs.readFileSync(treePath, 'utf8')) as JsonRecord;
@@ -438,17 +438,17 @@ function coerceIvySeedFile(raw: unknown, jsonPath: string): IvySeedFile {
   }
   const categories = treeCats.map((n) => parseFlatCategoryTreeNode(n as JsonRecord));
 
-  type ProductExt = IvyProductSeed & { categoryLevel3Slugs?: string[] };
+  type ProductExt = VnmixxProductSeed & { categoryLevel3Slugs?: string[] };
   const productsParsed = productsRaw as ProductExt[];
 
   const colorCandidates =
     Array.isArray(r.colors) && r.colors.length > 0
-      ? (r.colors as IvyColorSeed[])
+      ? (r.colors as VnmixxColorSeed[])
       : collectColorsInfer(productsParsed);
   const colors = colorCandidates.filter(
     (c, idx, arr) =>
       arr.findIndex(
-        (x) => ivyColorFingerprintFromSeedRow(x) === ivyColorFingerprintFromSeedRow(c),
+        (x) => vnmixxColorFingerprintFromSeedRow(x) === vnmixxColorFingerprintFromSeedRow(c),
       ) === idx,
   );
   const sizes =
@@ -456,7 +456,7 @@ function coerceIvySeedFile(raw: unknown, jsonPath: string): IvySeedFile {
       ? (r.sizes as unknown[]).map((x) => String(x))
       : collectSizesInfer(productsParsed);
 
-  const products: IvyProductSeed[] = productsParsed.map((p) => {
+  const products: VnmixxProductSeed[] = productsParsed.map((p) => {
     const inherited =
       Array.isArray(p.categoryLevel3Slugs) && p.categoryLevel3Slugs.length > 0
         ? [...p.categoryLevel3Slugs]
@@ -480,7 +480,7 @@ function coerceIvySeedFile(raw: unknown, jsonPath: string): IvySeedFile {
   return { schemaVersion: 1, categories, colors, sizes, products };
 }
 
-export async function seedIvyFromJson(): Promise<void> {
+export async function seedVnmixxFromJson(): Promise<void> {
   if (!process.env.DATABASE_URL) {
     throw new Error('Thiếu DATABASE_URL (apps/api/.env).');
   }
@@ -488,19 +488,19 @@ export async function seedIvyFromJson(): Promise<void> {
   if (!fs.existsSync(jsonPath)) {
     const tried = [
       process.env.IVY_CATALOG_JSON?.trim() ?? null,
-      ...DEFAULT_IVY_CATALOG_CANDIDATES.map((n) => path.join(IVY_JSON_DIR, n)),
+      ...DEFAULT_VNMIXX_CATALOG_CANDIDATES.map((n) => path.join(VNMIXX_JSON_DIR, n)),
     ]
       .filter((x): x is string => typeof x === 'string' && x.length > 0)
       .map((p) => (path.isAbsolute(p) ? p : path.resolve(process.cwd(), p)));
     const unique = [...new Set(tried)];
     throw new Error(
-      `Không tìm thấy Ivy JSON. Đặt IVY_CATALOG_JSON hoặc tạo một trong: ${unique.join(' | ')}`,
+      `Không tìm thấy Vnmixx JSON. Đặt IVY_CATALOG_JSON hoặc tạo một trong: ${unique.join(' | ')}`,
     );
   }
   const parsed: unknown = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-  const payload = coerceIvySeedFile(parsed, jsonPath);
+  const payload = coerceVnmixxSeedFile(parsed, jsonPath);
 
-  assertNoConflictingIvyColorKeysPerSemanticLabel(payload.products);
+  assertNoConflictingVnmixxColorKeysPerSemanticLabel(payload.products);
 
   const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
   const prisma = new PrismaClient({ adapter });
@@ -547,7 +547,7 @@ export async function seedIvyFromJson(): Promise<void> {
     const paletteRows = buildGlobalColorAggs(payload);
     const colorIdByFingerprint = new Map<string, number>();
 
-    console.log(`Ivy seed: ${paletteRows.length} màu chung catalog (ghi DB trước sản phẩm).`);
+    console.log(`Vnmixx seed: ${paletteRows.length} màu chung catalog (ghi DB trước sản phẩm).`);
 
     for (const row of paletteRows) {
       const nm = row.displayNameForDb;
@@ -593,20 +593,20 @@ export async function seedIvyFromJson(): Promise<void> {
 
     const total = payload.products.length;
     for (let pi = 0; pi < total; pi += 1) {
-      const ivy = payload.products[pi];
+      const vnmixx = payload.products[pi];
       await ingestOneProduct({
         prisma,
         slugToId,
         labelToSizeId,
         colorIdByFingerprint,
-        ivyProduct: ivy,
+        vnmixxProduct: vnmixx,
       });
       if ((pi + 1) % 25 === 0 || pi === total - 1) {
-        console.log(`Ivy seed: ${pi + 1}/${total}`);
+        console.log(`Vnmixx seed: ${pi + 1}/${total}`);
       }
     }
 
-    console.log(`Ivy seed hoàn thành: ${total} sản phẩm (${jsonPath})`);
+    console.log(`vnmixx seed hoàn thành: ${total} sản phẩm (${jsonPath})`);
   } finally {
     await prisma.$disconnect();
   }
@@ -617,20 +617,20 @@ async function ingestOneProduct(input: {
   slugToId: Map<string, number>;
   labelToSizeId: Map<string, number>;
   colorIdByFingerprint: Map<string, number>;
-  ivyProduct: IvyProductSeed;
+  vnmixxProduct: VnmixxProductSeed;
 }): Promise<void> {
-  const { prisma, slugToId, labelToSizeId, colorIdByFingerprint, ivyProduct } = input;
+  const { prisma, slugToId, labelToSizeId, colorIdByFingerprint, vnmixxProduct } = input;
 
-  const slugFit = fitDbChars(ivyProduct.product.slug.trim(), PRODUCT_SLUG_DB_MAX);
+  const slugFit = fitDbChars(vnmixxProduct.product.slug.trim(), PRODUCT_SLUG_DB_MAX);
   const createBody: Prisma.ProductUpsertArgs['create'] = {
-    name: fitDbChars(ivyProduct.product.name.trim(), PRODUCT_NAME_DB_MAX),
+    name: fitDbChars(vnmixxProduct.product.name.trim(), PRODUCT_NAME_DB_MAX),
     slug: slugFit,
-    description: ivyProduct.product.description,
-    weight: ivyProduct.product.weightGrams,
-    length: ivyProduct.product.lengthCm,
-    width: ivyProduct.product.widthCm,
-    height: ivyProduct.product.heightCm,
-    isActive: ivyProduct.product.isActive,
+    description: vnmixxProduct.product.description,
+    weight: vnmixxProduct.product.weightGrams,
+    length: vnmixxProduct.product.lengthCm,
+    width: vnmixxProduct.product.widthCm,
+    height: vnmixxProduct.product.heightCm,
+    isActive: vnmixxProduct.product.isActive,
   };
 
   const productRow = await prisma.product.upsert({
@@ -649,7 +649,7 @@ async function ingestOneProduct(input: {
   });
 
   await prisma.productCategory.deleteMany({ where: { productId: productRow.id } });
-  const junctionRows = ivyProduct.categoryLevel3Slugs
+  const junctionRows = vnmixxProduct.categoryLevel3Slugs
     .map((sl) => {
       const categoryId = slugToId.get(sl);
       return categoryId == null ? null : { productId: productRow.id, categoryId };
@@ -677,8 +677,8 @@ async function ingestOneProduct(input: {
     colorKeySeed: string;
   }>;
   const variantAggByCombo = new Map<string, Agg>();
-  for (const v of ivyProduct.variants) {
-    const fp = ivySemanticColorFingerprint(pickVariantDisplayRaw(v), v.colorKey);
+  for (const v of vnmixxProduct.variants) {
+    const fp = vnmixxSemanticColorFingerprint(pickVariantDisplayRaw(v), v.colorKey);
     const colorId = colorIdByFingerprint.get(fp);
     const sizeNormDb = normalizeSizeLabelForDb(v.sizeLabel);
     const sizeLookup =
@@ -705,7 +705,7 @@ async function ingestOneProduct(input: {
         reserved: rv,
         priceVnd: v.priceVnd,
         compareAt: normalizedCompareAt,
-        skuSeed: v.ivyProductSubSku.trim(),
+        skuSeed: v.vnmixxProductSubSku.trim(),
         colorKeySeed: v.colorKey.trim(),
       });
       continue;
@@ -759,7 +759,7 @@ async function ingestOneProduct(input: {
 
   let sortIdx = 0;
   const imageRows: Prisma.ProductImageUncheckedCreateInput[] = [];
-  for (const im of ivyProduct.imagesGlobal) {
+  for (const im of vnmixxProduct.imagesGlobal) {
     imageRows.push({
       productId: productRow.id,
       colorId: null,
@@ -770,14 +770,14 @@ async function ingestOneProduct(input: {
     sortIdx += 1;
   }
 
-  Object.entries(ivyProduct.imagesByColor).forEach(([swatchKeyLc, imgs]) => {
-    const matchVariant = ivyProduct.variants.find(
+  Object.entries(vnmixxProduct.imagesByColor).forEach(([swatchKeyLc, imgs]) => {
+    const matchVariant = vnmixxProduct.variants.find(
       (vx) => vx.colorKey.trim().toLowerCase() === swatchKeyLc.trim().toLowerCase(),
     );
     const labelRaw =
       matchVariant != null ? pickVariantDisplayRaw(matchVariant) : `Màu ${swatchKeyLc.trim()}`;
     const colorIdResolved = colorIdByFingerprint.get(
-      ivySemanticColorFingerprint(labelRaw, swatchKeyLc.trim()),
+      vnmixxSemanticColorFingerprint(labelRaw, swatchKeyLc.trim()),
     );
     if (colorIdResolved == null) return;
     for (const im of imgs) {
@@ -797,7 +797,7 @@ async function ingestOneProduct(input: {
   }
 }
 
-void seedIvyFromJson().catch((e: unknown): void => {
+void seedVnmixxFromJson().catch((e: unknown): void => {
   console.error(e);
   process.exitCode = 1;
 });

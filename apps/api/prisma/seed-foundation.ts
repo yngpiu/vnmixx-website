@@ -1,6 +1,6 @@
 /**
  * Seed “nền” cho dev: RBAC/quyền, địa lý hành chính, nhân viên, media nhẹ, vài khách + địa chỉ.
- * Không 200 SP / 1000 đơn / wishlist … — catalog: Ivy (`pnpm seed:ivy`) hoặc SQL `prisma/data/catalog-products-categories-*.sql`.
+ * Không 200 SP / 1000 đơn / wishlist … — catalog: vnmixx (`pnpm seed:vnmixx`) hoặc SQL `prisma/data/catalog-products-categories-*.sql`.
  *
  * Override (optional): `SEED_CUSTOMER_COUNT`, `SEED_MEDIA_COUNT`, `SEED_ADDRESS_CUSTOMER_LIMIT`
  */
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
   await seedCustomers();
   await seedAddresses();
   console.log(
-    '--- FOUNDATION DONE — catalog: `pnpm seed:ivy` hoặc import `prisma/data/catalog-products-categories-*.sql`; rồi `pnpm seed:banners`. ---',
+    '--- FOUNDATION DONE — catalog: `pnpm seed:vnmixx` hoặc import `prisma/data/catalog-products-categories-*.sql`; rồi `pnpm seed:banners`. ---',
   );
 }
 

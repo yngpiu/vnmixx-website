@@ -125,7 +125,7 @@ const mdComponents = {
 } satisfies Components;
 
 /**
- * Mô tả PDP: **HTML** (Quill trên dashboard) sau DOMPurify, hoặc **Markdown/plain** (crawl Ivy, v.v.).
+ * Mô tả PDP: **HTML** (Quill trên dashboard) sau DOMPurify, hoặc **Markdown/plain** (crawl vnmixx, v.v.).
  */
 export function ProductDescription({ source }: Readonly<{ source: string }>): React.JSX.Element {
   if (isProbablyRichHtml(source)) {

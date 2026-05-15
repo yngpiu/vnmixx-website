@@ -11,6 +11,8 @@ export type MyPaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CA
 export interface MyOrderItem {
   id: number;
   productName: string;
+  productSlug: string;
+  imageUrl: string | null;
   colorName: string;
   sizeLabel: string;
   sku: string;
@@ -66,6 +68,11 @@ export interface MyOrderDetail extends MyOrderListItem {
   expectedDeliveryTime: string | null;
   updatedAt: string;
   payments: MyOrderPayment[];
+  statusHistories: Array<{
+    id: number;
+    status: MyOrderStatus;
+    createdAt: string;
+  }>;
 }
 
 export interface ListMyOrdersParams {

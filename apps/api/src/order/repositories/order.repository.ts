@@ -7,6 +7,8 @@ import { PrismaService } from '../../prisma/services/prisma.service';
 export interface OrderItemView {
   id: number;
   productName: string;
+  productSlug: string;
+  imageUrl: string | null;
   colorName: string;
   sizeLabel: string;
   sku: string;
@@ -102,6 +104,24 @@ const ORDER_ITEM_SELECT = {
   price: true,
   quantity: true,
   subtotal: true,
+  variant: {
+    select: {
+      colorId: true,
+      product: {
+        select: {
+          slug: true,
+          images: {
+            select: {
+              colorId: true,
+              url: true,
+              sortOrder: true,
+            },
+            orderBy: { sortOrder: 'asc' as const },
+          },
+        },
+      },
+    },
+  },
 } as const;
 
 const PAYMENT_SELECT = {
@@ -281,6 +301,45 @@ export class OrderRepository {
     };
   }
 
+  private mapOrderItemView<
+    T extends {
+      id: number;
+      productName: string;
+      colorName: string;
+      sizeLabel: string;
+      sku: string;
+      price: number;
+      quantity: number;
+      subtotal: number;
+      variant: {
+        colorId: number;
+        product: {
+          slug: string;
+          images: Array<{
+            colorId: number | null;
+            url: string;
+          }>;
+        };
+      };
+    },
+  >(item: T): OrderItemView {
+    const colorMatchedImage =
+      item.variant.product.images.find((image) => image.colorId === item.variant.colorId) ?? null;
+    const fallbackImage = item.variant.product.images[0] ?? null;
+    return {
+      id: item.id,
+      productName: item.productName,
+      productSlug: item.variant.product.slug,
+      imageUrl: colorMatchedImage?.url ?? fallbackImage?.url ?? null,
+      colorName: item.colorName,
+      sizeLabel: item.sizeLabel,
+      sku: item.sku,
+      price: item.price,
+      quantity: item.quantity,
+      subtotal: item.subtotal,
+    };
+  }
+
   /**
    * Sinh mã đơn hàng duy nhất theo format: VNM + YYMMDD + 5 ký tự ngẫu nhiên.
    * Ví dụ: VNM260410ABCDE.
@@ -326,7 +385,13 @@ export class OrderRepository {
       this.prisma.order.count({ where }),
     ]);
 
-    const data = rows.map((row) => this.withDerivedPaymentStatus(row));
+    const data = rows.map((row) => {
+      const withPaymentStatus = this.withDerivedPaymentStatus(row);
+      return {
+        ...withPaymentStatus,
+        items: withPaymentStatus.items.map((item) => this.mapOrderItemView(item)),
+      };
+    });
     return { data, total };
   }
 
@@ -349,6 +414,7 @@ export class OrderRepository {
     const withPaymentStatus = this.withDerivedPaymentStatus(row);
     return {
       ...withPaymentStatus,
+      items: withPaymentStatus.items.map((item) => this.mapOrderItemView(item)),
       payments: withPaymentStatus.payment ? [this.mapPaymentView(withPaymentStatus.payment)] : [],
       checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payment),
     };
@@ -370,6 +436,7 @@ export class OrderRepository {
     const withPaymentStatus = this.withDerivedPaymentStatus(row);
     return {
       ...withPaymentStatus,
+      items: withPaymentStatus.items.map((item) => this.mapOrderItemView(item)),
       payments: withPaymentStatus.payment ? [this.mapPaymentView(withPaymentStatus.payment)] : [],
       checkoutSession: this.deriveCheckoutInfo(withPaymentStatus.payment),
     };
@@ -413,7 +480,13 @@ export class OrderRepository {
       this.prisma.order.count({ where }),
     ]);
 
-    const data = rows.map((row) => this.withDerivedPaymentStatus(row));
+    const data = rows.map((row) => {
+      const withPaymentStatus = this.withDerivedPaymentStatus(row);
+      return {
+        ...withPaymentStatus,
+        items: withPaymentStatus.items.map((item) => this.mapOrderItemView(item)),
+      };
+    });
     return { data, total };
   }
 
