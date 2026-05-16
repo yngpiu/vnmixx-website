@@ -589,7 +589,7 @@ export function SupportChatFabSheet(): React.JSX.Element {
       behavior: 'smooth',
       block: 'end',
     });
-  }, [messages.length, scrollToBottomTick]);
+  }, [messages.length, scrollToBottomTick, typingEvent, aiThinking]);
 
   useEffect(() => {
     const optimisticUrls = new Set(
