@@ -22,7 +22,10 @@ export class CatalogAiSearchService {
 
   async search(args: SearchProductsArgs): Promise<ProductAiResult[]> {
     const startedAt = Date.now();
-    const query = args.query.trim();
+    const queryParts = [args.query.trim(), args.color?.trim(), args.size?.trim()].filter(
+      (part): part is string => Boolean(part),
+    );
+    const query = queryParts.join(' ');
     this.logger.log(`[catalog-ai] search start: query="${query}"`);
     const result = await this.productService.findPublicList({
       page: 1,

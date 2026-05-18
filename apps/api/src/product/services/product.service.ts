@@ -185,7 +185,8 @@ export class ProductService {
   }
 
   // Distinct variant colors matching catalog facet context (sizes/price/search/category).
-  findPublicColorFacets(
+  // Ưu tiên Meilisearch facet distribution để chỉ trả màu thực sự có sản phẩm khớp bộ lọc.
+  async findPublicColorFacets(
     query: ProductColorFacetsQueryDto,
   ): Promise<Array<{ id: number; name: string; hexCode: string }>> {
     const params = {
@@ -200,6 +201,24 @@ export class ProductService {
       PRODUCT_CACHE_KEYS.COLOR_FACET(hash),
       PRODUCT_CACHE_TTL.COLOR_FACET,
       async () => {
+        // Chuyển sizeIds → sizeLabels để Meilisearch filter đúng
+        const sizeLabels = params.sizeIds?.length
+          ? await this.repository.findSizeLabelsByIds(params.sizeIds)
+          : [];
+        // Thử lấy facet distribution từ Meilisearch
+        const facetDist = await this.productSearchService.getFacetDistribution({
+          query: params.search,
+          categorySlug: params.categorySlug,
+          sizeLabels: sizeLabels.length > 0 ? sizeLabels : undefined,
+          minPrice: params.minPrice,
+          maxPrice: params.maxPrice,
+        });
+        if (facetDist) {
+          const colorNames = Object.keys(facetDist.colorNames);
+          if (colorNames.length === 0) return [];
+          return this.repository.findColorsByNames(colorNames);
+        }
+        // Fallback: Prisma
         if (!params.search?.trim()) {
           return this.repository.findPublicColorFacetColors(params);
         }
@@ -226,7 +245,8 @@ export class ProductService {
   }
 
   // Distinct variant sizes matching catalog facet context (colors/price/search/category).
-  findPublicSizeFacets(
+  // Ưu tiên Meilisearch facet distribution để chỉ trả size thực sự có sản phẩm khớp bộ lọc.
+  async findPublicSizeFacets(
     query: ProductSizeFacetsQueryDto,
   ): Promise<Array<{ id: number; label: string; sortOrder: number }>> {
     const params = {
@@ -241,6 +261,24 @@ export class ProductService {
       PRODUCT_CACHE_KEYS.SIZE_FACET(hash),
       PRODUCT_CACHE_TTL.SIZE_FACET,
       async () => {
+        // Chuyển colorIds → colorNames để Meilisearch filter đúng
+        const colorNames = params.colorIds?.length
+          ? await this.repository.findColorNamesByIds(params.colorIds)
+          : [];
+        // Thử lấy facet distribution từ Meilisearch
+        const facetDist = await this.productSearchService.getFacetDistribution({
+          query: params.search,
+          categorySlug: params.categorySlug,
+          colorNames: colorNames.length > 0 ? colorNames : undefined,
+          minPrice: params.minPrice,
+          maxPrice: params.maxPrice,
+        });
+        if (facetDist) {
+          const sizeLabels = Object.keys(facetDist.sizeLabels);
+          if (sizeLabels.length === 0) return [];
+          return this.repository.findSizesByLabels(sizeLabels);
+        }
+        // Fallback: Prisma
         if (!params.search?.trim()) {
           return this.repository.findPublicSizeFacetSizes(params);
         }

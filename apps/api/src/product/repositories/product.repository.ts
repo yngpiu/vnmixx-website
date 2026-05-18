@@ -412,6 +412,7 @@ export class ProductRepository {
   async findPublicColorFacetColors(params: {
     search?: string;
     categorySlug?: string;
+    colorIds?: number[];
     sizeIds?: number[];
     minPrice?: number;
     maxPrice?: number;
@@ -432,6 +433,7 @@ export class ProductRepository {
     const variantWhere: Prisma.ProductVariantWhereInput = {
       isActive: true,
       deletedAt: null,
+      ...(params.colorIds?.length && { colorId: { in: params.colorIds } }),
       ...(params.sizeIds?.length && { sizeId: { in: params.sizeIds } }),
       ...(Object.keys(variantPriceFilter).length > 0 && { price: variantPriceFilter }),
       product: productWhere,
@@ -614,6 +616,34 @@ export class ProductRepository {
       orderBy: { id: 'asc' },
     });
     return rows.map((row) => row.label);
+  }
+
+  /** Lấy color objects theo danh sách tên màu (dùng cho Meilisearch facet distribution). */
+  async findColorsByNames(
+    names: string[],
+  ): Promise<Array<{ id: number; name: string; hexCode: string }>> {
+    if (names.length === 0) {
+      return [];
+    }
+    return this.prisma.color.findMany({
+      where: { name: { in: names } },
+      select: { id: true, name: true, hexCode: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  /** Lấy size objects theo danh sách label (dùng cho Meilisearch facet distribution). */
+  async findSizesByLabels(
+    labels: string[],
+  ): Promise<Array<{ id: number; label: string; sortOrder: number }>> {
+    if (labels.length === 0) {
+      return [];
+    }
+    return this.prisma.size.findMany({
+      where: { label: { in: labels } },
+      select: { id: true, label: true, sortOrder: true },
+      orderBy: { sortOrder: 'asc' },
+    });
   }
 
   async findAllProductSearchDocuments(): Promise<ProductSearchDocument[]> {

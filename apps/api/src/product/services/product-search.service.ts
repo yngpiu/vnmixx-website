@@ -129,31 +129,30 @@ export class ProductSearchService {
     searchTextNormalized: string;
     baseRank: number;
   }): number {
-    const startsWithQuery = params.nameNormalized.startsWith(params.queryNormalized);
-    const containsWholeQuery = params.nameNormalized.includes(params.queryNormalized);
-    const hasAllTokens = params.queryTokens.every((token) => params.nameNormalized.includes(token));
-    const descriptionHasAllTokens = params.queryTokens.every((token) =>
-      params.descriptionNormalized.includes(token),
-    );
-    const categoryStartsWithQuery = params.primaryCategoryNameNormalized.startsWith(
-      params.queryNormalized,
-    );
-    const categoryContainsQuery =
-      params.primaryCategoryNameNormalized.includes(params.queryNormalized) ||
-      params.categorySearchTextNormalized.includes(params.queryNormalized);
-    const colorsContainQuery = params.colorNamesNormalized.some((value) =>
-      value.includes(params.queryNormalized),
-    );
-    const searchTextHasAllTokens = params.queryTokens.every((token) =>
-      params.searchTextNormalized.includes(token),
-    );
+    const name = params.nameNormalized ?? '';
+    const desc = params.descriptionNormalized ?? '';
+    const catName = params.primaryCategoryNameNormalized ?? '';
+    const catSearch = params.categorySearchTextNormalized ?? '';
+    const colors = params.colorNamesNormalized ?? [];
+    const searchText = params.searchTextNormalized ?? '';
+    const query = params.queryNormalized;
+    const tokens = params.queryTokens;
+
+    const startsWithQuery = name.startsWith(query);
+    const containsWholeQuery = name.includes(query);
+    const hasAllTokens = tokens.every((token) => name.includes(token));
+    const descriptionHasAllTokens = tokens.every((token) => desc.includes(token));
+    const categoryStartsWithQuery = catName.startsWith(query);
+    const categoryContainsQuery = catName.includes(query) || catSearch.includes(query);
+    const colorsContainQuery = colors.some((value) => value.includes(query));
+    const searchTextHasAllTokens = tokens.every((token) => searchText.includes(token));
     const prefixTokenMatches = this.countPrefixTokenMatches({
-      nameNormalized: params.nameNormalized,
-      tokens: params.queryTokens,
+      nameNormalized: name,
+      tokens,
     });
     const categoryPrefixMatches = this.countPrefixTokenMatches({
-      nameNormalized: params.categorySearchTextNormalized,
-      tokens: params.queryTokens,
+      nameNormalized: catSearch,
+      tokens,
     });
     return (
       (startsWithQuery ? 1000 : 0) +
@@ -281,9 +280,8 @@ export class ProductSearchService {
     }
     if (params.colorNames?.length) {
       const clauses = params.colorNames
-        .map((value) => this.normalizeSearchText(value))
-        .filter((value) => value.length > 0)
-        .map((value) => `colorNamesNormalized = "${value}"`);
+        .filter((value) => value.trim().length > 0)
+        .map((value) => `colorNames = "${value.trim()}"`);
       if (clauses.length > 0) {
         filters.push(clauses.join(' OR '));
       }
@@ -382,6 +380,41 @@ export class ProductSearchService {
     } catch (error) {
       this.logger.warn(
         `Search engine unavailable, fallback to DB search: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Lấy phân bố facet (color/size) từ Meilisearch dựa trên bộ lọc hiện tại.
+   * Trả về null nếu Meilisearch không khả dụng.
+   */
+  async getFacetDistribution(params: SearchProductIdsParams): Promise<{
+    colorNames: Record<string, number>;
+    sizeLabels: Record<string, number>;
+  } | null> {
+    if (!this.meilisearchService.isEnabled()) {
+      return null;
+    }
+    try {
+      await this.ensureProductIndex();
+      const index = this.meilisearchService
+        .getClient()
+        .index(this.meilisearchService.getProductIndexUid());
+      const normalizedQuery = this.normalizeSearchText(params.query ?? '');
+      const filters = this.buildSearchFilters(params);
+      const result = await index.search(normalizedQuery, {
+        limit: 0,
+        ...(filters.length > 0 ? { filter: filters } : {}),
+        facets: ['colorNames', 'sizeLabels'],
+      });
+      return {
+        colorNames: result.facetDistribution?.colorNames ?? {},
+        sizeLabels: result.facetDistribution?.sizeLabels ?? {},
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Search engine unavailable for facets: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
       return null;
     }

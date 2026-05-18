@@ -3,7 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import { IsArray, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 /**
- * Query for contextual color facets on the storefront catalog (excludes colorIds by design).
+ * Query for contextual color facets on the storefront catalog.
  */
 export class ProductColorFacetsQueryDto {
   @ApiPropertyOptional({ example: 'basic tee' })
@@ -15,6 +15,13 @@ export class ProductColorFacetsQueryDto {
   @IsString({ message: 'Slug danh mục phải là chuỗi ký tự' })
   @IsOptional()
   categorySlug?: string;
+
+  @ApiPropertyOptional({ example: [1, 2], type: [Number] })
+  @IsArray({ message: 'Danh sách ID màu sắc phải là một mảng' })
+  @IsInt({ each: true, message: 'Mỗi ID màu sắc phải là số nguyên' })
+  @Transform(({ value }) => (Array.isArray(value) ? value.map(Number) : [Number(value)]))
+  @IsOptional()
+  colorIds?: number[];
 
   @ApiPropertyOptional({ example: [1, 2], type: [Number] })
   @IsArray({ message: 'Danh sách ID kích thước phải là một mảng' })
