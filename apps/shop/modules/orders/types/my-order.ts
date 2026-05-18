@@ -10,6 +10,7 @@ export type MyPaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'EXPIRED' | 'CA
 
 export interface MyOrderItem {
   id: number;
+  productId: number;
   productName: string;
   productSlug: string;
   imageUrl: string | null;

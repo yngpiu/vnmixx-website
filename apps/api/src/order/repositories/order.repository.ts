@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma/services/prisma.service';
 
 export interface OrderItemView {
   id: number;
+  productId: number;
   productName: string;
   productSlug: string;
   imageUrl: string | null;
@@ -122,6 +123,7 @@ const ORDER_ITEM_SELECT = {
   subtotal: true,
   variant: {
     select: {
+      productId: true,
       colorId: true,
       product: {
         select: {
@@ -407,6 +409,7 @@ export class OrderRepository {
       quantity: number;
       subtotal: number;
       variant: {
+        productId: number;
         colorId: number;
         product: {
           slug: string;
@@ -423,6 +426,7 @@ export class OrderRepository {
     const fallbackImage = item.variant.product.images[0] ?? null;
     return {
       id: item.id,
+      productId: item.variant.productId,
       productName: item.productName,
       productSlug: item.variant.product.slug,
       imageUrl: colorMatchedImage?.url ?? fallbackImage?.url ?? null,

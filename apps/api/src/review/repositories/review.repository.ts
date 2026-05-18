@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, ReviewVisibility } from '../../../generated/prisma/client';
+import { Prisma, ProductReview, ReviewVisibility } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/services/prisma.service';
 
 export interface AdminReviewListView {
@@ -222,5 +222,10 @@ export class ReviewRepository {
     await this.prisma.productReview.delete({
       where: { id },
     });
+  }
+
+  // Tạo đánh giá mới từ khách hàng.
+  async create(data: Prisma.ProductReviewCreateInput): Promise<ProductReview> {
+    return this.prisma.productReview.create({ data });
   }
 }

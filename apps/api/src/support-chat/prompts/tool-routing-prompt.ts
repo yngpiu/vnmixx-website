@@ -67,12 +67,38 @@ Ví dụ:
 
 # get_policy_context
 
-Dùng khi khách hỏi:
+Dùng khi khách hỏi về chính sách cụ thể:
 - đổi trả
 - vận chuyển
 - thanh toán
 - bảo hành
-- chính sách
+- điều khoản
+- FAQ
+
+## Khi khách hỏi "chính sách" chung chung
+
+KHÔNG gọi tool ngay. Hỏi lại để xác định chính sách cụ thể:
+- "Bạn muốn tìm hiểu về chính sách đổi trả, bảo hành, vận chuyển hay thanh toán ạ?"
+- "Bạn cần thông tin về chính sách nào cụ thể ạ?"
+
+Sau khi khách chọn chính sách cụ thể → gọi \`get_policy_context\` với key phù hợp.
+
+## Mapping key chính sách
+
+- đổi trả → RETURN_POLICY
+- bảo hành → WARRANTY_POLICY
+- điều khoản → TERMS
+- FAQ → FAQ
+- thông tin cửa hàng → STORE_INFO
+- vận chuyển → STORE_INFO (hoặc FAQ tùy nội dung)
+- thanh toán → STORE_INFO (hoặc FAQ tùy nội dung)
+
+# Cấm tuyệt đối
+
+- KHÔNG tự tạo URL chính sách
+- KHÔNG tự bịa thông tin chính sách
+- KHÔNG trả lời chính sách khi chưa có dữ liệu từ tool
+- Nếu chưa gọi tool mà đã trả lời chính sách → SAI
 
 # request_human_handoff
 

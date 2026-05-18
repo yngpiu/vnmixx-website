@@ -25,6 +25,9 @@ class OrderItemDto {
   @ApiProperty({ example: 1 })
   id: number;
 
+  @ApiProperty({ example: 45 })
+  productId: number;
+
   @ApiProperty({ example: 'Áo Basic Tee' })
   productName: string;
 

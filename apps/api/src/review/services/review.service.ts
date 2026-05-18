@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AuditLogStatus, Prisma, ReviewVisibility } from '../../../generated/prisma/client';
 import type { AuditRequestContext } from '../../audit-log/audit-log-request.util';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
@@ -280,5 +280,67 @@ export class ReviewService {
       });
       throw error;
     }
+  }
+
+  // Tạo đánh giá sản phẩm từ khách hàng.
+  async createCustomerReview(
+    customerId: number,
+    dto: {
+      productId: number;
+      orderItemId?: number;
+      rating: number;
+      title?: string;
+      content?: string;
+    },
+  ): Promise<{ id: number }> {
+    // Kiểm tra sản phẩm tồn tại
+    const product = await this.prisma.product.findFirst({
+      where: { id: dto.productId, isActive: true, deletedAt: null },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new NotFoundException(`Không tìm thấy sản phẩm #${dto.productId}`);
+    }
+
+    // Nếu có orderItemId, kiểm tra order item thuộc về customer và đã giao thành công
+    if (dto.orderItemId) {
+      const orderItem = await this.prisma.orderItem.findFirst({
+        where: {
+          id: dto.orderItemId,
+          variant: { productId: dto.productId },
+          order: { customerId, status: 'DELIVERED' },
+        },
+        select: { id: true },
+      });
+      if (!orderItem) {
+        throw new BadRequestException('Không tìm thấy sản phẩm trong đơn hàng đã giao của bạn.');
+      }
+    }
+
+    // Kiểm tra đánh giá đã tồn tại chưa (tránh duplicate)
+    const existingReview = await this.prisma.productReview.findFirst({
+      where: {
+        productId: dto.productId,
+        customerId,
+        orderItemId: dto.orderItemId ?? null,
+      },
+      select: { id: true },
+    });
+    if (existingReview) {
+      throw new BadRequestException('Bạn đã đánh giá sản phẩm này rồi.');
+    }
+
+    // Tạo đánh giá
+    const review = await this.reviewRepo.create({
+      product: { connect: { id: dto.productId } },
+      customer: { connect: { id: customerId } },
+      ...(dto.orderItemId ? { orderItem: { connect: { id: dto.orderItemId } } } : {}),
+      rating: dto.rating,
+      title: dto.title,
+      content: dto.content,
+      status: ReviewVisibility.VISIBLE,
+    });
+
+    return { id: review.id };
   }
 }

@@ -3,12 +3,14 @@
 import { ACCOUNT_MENU_ITEMS } from '@/modules/header/constants/account-menu-items';
 import { getMyOrderDetail } from '@/modules/orders/api/orders';
 import { getMyOrderStatusLabel } from '@/modules/orders/utils/order-status';
+import { ReviewDialog } from '@/modules/reviews/components/review-dialog';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeftIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 type AccountOrderDetailPageContentProps = {
   orderCode: string;
@@ -39,6 +41,12 @@ export function AccountOrderDetailPageContent({
   orderCode,
 }: AccountOrderDetailPageContentProps): React.JSX.Element {
   const pathname = usePathname();
+  const [reviewDialog, setReviewDialog] = useState<{
+    open: boolean;
+    productId: number;
+    orderItemId: number;
+    productName: string;
+  } | null>(null);
   const orderDetailQuery = useQuery({
     queryKey: ['shop', 'me', 'order', orderCode],
     queryFn: () => getMyOrderDetail(orderCode),
@@ -189,9 +197,27 @@ export function AccountOrderDetailPageContent({
                             </p>
                           </div>
                         </div>
-                        <p className="text-[18px] leading-7 font-semibold text-foreground">
-                          {formatMoney(item.subtotal)}
-                        </p>
+                        <div className="flex flex-col items-end gap-2">
+                          <p className="text-[18px] leading-7 font-semibold text-foreground">
+                            {formatMoney(item.subtotal)}
+                          </p>
+                          {selectedOrder.status === 'DELIVERED' && (
+                            <button
+                              type="button"
+                              className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+                              onClick={() =>
+                                setReviewDialog({
+                                  open: true,
+                                  productId: item.productId,
+                                  orderItemId: item.id,
+                                  productName: item.productName,
+                                })
+                              }
+                            >
+                              Đánh giá
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </article>
                   ))}
@@ -255,6 +281,18 @@ export function AccountOrderDetailPageContent({
           )}
         </div>
       </section>
+      {reviewDialog && (
+        <ReviewDialog
+          open={reviewDialog.open}
+          onOpenChange={(open) => setReviewDialog((prev) => (prev ? { ...prev, open } : null))}
+          productId={reviewDialog.productId}
+          orderItemId={reviewDialog.orderItemId}
+          productName={reviewDialog.productName}
+          onSuccess={() => {
+            orderDetailQuery.refetch();
+          }}
+        />
+      )}
     </main>
   );
 }
