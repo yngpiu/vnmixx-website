@@ -47,6 +47,38 @@ export default async function RootLayout({
   const accessToken = cookieStore.get(COOKIE_ACCESS_TOKEN)?.value ?? null;
   return (
     <html lang="vi" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'VNMIXX Shop',
+              url: SHOP_SITE_URL,
+              logo: `${SHOP_SITE_URL}/images/favicon-light.png`,
+              description: 'VNMIXX Shop - thời trang hiện đại, tối giản và linh hoạt cho mỗi ngày.',
+              sameAs: [],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'VNMIXX Shop',
+              url: SHOP_SITE_URL,
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: `${SHOP_SITE_URL}/search?q={search_term_string}`,
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
+      </head>
       <body className={`${montserrat.className} min-h-dvh flex flex-col`}>
         <QueryProvider>
           <AuthProvider accessToken={accessToken}>

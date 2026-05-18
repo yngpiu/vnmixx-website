@@ -1,0 +1,597 @@
+Enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+Enum AddressType {
+  HOME
+  OFFICE
+}
+
+Enum OrderStatus {
+  PENDING_CONFIRMATION
+  PROCESSING
+  AWAITING_SHIPMENT
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+Enum PaymentMethod {
+  COD
+  BANK_TRANSFER_QR
+}
+
+Enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+Enum SepayMatchStatus {
+  MATCHED
+  UNMATCHED
+  DUPLICATE
+  IGNORED
+}
+
+Enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+Enum CustomerStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  INACTIVE
+}
+
+Enum RequiredNote {
+  CHOTHUHANG
+  CHOXEMHANGKHONGTHU
+  KHONGCHOXEMHANG
+}
+
+Enum InventoryMovementType {
+  IMPORT
+  EXPORT
+  RESERVE
+  RELEASE
+  ADJUSTMENT
+  RETURN
+}
+
+Enum InventoryVoucherType {
+  IMPORT
+  EXPORT
+}
+
+Enum AuditLogStatus {
+  SUCCESS
+  FAILED
+}
+
+Enum ChatSenderType {
+  CUSTOMER
+  EMPLOYEE
+  GUEST
+  AI
+}
+
+Enum SupportChatAiMode {
+  AUTO
+  PAUSED
+  OFF
+}
+
+Enum SupportChatStatus {
+  OPEN
+  WAITING_HUMAN
+  RESOLVED
+  CLOSED
+}
+
+Enum ReviewVisibility {
+  VISIBLE
+  HIDDEN
+}
+
+Enum BannerPlacement {
+  HERO_SLIDER
+  FEATURED_TILE
+  PROMO_STRIP
+}
+
+Enum ShopContentKey {
+  WARRANTY_POLICY
+  RETURN_POLICY
+  TERMS
+  FAQ
+  STORE_INFO
+}
+
+Table roles {
+  id int [pk, increment]
+  name varchar(50) [unique, not null]
+  description varchar(255)
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table permissions {
+  id int [pk, increment]
+  name varchar(100) [unique, not null]
+  description varchar(255)
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table role_permissions {
+  role_id int [pk]
+  permission_id int [pk]
+}
+
+Table employees {
+  id int [pk, increment]
+  role_id int [not null]
+  full_name varchar(100) [not null]
+  email varchar(255) [unique, not null]
+  phone_number varchar(20) [unique, not null]
+  hashed_password varchar(255) [not null]
+  avatar_url varchar(500)
+  status EmployeeStatus [not null, default: 'ACTIVE']
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  deleted_at timestamp
+}
+
+Table customers {
+  id int [pk, increment]
+  full_name varchar(100) [not null]
+  email varchar(255) [unique, not null]
+  phone_number varchar(20) [unique, not null]
+  dob date
+  gender Gender
+  hashed_password varchar(255) [not null]
+  avatar_url varchar(500)
+  status CustomerStatus [not null, default: 'PENDING_VERIFICATION']
+  email_verified_at timestamp
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  deleted_at timestamp
+}
+
+Table refresh_tokens {
+  id int [pk, increment]
+  token_hash varchar(255) [unique, not null]
+  customer_id int
+  employee_id int
+  device_info varchar(500)
+  ip_address varchar(45)
+  expires_at timestamp [not null]
+  revoked_at timestamp
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table audit_logs {
+  id int [pk, increment]
+  actor_employee_id int
+  action varchar(120) [not null]
+  resource_type varchar(80) [not null]
+  resource_id varchar(64)
+  request_id varchar(64)
+  ip_address varchar(45)
+  user_agent varchar(500)
+  before_data json
+  after_data json
+  status AuditLogStatus [not null]
+  error_message varchar(500)
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table cities {
+  id int [pk, increment]
+  giaohangnhanh_id varchar(20) [unique, not null]
+  name varchar(100) [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table districts {
+  id int [pk, increment]
+  giaohangnhanh_id varchar(20) [unique, not null]
+  name varchar(100) [not null]
+  city_id int [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table wards {
+  id int [pk, increment]
+  giaohangnhanh_id varchar(20) [unique, not null]
+  name varchar(100) [not null]
+  district_id int [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table addresses {
+  id int [pk, increment]
+  customer_id int [not null]
+  full_name varchar(100) [not null]
+  phone_number varchar(20) [not null]
+  city_id int [not null]
+  district_id int [not null]
+  ward_id int [not null]
+  address_line varchar(255) [not null]
+  type AddressType [not null, default: 'HOME']
+  is_default boolean [not null, default: false]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table categories {
+  id int [pk, increment]
+  name varchar(100) [not null]
+  slug varchar(120) [unique, not null]
+  is_featured boolean [not null, default: false]
+  show_in_header boolean [not null, default: false]
+  is_active boolean [not null, default: true]
+  sort_order smallint [not null, default: 0]
+  parent_id int
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  deleted_at timestamp
+}
+
+Table banners {
+  id int [pk, increment]
+  placement BannerPlacement [not null]
+  title varchar(120)
+  image_url varchar(500) [not null]
+  category_id int [not null]
+  is_active boolean [not null, default: true]
+  sort_order smallint [not null, default: 0]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table colors {
+  id int [pk, increment]
+  name varchar(50) [unique, not null]
+  hex_code char(7) [unique, not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table sizes {
+  id int [pk, increment]
+  label varchar(10) [unique, not null]
+  sort_order smallint [not null, default: 0]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table products {
+  id int [pk, increment]
+  name varchar(255) [not null]
+  slug varchar(255) [unique, not null]
+  description text
+  weight int [not null]
+  length smallint [not null]
+  width smallint [not null]
+  height smallint [not null]
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  deleted_at timestamp
+}
+
+Table product_categories {
+  product_id int [pk]
+  category_id int [pk]
+}
+
+Table product_variants {
+  id int [pk, increment]
+  product_id int [not null]
+  color_id int [not null]
+  size_id int [not null]
+  sku varchar(50) [unique, not null]
+  barcode varchar(64) [unique]
+  unit varchar(20) [not null, default: 'pcs']
+  price int [not null]
+  compare_at_price int [not null]
+  on_hand int [not null, default: 0]
+  reserved int [not null, default: 0]
+  version int [not null, default: 0]
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  deleted_at timestamp
+}
+
+Table product_images {
+  id int [pk, increment]
+  product_id int [not null]
+  color_id int
+  url varchar(500) [not null]
+  alt_text varchar(255)
+  sort_order smallint [not null, default: 0]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table inventory_vouchers {
+  id int [pk, increment]
+  code varchar(30) [unique, not null]
+  type InventoryVoucherType [not null]
+  issued_at timestamp [not null]
+  note varchar(500)
+  total_quantity int [not null, default: 0]
+  total_amount int [not null, default: 0]
+  created_by_employee_id int [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table inventory_voucher_items {
+  id int [pk, increment]
+  voucher_id int [not null]
+  variant_id int [not null]
+  quantity int [not null]
+  unit_price int [not null]
+  line_amount int [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table carts {
+  id int [pk, increment]
+  customer_id int [unique, not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table cart_items {
+  id int [pk, increment]
+  cart_id int [not null]
+  variant_id int [not null]
+  quantity smallint [not null, default: 1]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table wishlists {
+  customer_id int [pk]
+  product_id int [pk]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table orders {
+  id int [pk, increment]
+  order_code varchar(20) [unique, not null]
+  customer_id int [not null]
+  status OrderStatus [not null, default: 'PENDING_CONFIRMATION']
+  shipping_full_name varchar(100) [not null]
+  shipping_phone_number varchar(20) [not null]
+  shipping_city varchar(100) [not null]
+  shipping_district varchar(100) [not null]
+  shipping_ward varchar(100) [not null]
+  shipping_address_line varchar(255) [not null]
+  shipping_ghn_district_id int
+  shipping_ghn_ward_code varchar(20)
+  service_type_id smallint
+  required_note RequiredNote [not null, default: 'KHONGCHOXEMHANG']
+  note varchar(500)
+  ghn_order_code varchar(50)
+  expected_delivery_time timestamp
+  package_weight int [not null, default: 0]
+  package_length smallint [not null, default: 0]
+  package_width smallint [not null, default: 0]
+  package_height smallint [not null, default: 0]
+  subtotal int [not null]
+  shipping_fee int [not null, default: 0]
+  total int [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table order_items {
+  id int [pk, increment]
+  order_id int [not null]
+  variant_id int [not null]
+  product_name varchar(255) [not null]
+  color_name varchar(50) [not null]
+  size_label varchar(10) [not null]
+  sku varchar(50) [not null]
+  price int [not null]
+  quantity smallint [not null]
+  subtotal int [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table order_status_histories {
+  id int [pk, increment]
+  order_id int [not null]
+  status OrderStatus [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table payments {
+  id int [pk, increment]
+  order_id int [unique, not null]
+  method PaymentMethod [not null]
+  status PaymentStatus [not null, default: 'PENDING']
+  provider varchar(30)
+  transaction_id varchar(100)
+  provider_reference_code varchar(100)
+  bank_code varchar(30)
+  bank_name varchar(100)
+  account_number varchar(50)
+  account_name varchar(150)
+  qr_template varchar(30)
+  transfer_content varchar(255)
+  qr_image_url varchar(1000)
+  amount int [not null]
+  amount_paid int [not null, default: 0]
+  paid_at timestamp
+  expired_at timestamp
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table sepay_transactions {
+  id int [pk, increment]
+  sepay_transaction_id int [unique, not null]
+  transfer_amount int [not null]
+  content varchar(1000) [not null]
+  reference_code varchar(255)
+  order_id int
+  payment_id int
+  matched_order_code varchar(64)
+  match_status SepayMatchStatus [not null, default: 'UNMATCHED']
+  raw_payload json [not null]
+  received_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  processed_at timestamp
+}
+
+Table inventory_movements {
+  id int [pk, increment]
+  variant_id int [not null]
+  voucher_id int
+  order_id int
+  order_item_id int
+  employee_id int
+  type InventoryMovementType [not null]
+  delta int [not null]
+  on_hand_after int [not null]
+  reserved_after int [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table product_reviews {
+  id int [pk, increment]
+  product_id int [not null]
+  customer_id int [not null]
+  order_item_id int
+  rating tinyint [not null]
+  title varchar(120)
+  content varchar(1000)
+  status ReviewVisibility [not null, default: 'VISIBLE']
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table media_folders {
+  id int [pk, increment]
+  name varchar(255) [not null]
+  parent_id int
+  path varchar(500) [unique, not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table media_files {
+  id int [pk, increment]
+  key varchar(500) [unique, not null]
+  file_name varchar(255) [not null]
+  folder varchar(500) [not null, default: '']
+  folder_id int
+  mime_type varchar(100) [not null]
+  size int [not null]
+  width smallint
+  height smallint
+  uploaded_by int
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table support_chats {
+  id int [pk, increment]
+  customer_id int [unique]
+  guest_session_secret_hash varchar(64) [unique]
+  ai_mode SupportChatAiMode [not null, default: 'AUTO']
+  status SupportChatStatus [not null, default: 'OPEN']
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table chat_messages {
+  id int [pk, increment]
+  chat_id int [not null]
+  sender_type ChatSenderType [not null]
+  sender_customer_id int
+  sender_employee_id int
+  content longtext [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table chat_assignments {
+  chat_id int [pk]
+  employee_id int [pk]
+  assigned_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table shop_content {
+  id int [pk, increment]
+  key ShopContentKey [unique, not null]
+  title varchar(255) [not null]
+  content longtext [not null]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Ref: roles.id < employees.role_id [delete: restrict]
+Ref: permissions.id < role_permissions.permission_id [delete: cascade]
+Ref: roles.id < role_permissions.role_id [delete: cascade]
+Ref: employees.id < audit_logs.actor_employee_id [delete: set null]
+Ref: employees.id < refresh_tokens.employee_id [delete: cascade]
+Ref: customers.id < refresh_tokens.customer_id [delete: cascade]
+Ref: cities.id < districts.city_id [delete: restrict]
+Ref: districts.id < wards.district_id [delete: restrict]
+Ref: customers.id < addresses.customer_id [delete: cascade]
+Ref: cities.id < addresses.city_id [delete: restrict]
+Ref: districts.id < addresses.district_id [delete: restrict]
+Ref: wards.id < addresses.ward_id [delete: restrict]
+Ref: categories.id < categories.parent_id [delete: restrict]
+Ref: categories.id < banners.category_id [delete: restrict]
+Ref: products.id < product_categories.product_id [delete: cascade]
+Ref: categories.id < product_categories.category_id [delete: restrict]
+Ref: products.id < product_variants.product_id [delete: restrict]
+Ref: colors.id < product_variants.color_id [delete: restrict]
+Ref: sizes.id < product_variants.size_id [delete: restrict]
+Ref: products.id < product_images.product_id [delete: cascade]
+Ref: colors.id < product_images.color_id [delete: set null]
+Ref: employees.id < inventory_vouchers.created_by_employee_id [delete: restrict]
+Ref: inventory_vouchers.id < inventory_voucher_items.voucher_id [delete: cascade]
+Ref: product_variants.id < inventory_voucher_items.variant_id [delete: restrict]
+Ref: customers.id < carts.customer_id [delete: cascade]
+Ref: carts.id < cart_items.cart_id [delete: cascade]
+Ref: product_variants.id < cart_items.variant_id [delete: cascade]
+Ref: customers.id < wishlists.customer_id [delete: cascade]
+Ref: products.id < wishlists.product_id [delete: cascade]
+Ref: customers.id < orders.customer_id [delete: restrict]
+Ref: orders.id < order_items.order_id [delete: restrict]
+Ref: product_variants.id < order_items.variant_id [delete: restrict]
+Ref: orders.id < order_status_histories.order_id [delete: cascade]
+Ref: orders.id < payments.order_id [delete: restrict]
+Ref: orders.id < sepay_transactions.order_id [delete: set null]
+Ref: payments.id < sepay_transactions.payment_id [delete: set null]
+Ref: product_variants.id < inventory_movements.variant_id [delete: restrict]
+Ref: inventory_vouchers.id < inventory_movements.voucher_id [delete: set null]
+Ref: orders.id < inventory_movements.order_id [delete: set null]
+Ref: employees.id < inventory_movements.employee_id [delete: set null]
+Ref: products.id < product_reviews.product_id [delete: cascade]
+Ref: customers.id < product_reviews.customer_id [delete: cascade]
+Ref: order_items.id < product_reviews.order_item_id [delete: set null]
+Ref: media_folders.id < media_folders.parent_id [delete: cascade]
+Ref: media_folders.id < media_files.folder_id [delete: set null]
+Ref: employees.id < media_files.uploaded_by [delete: set null]
+Ref: customers.id < support_chats.customer_id [delete: cascade]
+Ref: support_chats.id < chat_messages.chat_id [delete: cascade]
+Ref: customers.id < chat_messages.sender_customer_id [delete: set null]
+Ref: employees.id < chat_messages.sender_employee_id [delete: set null]
+Ref: support_chats.id < chat_assignments.chat_id [delete: cascade]
+Ref: employees.id < chat_assignments.employee_id [delete: cascade]
