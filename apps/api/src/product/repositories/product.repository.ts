@@ -718,6 +718,11 @@ export class ProductRepository {
     };
   }
 
+  /**
+   * Sắp xếp theo số lượng đã bán (best selling).
+   * Dùng raw SQL để tính sold count trực tiếp từ order_items + orders,
+   * tránh load toàn bộ variant vào memory và query N+1.
+   */
   private async findPublicBestSellingList(params: {
     page: number;
     limit: number;
@@ -733,6 +738,8 @@ export class ProductRepository {
   > {
     const { page, limit } = params;
     const where = buildPublicListWhereInput(params);
+
+    // Bước 1: Load product stubs (id + createdAt) matching filters
     const listStubs = await this.prisma.product.findMany({
       where,
       select: { id: true, createdAt: true },
@@ -745,37 +752,32 @@ export class ProductRepository {
         meta: { page, limit, total: 0, totalPages: 0 },
       };
     }
+
     const productIds = listStubs.map((stub) => stub.id);
-    const variantSoldRows = await this.prisma.orderItem.groupBy({
-      by: ['variantId'],
-      where: {
-        order: { status: 'DELIVERED' },
-        variant: { productId: { in: productIds } },
-      },
-      _sum: { quantity: true },
-    });
-    const variantIds = variantSoldRows.map((row) => row.variantId);
-    const variants =
-      variantIds.length > 0
-        ? await this.prisma.productVariant.findMany({
-            where: { id: { in: variantIds } },
-            select: { id: true, productId: true },
-          })
-        : [];
-    const productIdByVariantId = new Map(
-      variants.map((variant) => [variant.id, variant.productId]),
-    );
+
+    // Bước 2: Raw SQL lấy sold count per product — 1 query duy nhất,
+    // không cần load variants rồi map productId như cách cũ
+    const soldRows = await this.prisma.$queryRaw<
+      Array<{ product_id: number; total_sold: string | number }>
+    >`
+      SELECT pv.product_id, COALESCE(SUM(oi.quantity), 0) AS total_sold
+      FROM order_items oi
+      INNER JOIN product_variants pv ON pv.id = oi.variant_id
+      INNER JOIN orders o ON o.id = oi.order_id
+      WHERE o.status = 'DELIVERED'
+        AND pv.product_id IN (${Prisma.join(productIds)})
+      GROUP BY pv.product_id
+    `;
+
+    // Bước 3: Build sold count map
     const soldCountByProductId = new Map<number, number>(
       productIds.map((productId) => [productId, 0]),
     );
-    for (const row of variantSoldRows) {
-      const productId = productIdByVariantId.get(row.variantId);
-      if (!productId) continue;
-      soldCountByProductId.set(
-        productId,
-        (soldCountByProductId.get(productId) ?? 0) + Number(row._sum.quantity ?? 0),
-      );
+    for (const row of soldRows) {
+      soldCountByProductId.set(row.product_id, Number(row.total_sold));
     }
+
+    // Bước 4: Sort trong JS: sold DESC, createdAt DESC
     const sortedStubs = listStubs.slice().sort((leftStub, rightStub) => {
       const leftSold = soldCountByProductId.get(leftStub.id) ?? 0;
       const rightSold = soldCountByProductId.get(rightStub.id) ?? 0;
@@ -784,6 +786,8 @@ export class ProductRepository {
       }
       return rightStub.createdAt.getTime() - leftStub.createdAt.getTime();
     });
+
+    // Bước 5: Slice cho trang hiện tại
     const pageIds = sortedStubs.slice((page - 1) * limit, page * limit).map((stub) => stub.id);
     if (pageIds.length === 0) {
       return {
@@ -791,6 +795,8 @@ export class ProductRepository {
         meta: { page, limit, total, totalPages },
       };
     }
+
+    // Bước 6: Load full product graph chỉ cho các product trong trang
     const pageRows = await this.prisma.product.findMany({
       where: { id: { in: pageIds } },
       select: this.resolvePublicListGraphSelect(params),

@@ -619,6 +619,7 @@ model OrderItem {
   @@unique([id, orderId], map: "uk_order_items_id_order")
   @@index([orderId], map: "idx_order_items_order")
   @@index([variantId], map: "idx_order_items_variant")
+  @@index([variantId, orderId], map: "idx_order_items_variant_order")
   @@map("order_items")
 }
 
